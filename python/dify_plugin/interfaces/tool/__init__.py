@@ -2,11 +2,10 @@ from abc import ABC, abstractmethod
 from collections.abc import Generator
 from typing import Any, Optional
 
-from dify_plugin.file.entities import FileType
-
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities.tool import ToolInvokeMessage, ToolParameter, ToolRuntime
 from dify_plugin.file.constants import DIFY_FILE_IDENTITY
+from dify_plugin.file.entities import FileType
 from dify_plugin.file.file import File
 
 

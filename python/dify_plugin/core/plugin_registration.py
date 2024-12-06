@@ -27,7 +27,6 @@ from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
 from dify_plugin.interfaces.tool import Tool, ToolProvider
 
-
 T = TypeVar("T")
 
 

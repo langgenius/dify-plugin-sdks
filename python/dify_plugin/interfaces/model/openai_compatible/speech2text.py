@@ -7,8 +7,8 @@ from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeBadRequestError,
 )
-from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.openai_compatible.common import _CommonOaiApiCompat
+from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 
 
 class OAICompatSpeech2TextModel(_CommonOaiApiCompat, Speech2TextModel):

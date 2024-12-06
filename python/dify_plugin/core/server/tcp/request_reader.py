@@ -8,7 +8,6 @@ from typing import Callable, Optional
 from gevent.select import select
 
 from dify_plugin.core.entities.message import InitializeMessage
-
 from dify_plugin.core.entities.plugin.io import (
     PluginInStream,
     PluginInStreamEvent,

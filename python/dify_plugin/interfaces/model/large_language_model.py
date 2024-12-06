@@ -29,6 +29,7 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     UserPromptMessage,
 )
+
 from .ai_model import AIModel
 
 logger = logging.getLogger(__name__)
