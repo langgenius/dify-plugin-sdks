@@ -19,20 +19,23 @@ class StorageInvocation(BackwardsInvocation[dict]):
 
             raise Exception("unexpected data")
 
-        Exception("no data found")
-
-    def get(self, key: str) -> bytes:
-        for data in self._backwards_invoke(
-            InvokeType.Storage,
-            dict,
-            {
-                "opt": "get",
-                "key": key,
-            },
-        ):
-            return unhexlify(data["data"])
-
         raise Exception("no data found")
+
+    def get(self, key: str) -> bytes | None:
+        try:
+            for data in self._backwards_invoke(
+                InvokeType.Storage,
+                dict,
+                {
+                    "opt": "get",
+                    "key": key,
+                },
+            ):
+                return unhexlify(data["data"])
+        except Exception as e:
+            if "load data failed, please check if the key is correct" in str(e):
+                return None
+            raise 
 
     def delete(self, key: str) -> None:
         for data in self._backwards_invoke(
