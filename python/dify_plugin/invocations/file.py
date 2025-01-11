@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 import requests
 from pydantic import BaseModel
@@ -30,7 +31,11 @@ class UploadFileResponse(BaseModel):
     size: int
     extension: str
     mime_type: str
-    type: Type
+    type: Optional[Type] = None
+
+    def __init__(self, **data):
+        data['type'] = self.Type.from_mime_type(data.get('mime_type', ''))
+        super().__init__(**data)
 
     def to_app_parameter(self) -> dict:
         return {
