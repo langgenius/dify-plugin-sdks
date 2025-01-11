@@ -259,6 +259,9 @@ class LargeLanguageModel(AIModel):
                 # validate options
                 if parameter_rule.options and parameter_value not in parameter_rule.options:
                     raise ValueError(f"Model Parameter {parameter_name} should be one of {parameter_rule.options}.")
+            elif parameter_rule.type == ParameterType.TEXT:
+                if not isinstance(parameter_value, str):
+                    raise ValueError(f"Model Parameter {parameter_name} should be string.")
             else:
                 raise ValueError(f"Model Parameter {parameter_name} type {parameter_rule.type} is not supported.")
 
