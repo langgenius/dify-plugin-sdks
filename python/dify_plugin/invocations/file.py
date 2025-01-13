@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 import requests
 from pydantic import BaseModel, model_validator
