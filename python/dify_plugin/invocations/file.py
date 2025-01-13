@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional
 
 import requests
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from dify_plugin.core.entities.invocation import InvokeType
 from dify_plugin.core.runtime import BackwardsInvocation
@@ -31,11 +31,14 @@ class UploadFileResponse(BaseModel):
     size: int
     extension: str
     mime_type: str
-    type: Optional[Type] = None
+    type: Type
 
-    def __init__(self, **data):
-        data['type'] = self.Type.from_mime_type(data.get('mime_type', ''))
-        super().__init__(**data)
+    @model_validator(mode="before")
+    @classmethod
+    def validate_type(cls, d):
+        if "type" not in d:
+            d["type"] = cls.Type.from_mime_type(d.get("mime_type", ""))
+        return d
 
     def to_app_parameter(self) -> dict:
         return {
