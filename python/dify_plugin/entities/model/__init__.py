@@ -279,9 +279,6 @@ class ParameterRule(BaseModel):
     @classmethod
     def validate_label(cls, data: dict) -> dict:
         if isinstance(data, dict):
-            if not data.get("label"):
-                data["label"] = I18nObject(en_US=data["name"])
-
             # check if there is a template
             if "use_template" in data:
                 try:
@@ -294,6 +291,9 @@ class ParameterRule(BaseModel):
                     data = copy_default_parameter_rule
                 except ValueError:
                     pass
+            
+            if not data.get("label"):
+                data["label"] = I18nObject(en_US=data["name"])
 
         return data
 
