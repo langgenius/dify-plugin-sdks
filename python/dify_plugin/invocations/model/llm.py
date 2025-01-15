@@ -17,7 +17,7 @@ class LLMInvocation(BackwardsInvocation[LLMResultChunk]):
     @overload
     def invoke(
         self,
-        model_config: LLMModelConfig,
+        model_config: LLMModelConfig | dict,
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
         stop: list[str] | None = None,
@@ -27,7 +27,7 @@ class LLMInvocation(BackwardsInvocation[LLMResultChunk]):
     @overload
     def invoke(
         self,
-        model_config: LLMModelConfig,
+        model_config: LLMModelConfig | dict,
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
         stop: list[str] | None = None,
@@ -37,7 +37,7 @@ class LLMInvocation(BackwardsInvocation[LLMResultChunk]):
     @overload
     def invoke(
         self,
-        model_config: LLMModelConfig,
+        model_config: LLMModelConfig | dict,
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
         stop: list[str] | None = None,
@@ -46,7 +46,7 @@ class LLMInvocation(BackwardsInvocation[LLMResultChunk]):
 
     def invoke(
         self,
-        model_config: LLMModelConfig,
+        model_config: LLMModelConfig | dict,
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
         stop: list[str] | None = None,
@@ -55,6 +55,9 @@ class LLMInvocation(BackwardsInvocation[LLMResultChunk]):
         """
         Invoke llm
         """
+        if isinstance(model_config, dict):
+            model_config = LLMModelConfig(**model_config)
+
         data = {
             **model_config.model_dump(),
             "prompt_messages": [message.model_dump() for message in prompt_messages],
