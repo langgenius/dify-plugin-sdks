@@ -1,6 +1,6 @@
 [project]
 name = "dify_plugin"
-version = "0.0.1-beta67"
+version = "0.0.1-beta68"
 description = "Dify Plugin SDK"
 authors = [{ name = "langgenius", email = "hello@dify.ai" }]
 dependencies = [

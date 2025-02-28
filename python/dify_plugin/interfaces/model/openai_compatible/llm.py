@@ -336,6 +336,23 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if not endpoint_url.endswith("/"):
             endpoint_url += "/"
 
+        response_format = model_parameters.get("response_format")
+        if response_format:
+            if response_format == "json_schema":
+                json_schema = model_parameters.get("json_schema")
+                if not json_schema:
+                    raise ValueError("Must define JSON Schema when the response format is json_schema")
+                try:
+                    schema = json.loads(json_schema)
+                except Exception:
+                    raise ValueError(f"not correct json_schema format: {json_schema}")
+                model_parameters.pop("json_schema")
+                model_parameters["response_format"] = {"type": "json_schema", "json_schema": schema}
+            else:
+                model_parameters["response_format"] = {"type": response_format}
+        elif "json_schema" in model_parameters:
+            del model_parameters["json_schema"]
+
         data = {"model": model if not credentials.get('endpoint_model_name') else credentials.get('endpoint_model_name'), "stream": stream, **model_parameters}
 
         completion_type = LLMMode.value_of(credentials["mode"])
