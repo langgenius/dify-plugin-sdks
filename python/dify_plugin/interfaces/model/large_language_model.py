@@ -560,7 +560,8 @@ if you are not sure about the structure.
         self.started_at = time.perf_counter()
 
         try:
-            if "response_format" in model_parameters:
+            # do not use code block mode wrapper if response_format is json_schema
+            if "response_format" in model_parameters and model_parameters["response_format"] != "json_schema":
                 result = self._code_block_mode_wrapper(
                     model=model,
                     credentials=credentials,
