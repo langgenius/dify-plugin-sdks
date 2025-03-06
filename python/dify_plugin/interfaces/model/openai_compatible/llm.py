@@ -496,6 +496,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     tool_call.function.arguments += new_tool_call.function.arguments
 
         finish_reason = None  # The default value of finish_reason is None
+        is_reasoning_started = False
         message_id, usage = None, None
         for chunk in response.iter_lines(decode_unicode=True, delimiter=delimiter):
             chunk = chunk.strip()
@@ -531,7 +532,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
                 if "delta" in choice:
                     delta = choice["delta"]
-                    delta_content = delta.get("content")
+                    delta_content, is_reasoning_started = self._wrap_thinking_by_reasoning_content(
+                        delta, is_reasoning_started
+                    )
 
                     assistant_message_tool_calls = None
 
