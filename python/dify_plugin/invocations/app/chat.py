@@ -14,7 +14,7 @@ class ChatAppInvocation(BackwardsInvocation[dict]):
         inputs: dict,
         response_mode: Literal["streaming"],
         conversation_id: str | None = None,
-        user: str |None = one,
+        user: str |None = None,
     ) -> Generator[dict, None, None]: ...
 
     @overload
@@ -25,7 +25,7 @@ class ChatAppInvocation(BackwardsInvocation[dict]):
         inputs: dict,
         response_mode: Literal["blocking"],
         conversation_id: str | None = None,
-        user: str |None = one,
+        user: str |None = None,
     ) -> dict: ...
 
     def invoke(
