@@ -49,7 +49,7 @@ class ChatAppInvocation(BackwardsInvocation[dict]):
                 "inputs": inputs,
                 "response_mode": response_mode,
                 "conversation_id": conversation_id,
-                 "user": user
+                "user": user
             },
         )
 
