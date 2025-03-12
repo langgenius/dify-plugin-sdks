@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 import requests
 from pydantic import BaseModel, model_validator
@@ -30,7 +31,7 @@ class UploadFileResponse(BaseModel):
     size: int
     extension: str
     mime_type: str
-    type: Type
+    type: Optional[Type] = None
 
     @model_validator(mode="before")
     @classmethod
