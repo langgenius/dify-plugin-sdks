@@ -37,7 +37,7 @@ class OAICompatSpeech2TextModel(_CommonOaiApiCompat, Speech2TextModel):
             endpoint_url += "/"
         endpoint_url = urljoin(endpoint_url, "audio/transcriptions")
 
-        payload = {"model": model if not credentials.get('endpoint_model_name') else credentials.get('endpoint_model_name')}
+        payload = {"model": credentials.get('endpoint_model_name', model)}
         files = [("file", file)]
         response = requests.post(endpoint_url, headers=headers, data=payload, files=files)
 

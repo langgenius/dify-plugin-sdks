@@ -98,7 +98,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             # Prepare the payload for the request
             payload = {
                 "input": inputs[i : i + max_chunks],
-                "model": model if not credentials.get('endpoint_model_name') else credentials.get('endpoint_model_name'),
+                "model": credentials.get('endpoint_model_name', model),
                 **extra_model_kwargs,
             }
 
@@ -158,7 +158,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
 
             endpoint_url = urljoin(endpoint_url, "embeddings")
 
-            payload = {"input": "ping", "model": model if not credentials.get('endpoint_model_name') else credentials.get('endpoint_model_name')}
+            payload = {"input": "ping", "model": credentials.get('endpoint_model_name', model)}
 
             response = requests.post(
                 url=endpoint_url,
