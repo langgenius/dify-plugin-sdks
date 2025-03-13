@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from enum import Enum
 from typing import Optional
 
@@ -102,7 +103,6 @@ class AudioPromptMessageContent(MultiModalPromptMessageContent):
 
 
 class ImagePromptMessageContent(MultiModalPromptMessageContent):
-
     class DETAIL(Enum):
         LOW = "low"
         HIGH = "high"
@@ -134,7 +134,9 @@ class PromptMessage(BaseModel):
 
     @field_validator("content", mode="before")
     @classmethod
-    def transform_content(cls, value: list[dict] | str | None) -> Optional[str | list[PromptMessageContent]]:
+    def transform_content(
+        cls, value: list[dict] | Sequence[PromptMessageContent] | str | None
+    ) -> Optional[str | list[PromptMessageContent]]:
         """
         Transform content to list of prompt message content.
         """
@@ -143,6 +145,9 @@ class PromptMessage(BaseModel):
         else:
             result = []
             for content in value or []:
+                if isinstance(content, PromptMessageContent):
+                    result.append(content)
+                    continue
                 if content.get("type") == PromptMessageContentType.TEXT.value:
                     result.append(TextPromptMessageContent(**content))
                 elif content.get("type") == PromptMessageContentType.IMAGE.value:
