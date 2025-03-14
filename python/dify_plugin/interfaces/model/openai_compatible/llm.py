@@ -144,6 +144,12 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300))
 
             if response.status_code != 200:
+                # add function to validate only stream mode model credentials
+                data["stream"] = True
+                data["max_tokens"] = 10
+                response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300), stream=True)
+                if response.status_code == 200:
+                    return
                 raise CredentialsValidateFailedError(
                     f"Credentials validation failed with status code {response.status_code}"
                 )
