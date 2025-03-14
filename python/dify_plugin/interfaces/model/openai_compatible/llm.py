@@ -125,7 +125,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 endpoint_url += "/"
 
             # prepare the payload for a simple ping to the model
-            data = {"model": model, "max_tokens": 5}
+            data = {"model": model, "max_completion_tokens": 5}
 
             completion_type = LLMMode.value_of(credentials["mode"])
 
