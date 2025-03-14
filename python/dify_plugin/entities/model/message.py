@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from enum import Enum
-from typing import Optional
+from typing import Annotated, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -62,11 +62,7 @@ class PromptMessageContentType(Enum):
 
 
 class PromptMessageContent(BaseModel):
-    """
-    Model class for prompt message content.
-    """
-
-    type: PromptMessageContentType
+    pass
 
 
 class TextPromptMessageContent(PromptMessageContent):
@@ -74,7 +70,7 @@ class TextPromptMessageContent(PromptMessageContent):
     Model class for text prompt message content.
     """
 
-    type: PromptMessageContentType = PromptMessageContentType.TEXT
+    type: Literal[PromptMessageContentType.TEXT] = PromptMessageContentType.TEXT
     data: str
 
 
@@ -83,7 +79,6 @@ class MultiModalPromptMessageContent(PromptMessageContent):
     Model class for multi-modal prompt message content.
     """
 
-    type: PromptMessageContentType
     format: str = Field(default=..., description="the format of multi-modal file")
     base64_data: str = Field(default="", description="the base64 data of multi-modal file")
     url: str = Field(default="", description="the url of multi-modal file")
@@ -95,11 +90,11 @@ class MultiModalPromptMessageContent(PromptMessageContent):
 
 
 class VideoPromptMessageContent(MultiModalPromptMessageContent):
-    type: PromptMessageContentType = PromptMessageContentType.VIDEO
+    type: Literal[PromptMessageContentType.VIDEO] = PromptMessageContentType.VIDEO
 
 
 class AudioPromptMessageContent(MultiModalPromptMessageContent):
-    type: PromptMessageContentType = PromptMessageContentType.AUDIO
+    type: Literal[PromptMessageContentType.AUDIO] = PromptMessageContentType.AUDIO
 
 
 class ImagePromptMessageContent(MultiModalPromptMessageContent):
@@ -107,12 +102,24 @@ class ImagePromptMessageContent(MultiModalPromptMessageContent):
         LOW = "low"
         HIGH = "high"
 
-    type: PromptMessageContentType = PromptMessageContentType.IMAGE
+    type: Literal[PromptMessageContentType.IMAGE] = PromptMessageContentType.IMAGE
     detail: DETAIL = DETAIL.LOW
 
 
 class DocumentPromptMessageContent(MultiModalPromptMessageContent):
-    type: PromptMessageContentType = PromptMessageContentType.DOCUMENT
+    type: Literal[PromptMessageContentType.DOCUMENT] = PromptMessageContentType.DOCUMENT
+
+
+PromptMessageContentUnionTypes = Annotated[
+    Union[
+        TextPromptMessageContent,
+        ImagePromptMessageContent,
+        DocumentPromptMessageContent,
+        AudioPromptMessageContent,
+        VideoPromptMessageContent,
+    ],
+    Field(discriminator="type"),
+]
 
 
 class PromptMessage(BaseModel):
@@ -121,7 +128,7 @@ class PromptMessage(BaseModel):
     """
 
     role: PromptMessageRole
-    content: Optional[str | list[PromptMessageContent]] = None
+    content: Optional[str | list[PromptMessageContentUnionTypes]] = None
     name: Optional[str] = None
 
     def is_empty(self) -> bool:

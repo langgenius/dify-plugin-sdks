@@ -1,4 +1,4 @@
-from dify_plugin.entities.model.message import TextPromptMessageContent, UserPromptMessage
+from dify_plugin.entities.model.message import ImagePromptMessageContent, TextPromptMessageContent, UserPromptMessage
 
 
 def test_build_prompt_message_with_prompt_message_contents():
@@ -6,3 +6,18 @@ def test_build_prompt_message_with_prompt_message_contents():
     assert isinstance(prompt.content, list)
     assert isinstance(prompt.content[0], TextPromptMessageContent)
     assert prompt.content[0].data == "Hello, World!"
+
+
+def test_dump_prompt_message():
+    example_url = "https://example.com/image.jpg"
+    prompt = UserPromptMessage(
+        content=[
+            ImagePromptMessageContent(
+                url=example_url,
+                format="jpeg",
+                mime_type="image/jpeg",
+            )
+        ]
+    )
+    data = prompt.model_dump()
+    assert data["content"][0].get("url") == example_url
