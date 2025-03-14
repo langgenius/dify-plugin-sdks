@@ -18,7 +18,7 @@ class AgentToolIdentity(ToolIdentity):
 
 
 class AgentModelConfig(LLMModelConfig):
-    entity: AIModelEntity
+    entity: Optional[AIModelEntity] = Field(default=None)
 
 
 class AgentScratchpadUnit(BaseModel):
