@@ -20,6 +20,7 @@ class DefaultParameterName(Enum):
     MAX_TOKENS = "max_tokens"
     RESPONSE_FORMAT = "response_format"
     JSON_SCHEMA = "json_schema"
+    ENCOURAGED_RESPONSE_PREFIX = "encouraged_response_prefix"
 
     @classmethod
     def value_of(cls, value: Any) -> "DefaultParameterName":
@@ -157,6 +158,21 @@ PARAMETER_RULE_TEMPLATE: dict[DefaultParameterName, dict] = {
         "help": {
             "en_US": "Set a response json schema will ensure LLM to adhere it.",
             "zh_Hans": "设置返回的json schema，llm将按照它返回",
+        },
+        "required": False,
+    },
+    DefaultParameterName.ENCOURAGED_RESPONSE_PREFIX: {
+        # For example, add the "<think>\n" prefix for DeepSeek R1 serial models:
+        # 1. https://github.com/deepseek-ai/DeepSeek-R1/commit/7ca5e1e7f75e12a1c561fffaa6aa686708f881ae
+        # 2. https://api-docs.deepseek.com/zh-cn/guides/chat_prefix_completion
+        "label": {
+            "en_US": "Encouraged response prefix",
+            "zh_Hans": "引导回复前缀",
+        },
+        "type": "text",
+        "help": {
+            "en_US": "Encourage the model to response with the prefix.",
+            "zh_Hans": "引导模型回复的前缀",
         },
         "required": False,
     },

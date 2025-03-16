@@ -201,6 +201,7 @@ class AssistantPromptMessage(PromptMessage):
 
     role: PromptMessageRole = PromptMessageRole.ASSISTANT
     tool_calls: list[ToolCall] = []
+    encouraged_response_prefixed: Optional[bool] = None
 
     def is_empty(self) -> bool:
         """
