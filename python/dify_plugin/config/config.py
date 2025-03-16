@@ -44,7 +44,8 @@ class DifyPluginEnv(BaseSettings):
     DIFY_PLUGIN_DEFAULT_TOKENIZER_MODEL: str = Field(
         default="gpt2",
         description="the model to use for tokenization offline for the models that do not provide an interface for "
-                    "obtaining the number of tokens")
+                    "obtaining the number of tokens. The possible model names can be found in "
+                    "https://github.com/openai/tiktoken/blob/main/tiktoken/model.py")
 
     model_config = SettingsConfigDict(
         # read from dotenv format config file

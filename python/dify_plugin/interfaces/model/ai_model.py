@@ -269,11 +269,12 @@ class AIModel(ABC):
 
         # ENHANCEMENT:
         # to avoid performance issue, do not calculate the number of tokens for too long text
-        # only to promise text length is less than 100000
-        if len(text) >= 100000:
-            logging.warning(f"Text length is too long ({len(text)}) to calculate the number of tokens, use the text "
+        # only to promise text length is less than DifyPluginEnv.DIFY_PLUGIN_MAX_TEXT_LENGTH_FOR_TOKENIZATION
+        text_len = len(text)
+        if text_len >= DifyPluginEnv.DIFY_PLUGIN_MAX_TEXT_LENGTH_FOR_TOKENIZATION:
+            logging.warning(f"Text length is too long ({text_len}) to calculate the number of tokens, use the text "
                             f"length as the number of tokens instead.")
-            return len(text)
+            return text_len
 
         import tiktoken
 
