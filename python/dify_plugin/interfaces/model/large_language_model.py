@@ -8,11 +8,12 @@ from typing import Optional, Union
 from pydantic import ConfigDict
 
 from dify_plugin.entities.model import (
+    DefaultParameterName,
     ModelPropertyKey,
     ModelType,
     ParameterRule,
     ParameterType,
-    PriceType, DefaultParameterName,
+    PriceType,
 )
 from dify_plugin.entities.model.llm import (
     LLMMode,
@@ -581,9 +582,8 @@ if you are not sure about the structure.
 
         model_parameters = self._validate_and_filter_model_parameters(model, model_parameters, credentials)
 
-        # deal with the prompt messages
-        encouraged_response_prefix = model_parameters.get(DefaultParameterName.ENCOURAGED_RESPONSE_PREFIX.value, "")
-        if encouraged_response_prefix is not None and encouraged_response_prefix != "":
+        # add encouraged_response_prefix if it's enabled
+        if (encouraged_response_prefix := model_parameters.get(DefaultParameterName.ENCOURAGED_RESPONSE_PREFIX.value, "")) != "":
             if len(prompt_messages) > 0 and not isinstance(prompt_messages[-1], AssistantPromptMessage):
                 prompt_messages.append(AssistantPromptMessage(content=encouraged_response_prefix,
                                                               encouraged_response_prefix=True))
