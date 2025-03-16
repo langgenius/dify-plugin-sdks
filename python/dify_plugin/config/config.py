@@ -37,6 +37,15 @@ class DifyPluginEnv(BaseSettings):
 
     DIFY_PLUGIN_DAEMON_URL: str = Field(default="http://localhost:5002", description="backwards invocation address")
 
+    DIFY_PLUGIN_MAX_TEXT_LENGTH_FOR_TOKENIZATION: int = Field(
+        default=100000,
+        description="the maximum length of text to estimate the number of tokens for the default tokenizer. If the "
+                    "text length exceeds this value, the number of tokens is estimated as the length of the text")
+    DIFY_PLUGIN_DEFAULT_TOKENIZER_MODEL: str = Field(
+        default="gpt2",
+        description="the model to use for tokenization offline for the models that do not provide an interface for "
+                    "obtaining the number of tokens")
+
     model_config = SettingsConfigDict(
         # read from dotenv format config file
         env_file=".env",

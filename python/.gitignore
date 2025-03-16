@@ -1,6 +1,7 @@
 __pycache__
 .env
 **/*.env
+.idea
 .installed
 .ruff_cache
 .vscode

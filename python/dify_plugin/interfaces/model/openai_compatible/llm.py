@@ -764,7 +764,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     message_content = cast(PromptMessageContent, message_content)
                     full_text += message_content.data
 
-        num_tokens = self._get_num_tokens_by_gpt2(full_text)
+        num_tokens = self._get_estimated_num_tokens(full_text)
 
         if tools:
             num_tokens += self._num_tokens_for_tools(tools)
@@ -806,16 +806,16 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 if key == "tool_calls":
                     for tool_call in value or []:
                         for t_key, t_value in tool_call.items():
-                            num_tokens += self._get_num_tokens_by_gpt2(t_key)
+                            num_tokens += self._get_estimated_num_tokens(t_key)
                             if t_key == "function":
                                 for f_key, f_value in t_value.items():
-                                    num_tokens += self._get_num_tokens_by_gpt2(f_key)
-                                    num_tokens += self._get_num_tokens_by_gpt2(f_value)
+                                    num_tokens += self._get_estimated_num_tokens(f_key)
+                                    num_tokens += self._get_estimated_num_tokens(f_value)
                             else:
-                                num_tokens += self._get_num_tokens_by_gpt2(t_key)
-                                num_tokens += self._get_num_tokens_by_gpt2(t_value)
+                                num_tokens += self._get_estimated_num_tokens(t_key)
+                                num_tokens += self._get_estimated_num_tokens(t_value)
                 else:
-                    num_tokens += self._get_num_tokens_by_gpt2(str(value))
+                    num_tokens += self._get_estimated_num_tokens(str(value))
 
                 if key == "name":
                     num_tokens += tokens_per_name
@@ -837,40 +837,40 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         """
         num_tokens = 0
         for tool in tools:
-            num_tokens += self._get_num_tokens_by_gpt2("type")
-            num_tokens += self._get_num_tokens_by_gpt2("function")
-            num_tokens += self._get_num_tokens_by_gpt2("function")
+            num_tokens += self._get_estimated_num_tokens("type")
+            num_tokens += self._get_estimated_num_tokens("function")
+            num_tokens += self._get_estimated_num_tokens("function")
 
             # calculate num tokens for function object
-            num_tokens += self._get_num_tokens_by_gpt2("name")
-            num_tokens += self._get_num_tokens_by_gpt2(tool.name)
-            num_tokens += self._get_num_tokens_by_gpt2("description")
-            num_tokens += self._get_num_tokens_by_gpt2(tool.description)
+            num_tokens += self._get_estimated_num_tokens("name")
+            num_tokens += self._get_estimated_num_tokens(tool.name)
+            num_tokens += self._get_estimated_num_tokens("description")
+            num_tokens += self._get_estimated_num_tokens(tool.description)
             parameters = tool.parameters
-            num_tokens += self._get_num_tokens_by_gpt2("parameters")
+            num_tokens += self._get_estimated_num_tokens("parameters")
             if "title" in parameters:
-                num_tokens += self._get_num_tokens_by_gpt2("title")
-                num_tokens += self._get_num_tokens_by_gpt2(parameters.get("title") or "")
-            num_tokens += self._get_num_tokens_by_gpt2("type")
-            num_tokens += self._get_num_tokens_by_gpt2(parameters.get("type") or "")
+                num_tokens += self._get_estimated_num_tokens("title")
+                num_tokens += self._get_estimated_num_tokens(parameters.get("title") or "")
+            num_tokens += self._get_estimated_num_tokens("type")
+            num_tokens += self._get_estimated_num_tokens(parameters.get("type") or "")
             if "properties" in parameters:
-                num_tokens += self._get_num_tokens_by_gpt2("properties")
+                num_tokens += self._get_estimated_num_tokens("properties")
                 for key, value in parameters.get("properties") or {}.items():
-                    num_tokens += self._get_num_tokens_by_gpt2(key)
+                    num_tokens += self._get_estimated_num_tokens(key)
                     for field_key, field_value in value.items():
-                        num_tokens += self._get_num_tokens_by_gpt2(field_key)
+                        num_tokens += self._get_estimated_num_tokens(field_key)
                         if field_key == "enum":
                             for enum_field in field_value:
                                 num_tokens += 3
-                                num_tokens += self._get_num_tokens_by_gpt2(enum_field)
+                                num_tokens += self._get_estimated_num_tokens(enum_field)
                         else:
-                            num_tokens += self._get_num_tokens_by_gpt2(field_key)
-                            num_tokens += self._get_num_tokens_by_gpt2(str(field_value))
+                            num_tokens += self._get_estimated_num_tokens(field_key)
+                            num_tokens += self._get_estimated_num_tokens(str(field_value))
             if "required" in parameters:
-                num_tokens += self._get_num_tokens_by_gpt2("required")
+                num_tokens += self._get_estimated_num_tokens("required")
                 for required_field in parameters["required"]:
                     num_tokens += 3
-                    num_tokens += self._get_num_tokens_by_gpt2(required_field)
+                    num_tokens += self._get_estimated_num_tokens(required_field)
 
         return num_tokens
 

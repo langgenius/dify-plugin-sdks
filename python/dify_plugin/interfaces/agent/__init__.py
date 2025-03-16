@@ -4,6 +4,7 @@ from typing import Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
+from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities.agent import AgentInvokeMessage
 from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
@@ -146,7 +147,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         if max_tokens is None:
             max_tokens = 0
 
-        prompt_tokens = self._get_num_tokens_by_gpt2(prompt_messages)
+        prompt_tokens = self._get_estimated_num_tokens(prompt_messages)
 
         if prompt_tokens + max_tokens > model_context_tokens:
             max_tokens = max(model_context_tokens - prompt_tokens, 16)
@@ -157,20 +158,21 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
                 ):
                     parameters[parameter_rule.name] = max_tokens
 
-    def _get_num_tokens_by_gpt2(self, prompt_messges: list[PromptMessage]) -> int:
+    def _get_estimated_num_tokens(self, prompt_messges: list[PromptMessage]) -> int:
         """
-        Get number of tokens for given prompt messages by gpt2
+        Get estimated number of tokens for given prompt messages
         Some provider models do not provide an interface for obtaining the number of tokens.
-        Here, the gpt2 tokenizer is used to calculate the number of tokens.
-        This method can be executed offline, and the gpt2 tokenizer has been cached in the project.
+        Here, a default tokenizer is used to calculate the number of tokens.
+        This method can be executed offline, and the default tokenizer has been cached in the project.
 
         :param text: plain text of prompt. You need to convert the original message to plain text
         :return: number of tokens
         """
         import tiktoken
 
+        tokenizer_model = DifyPluginEnv.DIFY_PLUGIN_DEFAULT_TOKENIZER_MODEL
         text = " ".join([prompt.content for prompt in prompt_messges if isinstance(prompt.content, str)])
-        return len(tiktoken.encoding_for_model("gpt2").encode(text))
+        return len(tiktoken.encoding_for_model(tokenizer_model).encode(text))
 
     def _init_prompt_tools(self, tools: list[ToolEntity] | None) -> list[PromptMessageTool]:
         """

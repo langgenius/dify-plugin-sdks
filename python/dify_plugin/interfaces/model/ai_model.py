@@ -1,4 +1,5 @@
 import decimal
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from typing import Optional
@@ -6,6 +7,7 @@ from typing import Optional
 import gevent.socket
 from pydantic import ConfigDict
 
+from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import (
     PARAMETER_RULE_TEMPLATE,
@@ -254,12 +256,12 @@ class AIModel(ABC):
 
         return default_parameter_rule
 
-    def _get_num_tokens_by_gpt2(self, text: str) -> int:
+    def _get_estimated_num_tokens(self, text: str) -> int:
         """
-        Get number of tokens for given prompt messages by gpt2
+        Get estimated number of tokens for given prompt messages
         Some provider models do not provide an interface for obtaining the number of tokens.
-        Here, the gpt2 tokenizer is used to calculate the number of tokens.
-        This method can be executed offline, and the gpt2 tokenizer has been cached in the project.
+        Here, a default tokenizer is used to calculate the number of tokens.
+        This method can be executed offline, and the default tokenizer has been cached in the project.
 
         :param text: plain text of prompt. You need to convert the original message to plain text
         :return: number of tokens
@@ -269,6 +271,8 @@ class AIModel(ABC):
         # to avoid performance issue, do not calculate the number of tokens for too long text
         # only to promise text length is less than 100000
         if len(text) >= 100000:
+            logging.warning(f"Text length is too long ({len(text)}) to calculate the number of tokens, use the text "
+                            f"length as the number of tokens instead.")
             return len(text)
 
         import tiktoken
@@ -276,9 +280,10 @@ class AIModel(ABC):
         # check if gevent is patched to main thread
         import socket
 
+        tokenizer_model = DifyPluginEnv.DIFY_PLUGIN_DEFAULT_TOKENIZER_MODEL
         if socket.socket is gevent.socket.socket:
             # using gevent real thread to avoid blocking main thread
-            result = threadpool.spawn(lambda: len(tiktoken.encoding_for_model("gpt2").encode(text)))
+            result = threadpool.spawn(lambda: len(tiktoken.encoding_for_model(tokenizer_model).encode(text)))
             return result.get(block=True) or 0
 
-        return len(tiktoken.encoding_for_model("gpt2").encode(text))
+        return len(tiktoken.encoding_for_model(tokenizer_model).encode(text))

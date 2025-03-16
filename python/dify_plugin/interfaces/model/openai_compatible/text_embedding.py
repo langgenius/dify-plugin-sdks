@@ -81,7 +81,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         for i, text in enumerate(texts):
             # Here token count is only an approximation based on the GPT2 tokenizer
             # TODO: Optimize for better token estimation and chunking
-            num_tokens = self._get_num_tokens_by_gpt2(text)
+            num_tokens = self._get_estimated_num_tokens(text)
 
             if num_tokens >= context_size:
                 cutoff = int((len(text) * context_size) // num_tokens)
@@ -134,7 +134,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         :param texts: texts to embed
         :return:
         """
-        return [self._get_num_tokens_by_gpt2(text) for text in texts]
+        return [self._get_estimated_num_tokens(text) for text in texts]
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
