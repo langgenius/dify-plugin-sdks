@@ -393,6 +393,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if user:
             data["user"] = user
 
+        if stream:
+            data["stream_options"] = {"include_usage": True}
+
         response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300), stream=stream)
 
         if response.encoding is None or response.encoding == "ISO-8859-1":
