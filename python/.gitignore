@@ -8,3 +8,4 @@ dist/
 dify_plugin.egg-info/
 build/
 .pdm-python
+.idea/
