@@ -140,16 +140,19 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             else:
                 raise ValueError("Unsupported completion type for model configuration.")
 
-            # send a post request to validate the credentials
-            response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300))
-
-            if response.status_code != 200:
-                # add function to validate only stream mode model credentials
+            # ADD stream validate_credentials
+            streaming_mode = credentials.get("stream_mode_auth", "not_use")
+            if streaming_mode == "use":
                 data["stream"] = True
                 data["max_tokens"] = 10
                 response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300), stream=True)
                 if response.status_code == 200:
                     return
+
+            # send a post request to validate the credentials
+            response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300))
+
+            if response.status_code != 200:
                 raise CredentialsValidateFailedError(
                     f"Credentials validation failed with status code {response.status_code}"
                 )
