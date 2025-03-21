@@ -521,7 +521,7 @@ if you are not sure about the structure.
                         message=AssistantPromptMessage(content=new_piece, tool_calls=[]),
                     ),
                 )
-    
+
     def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
         """
         If the reasoning response is from delta.get("reasoning_content"), we wrap
@@ -584,7 +584,7 @@ if you are not sure about the structure.
         self.started_at = time.perf_counter()
 
         try:
-            if "response_format" in model_parameters:
+            if "response_format" in model_parameters and model_parameters["response_format"] in {"JSON", "XML"}:
                 result = self._code_block_mode_wrapper(
                     model=model,
                     credentials=credentials,
