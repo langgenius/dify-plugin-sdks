@@ -141,8 +141,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 raise ValueError("Unsupported completion type for model configuration.")
 
             # ADD stream validate_credentials
-            streaming_mode = credentials.get("stream_mode_auth", "not_use")
-            if streaming_mode == "use":
+            stream_mode_auth = credentials.get("stream_mode_auth", "not_use")
+            if stream_mode_auth == "use":
                 data["stream"] = True
                 data["max_tokens"] = 10
                 response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300), stream=True)
