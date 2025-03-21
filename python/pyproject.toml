@@ -16,7 +16,7 @@ dependencies = [
     "requests~=2.32.3",
     "socksio==1.0.0",
     "tiktoken~=0.8.0",
-    "yarl~=1.9.4",
+    "yarl>=1.9.4,<2.0",
 ]
 requires-python = ">=3.11"
 readme = "README.md"
@@ -34,6 +34,4 @@ distribution = true
 
 [dependency-groups]
 lint = ["ruff>=0.8.1"]
-test = [
-    "pytest>=8.3.5",
-]
+test = ["pytest>=8.3.5"]
