@@ -32,6 +32,7 @@ class UploadFileResponse(BaseModel):
     extension: str
     mime_type: str
     type: Optional[Type] = None
+    preview_url: Optional[str] = None
 
     @model_validator(mode="before")
     @classmethod
