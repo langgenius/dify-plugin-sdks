@@ -14,7 +14,7 @@ class Route:
     filter: Callable[[dict], bool]
     func: Callable
 
-    def __init__(self, filter: Callable[[dict], bool], func) -> None:
+    def __init__(self, filter: Callable[[dict], bool], func) -> None:  # noqa: A002
         self.filter = filter
         self.func = func
 
@@ -28,7 +28,7 @@ class Router:
         self.request_reader = request_reader
         self.response_writer = response_writer
 
-    def register_route(self, f: Callable, filter: Callable[[dict], bool], instance: Any = None):
+    def register_route(self, f: Callable, filter: Callable[[dict], bool], instance: Any = None):  # noqa: A002
         sig = inspect.signature(f)
         parameters = list(sig.parameters.values())
         if len(parameters) == 0:

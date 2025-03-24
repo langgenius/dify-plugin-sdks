@@ -32,9 +32,41 @@ select = [
     "UP",      # pyupgrade rules
     "W191",    # tab-indentation
     "W605",    # invalid-escape-sequence
+
+    # Security related linting rules
+    # https://docs.astral.sh/ruff/rules/#flake8-bandit-s
+    "S",
+
+    # avoid shadowing builtins
+    # https://docs.astral.sh/ruff/rules/#flake8-builtins-a
+    "A",
+
+    # prohibit calls to `breakpoint()` in committed code
+    # https://docs.astral.sh/ruff/rules/#flake8-debugger-t10
+    "T10",
+
+    # disallow calling functions with boolean positional
+    # arguments.
+    #
+    # https://docs.astral.sh/ruff/rules/boolean-positional-value-in-call/
+    "FBT003",
+
+    # Pycodestyle's warning
+    # https://docs.astral.sh/ruff/rules/#warning-w
+    "W",
 ]
 
 ignore = [
+
+    # ===================== flake8-bandit (S) rules =====================
+    "S101", # use of assert detected, https://docs.astral.sh/ruff/rules/assert/
+    # hardcoded-bind-all-interfaces, https://docs.astral.sh/ruff/rules/hardcoded-bind-all-interfaces/
+    # disabled beacause of false positives
+    "S104",
+    # hardcoded-password-string, https://docs.astral.sh/ruff/rules/hardcoded-password-string/
+    # disabled beacause of false positives
+    "S105",
+
     "E402", # module-import-not-at-top-of-file
     "N815", # mixed-case-variable-in-class-scope
 ]

@@ -142,6 +142,18 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             else:
                 raise ValueError("Unsupported completion type for model configuration.")
 
+            # ADD stream validate_credentials
+            stream_mode_auth = credentials.get("stream_mode_auth", "not_use")
+            if stream_mode_auth == "use":
+                data["stream"] = True
+                data["max_tokens"] = 10
+                response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300), stream=True)
+                if response.status_code != 200:
+                    raise CredentialsValidateFailedError(
+                        f"Credentials validation failed with status code {response.status_code}"
+                    )
+                return
+
             # send a post request to validate the credentials
             response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300))
 
@@ -540,7 +552,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     delta_content, is_reasoning_started = self._wrap_thinking_by_reasoning_content(
                         delta, is_reasoning_started
                     )
- 
+
                     assistant_message_tool_calls = None
 
                     if "tool_calls" in delta and credentials.get("function_calling_type", "no_call") == "tool_call":

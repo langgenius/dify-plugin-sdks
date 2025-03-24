@@ -57,7 +57,7 @@ class IOServer(ABC):
         start listen to stdin and dispatch task to executor
         """
 
-        def filter(data: PluginInStream) -> bool:
+        def filter(data: PluginInStream) -> bool:  # noqa: A001
             return data.event == PluginInStreamEvent.Request
 
         for data in self.request_reader.read(filter).read():
@@ -142,8 +142,8 @@ class IOServer(ABC):
         """
         while True:
             time.sleep(0.5)
-            id = os.getppid()
-            if id == 1:
+            parent_process_id = os.getppid()
+            if parent_process_id == 1:
                 os._exit(-1)
 
     def _run(self):
