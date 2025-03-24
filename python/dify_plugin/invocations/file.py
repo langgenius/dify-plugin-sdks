@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 import requests
 from pydantic import BaseModel, model_validator
@@ -30,7 +31,8 @@ class UploadFileResponse(BaseModel):
     size: int
     extension: str
     mime_type: str
-    type: Type
+    type: Optional[Type] = None
+    preview_url: Optional[str] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -70,7 +72,7 @@ class File(BackwardsInvocation[dict]):
             if not url:
                 raise Exception("upload file failed, could not get signed url")
 
-            response = requests.post(url, files={"file": (filename, content, mimetype)})
+            response = requests.post(url, files={"file": (filename, content, mimetype)})  # noqa: S113
             if response.status_code != 201:
                 raise Exception(f"upload file failed, status code: {response.status_code}, response: {response.text}")
 

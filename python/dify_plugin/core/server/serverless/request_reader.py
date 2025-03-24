@@ -1,6 +1,7 @@
 import threading
 from collections.abc import Generator
-from queue import Queue
+from queue import Empty, Queue
+import time
 
 from flask import Flask, request
 
@@ -64,19 +65,47 @@ class ServerlessRequestReader(RequestReader):
 
             # wait for response
             def generate():
+                refresh_time = time.time()
                 while True:
-                    response = queue.get()
+                    try:
+                        response = queue.get(timeout=1)
+                    except Empty:
+                        if time.time() - refresh_time > self.max_single_connection_lifetime:
+                            # reach max single connection lifetime
+                            break
+                        continue
+
                     if response is None:
                         break
+
+                    # refresh refresh_time
+                    refresh_time = time.time()
                     yield response
 
             return generate(), 200
         except Exception as e:
             return str(e), 500
 
+    def health(self):
+        return "OK", 200
+
     def _run(self):
         self.app.route("/invoke", methods=["POST"])(self.handler)
-        self.app.run(host=self.host, port=self.port, threaded=True)
+        self.app.route("/health", methods=["GET"])(self.health)
+
+        import socket
+        import gevent.socket
+
+        if socket.socket is gevent.socket.socket:
+            from gevent.pywsgi import WSGIServer
+
+            server = WSGIServer((self.host, self.port), self.app)
+            print("* Serving Flask app 'dify_plugin.core.server.serverless.request_reader'")
+            print("* Running on http://%s:%d (Press CTRL+C to quit)" % (self.host, self.port))
+            print("* Server Worker: gevent.wsgi.WSGIServer", flush=True)
+            server.serve_forever()
+        else:
+            self.app.run(host=self.host, port=self.port, threaded=True)
 
     def launch(self):
         """

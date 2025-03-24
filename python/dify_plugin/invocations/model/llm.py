@@ -91,7 +91,8 @@ class LLMInvocation(BackwardsInvocation[LLMResultChunk]):
         ):
             if isinstance(llm_result.delta.message.content, str):
                 result.message.content += llm_result.delta.message.content
-
+            if len(llm_result.delta.message.tool_calls) > 0:
+                result.message.tool_calls = llm_result.delta.message.tool_calls
             if llm_result.delta.usage:
                 result.usage.prompt_tokens += llm_result.delta.usage.prompt_tokens
                 result.usage.completion_tokens += llm_result.delta.usage.completion_tokens

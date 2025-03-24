@@ -1,6 +1,6 @@
 [project]
 name = "dify_plugin"
-version = "0.0.1-beta68"
+version = "0.0.1-beta74"
 description = "Dify Plugin SDK"
 authors = [{ name = "langgenius", email = "hello@dify.ai" }]
 dependencies = [
@@ -33,4 +33,7 @@ build-backend = "pdm.backend"
 distribution = true
 
 [dependency-groups]
-lint = ["ruff>=0.8.1"]
+lint = ["ruff>=0.11.2"]
+test = [
+    "pytest>=8.3.5",
+]

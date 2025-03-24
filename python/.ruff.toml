@@ -32,9 +32,24 @@ select = [
     "UP",      # pyupgrade rules
     "W191",    # tab-indentation
     "W605",    # invalid-escape-sequence
+
+    # Security related linting rules
+    # https://docs.astral.sh/ruff/rules/#flake8-bandit-s
+    "S",
+
 ]
 
 ignore = [
+
+    # ===================== flake8-bandit (S) rules =====================
+    "S101", # use of assert detected, https://docs.astral.sh/ruff/rules/assert/
+    # hardcoded-bind-all-interfaces, https://docs.astral.sh/ruff/rules/hardcoded-bind-all-interfaces/
+    # disabled beacause of false positives
+    "S104",
+    # hardcoded-password-string, https://docs.astral.sh/ruff/rules/hardcoded-password-string/
+    # disabled beacause of false positives
+    "S105",
+
     "E402", # module-import-not-at-top-of-file
     "N815", # mixed-case-variable-in-class-scope
 ]

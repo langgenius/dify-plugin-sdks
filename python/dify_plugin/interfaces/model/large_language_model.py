@@ -522,6 +522,30 @@ if you are not sure about the structure.
                     ),
                 )
 
+    def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
+        """
+        If the reasoning response is from delta.get("reasoning_content"), we wrap
+        it with HTML think tag.
+
+        :param delta: delta dictionary from LLM streaming response
+        :param is_reasoning: is reasoning
+        :return: tuple of (processed_content, is_reasoning)
+        """
+
+        content = delta.get("content") or ""
+        reasoning_content = delta.get("reasoning_content")
+
+        if reasoning_content:
+            if not is_reasoning:
+                content = "<think>\n" + reasoning_content
+                is_reasoning = True
+            else:
+                content = reasoning_content
+        elif is_reasoning and content:
+            content = "\n</think>" + content
+            is_reasoning = False
+        return content, is_reasoning
+
     ############################################################
     #                 For executor use only                    #
     ############################################################
@@ -560,7 +584,7 @@ if you are not sure about the structure.
         self.started_at = time.perf_counter()
 
         try:
-            if "response_format" in model_parameters:
+            if "response_format" in model_parameters and model_parameters["response_format"] in {"JSON", "XML"}:
                 result = self._code_block_mode_wrapper(
                     model=model,
                     credentials=credentials,

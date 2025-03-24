@@ -8,7 +8,15 @@ from dify_plugin.core.runtime import Session
 from dify_plugin.entities.agent import AgentInvokeMessage
 from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
 from dify_plugin.entities.model.llm import LLMModelConfig, LLMUsage
-from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
+from dify_plugin.entities.model.message import (
+    AssistantPromptMessage,
+    PromptMessage,
+    PromptMessageRole,
+    PromptMessageTool,
+    SystemPromptMessage,
+    ToolPromptMessage,
+    UserPromptMessage,
+)
 from dify_plugin.entities.tool import ToolDescription, ToolIdentity, ToolParameter, ToolProviderType
 from dify_plugin.interfaces.tool import ToolLike, ToolProvider
 
@@ -18,7 +26,28 @@ class AgentToolIdentity(ToolIdentity):
 
 
 class AgentModelConfig(LLMModelConfig):
-    entity: AIModelEntity
+    entity: AIModelEntity | None = None
+    history_prompt_messages: list[PromptMessage] = []
+
+    @field_validator("history_prompt_messages", mode="before")
+    @classmethod
+    def convert_prompt_messages(cls, v):
+        if not isinstance(v, list):
+            raise ValueError("prompt_messages must be a list")
+
+        for i in range(len(v)):
+            if v[i]["role"] == PromptMessageRole.USER.value:
+                v[i] = UserPromptMessage(**v[i])
+            elif v[i]["role"] == PromptMessageRole.ASSISTANT.value:
+                v[i] = AssistantPromptMessage(**v[i])
+            elif v[i]["role"] == PromptMessageRole.SYSTEM.value:
+                v[i] = SystemPromptMessage(**v[i])
+            elif v[i]["role"] == PromptMessageRole.TOOL.value:
+                v[i] = ToolPromptMessage(**v[i])
+            else:
+                v[i] = PromptMessage(**v[i])
+
+        return v
 
 
 class AgentScratchpadUnit(BaseModel):

@@ -78,7 +78,7 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         }
 
         try:
-            response = post(url, headers=headers, data=dumps(data))
+            response = post(url, headers=headers, data=dumps(data))  # noqa: S113
         except Exception as e:
             raise InvokeConnectionError(str(e)) from e
 
