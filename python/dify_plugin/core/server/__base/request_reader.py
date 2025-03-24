@@ -45,7 +45,7 @@ class RequestReader(ABC):
                 data={"error": f"Failed to process request ({type(e).__name__}): {str(e)}"},
             )
 
-    def read(self, filter: Callable[["PluginInStream"], bool]) -> FilterReader:
+    def read(self, filter: Callable[["PluginInStream"], bool]) -> FilterReader:  # noqa: A002
         def close(reader: FilterReader):
             with self.lock:
                 self.readers.remove(reader)

@@ -13,7 +13,7 @@ class FilterReader:
 
     def __init__(
         self,
-        filter: Callable[[PluginInStream], bool],
+        filter: Callable[[PluginInStream], bool],  # noqa: A002
         close_callback: Optional[Callable] = None,
     ) -> None:
         self.filter = filter

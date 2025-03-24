@@ -169,7 +169,7 @@ class BackwardsInvocation(Generic[T], ABC):
 
     def _backwards_invoke(
         self,
-        type: InvokeType,
+        type: InvokeType,  # noqa: A002
         data_type: type[T],
         data: dict,
     ) -> Generator[T, None, None]:
@@ -224,7 +224,7 @@ class BackwardsInvocation(Generic[T], ABC):
     def _http_backwards_invoke(
         self,
         backwards_request_id: str,
-        type: InvokeType,
+        type: InvokeType,  # noqa: A002
         data_type: type[T],
         data: dict,
     ) -> Generator[T, None, None]:
@@ -283,7 +283,7 @@ class BackwardsInvocation(Generic[T], ABC):
     def _full_duplex_backwards_invoke(
         self,
         backwards_request_id: str,
-        type: InvokeType,
+        type: InvokeType,  # noqa: A002
         data_type: type[T],
         data: dict,
     ) -> Generator[T, None, None]:
@@ -301,7 +301,7 @@ class BackwardsInvocation(Generic[T], ABC):
             ),
         )
 
-        def filter(data: PluginInStream) -> bool:
+        def filter(data: PluginInStream) -> bool:  # noqa: A001
             return (
                 data.event == PluginInStreamEvent.BackwardInvocationResponse
                 and data.data.get("backwards_request_id") == backwards_request_id

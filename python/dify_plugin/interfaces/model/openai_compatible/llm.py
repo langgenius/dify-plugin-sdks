@@ -438,7 +438,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         chunk_index = 0
 
         def create_final_llm_result_chunk(
-            id: Optional[str],
+            id: Optional[str],  # noqa: A002
             index: int,
             message: AssistantPromptMessage,
             finish_reason: str,

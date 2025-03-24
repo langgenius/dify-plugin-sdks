@@ -335,9 +335,9 @@ class Plugin(IOServer, Router):
                         message.message, ToolInvokeMessage.BlobMessage
                     ):
                         # convert blob to file chunks
-                        id = uuid.uuid4().hex
+                        id_ = uuid.uuid4().hex
                         blob = message.message.blob
-                        message.message.blob = id.encode("utf-8")
+                        message.message.blob = id_.encode("utf-8")
                         # split the blob into chunks
                         chunks = [blob[i : i + 8192] for i in range(0, len(blob), 8192)]
                         for sequence, chunk in enumerate(chunks):
@@ -347,7 +347,7 @@ class Plugin(IOServer, Router):
                                     data=ToolInvokeMessage(
                                         type=ToolInvokeMessage.MessageType.BLOB_CHUNK,
                                         message=ToolInvokeMessage.BlobChunkMessage(
-                                            id=id,
+                                            id=id_,
                                             sequence=sequence,
                                             total_length=len(blob),
                                             blob=chunk,
@@ -365,7 +365,7 @@ class Plugin(IOServer, Router):
                                 data=ToolInvokeMessage(
                                     type=ToolInvokeMessage.MessageType.BLOB_CHUNK,
                                     message=ToolInvokeMessage.BlobChunkMessage(
-                                        id=id,
+                                        id=id_,
                                         sequence=len(chunks),
                                         total_length=len(blob),
                                         blob=b"",
