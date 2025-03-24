@@ -72,7 +72,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
             }
 
             # Make POST request
-            response = requests.post(endpoint_url, headers=headers, json=payload, stream=True)
+            response = requests.post(endpoint_url, headers=headers, json=payload, stream=True)  # noqa: S113
 
             if response.status_code != 200:
                 raise InvokeBadRequestError(response.text)

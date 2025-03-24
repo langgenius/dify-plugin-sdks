@@ -39,7 +39,7 @@ class OAICompatSpeech2TextModel(_CommonOaiApiCompat, Speech2TextModel):
 
         payload = {"model": model}
         files = [("file", file)]
-        response = requests.post(endpoint_url, headers=headers, data=payload, files=files)
+        response = requests.post(endpoint_url, headers=headers, data=payload, files=files)  # noqa: S113
 
         if response.status_code != 200:
             raise InvokeBadRequestError(response.text)
