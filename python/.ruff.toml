@@ -50,6 +50,10 @@ select = [
     #
     # https://docs.astral.sh/ruff/rules/boolean-positional-value-in-call/
     "FBT003",
+
+    # Pycodestyle's warning
+    # https://docs.astral.sh/ruff/rules/#warning-w
+    "W",
 ]
 
 ignore = [

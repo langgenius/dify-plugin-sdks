@@ -291,7 +291,7 @@ class ParameterRule(BaseModel):
                     data = copy_default_parameter_rule
                 except ValueError:
                     pass
-            
+
             if not data.get("label"):
                 data["label"] = I18nObject(en_US=data["name"])
 
