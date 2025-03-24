@@ -78,6 +78,11 @@ ignore = [
 
     "E402", # module-import-not-at-top-of-file
     "N815", # mixed-case-variable-in-class-scope
+
+    # deprecated and not recommended
+    #
+    # https://docs.astral.sh/ruff/rules/non-pep604-isinstance/
+    "UP038",
 ]
 
 
