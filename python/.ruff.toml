@@ -37,6 +37,9 @@ select = [
     # https://docs.astral.sh/ruff/rules/#flake8-bandit-s
     "S",
 
+    # prohibit calls to `breakpoint()` in committed code
+    # https://docs.astral.sh/ruff/rules/#flake8-debugger-t10
+    "T10",
 ]
 
 ignore = [
