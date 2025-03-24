@@ -54,9 +54,18 @@ select = [
     # Pycodestyle's warning
     # https://docs.astral.sh/ruff/rules/#warning-w
     "W",
+
+    # Ruff specific rules
+    # https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf
+    "RUF",
 ]
 
 ignore = [
+# ===================== Ruff-specific rules (RUF) =====================
+    # ambiguous-unicode-character-string,
+    # disabled beacause of false positives
+    # ref: https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-string/
+    "RUF001",
 
     # ===================== flake8-bandit (S) rules =====================
     "S101", # use of assert detected, https://docs.astral.sh/ruff/rules/assert/

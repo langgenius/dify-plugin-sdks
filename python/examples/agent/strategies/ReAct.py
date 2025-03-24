@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 from collections.abc import Generator, Mapping
 from typing import Any, Optional, cast
@@ -594,7 +595,9 @@ class ReActAgentStrategy(AgentStrategy):
                             current_scratchpad.action.to_dict()
                         )
                     except Exception:
-                        pass
+                        logger = logging.getLogger(__name__)
+                        logger.exception("failed to parse tool call")
+
             elif isinstance(message, ToolPromptMessage):
                 if current_scratchpad:
                     assert isinstance(message.content, str)

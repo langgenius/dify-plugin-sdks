@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from collections.abc import Generator, Mapping
+import logging
 from typing import Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
@@ -212,6 +213,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
                 prompt_tool = self._convert_tool_to_prompt_message_tool(tool)
             except Exception:
                 # api tool may be deleted
+                logging.exception("Failed to convert tool to prompt message tool")
                 continue
 
             # save prompt tool
