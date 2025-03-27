@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Annotated, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
@@ -49,7 +49,7 @@ class PromptMessageFunction(BaseModel):
     function: PromptMessageTool
 
 
-class PromptMessageContentType(Enum):
+class PromptMessageContentType(StrEnum):
     """
     Enum class for prompt message content type.
     """
@@ -149,23 +149,30 @@ class PromptMessage(BaseModel):
         """
         if isinstance(value, str):
             return value
-        else:
+        elif isinstance(value, Sequence):
             result = []
-            for content in value or []:
+            for content in value:
                 if isinstance(content, PromptMessageContent):
                     result.append(content)
                     continue
-                if content.get("type") == PromptMessageContentType.TEXT.value:
-                    result.append(TextPromptMessageContent(**content))
-                elif content.get("type") == PromptMessageContentType.IMAGE.value:
-                    result.append(ImagePromptMessageContent(**content))
-                elif content.get("type") == PromptMessageContentType.DOCUMENT.value:
-                    result.append(DocumentPromptMessageContent(**content))
-                elif content.get("type") == PromptMessageContentType.AUDIO.value:
-                    result.append(AudioPromptMessageContent(**content))
-                elif content.get("type") == PromptMessageContentType.VIDEO.value:
-                    result.append(VideoPromptMessageContent(**content))
+                if not isinstance(content, dict):
+                    raise ValueError("invalid prompt message content")
+                value_type = content.get("type")
+                match value_type:
+                    case PromptMessageContentType.TEXT:
+                        result.append(TextPromptMessageContent.model_validate(content))
+                    case PromptMessageContentType.IMAGE:
+                        result.append(ImagePromptMessageContent.model_validate(content))
+                    case PromptMessageContentType.AUDIO:
+                        result.append(AudioPromptMessageContent.model_validate(content))
+                    case PromptMessageContentType.VIDEO:
+                        result.append(VideoPromptMessageContent.model_validate(content))
+                    case PromptMessageContentType.DOCUMENT:
+                        result.append(DocumentPromptMessageContent.model_validate(content))
+                    case _:
+                        raise ValueError("invalid prompt message content type")
             return result
+        return value
 
 
 class UserPromptMessage(PromptMessage):
