@@ -358,7 +358,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     raise ValueError("Must define JSON Schema when the response format is json_schema")
                 try:
                     schema = json.loads(json_schema)
-                except:
+                except Exception as exc:
                     raise ValueError(f"not correct json_schema format: {json_schema}") from exc
                 model_parameters.pop("json_schema")
                 model_parameters["response_format"] = {"type": "json_schema", "json_schema": schema}
