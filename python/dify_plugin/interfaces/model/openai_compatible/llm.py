@@ -532,6 +532,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                         usage=usage or {},
                     )
                     break
+                if chunk_json and (e := chunk_json.get("error")):
+                    raise ValueError(e)
                 if chunk_json and (u := chunk_json.get("usage")):
                     usage = u
                 if not chunk_json or len(chunk_json["choices"]) == 0:
