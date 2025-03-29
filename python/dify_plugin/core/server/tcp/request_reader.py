@@ -119,7 +119,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                 ready_to_read, _, _ = select([self.sock], [], [], 1)
                 if not ready_to_read:
                     continue
-                data = self.sock.recv(4096)
+                data = self.sock.recv(1048576)
                 if data == b"":
                     raise Exception("Connection is closed")
             except Exception:
