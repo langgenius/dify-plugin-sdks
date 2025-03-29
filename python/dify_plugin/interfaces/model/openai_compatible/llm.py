@@ -1,4 +1,6 @@
+import codecs
 import json
+
 import logging
 from collections.abc import Generator
 from decimal import Decimal
@@ -102,7 +104,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :param tools: tools for tool calling
         :return:
         """
-        return self._num_tokens_from_messages(model, prompt_messages, tools, credentials)
+        return self._num_tokens_from_messages(prompt_messages, tools, credentials)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -163,7 +165,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             try:
                 json_result = response.json()
             except json.JSONDecodeError as e:
-                raise CredentialsValidateFailedError("Credentials validation failed: JSON decode error") from e
+                raise CredentialsValidateFailedError("Credentials validation failed: JSON decode error")
 
             if completion_type is LLMMode.CHAT and json_result.get("object", "") == "":
                 json_result["object"] = "chat.completion"
@@ -185,7 +187,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         except CredentialsValidateFailedError:
             raise
         except Exception as ex:
-            raise CredentialsValidateFailedError(f"An error occurred during credentials validation: {str(ex)}") from ex
+            raise CredentialsValidateFailedError(f"An error occurred during credentials validation: {str(ex)}")
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
         """
@@ -418,12 +420,75 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         return self._handle_generate_response(model, credentials, response, prompt_messages)
 
-    def _handle_generate_stream_response(
+    def _create_final_llm_result_chunk(
         self,
+        index: int,
+        message: AssistantPromptMessage,
+        finish_reason: str,
+        usage: dict,
         model: str,
-        credentials: dict,
-        response: requests.Response,
         prompt_messages: list[PromptMessage],
+        credentials: dict,
+        full_content: str,
+    ) -> LLMResultChunk:
+        # calculate num tokens
+        prompt_tokens = usage and usage.get("prompt_tokens")
+        if prompt_tokens is None:
+            prompt_tokens = self._num_tokens_from_string(text=prompt_messages[0].content)
+        completion_tokens = usage and usage.get("completion_tokens")
+        if completion_tokens is None:
+            completion_tokens = self._num_tokens_from_string(text=full_content)
+
+        # transform usage
+        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+        return LLMResultChunk(
+            model=model,
+            prompt_messages=prompt_messages,
+            delta=LLMResultChunkDelta(index=index, message=message, finish_reason=finish_reason, usage=usage),
+        )
+
+    def _get_tool_call(self, tool_call_id: str, tools_calls: list[AssistantPromptMessage.ToolCall]):
+        """
+        Get or create a tool call by ID
+
+        :param tool_call_id: tool call ID
+        :param tools_calls: list of existing tool calls
+        :return: existing or new tool call, updated tools_calls
+        """
+        if not tool_call_id:
+            return tools_calls[-1], tools_calls
+
+        tool_call = next((tool_call for tool_call in tools_calls if tool_call.id == tool_call_id), None)
+        if tool_call is None:
+            tool_call = AssistantPromptMessage.ToolCall(
+                id=tool_call_id,
+                type="function",
+                function=AssistantPromptMessage.ToolCall.ToolCallFunction(name="", arguments=""),
+            )
+            tools_calls.append(tool_call)
+
+        return tool_call, tools_calls
+
+    def _increase_tool_call(
+        self, new_tool_calls: list[AssistantPromptMessage.ToolCall], tools_calls: list[AssistantPromptMessage.ToolCall]
+    ) -> list[AssistantPromptMessage.ToolCall]:
+        for new_tool_call in new_tool_calls:
+            # get tool call
+            tool_call, tools_calls = self._get_tool_call(new_tool_call.function.name, tools_calls)
+            # update tool call
+            if new_tool_call.id:
+                tool_call.id = new_tool_call.id
+            if new_tool_call.type:
+                tool_call.type = new_tool_call.type
+            if new_tool_call.function.name:
+                tool_call.function.name = new_tool_call.function.name
+            if new_tool_call.function.arguments:
+                tool_call.function.arguments += new_tool_call.function.arguments
+        return tools_calls
+
+    def _handle_generate_stream_response(
+        self, model: str, credentials: dict, response: requests.Response, prompt_messages: list[PromptMessage]
     ) -> Generator:
         """
         Handle llm stream response
@@ -434,82 +499,15 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response chunk generator
         """
-        full_assistant_content = ""
         chunk_index = 0
-
-        def create_final_llm_result_chunk(
-            id: Optional[str],  # noqa: A002
-            index: int,
-            message: AssistantPromptMessage,
-            finish_reason: str,
-            usage: dict,
-        ) -> LLMResultChunk:
-            # calculate num tokens
-            prompt_tokens = usage.get("prompt_tokens") if usage else 0
-            if prompt_tokens is None:
-                assert prompt_messages[0].content is not None
-                prompt_tokens = self._num_tokens_from_string(model, prompt_messages[0].content)
-            completion_tokens = usage.get("completion_tokens") if usage else 0
-            if completion_tokens is None:
-                completion_tokens = self._num_tokens_from_string(model, full_assistant_content)
-
-            # transform usage
-            usage_obj = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
-
-            return LLMResultChunk(
-                model=model,
-                prompt_messages=prompt_messages,
-                delta=LLMResultChunkDelta(
-                    index=index,
-                    message=message,
-                    finish_reason=finish_reason,
-                    usage=usage_obj,
-                ),
-            )
-
+        full_assistant_content = ""
+        tools_calls: list[AssistantPromptMessage.ToolCall] = []
+        finish_reason = None
+        usage = None
+        is_reasoning_started = False
         # delimiter for stream response, need unicode_escape
-        import codecs
-
         delimiter = credentials.get("stream_mode_delimiter", "\n\n")
         delimiter = codecs.decode(delimiter, "unicode_escape")
-
-        tools_calls: list[AssistantPromptMessage.ToolCall] = []
-
-        def increase_tool_call(new_tool_calls: list[AssistantPromptMessage.ToolCall]):
-            def get_tool_call(tool_call_id: str):
-                if not tool_call_id:
-                    return tools_calls[-1]
-
-                tool_call = next(
-                    (tool_call for tool_call in tools_calls if tool_call.id == tool_call_id),
-                    None,
-                )
-                if tool_call is None:
-                    tool_call = AssistantPromptMessage.ToolCall(
-                        id=tool_call_id,
-                        type="function",
-                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(name="", arguments=""),
-                    )
-                    tools_calls.append(tool_call)
-
-                return tool_call
-
-            for new_tool_call in new_tool_calls:
-                # get tool call
-                tool_call = get_tool_call(new_tool_call.function.name)
-                # update tool call
-                if new_tool_call.id:
-                    tool_call.id = new_tool_call.id
-                if new_tool_call.type:
-                    tool_call.type = new_tool_call.type
-                if new_tool_call.function.name:
-                    tool_call.function.name = new_tool_call.function.name
-                if new_tool_call.function.arguments:
-                    tool_call.function.arguments += new_tool_call.function.arguments
-
-        finish_reason = None  # The default value of finish_reason is None
-        is_reasoning_started = False
-        message_id, usage = None, None
         for chunk in response.iter_lines(decode_unicode=True, delimiter=delimiter):
             chunk = chunk.strip()
             if chunk:
@@ -523,23 +521,30 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 try:
                     chunk_json: dict = json.loads(decoded_chunk)
                 # stream ended
-                except json.JSONDecodeError:
-                    yield create_final_llm_result_chunk(
-                        id=message_id,
+                except json.JSONDecodeError as e:
+                    yield self._create_final_llm_result_chunk(
                         index=chunk_index + 1,
                         message=AssistantPromptMessage(content=""),
                         finish_reason="Non-JSON encountered.",
-                        usage=usage or {},
+                        usage=usage,
+                        model=model,
+                        credentials=credentials,
+                        prompt_messages=prompt_messages,
+                        full_content=full_assistant_content,
                     )
                     break
-                if chunk_json and (u := chunk_json.get("usage")):
-                    usage = u
+                # handle the error here. for issue #11629
+                if chunk_json.get("error") and chunk_json.get("choices") is None:
+                    raise ValueError(chunk_json.get("error"))
+
+                if chunk_json:
+                    if u := chunk_json.get("usage"):
+                        usage = u
                 if not chunk_json or len(chunk_json["choices"]) == 0:
                     continue
 
                 choice = chunk_json["choices"][0]
                 finish_reason = chunk_json["choices"][0].get("finish_reason")
-                message_id = chunk_json.get("id")
                 chunk_index += 1
 
                 if "delta" in choice:
@@ -557,19 +562,13 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                         and credentials.get("function_calling_type", "no_call") == "function_call"
                     ):
                         assistant_message_tool_calls = [
-                            {
-                                "id": "tool_call_id",
-                                "type": "function",
-                                "function": delta.get("function_call", {}),
-                            }
+                            {"id": "tool_call_id", "type": "function", "function": delta.get("function_call", {})}
                         ]
-
-                    # assistant_message_function_call = delta.delta.function_call
 
                     # extract tool calls from response
                     if assistant_message_tool_calls:
                         tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)
-                        increase_tool_call(tool_calls)
+                        tools_calls = self._increase_tool_call(tool_calls, tools_calls)
 
                     if delta_content is None or delta_content == "":
                         continue
@@ -614,12 +613,15 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 ),
             )
 
-        yield create_final_llm_result_chunk(
-            id=message_id,
+        yield self._create_final_llm_result_chunk(
             index=chunk_index,
             message=AssistantPromptMessage(content=""),
-            finish_reason=finish_reason or "",
-            usage=usage or {},
+            finish_reason=finish_reason,
+            usage=usage,
+            model=model,
+            credentials=credentials,
+            prompt_messages=prompt_messages,
+            full_content=full_assistant_content,
         )
 
     def _handle_generate_response(
@@ -634,6 +636,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         completion_type = LLMMode.value_of(credentials["mode"])
 
         output = response_json["choices"][0]
+        message_id = response_json.get("id")
 
         response_content = ""
         tool_calls = None
@@ -653,10 +656,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if tool_calls:
             if function_calling_type == "tool_call":
                 assistant_message.tool_calls = self._extract_response_tool_calls(tool_calls)
-            elif function_calling_type == "function_call" and tool_calls:
-                extracted_tool_call = self._extract_response_function_call(tool_calls)
-                if extracted_tool_call:
-                    assistant_message.tool_calls = [extracted_tool_call]
+            elif function_calling_type == "function_call":
+                assistant_message.tool_calls = [self._extract_response_function_call(tool_calls)]
 
         usage = response_json.get("usage")
         if usage:
@@ -675,6 +676,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         # transform response
         result = LLMResult(
+            id=message_id,
             model=response_json["model"],
             prompt_messages=prompt_messages,
             message=assistant_message,
@@ -687,7 +689,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         """
         Convert PromptMessage to dict for OpenAI API format
         """
-        credentials = credentials or {}
+        message_dict = {}
         if isinstance(message, UserPromptMessage):
             message = cast(UserPromptMessage, message)
             if isinstance(message.content, str):
@@ -755,14 +757,12 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
     def _num_tokens_from_string(
         self,
-        model: str,
         text: Union[str, list[PromptMessageContent]],
         tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
         """
         Approximate num tokens for model with gpt2 tokenizer.
 
-        :param model: model name
         :param text: prompt text
         :param tools: tools for tool calling
         :return: number of tokens
@@ -785,7 +785,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
     def _num_tokens_from_messages(
         self,
-        model: str,
         messages: list[PromptMessage],
         tools: Optional[list[PromptMessageTool]] = None,
         credentials: Optional[dict] = None,
@@ -855,34 +854,37 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
             # calculate num tokens for function object
             num_tokens += self._get_num_tokens_by_gpt2("name")
-            num_tokens += self._get_num_tokens_by_gpt2(tool.name)
+            if hasattr(tool, "name"):
+                num_tokens += self._get_num_tokens_by_gpt2(tool.name)
             num_tokens += self._get_num_tokens_by_gpt2("description")
-            num_tokens += self._get_num_tokens_by_gpt2(tool.description)
-            parameters = tool.parameters
-            num_tokens += self._get_num_tokens_by_gpt2("parameters")
-            if "title" in parameters:
-                num_tokens += self._get_num_tokens_by_gpt2("title")
-                num_tokens += self._get_num_tokens_by_gpt2(parameters.get("title") or "")
-            num_tokens += self._get_num_tokens_by_gpt2("type")
-            num_tokens += self._get_num_tokens_by_gpt2(parameters.get("type") or "")
-            if "properties" in parameters:
-                num_tokens += self._get_num_tokens_by_gpt2("properties")
-                for key, value in parameters.get("properties") or {}.items():
-                    num_tokens += self._get_num_tokens_by_gpt2(key)
-                    for field_key, field_value in value.items():
-                        num_tokens += self._get_num_tokens_by_gpt2(field_key)
-                        if field_key == "enum":
-                            for enum_field in field_value:
-                                num_tokens += 3
-                                num_tokens += self._get_num_tokens_by_gpt2(enum_field)
-                        else:
+            if hasattr(tool, "description"):
+                num_tokens += self._get_num_tokens_by_gpt2(tool.description)
+            if hasattr(tool, "parameters"):
+                parameters = tool.parameters
+                num_tokens += self._get_num_tokens_by_gpt2("parameters")
+                if "title" in parameters:
+                    num_tokens += self._get_num_tokens_by_gpt2("title")
+                    num_tokens += self._get_num_tokens_by_gpt2(parameters.get("title"))
+                num_tokens += self._get_num_tokens_by_gpt2("type")
+                num_tokens += self._get_num_tokens_by_gpt2(parameters.get("type"))
+                if "properties" in parameters:
+                    num_tokens += self._get_num_tokens_by_gpt2("properties")
+                    for key, value in parameters.get("properties", {}).items():
+                        num_tokens += self._get_num_tokens_by_gpt2(key)
+                        for field_key, field_value in value.items():
                             num_tokens += self._get_num_tokens_by_gpt2(field_key)
-                            num_tokens += self._get_num_tokens_by_gpt2(str(field_value))
-            if "required" in parameters:
-                num_tokens += self._get_num_tokens_by_gpt2("required")
-                for required_field in parameters["required"]:
-                    num_tokens += 3
-                    num_tokens += self._get_num_tokens_by_gpt2(required_field)
+                            if field_key == "enum":
+                                for enum_field in field_value:
+                                    num_tokens += 3
+                                    num_tokens += self._get_num_tokens_by_gpt2(enum_field)
+                            else:
+                                num_tokens += self._get_num_tokens_by_gpt2(field_key)
+                                num_tokens += self._get_num_tokens_by_gpt2(str(field_value))
+                if "required" in parameters:
+                    num_tokens += self._get_num_tokens_by_gpt2("required")
+                    for required_field in parameters["required"]:
+                        num_tokens += 3
+                        num_tokens += self._get_num_tokens_by_gpt2(required_field)
 
         return num_tokens
 
