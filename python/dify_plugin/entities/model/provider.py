@@ -197,6 +197,13 @@ class ProviderEntity(BaseModel):
 
                         provider_model = AIModelEntity(**model_entity)
                         model_entities.append(provider_model)
+                if "position" in values and values["position"].get(model_type):
+                    position = values["position"][model_type]
+                    model_entities.sort(
+                        key=lambda x: position.index(x.model) 
+                        if x.model in position 
+                        else len(position)
+                    )
 
         load_models("llm")
         load_models("text_embedding")
