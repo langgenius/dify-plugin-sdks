@@ -1,0 +1,70 @@
+name: Style check
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+
+concurrency:
+  group: style-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  change-check:
+    name: Check Changed Files
+    runs-on: ubuntu-latest
+    outputs:
+      python-changed: ${{ steps.python-changed.outputs.any_changed }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check changed Python files
+        id: python-changed
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            python/**
+            .github/workflows/pull-request.yaml
+
+  python-style:
+    needs: [change-check]
+    name: Python Style
+    runs-on: ubuntu-latest
+    if: needs.change-check.outputs.python-changed == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup PDM
+        uses: pdm-project/setup-pdm@v4
+        with:
+          python-version-file: python/pyproject.toml
+          cache: true
+          cache-dependency-path: python/pdm.lock
+        # You are now able to use PDM in your workflow
+      - name: Install dependencies
+        working-directory: python
+        run: pdm install -G lint -G test
+
+      - name: Ruff check
+        working-directory: python
+        run: |
+          pdm run ruff --version
+          pdm run ruff check ./
+          pdm run ruff format --check ./
+
+      - name: Lint hints
+        if: failure()
+        run: echo "Please run 'dev/reformat' to fix the fixable linting errors."
