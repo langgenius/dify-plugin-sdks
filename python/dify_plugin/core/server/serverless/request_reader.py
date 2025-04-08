@@ -27,6 +27,7 @@ class ServerlessRequestReader(RequestReader):
         """
         Initialize the ServerlessStream and wait for jobs
         """
+        super().__init__()
         self.app = Flask(__name__)
         self.host = host
         self.port = port

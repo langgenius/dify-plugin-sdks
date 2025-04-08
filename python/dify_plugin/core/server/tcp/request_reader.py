@@ -34,6 +34,8 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         """
         Initialize the TCPStream and connect to the target, raise exception if connection failed
         """
+        super().__init__()
+        
         self.host = host
         self.port = port
         self.key = key
