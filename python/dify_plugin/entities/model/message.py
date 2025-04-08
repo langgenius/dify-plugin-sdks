@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from enum import Enum, StrEnum
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, BeforeValidator
 
 
 class PromptMessageRole(Enum):
@@ -183,6 +183,11 @@ class UserPromptMessage(PromptMessage):
     role: PromptMessageRole = PromptMessageRole.USER
 
 
+def _ensure_field_empty_str(value: Optional[str]) -> str:
+    if value is None:
+        return ""
+    return value
+
 class AssistantPromptMessage(PromptMessage):
     """
     Model class for assistant prompt message.
@@ -198,17 +203,19 @@ class AssistantPromptMessage(PromptMessage):
             Model class for assistant prompt message tool call function.
             """
 
-            name: str
-            arguments: str
+            name: Annotated[str, BeforeValidator(_ensure_field_empty_str)]
+            arguments: Annotated[str, BeforeValidator(_ensure_field_empty_str)]
 
         id: str
-        type: str
+        type: Annotated[str, BeforeValidator(_ensure_field_empty_str)]
         function: ToolCallFunction
 
         @field_validator("id", mode="before")
         @classmethod
         def transform_id_to_str(cls, value) -> str:
-            if not isinstance(value, str):
+            if value is None:
+                return ""
+            elif not isinstance(value, str):
                 return str(value)
             else:
                 return value
