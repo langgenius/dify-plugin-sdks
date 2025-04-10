@@ -1,13 +1,14 @@
+import errno
 import logging
 import os
 import signal
-import socket
 import time
 from collections.abc import Generator
 from json import loads
 from typing import Callable, Optional
 
 from gevent.select import select
+from gevent import socket, sleep
 
 from dify_plugin.core.entities.message import InitializeMessage
 
@@ -93,8 +94,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         Connect to the target
         """
         try:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.connect((self.host, self.port))
+            self.sock = socket.create_connection((self.host, self.port))
             self.alive = True
             handshake_message = InitializeMessage(
                 type=InitializeMessage.Type.HANDSHAKE,
@@ -119,7 +119,13 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                 ready_to_read, _, _ = select([self.sock], [], [], 1)
                 if not ready_to_read:
                     continue
-                data = self.sock.recv(4096)
+                try:
+                    data = self.sock.recv(4096)
+                except BlockingIOError as e:
+                    if e.errno != errno.EAGAIN:
+                        raise
+                    sleep(0)
+                    continue
                 if data == b"":
                     raise Exception("Connection is closed")
             except Exception:
