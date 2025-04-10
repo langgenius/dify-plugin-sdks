@@ -155,7 +155,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                 if not ready_to_read:
                     continue
                 try:
-                    data = self._recv_from_sock(4096)
+                    data = self._recv_from_sock(1048576)
                 except BlockingIOError as e:
                     if native_socket.socket is gevent_socket.socket:
                         if e.errno != errno.EAGAIN:

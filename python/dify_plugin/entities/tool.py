@@ -291,6 +291,7 @@ class ProviderConfig(BaseModel):
         MODEL_SELECTOR = CommonParameterType.MODEL_SELECTOR.value
         APP_SELECTOR = CommonParameterType.APP_SELECTOR.value
         # TOOL_SELECTOR = CommonParameterType.TOOL_SELECTOR.value
+        TOOLS_SELECTOR = CommonParameterType.TOOLS_SELECTOR.value
 
         @classmethod
         def value_of(cls, value: str) -> "ProviderConfig.Config":
