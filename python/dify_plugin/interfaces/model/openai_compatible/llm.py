@@ -475,7 +475,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
     ) -> list[AssistantPromptMessage.ToolCall]:
         for new_tool_call in new_tool_calls:
             # get tool call
-            tool_call, tools_calls = self._get_tool_call(new_tool_call.function.name, tools_calls)
+            tool_call, tools_calls = self._get_tool_call(new_tool_call.id, tools_calls)
             # update tool call
             if new_tool_call.id:
                 tool_call.id = new_tool_call.id
