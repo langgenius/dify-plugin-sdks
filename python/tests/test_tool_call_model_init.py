@@ -9,7 +9,7 @@ def test_tool_call_model_init_with_explicit_none_fields():
             "arguments": None,
         },
         "id": None,
-        "type": None
+        "type": None,
     }
 
     try:
@@ -32,11 +32,7 @@ def test_tool_call_model_init_with_explicit_none_fields():
         assert tool_call.function.name == ""
         assert tool_call.function.arguments == ""
 
-    response_function_call = {
-        "name": None,
-        "arguments": None,
-        "id": None
-    }
+    response_function_call = {"name": None, "arguments": None, "id": None}
 
     try:
         function = AssistantPromptMessage.ToolCall.ToolCallFunction(
@@ -56,4 +52,3 @@ def test_tool_call_model_init_with_explicit_none_fields():
         assert tool_call.id == ""
         assert tool_call.function.name == ""
         assert tool_call.function.arguments == ""
-

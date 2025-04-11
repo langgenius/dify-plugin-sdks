@@ -105,7 +105,7 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
             usage = resp["usage"]
         except Exception as e:
             raise InvokeServerUnavailableError(
-                "Failed to convert response to json: " f"{e} with text: {response.text}"
+                f"Failed to convert response to json: {e} with text: {response.text}"
             ) from e
 
         usage = self._calc_response_usage(model=model, credentials=credentials, tokens=usage["total_tokens"])

@@ -45,9 +45,7 @@ class CotAgentOutputParser:
             if not code_blocks:
                 return
             for block in code_blocks:
-                json_text = re.sub(
-                    r"^[a-zA-Z]+\n", "", block.strip(), flags=re.MULTILINE
-                )
+                json_text = re.sub(r"^[a-zA-Z]+\n", "", block.strip(), flags=re.MULTILINE)
                 yield parse_action(json_text)
 
         code_block_cache = ""
