@@ -1,0 +1,23 @@
+from dify_plugin.entities.model.llm import LLMResultChunk, LLMResultChunkDelta
+from dify_plugin.entities.model.message import AssistantPromptMessage, TextPromptMessageContent
+
+
+def test_build_llm_result_chunk_with_prompt_messages():
+    prompt = LLMResultChunk(
+        model="test",
+        prompt_messages=[AssistantPromptMessage(content=[TextPromptMessageContent(data="Hello, World!")])],
+        delta=LLMResultChunkDelta(
+            index=0,
+            message=AssistantPromptMessage(content=[TextPromptMessageContent(data="Hello, World!")]),
+        ),
+    )
+    assert isinstance(prompt.prompt_messages, list)
+    """
+    NOTE:
+    - https://github.com/langgenius/dify/issues/17799
+    - https://github.com/langgenius/dify-official-plugins/issues/648
+
+    The `prompt_messages` field is deprecated, but to keep backward compatibility
+    we need to always set it to an empty list.
+    """
+    assert len(prompt.prompt_messages) == 0
