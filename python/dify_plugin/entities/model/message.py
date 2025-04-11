@@ -188,6 +188,7 @@ def _ensure_field_empty_str(value: Optional[str]) -> str:
         return ""
     return value
 
+
 class AssistantPromptMessage(PromptMessage):
     """
     Model class for assistant prompt message.

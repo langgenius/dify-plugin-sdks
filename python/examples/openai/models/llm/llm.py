@@ -518,7 +518,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         # transform response
         result = LLMResult(
             model=response.model,
-            prompt_messages=prompt_messages,
             message=assistant_prompt_message,
             usage=usage,
             system_fingerprint=response.system_fingerprint,
@@ -548,7 +547,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         final_chunk = LLMResultChunk(
             model=model,
-            prompt_messages=prompt_messages,
             delta=LLMResultChunkDelta(
                 index=0,
                 message=AssistantPromptMessage(content=""),
@@ -577,7 +575,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             if delta.finish_reason is not None:
                 final_chunk = LLMResultChunk(
                     model=chunk.model,
-                    prompt_messages=prompt_messages,
                     system_fingerprint=chunk.system_fingerprint,
                     delta=LLMResultChunkDelta(
                         index=delta.index,
@@ -588,7 +585,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             else:
                 yield LLMResultChunk(
                     model=chunk.model,
-                    prompt_messages=prompt_messages,
                     system_fingerprint=chunk.system_fingerprint,
                     delta=LLMResultChunkDelta(
                         index=delta.index,
@@ -731,7 +727,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         # transform response
         return LLMResult(
             model=response.model,
-            prompt_messages=prompt_messages,
             message=assistant_prompt_message,
             usage=usage,
             system_fingerprint=response.system_fingerprint,
@@ -761,7 +756,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         final_tool_calls = []
         final_chunk = LLMResultChunk(
             model=model,
-            prompt_messages=prompt_messages,
             delta=LLMResultChunkDelta(
                 index=0,
                 message=AssistantPromptMessage(content=""),
@@ -829,7 +823,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             if has_finish_reason:
                 final_chunk = LLMResultChunk(
                     model=chunk.model,
-                    prompt_messages=prompt_messages,
                     system_fingerprint=chunk.system_fingerprint,
                     delta=LLMResultChunkDelta(
                         index=delta.index,
@@ -840,7 +833,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             else:
                 yield LLMResultChunk(
                     model=chunk.model,
-                    prompt_messages=prompt_messages,
                     system_fingerprint=chunk.system_fingerprint,
                     delta=LLMResultChunkDelta(
                         index=delta.index,

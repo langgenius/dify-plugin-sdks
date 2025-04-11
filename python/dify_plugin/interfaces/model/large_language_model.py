@@ -440,7 +440,6 @@ if you are not sure about the structure.
             if new_piece:
                 yield LLMResultChunk(
                     model=model,
-                    prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=0,
                         message=AssistantPromptMessage(content=new_piece, tool_calls=[]),
@@ -515,7 +514,6 @@ if you are not sure about the structure.
                 # Only yield content collected within the code block
                 yield LLMResultChunk(
                     model=model,
-                    prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=0,
                         message=AssistantPromptMessage(content=new_piece, tool_calls=[]),

@@ -7,7 +7,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from dify_plugin.entities.model import BaseModelConfig, ModelType, ModelUsage, PriceInfo
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
-    PromptMessage,
 )
 
 
@@ -86,7 +85,6 @@ class LLMResultChunk(BaseModel):
     """
 
     model: str
-    prompt_messages: list[PromptMessage]
     system_fingerprint: Optional[str] = None
     delta: LLMResultChunkDelta
 
@@ -97,7 +95,6 @@ class LLMResult(BaseModel):
     """
 
     model: str
-    prompt_messages: list[PromptMessage]
     message: AssistantPromptMessage
     usage: LLMUsage
     system_fingerprint: Optional[str] = None
@@ -105,7 +102,6 @@ class LLMResult(BaseModel):
     def to_llm_result_chunk(self) -> "LLMResultChunk":
         return LLMResultChunk(
             model=self.model,
-            prompt_messages=self.prompt_messages,
             system_fingerprint=self.system_fingerprint,
             delta=LLMResultChunkDelta(
                 index=0,

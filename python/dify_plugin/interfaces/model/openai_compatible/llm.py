@@ -164,7 +164,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
             try:
                 json_result = response.json()
-            except json.JSONDecodeError as e:
+            except json.JSONDecodeError:
                 raise CredentialsValidateFailedError("Credentials validation failed: JSON decode error")
 
             if completion_type is LLMMode.CHAT and json_result.get("object", "") == "":
@@ -444,7 +444,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         return LLMResultChunk(
             model=model,
-            prompt_messages=prompt_messages,
             delta=LLMResultChunkDelta(index=index, message=message, finish_reason=finish_reason, usage=usage),
         )
 
@@ -521,7 +520,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 try:
                     chunk_json: dict = json.loads(decoded_chunk)
                 # stream ended
-                except json.JSONDecodeError as e:
+                except json.JSONDecodeError:
                     yield self._create_final_llm_result_chunk(
                         index=chunk_index + 1,
                         message=AssistantPromptMessage(content=""),
@@ -594,7 +593,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
                 yield LLMResultChunk(
                     model=model,
-                    prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=chunk_index,
                         message=assistant_prompt_message,
@@ -606,7 +604,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if tools_calls:
             yield LLMResultChunk(
                 model=model,
-                prompt_messages=prompt_messages,
                 delta=LLMResultChunkDelta(
                     index=chunk_index,
                     message=AssistantPromptMessage(tool_calls=tools_calls, content=""),
@@ -678,7 +675,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         result = LLMResult(
             id=message_id,
             model=response_json["model"],
-            prompt_messages=prompt_messages,
             message=assistant_message,
             usage=usage,
         )

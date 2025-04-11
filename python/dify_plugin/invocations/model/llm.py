@@ -77,7 +77,6 @@ class LLMInvocation(BackwardsInvocation[LLMResultChunk]):
 
         result = LLMResult(
             model=model_config.model,
-            prompt_messages=prompt_messages,
             message=AssistantPromptMessage(content=""),
             usage=LLMUsage.empty_usage(),
         )
