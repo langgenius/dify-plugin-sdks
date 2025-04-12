@@ -49,3 +49,16 @@ class StorageInvocation(BackwardsInvocation[dict]):
             raise Exception("unexpected data")
 
         raise Exception("no data found")
+        
+    def exist(self, key: str) -> bool:
+        for data in self._backwards_invoke(
+            InvokeType.Storage,
+            dict,
+            {
+                "opt": "exist",
+                "key": key,
+            },
+        ):
+            return data["data"]
+
+        raise Exception("no data found")
