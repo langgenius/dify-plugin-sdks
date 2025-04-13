@@ -1,0 +1,51 @@
+name: Pull Request
+
+# Trigger mega-linter at every push. Action will also be visible from Pull
+# Requests to main
+on: # yamllint disable-line rule:truthy - false positive
+  # Comment this line to trigger action only on pull-requests
+  # (not recommended if you don't pay for GH Actions)
+  push:
+
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: python-pr-test-${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  python-ci:
+    name: Python CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      matrix:
+        python-version:
+          - "3.11"
+          - "3.12"
+    steps:
+      # Git Checkout
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          # If you use VALIDATE_ALL_CODEBASE = true, you can remove this line to
+          # improve performance
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pdm-project/setup-pdm@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: true
+          cache-dependency-path: python/pdm.lock
+      - name: Install dependencies
+        run: ./python/scripts/install-deps.sh
+      - name: Run linter
+        run: ./python/scripts/lint.sh
+      - name: Run tests
+        run: ./python/scripts/test.sh

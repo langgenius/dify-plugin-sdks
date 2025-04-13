@@ -2,6 +2,8 @@ on:
   release:
     types: [published]
 
+permissions: {}
+
 jobs:
   pypi-publish:
     name: upload release to PyPI
