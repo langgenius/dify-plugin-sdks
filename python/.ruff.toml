@@ -83,6 +83,12 @@ ignore = [
     #
     # https://docs.astral.sh/ruff/rules/non-pep604-isinstance/
     "UP038",
+
+    # Disable UP007 for now due to the significant number of
+    # violations in the current codebase.
+    #
+    # Reference: https://docs.astral.sh/ruff/rules/non-pep604-annotation-union/
+    "UP007",
 ]
 
 
