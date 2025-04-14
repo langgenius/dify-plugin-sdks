@@ -28,7 +28,7 @@ class AgentToolIdentity(ToolIdentity):
 
 class AgentModelConfig(LLMModelConfig):
     entity: AIModelEntity | None = None
-    history_prompt_messages: list[PromptMessage] = []
+    history_prompt_messages: list[PromptMessage] = Field(default_factory=list)
 
     @field_validator("history_prompt_messages", mode="before")
     @classmethod

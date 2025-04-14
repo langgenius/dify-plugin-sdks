@@ -33,7 +33,7 @@ class RequestReader(ABC):
             try:
                 for line in self._read_stream():
                     self._process_line(line)
-            except Exception as e:
+            except Exception:
                 logger.exception("Error in event loop")
                 time.sleep(0.01)  # Prevent high CPU usage
 
@@ -57,14 +57,14 @@ class RequestReader(ABC):
                     result = reader.filter(data)
                     if result:
                         matched_readers.append(reader)
-                except Exception as e:
+                except Exception:
                     logger.exception("Error in filter")
 
             # Process readers in batches to avoid blocking
             for reader in matched_readers:
                 try:
                     reader.write(data)
-                except Exception as e:
+                except Exception:
                     logger.exception("Error writing to reader")
 
         except Exception as e:
@@ -73,7 +73,7 @@ class RequestReader(ABC):
                 data={"error": f"Failed to process request ({type(e).__name__}): {e!s}"},
             )
 
-    def read(self, filter: Callable[["PluginInStream"], bool]) -> FilterReader:
+    def read(self, filter: Callable[["PluginInStream"], bool]) -> FilterReader:  # noqa: A002
         def close(reader: FilterReader):
             self.lock.acquire()
             try:
@@ -109,5 +109,5 @@ class RequestReader(ABC):
         for reader in readers_to_close:
             try:
                 reader.close()
-            except Exception as e:
+            except Exception:
                 logger.exception("Error closing reader")

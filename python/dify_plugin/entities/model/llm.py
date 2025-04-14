@@ -91,6 +91,7 @@ class LLMResultChunk(BaseModel):
     delta: LLMResultChunkDelta
 
     @field_validator("prompt_messages", mode="before")
+    @classmethod
     def transform_prompt_messages(cls, value):
         """
         ISSUE:
@@ -117,6 +118,7 @@ class LLMResult(BaseModel):
     system_fingerprint: Optional[str] = None
 
     @field_validator("prompt_messages", mode="before")
+    @classmethod
     def transform_prompt_messages(cls, value):
         """
         ISSUE:

@@ -24,7 +24,6 @@ class Tts(Endpoint):
         )
 
         def generator():
-            for chunk in response:
-                yield chunk
+            yield from response
 
         return Response(generator(), status=200, content_type="text/event-stream")
