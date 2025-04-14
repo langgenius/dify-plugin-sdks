@@ -14,6 +14,7 @@ from dify_plugin.core.server.__base.filter_reader import (
 
 logger = logging.getLogger(__name__)
 
+
 class RequestReader(ABC):
     def __init__(self):
         # Convert class variables to instance variables to avoid global lock contention

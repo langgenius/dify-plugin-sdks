@@ -6,14 +6,12 @@ def _make_agent_model_config() -> AgentModelConfig:
     return AgentModelConfig(
         provider="openai",
         model="gpt-4o-mini",
-        mode="chat",)
+        mode="chat",
+    )
 
 
 def test_agent_model_config_ensure_history_prompt_messages_not_shared():
-    prompt_message = PromptMessage(
-        role=PromptMessageRole.USER,
-        content="Content",
-        name=None)
+    prompt_message = PromptMessage(role=PromptMessageRole.USER, content="Content", name=None)
     cfg1 = _make_agent_model_config()
     cfg2 = _make_agent_model_config()
 

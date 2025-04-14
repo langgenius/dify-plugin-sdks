@@ -164,9 +164,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             try:
                 json_result = response.json()
             except json.JSONDecodeError:
-                raise CredentialsValidateFailedError(
-                    "Credentials validation failed: JSON decode error"
-                ) from None
+                raise CredentialsValidateFailedError("Credentials validation failed: JSON decode error") from None
 
             if completion_type is LLMMode.CHAT and json_result.get("object", "") == "":
                 json_result["object"] = "chat.completion"
