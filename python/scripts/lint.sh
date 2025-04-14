@@ -10,7 +10,7 @@ function main {
     cd "${PYTHON_SDK_DIR}"
     pdm run ruff --version
     pdm run ruff check ./
-    pdm run ruff format --check ./
+    pdm run ruff format --check --diff ./
 }
 
 main
