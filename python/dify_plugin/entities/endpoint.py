@@ -38,6 +38,6 @@ class EndpointProviderConfiguration(BaseModel):
                 file = load_yaml_file(endpoint)
                 endpoints.append(EndpointConfiguration(**file))
             except Exception as e:
-                raise ValueError(f"Error loading endpoint configuration: {str(e)}") from e
+                raise ValueError(f"Error loading endpoint configuration: {e!s}") from e
 
         return endpoints

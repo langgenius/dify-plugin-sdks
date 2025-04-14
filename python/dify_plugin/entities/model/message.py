@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from enum import Enum, StrEnum
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, field_validator, BeforeValidator
+from pydantic import BaseModel, BeforeValidator, Field, field_validator
 
 
 class PromptMessageRole(Enum):

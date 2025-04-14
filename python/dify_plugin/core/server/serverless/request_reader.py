@@ -1,7 +1,7 @@
 import threading
+import time
 from collections.abc import Generator
 from queue import Empty, Queue
-import time
 
 from flask import Flask, request
 
@@ -95,6 +95,7 @@ class ServerlessRequestReader(RequestReader):
         self.app.route("/health", methods=["GET"])(self.health)
 
         import socket
+
         import gevent.socket
 
         if socket.socket is gevent.socket.socket:

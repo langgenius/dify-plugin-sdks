@@ -281,7 +281,7 @@ class PluginExecutor:
         except ValueError as e:
             response = Response(str(e), status=404)
         except Exception as e:
-            response = Response(f"Internal Server Error: {str(e)}", status=500)
+            response = Response(f"Internal Server Error: {e!s}", status=500)
 
         # check if response is a generator
         if isinstance(response.response, Generator):

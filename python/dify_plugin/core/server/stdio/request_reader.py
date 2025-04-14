@@ -15,7 +15,7 @@ from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 class StdioRequestReader(RequestReader):
     def __init__(self):
         super().__init__()
-        
+
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
         buffer = b""
         while True:

@@ -23,8 +23,8 @@ from dify_plugin.entities.model.text_embedding import (
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
 )
-from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.openai_compatible.common import _CommonOaiApiCompat
+from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 
 
 class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):

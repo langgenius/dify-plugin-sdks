@@ -123,7 +123,7 @@ class PluginRegistration:
                 self.agent_strategies_configuration.append(agent_provider_configuration)
 
         except Exception as e:
-            raise ValueError(f"Error loading plugin configuration: {str(e)}") from e
+            raise ValueError(f"Error loading plugin configuration: {e!s}") from e
 
     def _resolve_tool_providers(self):
         """
@@ -349,4 +349,4 @@ class PluginRegistration:
             endpoint, values = adapter.match()
             return endpoint, values
         except werkzeug.exceptions.HTTPException as e:
-            raise ValueError(f"Failed to dispatch endpoint request: {str(e)}") from e
+            raise ValueError(f"Failed to dispatch endpoint request: {e!s}") from e

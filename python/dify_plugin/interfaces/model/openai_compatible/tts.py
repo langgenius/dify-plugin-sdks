@@ -15,8 +15,8 @@ from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeBadRequestError,
 )
-from dify_plugin.interfaces.model.tts_model import TTSModel
 from dify_plugin.interfaces.model.openai_compatible.common import _CommonOaiApiCompat
+from dify_plugin.interfaces.model.tts_model import TTSModel
 
 
 class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):

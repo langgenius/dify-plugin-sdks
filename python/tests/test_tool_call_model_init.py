@@ -1,4 +1,5 @@
 import pytest
+
 from dify_plugin.entities.model.message import AssistantPromptMessage
 
 
@@ -25,7 +26,7 @@ def test_tool_call_model_init_with_explicit_none_fields():
         )
 
     except Exception as ex:
-        pytest.fail(f"failed to initialize tool call: {str(ex)}")
+        pytest.fail(f"failed to initialize tool call: {ex!s}")
     else:
         assert tool_call.id == ""
         assert tool_call.type == ""
@@ -47,7 +48,7 @@ def test_tool_call_model_init_with_explicit_none_fields():
         )
 
     except Exception as ex:
-        pytest.fail(f"failed to initialize tool call: {str(ex)}")
+        pytest.fail(f"failed to initialize tool call: {ex!s}")
     else:
         assert tool_call.id == ""
         assert tool_call.function.name == ""

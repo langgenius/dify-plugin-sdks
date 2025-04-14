@@ -115,7 +115,7 @@ class AgentStrategyProviderConfiguration(BaseModel):
                     )
                 )
             except Exception as e:
-                raise ValueError(f"Error loading agent strategy configuration: {str(e)}") from e
+                raise ValueError(f"Error loading agent strategy configuration: {e!s}") from e
 
         return strategies
 

@@ -1,6 +1,5 @@
 import codecs
 import json
-
 import logging
 from collections.abc import Generator
 from decimal import Decimal
@@ -187,7 +186,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         except CredentialsValidateFailedError:
             raise
         except Exception as ex:
-            raise CredentialsValidateFailedError(f"An error occurred during credentials validation: {str(ex)}")
+            raise CredentialsValidateFailedError(f"An error occurred during credentials validation: {ex!s}")
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
         """

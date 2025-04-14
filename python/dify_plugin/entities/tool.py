@@ -384,7 +384,7 @@ class ToolProviderConfiguration(BaseModel):
                     )
                 )
             except Exception as e:
-                raise ValueError(f"Error loading tool configuration: {str(e)}") from e
+                raise ValueError(f"Error loading tool configuration: {e!s}") from e
 
         return tools
 

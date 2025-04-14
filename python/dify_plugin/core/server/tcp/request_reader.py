@@ -2,18 +2,18 @@ import errno
 import logging
 import os
 import signal
-from threading import Lock
-import time
 import socket as native_socket
-from collections.abc import Generator
+import time
+from collections.abc import Callable, Generator
 from json import loads
-from typing import Callable, Optional
+from threading import Lock
+from typing import Optional
 
+from gevent import sleep
+from gevent import socket as gevent_socket
 from gevent.select import select
-from gevent import socket as gevent_socket, sleep
 
 from dify_plugin.core.entities.message import InitializeMessage
-
 from dify_plugin.core.entities.plugin.io import (
     PluginInStream,
     PluginInStreamEvent,
@@ -38,7 +38,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         Initialize the TCPStream and connect to the target, raise exception if connection failed
         """
         super().__init__()
-        
+
         self.host = host
         self.port = port
         self.key = key

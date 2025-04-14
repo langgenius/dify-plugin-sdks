@@ -219,7 +219,7 @@ class BackwardsInvocation(Generic[T], ABC):
             try:
                 yield data_type(**event.data)
             except Exception as e:
-                raise Exception(f"Failed to parse response: {str(e)}") from e
+                raise Exception(f"Failed to parse response: {e!s}") from e
 
     def _http_backwards_invoke(
         self,

@@ -1,5 +1,5 @@
-from collections.abc import Mapping
 import json
+from collections.abc import Mapping
 from typing import Optional
 
 from werkzeug import Request, Response

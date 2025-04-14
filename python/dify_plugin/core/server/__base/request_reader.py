@@ -1,9 +1,9 @@
+import logging
 import threading
 import time
-import logging
 from abc import ABC, abstractmethod
-from collections.abc import Generator
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable, Generator
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dify_plugin.core.entities.plugin.io import PluginInStream
@@ -34,14 +34,14 @@ class RequestReader(ABC):
                 for line in self._read_stream():
                     self._process_line(line)
             except Exception as e:
-                logger.error(f"Error in event loop: {str(e)}")
+                logger.error(f"Error in event loop: {e!s}")
                 time.sleep(0.01)  # Prevent high CPU usage
 
     def _process_line(self, data: "PluginInStream"):
         try:
             session_id = data.session_id
             readers_to_process = []
-            
+
             # Acquire lock to safely access readers list
             self.lock.acquire()
             try:
@@ -49,7 +49,7 @@ class RequestReader(ABC):
                 readers_to_process = self.readers.copy()
             finally:
                 self.lock.release()
-            
+
             # Execute filter operations outside of lock
             matched_readers = []
             for reader in readers_to_process:
@@ -58,19 +58,19 @@ class RequestReader(ABC):
                     if result:
                         matched_readers.append(reader)
                 except Exception as e:
-                    logger.error(f"Error in filter: {str(e)}")
-            
+                    logger.error(f"Error in filter: {e!s}")
+
             # Process readers in batches to avoid blocking
             for reader in matched_readers:
                 try:
                     reader.write(data)
                 except Exception as e:
-                    logger.error(f"Error writing to reader: {str(e)}")
-                    
+                    logger.error(f"Error writing to reader: {e!s}")
+
         except Exception as e:
             data.writer.error(
                 session_id=session_id,
-                data={"error": f"Failed to process request ({type(e).__name__}): {str(e)}"},
+                data={"error": f"Failed to process request ({type(e).__name__}): {e!s}"},
             )
 
     def read(self, filter: Callable[["PluginInStream"], bool]) -> FilterReader:
@@ -97,17 +97,17 @@ class RequestReader(ABC):
         close stdin processing
         """
         readers_to_close = []
-        
+
         self.lock.acquire()
         try:
             readers_to_close = self.readers.copy()
             self.readers.clear()
         finally:
             self.lock.release()
-        
+
         # Close readers outside the lock
         for reader in readers_to_close:
             try:
                 reader.close()
             except Exception as e:
-                logger.error(f"Error closing reader: {str(e)}")
+                logger.error(f"Error closing reader: {e!s}")

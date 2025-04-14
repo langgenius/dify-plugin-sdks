@@ -21,9 +21,9 @@ from dify_plugin.core.plugin_registration import PluginRegistration
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.__base.response_writer import ResponseWriter
-from dify_plugin.core.server.serverless.request_reader import ServerlessRequestReader
 from dify_plugin.core.server.io_server import IOServer
 from dify_plugin.core.server.router import Router
+from dify_plugin.core.server.serverless.request_reader import ServerlessRequestReader
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 from dify_plugin.core.server.tcp.request_reader import TCPReaderWriter

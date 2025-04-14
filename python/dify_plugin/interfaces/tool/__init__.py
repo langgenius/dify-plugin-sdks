@@ -13,7 +13,7 @@ T = TypeVar("T", bound=ToolInvokeMessage | AgentInvokeMessage)
 
 
 class ToolLike(ABC, Generic[T]):
-    response_type: Type[T]
+    response_type: type[T]
 
     ############################################################
     #            For plugin implementation use only            #

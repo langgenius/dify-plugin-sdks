@@ -1,4 +1,5 @@
 import decimal
+import socket
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from typing import Optional
@@ -17,8 +18,6 @@ from dify_plugin.entities.model import (
     PriceType,
 )
 from dify_plugin.errors.model import InvokeAuthorizationError, InvokeError
-
-import socket
 
 if socket.socket is gevent.socket.socket:
     import gevent.threadpool
@@ -84,9 +83,9 @@ class AIModel(ABC):
                         "please check and try again. "
                     )
 
-                return invoke_error(description=f"[{provider_name}] {invoke_error.description}, {str(error)}")
+                return invoke_error(description=f"[{provider_name}] {invoke_error.description}, {error!s}")
 
-        return InvokeError(description=f"[{provider_name}] Error: {str(error)}")
+        return InvokeError(description=f"[{provider_name}] Error: {error!s}")
 
     def get_price(self, model: str, credentials: dict, price_type: PriceType, tokens: int) -> PriceInfo:
         """
@@ -271,10 +270,10 @@ class AIModel(ABC):
         if len(text) >= 100000:
             return len(text)
 
-        import tiktoken
-
         # check if gevent is patched to main thread
         import socket
+
+        import tiktoken
 
         if socket.socket is gevent.socket.socket:
             # using gevent real thread to avoid blocking main thread
