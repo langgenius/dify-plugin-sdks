@@ -8,6 +8,7 @@ class StorageInvocationError(Exception):
     """StorageInvocationError is a custom exception raised
     when an issue occurs during the execution of a storage invocation.
     """
+
     pass
 
 
@@ -15,6 +16,7 @@ class NotFoundError(StorageInvocationError):
     """NotFoundError is a subclass of StorageInvocationError, raised specifically
     when attempting to retrieve or delete a key that does not exist.
     """
+
     pass
 
 

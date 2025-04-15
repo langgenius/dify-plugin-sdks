@@ -1,14 +1,14 @@
-from typing import Any, Generator
-
-from dify_plugin.invocations.storage import (
-    StorageInvocation,
-    StorageInvocationError,
-    NotFoundError,
-)
-from dify_plugin.core.entities.invocation import InvokeType
-
+from collections.abc import Generator
+from typing import Any
 
 import pytest
+
+from dify_plugin.core.entities.invocation import InvokeType
+from dify_plugin.invocations.storage import (
+    NotFoundError,
+    StorageInvocation,
+    StorageInvocationError,
+)
 
 
 def test_error_hierarchy():
