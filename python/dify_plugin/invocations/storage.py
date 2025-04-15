@@ -12,14 +12,6 @@ class StorageInvocationError(Exception):
     pass
 
 
-class NotFoundError(StorageInvocationError):
-    """NotFoundError is a subclass of StorageInvocationError, raised specifically
-    when attempting to retrieve or delete a key that does not exist.
-    """
-
-    pass
-
-
 class StorageInvocation(BackwardsInvocation[dict]):
     def set(self, key: str, val: bytes) -> None:
         """
@@ -55,14 +47,13 @@ class StorageInvocation(BackwardsInvocation[dict]):
         ):
             return unhexlify(data["data"])
 
-        raise NotFoundError("no data found")
+        raise StorageInvocationError("no data found")
 
     def delete(self, key: str) -> None:
         """delete a key from persistence storage.
 
         :raises:
             StorageInvocationError: If the invocation returns an invalid data.
-            NotFoundError: If the caller gets a key that does not exist.
         """
         for data in self._backwards_invoke(
             InvokeType.Storage,
@@ -77,9 +68,14 @@ class StorageInvocation(BackwardsInvocation[dict]):
 
             raise StorageInvocationError(f"unexpected data: {data['data']}")
 
-        raise NotFoundError("no data found")
+        raise StorageInvocationError("no data found")
 
     def exist(self, key: str) -> bool:
+        """Check for the existence of a key in persistence storage.
+
+        :raises:
+            StorageInvocationError: If the invocation does not return any data.
+        """
         for data in self._backwards_invoke(
             InvokeType.Storage,
             dict,
@@ -90,4 +86,4 @@ class StorageInvocation(BackwardsInvocation[dict]):
         ):
             return data["data"]
 
-        raise Exception("no data found")
+        raise StorageInvocationError("no data found")
