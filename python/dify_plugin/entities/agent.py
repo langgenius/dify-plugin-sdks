@@ -45,6 +45,7 @@ class AgentStrategyParameter(BaseModel):
 
     name: str = Field(..., description="The name of the parameter")
     label: I18nObject = Field(..., description="The label presented to the user")
+    help: Optional[I18nObject] = None
     type: ToolParameterType = Field(..., description="The type of the parameter")
     auto_generate: Optional[ParameterAutoGenerate] = Field(
         default=None, description="The auto generate of the parameter"
