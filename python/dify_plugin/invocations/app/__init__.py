@@ -1,4 +1,5 @@
-from typing import Mapping
+from collections.abc import Mapping
+
 from dify_plugin.core.entities.invocation import InvokeType
 from dify_plugin.core.runtime import BackwardsInvocation
 
