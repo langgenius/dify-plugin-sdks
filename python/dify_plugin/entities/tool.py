@@ -81,7 +81,7 @@ class ToolInvokeMessage(BaseModel):
             return {"text": self.text}
 
     class JsonMessage(BaseModel):
-        json_object: dict
+        json_object: Mapping
 
         def to_dict(self):
             return {"json_object": self.json_object}

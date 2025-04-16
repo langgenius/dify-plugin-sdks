@@ -4,7 +4,7 @@ from abc import ABC
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import Generic, Optional, TypeVar, Union
+from typing import Generic, Optional, TypeVar, Union, Mapping
 
 import httpx
 from pydantic import BaseModel
@@ -49,10 +49,15 @@ class AppInvocations:
         from dify_plugin.invocations.app.chat import ChatAppInvocation
         from dify_plugin.invocations.app.completion import CompletionAppInvocation
         from dify_plugin.invocations.app.workflow import WorkflowAppInvocation
+        from dify_plugin.invocations.app import FetchAppInvocation
 
         self.chat = ChatAppInvocation(session)
         self.completion = CompletionAppInvocation(session)
         self.workflow = WorkflowAppInvocation(session)
+        self.fetch_app_invocation = FetchAppInvocation(session)
+
+    def fetch_app(self, app_id: str) -> Mapping:
+        return self.fetch_app_invocation.get(app_id)
 
 
 class WorkflowNodeInvocations:

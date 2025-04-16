@@ -25,7 +25,7 @@ class ToolLike(ABC, Generic[T]):
             message=ToolInvokeMessage.TextMessage(text=text),
         )
 
-    def create_json_message(self, json: dict) -> T:
+    def create_json_message(self, json: Mapping) -> T:
         return self.response_type(
             type=ToolInvokeMessage.MessageType.JSON,
             message=ToolInvokeMessage.JsonMessage(json_object=json),
