@@ -1,6 +1,7 @@
 import codecs
 import json
 import logging
+import uuid
 from collections.abc import Generator
 from decimal import Decimal
 from typing import Optional, Union, cast
@@ -43,6 +44,58 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from dify_plugin.interfaces.model.openai_compatible.common import _CommonOaiApiCompat
 
 logger = logging.getLogger(__name__)
+
+
+def _gen_tool_call_id() -> str:
+    return f"chatcmpl-tool-{uuid.uuid4().hex!s}"
+
+
+def _increase_tool_call(
+    new_tool_calls: list[AssistantPromptMessage.ToolCall], existing_tools_calls: list[AssistantPromptMessage.ToolCall]
+):
+    """
+    Merge incremental tool call updates into existing tool calls.
+
+    :param new_tool_calls: List of new tool call deltas to be merged.
+    :param existing_tools_calls: List of existing tool calls to be modified IN-PLACE.
+    """
+
+    def get_tool_call(tool_call_id: str):
+        """
+        Get or create a tool call by ID
+
+        :param tool_call_id: tool call ID
+        :return: existing or new tool call
+        """
+        if not tool_call_id:
+            return existing_tools_calls[-1]
+
+        _tool_call = next((_tool_call for _tool_call in existing_tools_calls if _tool_call.id == tool_call_id), None)
+        if _tool_call is None:
+            _tool_call = AssistantPromptMessage.ToolCall(
+                id=tool_call_id,
+                type="function",
+                function=AssistantPromptMessage.ToolCall.ToolCallFunction(name="", arguments=""),
+            )
+            existing_tools_calls.append(_tool_call)
+
+        return _tool_call
+
+    for new_tool_call in new_tool_calls:
+        # generate ID for tool calls with function name but no ID to track them
+        if new_tool_call.function.name and not new_tool_call.id:
+            new_tool_call.id = _gen_tool_call_id()
+        # get tool call
+        tool_call = get_tool_call(new_tool_call.id)
+        # update tool call
+        if new_tool_call.id:
+            tool_call.id = new_tool_call.id
+        if new_tool_call.type:
+            tool_call.type = new_tool_call.type
+        if new_tool_call.function.name:
+            tool_call.function.name = new_tool_call.function.name
+        if new_tool_call.function.arguments:
+            tool_call.function.arguments += new_tool_call.function.arguments
 
 
 class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
@@ -446,45 +499,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             delta=LLMResultChunkDelta(index=index, message=message, finish_reason=finish_reason, usage=usage),
         )
 
-    def _get_tool_call(self, tool_call_id: str, tools_calls: list[AssistantPromptMessage.ToolCall]):
-        """
-        Get or create a tool call by ID
-
-        :param tool_call_id: tool call ID
-        :param tools_calls: list of existing tool calls
-        :return: existing or new tool call, updated tools_calls
-        """
-        if not tool_call_id:
-            return tools_calls[-1], tools_calls
-
-        tool_call = next((tool_call for tool_call in tools_calls if tool_call.id == tool_call_id), None)
-        if tool_call is None:
-            tool_call = AssistantPromptMessage.ToolCall(
-                id=tool_call_id,
-                type="function",
-                function=AssistantPromptMessage.ToolCall.ToolCallFunction(name="", arguments=""),
-            )
-            tools_calls.append(tool_call)
-
-        return tool_call, tools_calls
-
-    def _increase_tool_call(
-        self, new_tool_calls: list[AssistantPromptMessage.ToolCall], tools_calls: list[AssistantPromptMessage.ToolCall]
-    ) -> list[AssistantPromptMessage.ToolCall]:
-        for new_tool_call in new_tool_calls:
-            # get tool call
-            tool_call, tools_calls = self._get_tool_call(new_tool_call.function.name, tools_calls)
-            # update tool call
-            if new_tool_call.id:
-                tool_call.id = new_tool_call.id
-            if new_tool_call.type:
-                tool_call.type = new_tool_call.type
-            if new_tool_call.function.name:
-                tool_call.function.name = new_tool_call.function.name
-            if new_tool_call.function.arguments:
-                tool_call.function.arguments += new_tool_call.function.arguments
-        return tools_calls
-
     def _handle_generate_stream_response(
         self, model: str, credentials: dict, response: requests.Response, prompt_messages: list[PromptMessage]
     ) -> Generator:
@@ -566,7 +580,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     # extract tool calls from response
                     if assistant_message_tool_calls:
                         tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)
-                        tools_calls = self._increase_tool_call(tool_calls, tools_calls)
+                        _increase_tool_call(tool_calls, tools_calls)
 
                     if delta_content is None or delta_content == "":
                         continue
@@ -576,8 +590,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                         content=delta_content,
                     )
 
-                    # reset tool calls
-                    tool_calls = []
                     full_assistant_content += delta_content
                 elif "text" in choice:
                     choice_text = choice.get("text", "")
