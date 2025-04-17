@@ -1,8 +1,9 @@
 import sys
 from collections.abc import Generator
-from json import loads
+from typing import Any, Dict
 
 from gevent.os import tp_read
+from pydantic import TypeAdapter
 
 from dify_plugin.core.entities.plugin.io import (
     PluginInStream,
@@ -37,7 +38,7 @@ class StdioRequestReader(RequestReader):
             lines = lines[:-1]
             for line in lines:
                 try:
-                    data = loads(line)
+                    data = TypeAdapter(Dict[str, Any]).validate_json(line)
                     yield PluginInStream(
                         session_id=data["session_id"],
                         event=PluginInStreamEvent.value_of(data["event"]),

@@ -5,13 +5,13 @@ import signal
 import socket as native_socket
 import time
 from collections.abc import Callable, Generator
-from json import loads
 from threading import Lock
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from gevent import sleep
 from gevent import socket as gevent_socket
 from gevent.select import select
+from pydantic import TypeAdapter
 
 from dify_plugin.core.entities.message import InitializeMessage
 from dify_plugin.core.entities.plugin.io import (
@@ -190,7 +190,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             lines = lines[:-1]
             for line in lines:
                 try:
-                    data = loads(line)
+                    data = TypeAdapter(Dict[str, Any]).validate_json(line)
                     chunk = PluginInStream(
                         session_id=data["session_id"],
                         event=PluginInStreamEvent.value_of(data["event"]),

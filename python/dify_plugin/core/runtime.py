@@ -1,13 +1,12 @@
-import json
 import uuid
 from abc import ABC
 from collections.abc import Generator, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import Generic, Optional, TypeVar, Union
+from typing import Any, Dict, Generic, Optional, TypeVar, Union
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, TypeAdapter
 from yarl import URL
 
 from dify_plugin.config.config import InstallMethod
@@ -276,7 +275,7 @@ class BackwardsInvocation(Generic[T], ABC):
                     if not line:
                         continue
 
-                    data = json.loads(line)
+                    data = TypeAdapter(Dict[str, Any]).validate_json(line)
                     yield PluginInStreamBase(
                         session_id=data["session_id"],
                         event=PluginInStreamEvent.value_of(data["event"]),
