@@ -6,7 +6,7 @@ import socket as native_socket
 import time
 from collections.abc import Callable, Generator
 from threading import Lock
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from gevent import sleep
 from gevent import socket as gevent_socket
@@ -190,7 +190,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             lines = lines[:-1]
             for line in lines:
                 try:
-                    data = TypeAdapter(Dict[str, Any]).validate_json(line)
+                    data = TypeAdapter(dict[str, Any]).validate_json(line)
                     chunk = PluginInStream(
                         session_id=data["session_id"],
                         event=PluginInStreamEvent.value_of(data["event"]),

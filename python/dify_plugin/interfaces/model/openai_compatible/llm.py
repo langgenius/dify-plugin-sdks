@@ -3,11 +3,11 @@ import json
 import logging
 from collections.abc import Generator
 from decimal import Decimal
-from typing import Any, Dict, Optional, Union, cast
+from typing import Any, Optional, Union, cast
 from urllib.parse import urljoin
 
-from pydantic import TypeAdapter, ValidationError
 import requests
+from pydantic import TypeAdapter, ValidationError
 
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import (
@@ -357,7 +357,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 if not json_schema:
                     raise ValueError("Must define JSON Schema when the response format is json_schema")
                 try:
-                    schema = TypeAdapter(Dict[str, Any]).validate_json(json_schema)
+                    schema = TypeAdapter(dict[str, Any]).validate_json(json_schema)
                 except Exception as exc:
                     raise ValueError(f"not correct json_schema format: {json_schema}") from exc
                 model_parameters.pop("json_schema")
@@ -518,7 +518,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     continue
 
                 try:
-                    chunk_json: dict = TypeAdapter(Dict[str, Any]).validate_json(decoded_chunk)
+                    chunk_json: dict = TypeAdapter(dict[str, Any]).validate_json(decoded_chunk)
                 # stream ended
                 except ValidationError:
                     yield self._create_final_llm_result_chunk(

@@ -3,7 +3,7 @@ from abc import ABC
 from collections.abc import Generator, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import Any, Dict, Generic, Optional, TypeVar, Union
+from typing import Any, Generic, Optional, TypeVar, Union
 
 import httpx
 from pydantic import BaseModel, TypeAdapter
@@ -275,7 +275,7 @@ class BackwardsInvocation(Generic[T], ABC):
                     if not line:
                         continue
 
-                    data = TypeAdapter(Dict[str, Any]).validate_json(line)
+                    data = TypeAdapter(dict[str, Any]).validate_json(line)
                     yield PluginInStreamBase(
                         session_id=data["session_id"],
                         event=PluginInStreamEvent.value_of(data["event"]),
