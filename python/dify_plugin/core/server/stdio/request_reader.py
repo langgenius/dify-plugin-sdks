@@ -41,6 +41,10 @@ class StdioRequestReader(RequestReader):
                     data = TypeAdapter(dict[str, Any]).validate_json(line)
                     yield PluginInStream(
                         session_id=data["session_id"],
+                        conversation_id=data.get("conversation_id"),
+                        message_id=data.get("message_id"),
+                        app_id=data.get("app_id"),
+                        endpoint_id=data.get("endpoint_id"),
                         event=PluginInStreamEvent.value_of(data["event"]),
                         data=data["data"],
                         reader=self,
