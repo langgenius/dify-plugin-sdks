@@ -41,6 +41,7 @@ class CommonParameterType(Enum):
     MODEL_SELECTOR = "model-selector"
     # TOOL_SELECTOR = "tool-selector"
     TOOLS_SELECTOR = "array[tools]"
+    VAR_SELECTOR = "var-selector"
 
 
 class AppSelectorScope(Enum):
@@ -129,6 +130,10 @@ class ToolInvokeMessage(BaseModel):
         data: Mapping[str, Any] = Field(..., description="Detailed log data")
         metadata: Optional[Mapping[LogMetadata, Any]] = Field(default=None, description="The metadata of the log")
 
+    class RetrieverResourceMessage(BaseModel):
+        retriever_resources: list[dict] = Field(..., description="retriever resources")
+        context: str = Field(..., description="context")
+
     class MessageType(Enum):
         TEXT = "text"
         FILE = "file"
@@ -140,11 +145,12 @@ class ToolInvokeMessage(BaseModel):
         VARIABLE = "variable"
         BLOB_CHUNK = "blob_chunk"
         LOG = "log"
+        RETRIEVER_RESOURCES = "retriever_resources"
 
     type: MessageType
     # TODO: pydantic will validate and construct the message one by one, until it encounters a correct type
     # we need to optimize the construction process
-    message: TextMessage | JsonMessage | VariableMessage | BlobMessage | BlobChunkMessage | LogMessage | None
+    message: TextMessage | JsonMessage | VariableMessage | BlobMessage | BlobChunkMessage | LogMessage | RetrieverResourceMessage | None
     meta: Optional[dict] = None
 
     @field_validator("message", mode="before")
@@ -212,6 +218,7 @@ class ToolParameter(BaseModel):
         MODEL_SELECTOR = CommonParameterType.MODEL_SELECTOR.value
         APP_SELECTOR = CommonParameterType.APP_SELECTOR.value
         # TOOL_SELECTOR = CommonParameterType.TOOL_SELECTOR.value
+        VAR_SELECTOR = CommonParameterType.VAR_SELECTOR.value
 
     class ToolParameterForm(Enum):
         SCHEMA = "schema"  # should be set while adding tool
