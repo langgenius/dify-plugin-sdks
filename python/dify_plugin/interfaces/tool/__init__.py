@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
 from typing import Any, Generic, Optional, TypeVar
 
+from werkzeug import Request
+
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities.agent import AgentInvokeMessage
 from dify_plugin.entities.tool import LogMetadata, ToolInvokeMessage, ToolParameter, ToolRuntime, ToolSelector
@@ -213,6 +215,18 @@ class ToolProvider(ABC):
     @abstractmethod
     def _validate_credentials(self, credentials: dict):
         pass
+
+    def oauth_get_authorization_url(self, system_credentials: Mapping[str, Any]) -> str:
+        return self._oauth_get_authorization_url(system_credentials)
+
+    def _oauth_get_authorization_url(self, system_credentials: Mapping[str, Any]) -> str:
+        raise NotImplementedError("This method should be implemented by a subclass")
+
+    def oauth_get_credentials(self, system_credentials: Mapping[str, Any], request: Request) -> Mapping[str, Any]:
+        return self._oauth_get_credentials(system_credentials, request)
+
+    def _oauth_get_credentials(self, system_credentials: Mapping[str, Any], request: Request) -> Mapping[str, Any]:
+        raise NotImplementedError("This method should be implemented by a subclass")
 
 
 class Tool(ToolLike[ToolInvokeMessage]):

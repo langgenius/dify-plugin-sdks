@@ -20,6 +20,8 @@ from dify_plugin.core.entities.plugin.request import (
     ModelInvokeTTSRequest,
     ModelValidateModelCredentialsRequest,
     ModelValidateProviderCredentialsRequest,
+    OAuthGetAuthorizationUrlRequest,
+    OAuthGetCredentialsRequest,
     ToolGetRuntimeParametersRequest,
     ToolInvokeRequest,
     ToolValidateCredentialsRequest,
@@ -315,3 +317,16 @@ class PluginExecutor:
                         result["result"] += binascii.hexlify(chunk.encode("utf-8")).decode()
 
             yield result
+
+    def get_oauth_authorization_url(self, session: Session, data: OAuthGetAuthorizationUrlRequest):
+        return {
+            "authorization_url": "https://example.com/oauth/authorize",
+        }
+
+    def get_oauth_credentials(self, session: Session, data: OAuthGetCredentialsRequest):
+        return {
+            "credentials": {
+                "access_token": "1234567890",
+                "refresh_token": "1234567890",
+            },
+        }

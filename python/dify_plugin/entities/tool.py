@@ -16,6 +16,7 @@ from pydantic import (
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model.message import PromptMessageTool
+from dify_plugin.entities.oauth import OAuthSchema
 
 
 class LogMetadata(str, Enum):
@@ -343,6 +344,10 @@ class ToolProviderConfiguration(BaseModel):
         default_factory=list,
         alias="credentials_for_provider",
         description="The credentials schema of the tool provider",
+    )
+    oauth_schema: Optional[OAuthSchema] = Field(
+        default=None,
+        description="The OAuth schema of the tool provider if OAuth is supported",
     )
     tools: list[ToolConfiguration] = Field(default=[], description="The tools of the tool provider")
     extra: ToolProviderConfigurationExtra

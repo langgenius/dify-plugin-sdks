@@ -1,4 +1,5 @@
-from enum import Enum
+from collections.abc import Mapping
+from enum import StrEnum
 from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -15,24 +16,25 @@ from dify_plugin.entities.model.message import (
 )
 
 
-class PluginInvokeType(Enum):
+class PluginInvokeType(StrEnum):
     Tool = "tool"
     Model = "model"
     Endpoint = "endpoint"
     Agent = "agent_strategy"
+    OAuth = "oauth"
 
 
-class AgentActions(Enum):
+class AgentActions(StrEnum):
     InvokeAgentStrategy = "invoke_agent_strategy"
 
 
-class ToolActions(Enum):
+class ToolActions(StrEnum):
     ValidateCredentials = "validate_tool_credentials"
     InvokeTool = "invoke_tool"
     GetToolRuntimeParameters = "get_tool_runtime_parameters"
 
 
-class ModelActions(Enum):
+class ModelActions(StrEnum):
     ValidateProviderCredentials = "validate_provider_credentials"
     ValidateModelCredentials = "validate_model_credentials"
     InvokeLLM = "invoke_llm"
@@ -47,8 +49,13 @@ class ModelActions(Enum):
     GetAIModelSchemas = "get_ai_model_schemas"
 
 
-class EndpointActions(Enum):
+class EndpointActions(StrEnum):
     InvokeEndpoint = "invoke_endpoint"
+
+
+class OAuthActions(StrEnum):
+    GetAuthorizationUrl = "get_authorization_url"
+    GetCredentials = "get_credentials"
 
 
 class PluginAccessRequest(BaseModel):
@@ -219,4 +226,19 @@ class EndpointInvokeRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Endpoint
     action: EndpointActions = EndpointActions.InvokeEndpoint
     settings: dict
+    raw_http_request: str
+
+
+class OAuthGetAuthorizationUrlRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.OAuth
+    action: OAuthActions = OAuthActions.GetAuthorizationUrl
+    provider: str
+    system_credentials: Mapping[str, Any]
+
+
+class OAuthGetCredentialsRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.OAuth
+    action: OAuthActions = OAuthActions.GetCredentials
+    provider: str
+    system_credentials: Mapping[str, Any]
     raw_http_request: str
