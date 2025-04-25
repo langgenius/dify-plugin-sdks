@@ -150,7 +150,16 @@ class ToolInvokeMessage(BaseModel):
     type: MessageType
     # TODO: pydantic will validate and construct the message one by one, until it encounters a correct type
     # we need to optimize the construction process
-    message: TextMessage | JsonMessage | VariableMessage | BlobMessage | BlobChunkMessage | LogMessage | RetrieverResourceMessage | None
+    message: (
+        TextMessage
+        | JsonMessage
+        | VariableMessage
+        | BlobMessage
+        | BlobChunkMessage
+        | LogMessage
+        | RetrieverResourceMessage
+        | None
+    )
     meta: Optional[dict] = None
 
     @field_validator("message", mode="before")
