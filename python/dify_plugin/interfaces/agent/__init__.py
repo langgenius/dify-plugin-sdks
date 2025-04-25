@@ -6,7 +6,7 @@ from typing import Any, Optional, Union
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from dify_plugin.core.runtime import Session
-from dify_plugin.entities.agent import AgentInvokeMessage
+from dify_plugin.entities.agent import AgentInvokeMessage, AgentRuntime
 from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
 from dify_plugin.entities.model.llm import LLMModelConfig, LLMUsage
 from dify_plugin.entities.model.message import (
@@ -151,8 +151,10 @@ class AgentProvider(ToolProvider):
 class AgentStrategy(ToolLike[AgentInvokeMessage]):
     def __init__(
         self,
+        runtime: AgentRuntime,
         session: Session,
     ):
+        self.runtime = runtime
         self.session = session
         self.response_type = AgentInvokeMessage
 

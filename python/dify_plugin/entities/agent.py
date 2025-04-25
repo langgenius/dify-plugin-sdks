@@ -21,6 +21,10 @@ class AgentStrategyProviderIdentity(ToolProviderIdentity):
     pass
 
 
+class AgentRuntime(BaseModel):
+    user_id: str
+
+
 class AgentStrategyFeature(str, Enum):
     HISTORY_MESSAGES = "history-messages"
 
