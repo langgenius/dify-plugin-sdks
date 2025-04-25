@@ -230,11 +230,6 @@ class ToolLabelEnum(Enum):
     OTHER = "other"
 
 
-class ToolCredentialsOption(BaseModel):
-    value: str = Field(..., description="The value of the option")
-    label: I18nObject = Field(..., description="The label of the option")
-
-
 class ToolProviderIdentity(BaseModel):
     author: str = Field(..., description="The author of the tool")
     name: str = Field(..., description="The name of the tool")

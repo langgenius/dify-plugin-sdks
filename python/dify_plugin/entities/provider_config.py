@@ -3,7 +3,6 @@ from typing import Optional, Union
 
 from pydantic import BaseModel, Field
 from dify_plugin.entities import I18nObject
-from dify_plugin.entities.tool import ToolCredentialsOption
 
 
 class LogMetadata(str, Enum):
@@ -55,6 +54,11 @@ class ToolSelectorScope(Enum):
     WORKFLOW = "workflow"
 
 
+class ConfigOption(BaseModel):
+    value: str = Field(..., description="The value of the option")
+    label: I18nObject = Field(..., description="The label of the option")
+
+
 class ProviderConfig(BaseModel):
     class Config(Enum):
         SECRET_INPUT = CommonParameterType.SECRET_INPUT.value
@@ -84,7 +88,7 @@ class ProviderConfig(BaseModel):
     scope: str | None = None
     required: bool = False
     default: Optional[Union[int, float, str]] = None
-    options: Optional[list[ToolCredentialsOption]] = None
+    options: Optional[list[ConfigOption]] = None
     label: I18nObject
     help: Optional[I18nObject] = None
     url: Optional[str] = None
