@@ -54,7 +54,7 @@ class PluginResourceRequirements(BaseModel):
         node: Optional[Node] = Field(default=None)
         endpoint: Optional[Endpoint] = Field(default=None)
         app: Optional[App] = Field(default=None)
-        storage: Storage = Field(default=None)
+        storage: Optional[Storage] = Field(default=None)
 
     permission: Optional[Permission] = Field(default=None)
 
