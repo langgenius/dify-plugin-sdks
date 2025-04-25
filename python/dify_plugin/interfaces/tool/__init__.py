@@ -208,13 +208,12 @@ class ToolLike(ABC, Generic[T]):
         return tool_parameters
 
 
-class ToolProvider(ABC):
+class ToolProvider:
     def validate_credentials(self, credentials: dict):
         return self._validate_credentials(credentials)
 
-    @abstractmethod
     def _validate_credentials(self, credentials: dict):
-        pass
+        raise NotImplementedError("This method should be implemented by a subclass")
 
     def oauth_get_authorization_url(self, system_credentials: Mapping[str, Any]) -> str:
         return self._oauth_get_authorization_url(system_credentials)
