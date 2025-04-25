@@ -894,6 +894,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         tool_calls = []
         if response_tool_calls:
             for response_tool_call in response_tool_calls:
+                if not response_tool_call.get("function"):
+                    continue
                 function = AssistantPromptMessage.ToolCall.ToolCallFunction(
                     name=response_tool_call.get("function", {}).get("name", ""),
                     arguments=response_tool_call.get("function", {}).get("arguments", ""),
