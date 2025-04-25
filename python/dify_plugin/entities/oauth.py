@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+
 from pydantic import BaseModel, Field
 
 from dify_plugin.entities.provider_config import ProviderConfig
