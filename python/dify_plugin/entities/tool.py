@@ -41,7 +41,7 @@ class CommonParameterType(Enum):
     MODEL_SELECTOR = "model-selector"
     # TOOL_SELECTOR = "tool-selector"
     TOOLS_SELECTOR = "array[tools]"
-    VAR_SELECTOR = "var-selector"
+    ANY = "any"
 
 
 class AppSelectorScope(Enum):
@@ -218,7 +218,7 @@ class ToolParameter(BaseModel):
         MODEL_SELECTOR = CommonParameterType.MODEL_SELECTOR.value
         APP_SELECTOR = CommonParameterType.APP_SELECTOR.value
         # TOOL_SELECTOR = CommonParameterType.TOOL_SELECTOR.value
-        VAR_SELECTOR = CommonParameterType.VAR_SELECTOR.value
+        ANY = CommonParameterType.ANY.value
 
     class ToolParameterForm(Enum):
         SCHEMA = "schema"  # should be set while adding tool
