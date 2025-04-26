@@ -22,7 +22,7 @@ class AgentStrategyProviderIdentity(ToolProviderIdentity):
 
 
 class AgentRuntime(BaseModel):
-    user_id: str
+    user_id: Optional[str]
 
 
 class AgentStrategyFeature(str, Enum):
