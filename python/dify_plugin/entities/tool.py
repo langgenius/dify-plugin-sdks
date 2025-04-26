@@ -131,7 +131,29 @@ class ToolInvokeMessage(BaseModel):
         metadata: Optional[Mapping[LogMetadata, Any]] = Field(default=None, description="The metadata of the log")
 
     class RetrieverResourceMessage(BaseModel):
-        retriever_resources: list[dict] = Field(..., description="retriever resources")
+        class RetrieverResource(BaseModel):
+            """
+            Model class for retriever resource.
+            """
+
+            position: Optional[int] = None
+            dataset_id: Optional[str] = None
+            dataset_name: Optional[str] = None
+            document_id: Optional[str] = None
+            document_name: Optional[str] = None
+            data_source_type: Optional[str] = None
+            segment_id: Optional[str] = None
+            retriever_from: Optional[str] = None
+            score: Optional[float] = None
+            hit_count: Optional[int] = None
+            word_count: Optional[int] = None
+            segment_position: Optional[int] = None
+            index_node_hash: Optional[str] = None
+            content: Optional[str] = None
+            page: Optional[int] = None
+            doc_metadata: Optional[dict] = None
+
+        retriever_resources: list[RetrieverResource] = Field(..., description="retriever resources")
         context: str = Field(..., description="context")
 
     class MessageType(Enum):

@@ -124,7 +124,11 @@ class ToolLike(ABC, Generic[T]):
             ),
         )
 
-    def create_retriever_resource_message(self, retriever_resources: list[dict], context: str) -> T:
+    def create_retriever_resource_message(
+        self,
+        retriever_resources: list[ToolInvokeMessage.RetrieverResourceMessage.RetrieverResource],
+        context: str,
+    ) -> T:
         """
         create a retriever resource message
         """
