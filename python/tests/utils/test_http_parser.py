@@ -15,7 +15,8 @@ def test_parse_raw_request():
 
 def test_parse_raw_request_with_body():
     request = parse_raw_request(
-        b"POST / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2\r\nAccept: */*\r\nContent-Length: 13\r\n\r\n"
+        b"POST / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2"
+        b"\r\nAccept: */*\r\nContent-Length: 13\r\n\r\n"
         b"Hello, World!"
     )
     assert request.method == "POST"
@@ -25,7 +26,8 @@ def test_parse_raw_request_with_body():
 
 def test_parse_raw_request_with_body_and_headers():
     request = parse_raw_request(
-        b"POST / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2\r\nAccept: */*\r\nContent-Length: 13\r\n\r\n"
+        b"POST / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2"
+        b"\r\nAccept: */*\r\nContent-Length: 13\r\n\r\n"
         b"Hello, World!"
     )
     assert request.method == "POST"
@@ -38,7 +40,8 @@ def test_parse_raw_request_with_body_and_headers():
 
 def test_convert_request_to_raw_data():
     request = parse_raw_request(
-        b"POST / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2\r\nAccept: */*\r\nContent-Length: 13\r\n\r\n"
+        b"POST / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2"
+        b"\r\nAccept: */*\r\nContent-Length: 13\r\n\r\n"
         b"Hello, World!"
     )
     raw_data = convert_request_to_raw_data(request)
