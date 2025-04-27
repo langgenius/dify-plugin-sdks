@@ -126,6 +126,22 @@ class ToolLike(ABC, Generic[T]):
             ),
         )
 
+    def create_retriever_resource_message(
+        self,
+        retriever_resources: list[ToolInvokeMessage.RetrieverResourceMessage.RetrieverResource],
+        context: str,
+    ) -> T:
+        """
+        create a retriever resource message
+        """
+        return self.response_type(
+            type=ToolInvokeMessage.MessageType.RETRIEVER_RESOURCES,
+            message=ToolInvokeMessage.RetrieverResourceMessage(
+                retriever_resources=retriever_resources,
+                context=context,
+            ),
+        )
+
     def finish_log_message(
         self,
         log: T,

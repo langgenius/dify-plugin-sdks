@@ -54,7 +54,7 @@ class PluginResourceRequirements(BaseModel):
         node: Optional[Node] = Field(default=None)
         endpoint: Optional[Endpoint] = Field(default=None)
         app: Optional[App] = Field(default=None)
-        storage: Storage = Field(default=None)
+        storage: Optional[Storage] = Field(default=None)
 
     permission: Optional[Permission] = Field(default=None)
 
@@ -75,7 +75,7 @@ class PluginConfiguration(BaseModel):
         version: str
         arch: list[PluginArch]
         runner: PluginRunner
-        minimum_dify_version: Optional[str] = Field(..., pattern=r"^\d{1,4}(\.\d{1,4}){1,3}(-\w{1,16})?$")
+        minimum_dify_version: Optional[str] = Field(None, pattern=r"^\d{1,4}(\.\d{1,4}){1,3}(-\w{1,16})?$")
 
     version: str = Field(..., pattern=r"^\d{1,4}(\.\d{1,4}){1,3}(-\w{1,16})?$")
     type: PluginType
