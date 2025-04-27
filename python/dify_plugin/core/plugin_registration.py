@@ -355,9 +355,8 @@ class PluginRegistration:
         :return: supported oauth providers
         """
         for provider_registration in self.tools_mapping:
-            if provider_registration == provider:
-                if self.tools_mapping[provider_registration][0].oauth_schema:
-                    return self.tools_mapping[provider_registration][1]
+            if provider_registration == provider and self.tools_mapping[provider_registration][0].oauth_schema:
+                return self.tools_mapping[provider_registration][1]
 
         return None
 
