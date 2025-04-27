@@ -28,6 +28,7 @@ from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
 from dify_plugin.interfaces.tool import Tool, ToolProvider
+from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
 T = TypeVar("T")
 
@@ -63,6 +64,15 @@ class PluginRegistration:
     ]
     endpoints_configuration: list[EndpointProviderConfiguration]
     endpoints: Map
+    datasource_configuration: list[None]  # TBD
+    datasource_mapping: dict[  # provider -> (provider_cls, datasource_mapping)
+        str,
+        tuple[
+            None,
+            dict[str, tuple[None, type[None]]],  # datasource_name -> (datasource_configuration, datasource_cls)
+        ],
+    ]  # TBD
+
     files: list[PluginAsset]
 
     def __init__(self, config: DifyPluginEnv) -> None:
@@ -337,6 +347,19 @@ class PluginRegistration:
                 registration = self.models_mapping[provider_registration][2].get(model_type)
                 if registration:
                     return registration
+
+    def get_supported_oauth_provider_cls(self, provider: str) -> type[OAuthProviderProtocol] | None:
+        """
+        get provider which supports oauth
+        :param provider: provider name
+        :return: supported oauth providers
+        """
+        for provider_registration in self.tools_mapping:
+            if provider_registration == provider:
+                if self.tools_mapping[provider_registration][0].oauth_schema:
+                    return self.tools_mapping[provider_registration][1]
+
+        return None
 
     def dispatch_endpoint_request(self, request: Request) -> tuple[type[Endpoint], Mapping]:
         """

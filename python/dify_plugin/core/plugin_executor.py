@@ -38,6 +38,8 @@ from dify_plugin.interfaces.model.rerank_model import RerankModel
 from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
+from dify_plugin.interfaces.tool import ToolProvider
+from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
 
 class PluginExecutor:
@@ -318,15 +320,28 @@ class PluginExecutor:
 
             yield result
 
+    def _get_oauth_provider_instance(self, provider: str) -> OAuthProviderProtocol:
+        provider_cls = self.registration.get_supported_oauth_provider_cls(provider)
+        if provider_cls is None:
+            raise ValueError(f"Provider `{provider}` does not support OAuth")
+
+        if provider_cls == ToolProvider:
+            return provider_cls()
+
+        raise ValueError(f"Provider `{provider}` does not support OAuth")
+
     def get_oauth_authorization_url(self, session: Session, data: OAuthGetAuthorizationUrlRequest):
+        provider_instance = self._get_oauth_provider_instance(data.provider)
+
         return {
-            "authorization_url": "https://example.com/oauth/authorize",
+            "authorization_url": provider_instance.oauth_get_authorization_url(data.system_credentials),
         }
 
     def get_oauth_credentials(self, session: Session, data: OAuthGetCredentialsRequest):
+        provider_instance = self._get_oauth_provider_instance(data.provider)
+        bytes_data = binascii.unhexlify(data.raw_http_request)
+        request = parse_raw_request(bytes_data)
+
         return {
-            "credentials": {
-                "access_token": "1234567890",
-                "refresh_token": "1234567890",
-            },
+            "credentials": provider_instance.oauth_get_credentials(data.system_credentials, request),
         }
