@@ -271,8 +271,8 @@ class SchemaDocumentationGenerator:
 
         if issubclass(type_, BaseModel):
             f.write("### Fields\n\n")
-            f.write("| Name | Type | Description | Required | Default | Extra |\n")
-            f.write("|------|------|-------------|----------|---------|---------|\n")
+            f.write("| Name | Type | Description | Default | Extra |\n")
+            f.write("|------|------|-------------|---------|---------|\n")
 
             # Track processed fields to avoid duplicates
             processed_fields = set()
