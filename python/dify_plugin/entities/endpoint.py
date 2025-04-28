@@ -1,9 +1,14 @@
 from pydantic import BaseModel, Field, field_validator
 
+from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
 from dify_plugin.entities.tool import ProviderConfig
 
 
+@docs(
+    name="EndpointExtra",
+    description="The extra of the endpoint",
+)
 class EndpointConfigurationExtra(BaseModel):
     class Python(BaseModel):
         source: str
@@ -11,6 +16,10 @@ class EndpointConfigurationExtra(BaseModel):
     python: Python
 
 
+@docs(
+    name="Endpoint",
+    description="The Manifest of the endpoint",
+)
 class EndpointConfiguration(BaseModel):
     path: str
     method: str
@@ -18,6 +27,10 @@ class EndpointConfiguration(BaseModel):
     extra: EndpointConfigurationExtra
 
 
+@docs(
+    name="EndpointGroup",
+    description="The Manifest of the endpoint group",
+)
 class EndpointProviderConfiguration(BaseModel):
     settings: list[ProviderConfig] = Field(default_factory=list)
     endpoints: list[EndpointConfiguration] = Field(default_factory=list)

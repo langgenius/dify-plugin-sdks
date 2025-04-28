@@ -23,6 +23,7 @@ tools:
   - tools/upload_file.yaml
   - tools/summary.yaml
   - tools/transform_image.yaml
+  - tools/jetbrains.yaml
 extra:
   python:
     source: provider/code_based_workflow.py

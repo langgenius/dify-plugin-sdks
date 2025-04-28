@@ -4,9 +4,13 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.entities import I18nObject
 
 
+@docs(
+    description="The default parameter name",
+)
 class DefaultParameterName(Enum):
     """
     Enum class for parameter template variable.
@@ -163,6 +167,9 @@ PARAMETER_RULE_TEMPLATE: dict[DefaultParameterName, dict] = {
 }
 
 
+@docs(
+    description="The model type",
+)
 class ModelType(Enum):
     """
     Enum class for model type.
@@ -177,6 +184,9 @@ class ModelType(Enum):
     TEXT2IMG = "text2img"
 
 
+@docs(
+    description="The fetch from",
+)
 class FetchFrom(Enum):
     """
     Enum class for fetch from.
@@ -186,6 +196,9 @@ class FetchFrom(Enum):
     CUSTOMIZABLE_MODEL = "customizable-model"
 
 
+@docs(
+    description="The model feature",
+)
 class ModelFeature(Enum):
     """
     Enum class for llm feature.
@@ -202,6 +215,9 @@ class ModelFeature(Enum):
     STRUCTURED_OUTPUT = "structured-output"
 
 
+@docs(
+    description="The parameter type",
+)
 class ParameterType(Enum):
     """
     Enum class for parameter type.
@@ -214,6 +230,9 @@ class ParameterType(Enum):
     TEXT = "text"
 
 
+@docs(
+    description="The model property key",
+)
 class ModelPropertyKey(Enum):
     """
     Enum class for model property key.
@@ -232,18 +251,21 @@ class ModelPropertyKey(Enum):
     MAX_WORKERS = "max_workers"
 
 
+@docs(
+    description="The provider model",
+)
 class ProviderModel(BaseModel):
     """
     Model class for provider model.
     """
 
-    model: str
-    label: I18nObject
-    model_type: ModelType
-    features: Optional[list[ModelFeature]] = None
-    fetch_from: FetchFrom = Field(default=FetchFrom.PREDEFINED_MODEL)
-    model_properties: dict[ModelPropertyKey, Any]
-    deprecated: bool = False
+    model: str = Field(..., description="The model name")
+    label: I18nObject = Field(..., description="The label of the model")
+    model_type: ModelType = Field(..., description="The model type")
+    features: Optional[list[ModelFeature]] = Field(default=None, description="The features of the model")
+    fetch_from: FetchFrom = Field(default=FetchFrom.PREDEFINED_MODEL, description="The fetch from")
+    model_properties: dict[ModelPropertyKey, Any] = Field(..., description="The model properties")
+    deprecated: bool = Field(default=False, description="Whether the model is deprecated")
     model_config = ConfigDict(protected_namespaces=())
 
     """
@@ -259,22 +281,25 @@ class ProviderModel(BaseModel):
         return data
 
 
+@docs(
+    description="The parameter rule of the model",
+)
 class ParameterRule(BaseModel):
     """
     Model class for parameter rule.
     """
 
-    name: str
-    use_template: Optional[str] = None
-    label: I18nObject
-    type: ParameterType
-    help: Optional[I18nObject] = None
-    required: bool = False
-    default: Optional[Any] = None
-    min: Optional[float] = None
-    max: Optional[float] = None
-    precision: Optional[int] = None
-    options: list[str] = []
+    name: str = Field(..., description="The name of the parameter")
+    use_template: Optional[str] = Field(default=None, description="The template of the parameter")
+    label: I18nObject = Field(..., description="The label of the parameter")
+    type: ParameterType = Field(..., description="The type of the parameter")
+    help: Optional[I18nObject] = Field(default=None, description="The help of the parameter")
+    required: bool = Field(default=False, description="Whether the parameter is required")
+    default: Optional[Any] = Field(default=None, description="The default value of the parameter")
+    min: Optional[float] = Field(default=None, description="The minimum value of the parameter")
+    max: Optional[float] = Field(default=None, description="The maximum value of the parameter")
+    precision: Optional[int] = Field(default=None, description="The precision of the parameter")
+    options: list[str] = Field(default=[], description="The options of the parameter")
 
     @model_validator(mode="before")
     @classmethod
@@ -299,17 +324,23 @@ class ParameterRule(BaseModel):
         return data
 
 
+@docs(
+    description="The price config",
+)
 class PriceConfig(BaseModel):
     """
     Model class for pricing info.
     """
 
-    input: Decimal
-    output: Optional[Decimal] = None
-    unit: Decimal
-    currency: str
+    input: Decimal = Field(..., description="Input price")
+    output: Optional[Decimal] = Field(default=None, description="Output price")
+    unit: Decimal = Field(..., description="Unit, e.g. 0.0001 -> per 10000 tokens")
+    currency: str = Field(..., description="Currency, e.g. USD")
 
 
+@docs(
+    description="AI model entity",
+)
 class AIModelEntity(ProviderModel):
     """
     Model class for AI model.
@@ -337,10 +368,10 @@ class PriceInfo(BaseModel):
     Model class for price info.
     """
 
-    unit_price: Decimal
-    unit: Decimal
-    total_amount: Decimal
-    currency: str
+    unit_price: Decimal = Field(..., description="The unit price, e.g. 0.000001")
+    unit: Decimal = Field(..., description="The unit, e.g. 1000")
+    total_amount: Decimal = Field(..., description="The total amount")
+    currency: str = Field(..., description="The currency, e.g. USD")
 
 
 class BaseModelConfig(BaseModel):
