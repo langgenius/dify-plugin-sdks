@@ -12,8 +12,6 @@ icon: icon.svg
 resource:
   memory: 1048576
   permission:
-    app:
-      enabled: true
     tool:
       enabled: true
     model:
@@ -41,4 +39,3 @@ meta:
     language: "python"
     version: "3.12"
     entrypoint: "main"
-  minimum_dify_version: "1.3.0"
