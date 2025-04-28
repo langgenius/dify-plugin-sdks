@@ -27,10 +27,15 @@ class AgentRuntime(BaseModel):
 
 class AgentStrategyFeature(str, Enum):
     HISTORY_MESSAGES = "history-messages"
+    CONTEXT = "context"
 
 
 class AgentStrategyIdentity(ToolIdentity):
     pass
+
+
+class ParameterContext(BaseModel):
+    enabled: bool = Field(..., description="Whether the parameter is context enabled")
 
 
 class AgentStrategyParameter(BaseModel):
@@ -56,6 +61,7 @@ class AgentStrategyParameter(BaseModel):
         default=None, description="The auto generate of the parameter"
     )
     template: Optional[ParameterTemplate] = Field(default=None, description="The template of the parameter")
+    context: Optional[ParameterContext] = Field(default=None, description="The context of the parameter")
     scope: str | None = None
     required: Optional[bool] = False
     default: Optional[Union[int, float, str]] = None
