@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any, Optional
 
 from pydantic import BaseModel
@@ -10,20 +10,16 @@ class SchemaDoc:
         cls: type[BaseModel],
         description: str,
         name: Optional[str] = None,
-        example: Optional[BaseModel] = None,
-        reference: Optional[type[BaseModel]] = None,
-        dynamic_fields: Optional[dict[str, str]] = None,
         top: bool = False,
         ignore_fields: Optional[list[str]] = None,
+        outside_reference_fields: Optional[Mapping[str, type[BaseModel]]] = None,
     ):
         self.cls = cls
         self.description = description
         self.name = name
-        self.example = example
-        self.reference = reference
-        self.dynamic_fields = dynamic_fields or {}
         self.top = top
         self.ignore_fields = ignore_fields or []
+        self.outside_reference_fields = outside_reference_fields or {}
 
 
 __cls_mapping__: dict[type[BaseModel], SchemaDoc] = {}
@@ -32,11 +28,9 @@ __cls_mapping__: dict[type[BaseModel], SchemaDoc] = {}
 def docs(
     description: str,
     name: Optional[str] = None,
-    example: Optional[BaseModel] = None,
-    reference: Optional[type[BaseModel]] = None,
-    dynamic_fields: Optional[dict[str, str]] = None,
     top: bool = False,
     ignore_fields: Optional[list[str]] = None,
+    outside_reference_fields: Optional[Mapping[str, type[BaseModel]]] = None,
 ) -> Callable:
     """
     Decorator to add schema documentation to a class
@@ -59,7 +53,7 @@ def docs(
 
             if cls_or_func not in __cls_mapping__:
                 __cls_mapping__[cls_or_func] = SchemaDoc(
-                    cls_or_func, description, name, example, reference, dynamic_fields, top, ignore_fields
+                    cls_or_func, description, name, top, ignore_fields, outside_reference_fields
                 )
 
             if not hasattr(cls_or_func, "__schema_docs__"):

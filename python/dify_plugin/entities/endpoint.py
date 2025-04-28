@@ -30,6 +30,7 @@ class EndpointConfiguration(BaseModel):
 @docs(
     name="EndpointGroup",
     description="The Manifest of the endpoint group",
+    outside_reference_fields={"endpoints": EndpointConfiguration},
 )
 class EndpointProviderConfiguration(BaseModel):
     settings: list[ProviderConfig] = Field(default_factory=list)

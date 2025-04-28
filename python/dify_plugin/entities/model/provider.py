@@ -6,11 +6,16 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import AIModelEntity, ModelType
 
 
+@docs(
+    description="Configurate method",
+    name="ModelConfigurateMethod",
+)
 class ConfigurateMethod(Enum):
     """
     Enum class for configurate method of provider model.
@@ -20,6 +25,10 @@ class ConfigurateMethod(Enum):
     CUSTOMIZABLE_MODEL = "customizable-model"
 
 
+@docs(
+    description="Model form type",
+    name="ModelFormType",
+)
 class FormType(Enum):
     """
     Enum class for form type.
@@ -32,6 +41,10 @@ class FormType(Enum):
     SWITCH = "switch"
 
 
+@docs(
+    description="Form show on",
+    name="ModelFormShowOnObject",
+)
 class FormShowOnObject(BaseModel):
     """
     Model class for form show on.
@@ -41,6 +54,10 @@ class FormShowOnObject(BaseModel):
     value: str
 
 
+@docs(
+    description="Form option",
+    name="ModelFormOption",
+)
 class FormOption(BaseModel):
     """
     Model class for form option.
@@ -56,6 +73,10 @@ class FormOption(BaseModel):
             self.label = I18nObject(en_US=self.value)
 
 
+@docs(
+    description="Credential form schema",
+    name="ModelCredentialFormSchema",
+)
 class CredentialFormSchema(BaseModel):
     """
     Model class for credential form schema.
@@ -72,6 +93,10 @@ class CredentialFormSchema(BaseModel):
     show_on: list[FormShowOnObject] = Field(default_factory=list)
 
 
+@docs(
+    description="Model provider credential schema",
+    name="ModelProviderCredentialSchema",
+)
 class ProviderCredentialSchema(BaseModel):
     """
     Model class for provider credential schema.
@@ -80,6 +105,10 @@ class ProviderCredentialSchema(BaseModel):
     credential_form_schemas: list[CredentialFormSchema]
 
 
+@docs(
+    description="Field model schema",
+    name="ModelFieldModelSchema",
+)
 class FieldModelSchema(BaseModel):
     label: I18nObject
     placeholder: Optional[I18nObject] = None
@@ -107,6 +136,10 @@ class SimpleProviderEntity(BaseModel):
     models: list[AIModelEntity] = []
 
 
+@docs(
+    description="Model provider help",
+    name="ModelProviderHelp",
+)
 class ProviderHelpEntity(BaseModel):
     """
     Model class for provider help.
@@ -116,17 +149,33 @@ class ProviderHelpEntity(BaseModel):
     url: I18nObject
 
 
+@docs(
+    description="Model position",
+    name="ModelPosition",
+)
 class ModelPosition(BaseModel):
     """
     Model class for ai models
     """
 
-    llm: Optional[list[str]] = Field(default_factory=list)
-    text_embedding: Optional[list[str]] = Field(default_factory=list)
-    rerank: Optional[list[str]] = Field(default_factory=list)
-    tts: Optional[list[str]] = Field(default_factory=list)
-    speech2text: Optional[list[str]] = Field(default_factory=list)
-    moderation: Optional[list[str]] = Field(default_factory=list)
+    llm: Optional[list[str]] = Field(
+        default_factory=list, description="Sorts of llm model in ascending order, fill model name here"
+    )
+    text_embedding: Optional[list[str]] = Field(
+        default_factory=list, description="Sorts of text embedding model in ascending order, fill model name here"
+    )
+    rerank: Optional[list[str]] = Field(
+        default_factory=list, description="Sorts of rerank model in ascending order, fill model name here"
+    )
+    tts: Optional[list[str]] = Field(
+        default_factory=list, description="Sorts of tts model in ascending order, fill model name here"
+    )
+    speech2text: Optional[list[str]] = Field(
+        default_factory=list, description="Sorts of speech2text model in ascending order, fill model name here"
+    )
+    moderation: Optional[list[str]] = Field(
+        default_factory=list, description="Sorts of moderation model in ascending order, fill model name here"
+    )
 
 
 class ProviderEntity(BaseModel):
@@ -210,6 +259,10 @@ class ProviderEntity(BaseModel):
         return values
 
 
+@docs(
+    description="Model provider configuration extra",
+    name="ModelProviderExtra",
+)
 class ModelProviderConfigurationExtra(BaseModel):
     class Python(BaseModel):
         provider_source: str
@@ -220,6 +273,11 @@ class ModelProviderConfigurationExtra(BaseModel):
     python: Python
 
 
+@docs(
+    name="ModelProvider",
+    description="Model provider configuration",
+    outside_reference_fields={"models": AIModelEntity},
+)
 class ModelProviderConfiguration(ProviderEntity):
     extra: ModelProviderConfigurationExtra
 

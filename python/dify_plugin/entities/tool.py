@@ -351,6 +351,7 @@ class ToolProviderConfigurationExtra(BaseModel):
 @docs(
     name="ToolProvider",
     description="The Manifest of the tool provider",
+    outside_reference_fields={"tools": ToolConfiguration},
 )
 class ToolProviderConfiguration(BaseModel):
     identity: ToolProviderIdentity

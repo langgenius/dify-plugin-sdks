@@ -126,6 +126,7 @@ class AgentProviderConfigurationExtra(BaseModel):
 @docs(
     name="AgentStrategyProvider",
     description="The Manifest of the agent strategy provider",
+    outside_reference_fields={"strategies": AgentStrategyConfiguration},
 )
 class AgentStrategyProviderConfiguration(BaseModel):
     identity: AgentStrategyProviderIdentity
