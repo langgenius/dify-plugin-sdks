@@ -107,10 +107,12 @@ class PluginConfiguration(BaseModel):
         description="Extensions of plugin",
     )
     class Plugins(BaseModel):
-        tools: list[str] = Field(default_factory=list)
-        models: list[str] = Field(default_factory=list)
-        endpoints: list[str] = Field(default_factory=list)
-        agent_strategies: list[str] = Field(default_factory=list)
+        tools: list[str] = Field(default_factory=list, description="manifest paths of tool providers")
+        models: list[str] = Field(default_factory=list, description="manifest paths of model providers")
+        endpoints: list[str] = Field(default_factory=list, description="manifest paths of endpoint groups")
+        agent_strategies: list[str] = Field(
+            default_factory=list, description="manifest paths of agent strategy providers"
+        )
 
     @docs(
         description="Meta information of plugin",
