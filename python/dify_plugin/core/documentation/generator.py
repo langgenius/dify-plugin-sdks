@@ -12,9 +12,9 @@ from dify_plugin.entities import *  # noqa: F403
 from dify_plugin.entities.agent import *  # noqa: F403
 from dify_plugin.entities.endpoint import *  # noqa: F403
 from dify_plugin.entities.model import *  # noqa: F403
-from dify_plugin.entities.model.provider import *  # noqa: F403
 from dify_plugin.entities.model.llm import *  # noqa: F403
 from dify_plugin.entities.model.moderation import *  # noqa: F403
+from dify_plugin.entities.model.provider import *  # noqa: F403
 from dify_plugin.entities.model.rerank import *  # noqa: F403
 from dify_plugin.entities.model.speech2text import *  # noqa: F403
 from dify_plugin.entities.model.text_embedding import *  # noqa: F403
@@ -189,9 +189,8 @@ class SchemaDocumentationGenerator:
                 description = field_info.description or ""
 
                 # Handle dynamic fields
-                if hasattr(schema, "dynamic_fields") and schema.dynamic_fields:
-                    if field_name in schema.dynamic_fields:
-                        description = schema.dynamic_fields[field_name]
+                if hasattr(schema, "dynamic_fields") and schema.dynamic_fields and field_name in schema.dynamic_fields:
+                    description = schema.dynamic_fields[field_name]
 
                 # For outside reference fields, append reference information to description
                 if field_name in outside_reference_fields:
@@ -199,7 +198,8 @@ class SchemaDocumentationGenerator:
                     referenced_schema = self._type_to_schema.get(referenced_type)
                     schema_name = referenced_schema.name if referenced_schema else referenced_type.__name__
                     if description:
-                        description = f"{description} (Paths to yaml files that will be loaded as [{schema_name}](#{schema_name.lower()}))"
+                        description = f"{description} "
+                        f"(Paths to yaml files that will be loaded as [{schema_name}](#{schema_name.lower()}))"
                     else:
                         description = (
                             f"Paths to yaml files that will be loaded as [{schema_name}](#{schema_name.lower()})"
