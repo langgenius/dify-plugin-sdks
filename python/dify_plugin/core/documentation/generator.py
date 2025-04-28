@@ -1,39 +1,40 @@
-from dify_plugin.core.documentation.schema_doc import list_schema_docs
-from typing import Dict, List, Set, Type, Any, Tuple, Union
-from pydantic import BaseModel
-from enum import Enum
 from collections import defaultdict
+from enum import Enum
+from typing import Any, Union
 
-from dify_plugin.entities import *  # noqa: F403
+from pydantic import BaseModel
+
+from dify_plugin.core.documentation.schema_doc import list_schema_docs
 from dify_plugin.core.entities import *  # noqa: F403
 from dify_plugin.core.entities.plugin import *  # noqa: F403
 from dify_plugin.core.entities.plugin.setup import *  # noqa: F403
-from dify_plugin.entities.tool import *  # noqa: F403
+from dify_plugin.entities import *  # noqa: F403
 from dify_plugin.entities.agent import *  # noqa: F403
 from dify_plugin.entities.endpoint import *  # noqa: F403
 from dify_plugin.entities.model import *  # noqa: F403
 from dify_plugin.entities.model.llm import *  # noqa: F403
-from dify_plugin.entities.model.text_embedding import *  # noqa: F403
-from dify_plugin.entities.model.tts import *  # noqa: F403
-from dify_plugin.entities.model.speech2text import *  # noqa: F403
 from dify_plugin.entities.model.moderation import *  # noqa: F403
 from dify_plugin.entities.model.rerank import *  # noqa: F403
+from dify_plugin.entities.model.speech2text import *  # noqa: F403
+from dify_plugin.entities.model.text_embedding import *  # noqa: F403
+from dify_plugin.entities.model.tts import *  # noqa: F403
+from dify_plugin.entities.tool import *  # noqa: F403
 
 
 class SchemaDocumentationGenerator:
     def __init__(self):
-        self._reference_counts: Dict[Type, int] = {}
-        self._reference_graph: Dict[Type, Set[Type]] = defaultdict(set)
-        self._processed_types: Set[Type] = set()
-        self._field_descriptions: Dict[Tuple[Type, str], str] = {}
-        self._schema_descriptions: Dict[Type, str] = {}
-        self._processed_field_types: Set[Type] = set()
-        self._type_to_schema: Dict[Type, Any] = {}
-        self._type_blocks: Dict[Type, int] = {}
-        self._blocks: List[List] = []
-        self._types: Set[Type] = set()
+        self._reference_counts: dict[type, int] = {}
+        self._reference_graph: dict[type, set[type]] = defaultdict(set)
+        self._processed_types: set[type] = set()
+        self._field_descriptions: dict[tuple[type, str], str] = {}
+        self._schema_descriptions: dict[type, str] = {}
+        self._processed_field_types: set[type] = set()
+        self._type_to_schema: dict[type, Any] = {}
+        self._type_blocks: dict[type, int] = {}
+        self._blocks: list[list] = []
+        self._types: set[type] = set()
 
-    def _organize_toc(self) -> List[Tuple[Type, List[Any]]]:
+    def _organize_toc(self) -> list[tuple[type, list[Any]]]:
         """Organize types into a hierarchical structure for table of contents.
 
         The hierarchy is built based on the following rules:
@@ -62,7 +63,7 @@ class SchemaDocumentationGenerator:
                 if ref in referenced_by:
                     referenced_by[ref].add(t)
 
-        def build_subtree(type_: Type, processed: Set[Type]) -> Tuple[Type, List[Any]]:
+        def build_subtree(type_: type, processed: set[type]) -> tuple[type, list[Any]]:
             """Recursively build a subtree for a type and its references.
 
             Args:
@@ -82,7 +83,7 @@ class SchemaDocumentationGenerator:
             for ref_type in self._reference_graph.get(type_, set()):
                 # If this is the only reference to ref_type
                 refs = referenced_by.get(ref_type, set())
-                if len(refs) == 1 and list(refs)[0] == type_:
+                if len(refs) == 1 and next(iter(refs)) == type_:
                     subtree = build_subtree(ref_type, processed)
                     children.append(subtree)
 
@@ -139,7 +140,7 @@ class SchemaDocumentationGenerator:
             f.write("## Table of Contents\n\n")
             hierarchy = self._organize_toc()
 
-            def write_toc_item(node: Tuple[Type, List[Any]], indent: int = 0):
+            def write_toc_item(node: tuple[type, list[Any]], indent: int = 0):
                 type_, children = node
                 schema = self._type_to_schema[type_]
                 name = schema.name or type_.__name__
@@ -156,7 +157,7 @@ class SchemaDocumentationGenerator:
                 for type_ in block:
                     self._write_schema_doc(f, type_)
 
-    def _preprocess_schemas(self, schemas: List) -> None:
+    def _preprocess_schemas(self, schemas: list) -> None:
         """Pre-process schemas to collect field descriptions and merge duplicates."""
         # First pass: collect all field descriptions
         for schema in schemas:
@@ -200,19 +201,14 @@ class SchemaDocumentationGenerator:
             if issubclass(field_type, (BaseModel, Enum)):
                 referenced.add(field_type)
         # Handle generic types (List, Dict, Union, etc)
-        elif hasattr(field_type, "__origin__"):
+        elif (hasattr(field_type, "__origin__") and field_type.__origin__ == Union) or hasattr(field_type, "__args__"):
             # Handle Union types
-            if field_type.__origin__ == Union:
-                for arg in field_type.__args__:
-                    referenced.update(self._extract_referenced_types(arg))
-            # Handle container types (List, Dict, etc)
-            elif hasattr(field_type, "__args__"):
-                for arg in field_type.__args__:
-                    referenced.update(self._extract_referenced_types(arg))
+            for arg in field_type.__args__:
+                referenced.update(self._extract_referenced_types(arg))
 
         return referenced
 
-    def _build_reference_graph(self, schemas: List) -> None:
+    def _build_reference_graph(self, schemas: list) -> None:
         """Build a graph of references between types (recursively for all nested types)."""
         for schema in schemas:
             cls = schema.cls
@@ -220,7 +216,7 @@ class SchemaDocumentationGenerator:
                 continue
 
             # Count references in fields
-            for field_name, field_info in cls.model_fields.items():
+            for _, field_info in cls.model_fields.items():
                 field_type = field_info.annotation
                 if field_type is None:
                     continue
@@ -275,8 +271,8 @@ class SchemaDocumentationGenerator:
 
         if issubclass(type_, BaseModel):
             f.write("### Fields\n\n")
-            f.write("| Name | Type | Description | Default | Extra |\n")
-            f.write("|------|------|-------------|----------|---------|\n")
+            f.write("| Name | Type | Description | Required | Default | Extra |\n")
+            f.write("|------|------|-------------|----------|---------|---------|\n")
 
             # Track processed fields to avoid duplicates
             processed_fields = set()
@@ -319,7 +315,7 @@ class SchemaDocumentationGenerator:
                     for value in field_info.metadata:
                         extra += f"{value} "
 
-                f.write(f"| {field_name} | {type_name} | {description} | {default} | {extra} |\n")
+                f.write(f"| {field_name} | {type_name} | {description} |  {default} | {extra} |\n")
 
             f.write("\n")
 
@@ -351,14 +347,14 @@ class SchemaDocumentationGenerator:
             if origin in (list, set):
                 inner_type = self._format_type_name(field_type.__args__[0])
                 return f"{origin.__name__}[{inner_type}]"
-            elif origin == dict:
+            elif origin is dict:
                 key_type = self._format_type_name(field_type.__args__[0])
                 value_type = self._format_type_name(field_type.__args__[1])
                 return f"dict[{key_type}, {value_type}]"
-            elif origin == tuple:
+            elif origin is tuple:
                 types = [self._format_type_name(arg) for arg in field_type.__args__]
                 return f"tuple[{', '.join(types)}]"
-            elif origin == Union:
+            elif origin is Union:
                 types = [self._format_type_name(arg) for arg in field_type.__args__]
                 return f"Union[{', '.join(types)}]"
 

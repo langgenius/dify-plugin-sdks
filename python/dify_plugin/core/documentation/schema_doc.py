@@ -1,4 +1,6 @@
-from typing import Any, Callable, Optional, Type
+from collections.abc import Callable
+from typing import Any, Optional
+
 from pydantic import BaseModel
 
 
@@ -9,7 +11,7 @@ class SchemaDoc:
         description: str,
         name: Optional[str] = None,
         example: Optional[BaseModel] = None,
-        reference: Optional[Type[BaseModel]] = None,
+        reference: Optional[type[BaseModel]] = None,
         dynamic_fields: Optional[dict[str, str]] = None,
         top: bool = False,
         ignore_fields: Optional[list[str]] = None,
@@ -31,7 +33,7 @@ def docs(
     description: str,
     name: Optional[str] = None,
     example: Optional[BaseModel] = None,
-    reference: Optional[Type[BaseModel]] = None,
+    reference: Optional[type[BaseModel]] = None,
     dynamic_fields: Optional[dict[str, str]] = None,
     top: bool = False,
     ignore_fields: Optional[list[str]] = None,
