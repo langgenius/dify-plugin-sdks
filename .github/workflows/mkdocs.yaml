@@ -20,7 +20,7 @@ jobs:
         run: ./python/scripts/install-deps.sh
 
       - name: Build raw docs
-        run: cd python && ./scripts/build_raw_docs.sh
+        run: cd python && ./scripts/build_raw_docs.sh python
 
       - name: Deploy docs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
