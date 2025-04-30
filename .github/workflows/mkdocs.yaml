@@ -1,0 +1,30 @@
+on:
+  push:
+    branches:
+      - main
+      - feat/docs
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pdm-project/setup-pdm@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: true
+          cache-dependency-path: python/pdm.lock
+
+      - name: Install dependencies
+        run: ./python/scripts/install-deps.sh
+
+      - name: Build raw docs
+        run: cd python && ./scripts/build_raw_docs.sh
+
+      - name: Deploy docs
+        uses: mhausenblas/mkdocs-deploy-gh-pages@master
+        # Or use mhausenblas/mkdocs-deploy-gh-pages@nomaterial to build without the mkdocs-material theme
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONFIG_FILE: python/.mkdocs/mkdocs.yml
