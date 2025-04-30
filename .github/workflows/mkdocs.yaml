@@ -4,10 +4,14 @@ on:
   push:
     branches:
       - main
-      - feat/docs
 
 jobs:
   build:
+    strategy:
+      matrix:
+        python-version:
+          - 3.12
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
