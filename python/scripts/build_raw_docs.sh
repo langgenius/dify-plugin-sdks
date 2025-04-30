@@ -8,7 +8,7 @@ PYTHON_SDK_DIR="$(dirname "${SCRIPT_DIR}")"
 
 function main {
     cd "${PYTHON_SDK_DIR}"
-    python dify_plugin/cli.py generate-docs
+    pdm run python dify_plugin/cli.py generate-docs
 }
 
 main

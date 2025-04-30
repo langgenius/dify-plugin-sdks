@@ -21,8 +21,8 @@ jobs:
       - name: Install dependencies
         run: ./python/scripts/install-deps.sh
 
-      - name: Debug
-        uses: mxschmitt/action-tmate@v3
+      # - name: Debug
+      #   uses: mxschmitt/action-tmate@v3
 
       - name: Build raw docs
         run: ./python/scripts/build_raw_docs.sh
