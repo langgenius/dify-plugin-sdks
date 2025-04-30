@@ -39,9 +39,11 @@ markdown_extensions:
   - attr_list
   - md_in_html
 
+docs_dir: python/dify_plugin/docs
+
 nav:
   - Home: index.md
-  - Schema Documentation: docs.md
+  - Schema Documentation: schema.md
 
 plugins:
   - search
