@@ -39,7 +39,7 @@ markdown_extensions:
   - attr_list
   - md_in_html
 
-docs_dir: python/dify_plugin/docs
+docs_dir: docs
 
 nav:
   - Schema Documentation: schema.md
