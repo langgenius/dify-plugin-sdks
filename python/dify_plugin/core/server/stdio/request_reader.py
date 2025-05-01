@@ -20,19 +20,21 @@ class StdioRequestReader(RequestReader):
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
         buffer = b""
         while True:
-            # read data from stdin through tp_read
-            data = tp_read(sys.stdin.fileno(), 512)
+            # read data from stdin using tp_read in 64KB chunks.
+            # the OS buffer for stdin is usually 64KB, so using a larger value doesn't make sense.
+            data = tp_read(sys.stdin.fileno(), 65536)
 
             if not data:
                 continue
 
             buffer += data
 
-            # process line by line and keep the last line if it is not complete
-            lines = buffer.split(b"\n")
-            if len(lines) == 0:
+            # if no b"\n" is in data, skip to the next iteration
+            if data.find(b"\n") == -1:
                 continue
 
+            # process line by line and keep the last line if it is not complete
+            lines = buffer.split(b"\n")
             buffer = lines[-1]
 
             lines = lines[:-1]
