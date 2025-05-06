@@ -1,9 +1,4 @@
-# setup GEVENT_SUPPORT
 import json
-import os
-
-os.environ["GEVENT_SUPPORT"] = "true"
-
 from dify_plugin.core.entities.plugin.io import PluginInStreamEvent
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 
