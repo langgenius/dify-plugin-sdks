@@ -39,3 +39,37 @@ def test_stdio(monkeypatch):
             break
 
     assert iters == 200
+
+
+def test_stdio_with_empty_line(monkeypatch):
+    payload = {
+        "session_id": "1",
+        "conversation_id": "2",
+        "message_id": "3",
+        "app_id": "4",
+        "endpoint_id": "5",
+        "data": {"test": "test" * 1000},
+        "event": PluginInStreamEvent.Request.value,
+    }
+
+    reader = StdioRequestReader()
+    dataflow_bytes = b"".join([json.dumps(payload).encode("utf-8") + b"\n" for _ in range(100)])
+    dataflow_bytes += b"\n"
+    dataflow_bytes += b"".join([json.dumps(payload).encode("utf-8") + b"\n" for _ in range(100)])
+    dataflow_bytes += b"\n"
+    dataflow_bytes += b"".join([json.dumps(payload).encode("utf-8") + b"\n" for _ in range(100)])
+    dataflow_bytes += b"\n"
+
+    def mock_read_async():
+        return dataflow_bytes
+
+    monkeypatch.setattr(reader, "_read_async", mock_read_async)
+
+    iters = 0
+    for line in reader._read_stream():
+        assert line.event == PluginInStreamEvent.Request
+        iters += 1
+        if iters == 300:
+            break
+
+    assert iters == 300

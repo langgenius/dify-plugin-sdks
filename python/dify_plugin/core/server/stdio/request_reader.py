@@ -41,6 +41,10 @@ class StdioRequestReader(RequestReader):
 
             lines = lines[:-1]
             for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+
                 try:
                     data = TypeAdapter(dict[str, Any]).validate_json(line)
                     yield PluginInStream(
