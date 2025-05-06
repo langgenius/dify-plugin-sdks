@@ -36,6 +36,10 @@ class EndpointProviderConfiguration(BaseModel):
     settings: list[ProviderConfig] = Field(default_factory=list)
     endpoints: list[EndpointConfiguration] = Field(default_factory=list)
 
+    @classmethod
+    def _load_yaml_file(cls, path: str) -> dict:
+        return load_yaml_file(path)
+
     @field_validator("endpoints", mode="before")
     @classmethod
     def validate_endpoints(cls, value) -> list[EndpointConfiguration]:
@@ -45,11 +49,18 @@ class EndpointProviderConfiguration(BaseModel):
         endpoints: list[EndpointConfiguration] = []
 
         for endpoint in value:
-            # read from yaml
+            # read from yaml or load directly
+            if isinstance(endpoint, EndpointConfiguration | dict):
+                if isinstance(endpoint, dict):
+                    endpoint = EndpointConfiguration(**endpoint)
+                endpoints.append(endpoint)
+                continue
+
             if not isinstance(endpoint, str):
                 raise ValueError("endpoint path should be a string")
+
             try:
-                file = load_yaml_file(endpoint)
+                file = cls._load_yaml_file(endpoint)
                 endpoints.append(EndpointConfiguration(**file))
             except Exception as e:
                 raise ValueError(f"Error loading endpoint configuration: {e!s}") from e
