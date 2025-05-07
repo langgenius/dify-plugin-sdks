@@ -1,7 +1,7 @@
 import logging
 from abc import abstractmethod
 from collections.abc import Generator, Mapping
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, final
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
@@ -149,11 +149,18 @@ class AgentProvider(ToolProvider):
 
 
 class AgentStrategy(ToolLike[AgentInvokeMessage]):
+    @final
     def __init__(
         self,
         runtime: AgentRuntime,
         session: Session,
     ):
+        """
+        Initialize the agent strategy
+
+        NOTE:
+        - This method has been marked as final, DO NOT OVERRIDE IT.
+        """
         self.runtime = runtime
         self.session = session
         self.response_type = AgentInvokeMessage

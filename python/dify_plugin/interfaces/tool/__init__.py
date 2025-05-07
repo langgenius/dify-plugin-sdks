@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Generic, Optional, TypeVar, final
 
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities.agent import AgentInvokeMessage
@@ -235,11 +235,18 @@ class Tool(ToolLike[ToolInvokeMessage]):
     runtime: ToolRuntime
     session: Session
 
+    @final
     def __init__(
         self,
         runtime: ToolRuntime,
         session: Session,
     ):
+        """
+        Initialize the tool
+
+        NOTE:
+        - This method has been marked as final, DO NOT OVERRIDE IT.
+        """
         self.runtime = runtime
         self.session = session
         self.response_type = ToolInvokeMessage

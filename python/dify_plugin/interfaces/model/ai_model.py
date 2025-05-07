@@ -2,7 +2,7 @@ import decimal
 import socket
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Optional
+from typing import Optional, final
 
 import gevent.socket
 from pydantic import ConfigDict
@@ -37,7 +37,14 @@ class AIModel(ABC):
     # pydantic configs
     model_config = ConfigDict(protected_namespaces=())
 
+    @final
     def __init__(self, model_schemas: list[AIModelEntity]) -> None:
+        """
+        Initialize the model
+
+        NOTE:
+        - This method has been marked as final, DO NOT OVERRIDE IT.
+        """
         self.model_schemas = [
             model_schema for model_schema in model_schemas if model_schema.model_type == self.model_type
         ]
