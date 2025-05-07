@@ -48,5 +48,5 @@ def test_constructor_of_agent_strategy():
         reader=StdioRequestReader(),
         writer=StdioResponseWriter(),
     )
-    agent_strategy = AgentStrategyImpl(session, runtime=AgentRuntime(user_id="test"))
+    agent_strategy = AgentStrategyImpl(runtime=AgentRuntime(user_id="test"), session=session)
     assert agent_strategy is not None
