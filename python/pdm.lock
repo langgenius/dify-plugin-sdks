@@ -5,7 +5,7 @@
 groups = ["default", "lint", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:ba2ffef30c47ff3a9fcacf18478fcb7333a29e0752b6f802f404a93493969af8"
+content_hash = "sha256:49aa3ffed2e292adfdf8857eb6e385a3505b050adc83751cb0725f5386e8ea95"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
@@ -726,16 +726,6 @@ dependencies = [
 files = [
     {file = "pydantic_settings-2.8.1-py3-none-any.whl", hash = "sha256:81942d5ac3d905f7f3ee1a70df5dfb62d5569c12f51a5a647defc1c3d9ee2e9c"},
     {file = "pydantic_settings-2.8.1.tar.gz", hash = "sha256:d5c663dfbe9db9d5e1c646b2e161da12f0d734d422ee56f567d0ea2cee4e8585"},
-]
-
-[[package]]
-name = "pydub"
-version = "0.25.1"
-summary = "Manipulate audio with an simple and easy high level interface"
-groups = ["default"]
-files = [
-    {file = "pydub-0.25.1-py2.py3-none-any.whl", hash = "sha256:65617e33033874b59d87db603aa1ed450633288aefead953b30bded59cb599a6"},
-    {file = "pydub-0.25.1.tar.gz", hash = "sha256:980a33ce9949cab2a569606b65674d748ecbca4f0796887fd6f46173a7b0d30f"},
 ]
 
 [[package]]
