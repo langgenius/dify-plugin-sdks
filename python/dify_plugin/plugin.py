@@ -5,6 +5,7 @@ from collections.abc import Generator
 from typing import Any, Optional
 
 from pydantic import RootModel
+from yarl import URL
 
 from dify_plugin.config.config import DifyPluginEnv, InstallMethod
 from dify_plugin.config.logger_format import plugin_logger_handler
@@ -389,7 +390,8 @@ class Plugin(IOServer, Router):
                     data=writer.stream_object(data=response),
                 )
 
-    def _get_remote_install_host_and_port(self, config: DifyPluginEnv) -> tuple[str, int]:
+    @staticmethod
+    def _get_remote_install_host_and_port(config: DifyPluginEnv) -> tuple[str, int]:
         """
         Get host and port for remote installation
         :param config:  dify plugin env config
@@ -397,13 +399,20 @@ class Plugin(IOServer, Router):
         """
         if config.REMOTE_INSTALL_URL:
             if ":" in config.REMOTE_INSTALL_URL:
-                split = config.REMOTE_INSTALL_URL.split(":")
-                remote_install_host = split[0]
-                remote_install_port = int(split[1])
+                url = URL(config.REMOTE_INSTALL_URL)
+                if url.host and url.port:
+                    # for the url with protocol prefix
+                    host = url.host
+                    port = url.port
+                else:
+                    # for "host:port" format
+                    split = config.REMOTE_INSTALL_URL.split(":")
+                    host = split[0]
+                    port = int(split[1])
             else:
-                raise ValueError("Invalid remote install URL, which should be in the format host:port")
+                raise ValueError("Invalid remote install URL, which should be in the format of host:port")
         else:
-            remote_install_host = config.REMOTE_INSTALL_HOST
-            remote_install_port = config.REMOTE_INSTALL_PORT
+            host = config.REMOTE_INSTALL_HOST
+            port = config.REMOTE_INSTALL_PORT
 
-        return remote_install_host, remote_install_port
+        return host, port
