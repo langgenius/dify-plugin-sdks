@@ -95,8 +95,6 @@ class Plugin(IOServer, Router):
 
         return tcp_stream, tcp_stream
 
-
-
     def _initialize_tcp_stream(
         self,
         tcp_stream: TCPReaderWriter,
