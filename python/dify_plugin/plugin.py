@@ -93,8 +93,8 @@ class Plugin(IOServer, Router):
         logging.debug(f"Remote installing to {remote_install_host}:{remote_install_port}")
 
         tcp_stream = TCPReaderWriter(
-            config.REMOTE_INSTALL_HOST,
-            config.REMOTE_INSTALL_PORT,
+            remote_install_host,
+            remote_install_port,
             config.REMOTE_INSTALL_KEY,
             on_connected=lambda: self._initialize_tcp_stream(tcp_stream),
         )
