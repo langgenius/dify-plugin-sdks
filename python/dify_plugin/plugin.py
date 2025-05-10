@@ -398,7 +398,7 @@ class Plugin(IOServer, Router):
                 remote_install_host = split[0]
                 remote_install_port = int(split[1])
             else:
-                raise ValueError("Invalid remote install URL, should be in the format host:port")
+                raise ValueError("Invalid remote install URL, which should be in the format host:port")
         else:
             remote_install_host = config.REMOTE_INSTALL_HOST
             remote_install_port = config.REMOTE_INSTALL_PORT
