@@ -81,16 +81,7 @@ class Plugin(IOServer, Router):
         if not config.REMOTE_INSTALL_KEY:
             raise ValueError("Missing remote install key")
 
-        if config.REMOTE_INSTALL_URL:
-            if ":" in config.REMOTE_INSTALL_URL:
-                split = config.REMOTE_INSTALL_URL.split(":")
-                remote_install_host = split[0]
-                remote_install_port = split[1]
-            else:
-                raise ValueError("Invalid remote install URL, should be in the format host:port")
-        else:
-            remote_install_host = config.REMOTE_INSTALL_HOST
-            remote_install_port = config.REMOTE_INSTALL_PORT
+        remote_install_host, remote_install_port = self._get_remote_install_host_and_port(config)
 
         logging.debug(f"Remote installing to {remote_install_host}:{remote_install_port}")
 
@@ -104,6 +95,8 @@ class Plugin(IOServer, Router):
         tcp_stream.launch()
 
         return tcp_stream, tcp_stream
+
+
 
     def _initialize_tcp_stream(
         self,
@@ -398,3 +391,17 @@ class Plugin(IOServer, Router):
                     session_id=session_id,
                     data=writer.stream_object(data=response),
                 )
+
+    def _get_remote_install_host_and_port(self, config: DifyPluginEnv) -> tuple[str, int]:
+        if config.REMOTE_INSTALL_URL:
+            if ":" in config.REMOTE_INSTALL_URL:
+                split = config.REMOTE_INSTALL_URL.split(":")
+                remote_install_host = split[0]
+                remote_install_port = int(split[1])
+            else:
+                raise ValueError("Invalid remote install URL, should be in the format host:port")
+        else:
+            remote_install_host = config.REMOTE_INSTALL_HOST
+            remote_install_port = config.REMOTE_INSTALL_PORT
+
+        return remote_install_host, remote_install_port
