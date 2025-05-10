@@ -81,12 +81,12 @@ class Plugin(IOServer, Router):
         if not config.REMOTE_INSTALL_KEY:
             raise ValueError("Missing remote install key")
 
-        remote_install_host, remote_install_port = self._get_remote_install_host_and_port(config)
-        logging.debug(f"Remote installing to {remote_install_host}:{remote_install_port}")
+        install_host, install_port = self._get_remote_install_host_and_port(config)
+        logging.debug(f"Remote installing to {install_host}:{install_port}")
 
         tcp_stream = TCPReaderWriter(
-            remote_install_host,
-            remote_install_port,
+            install_host,
+            install_port,
             config.REMOTE_INSTALL_KEY,
             on_connected=lambda: self._initialize_tcp_stream(tcp_stream),
         )
@@ -390,6 +390,11 @@ class Plugin(IOServer, Router):
                 )
 
     def _get_remote_install_host_and_port(self, config: DifyPluginEnv) -> tuple[str, int]:
+        """
+        Get host and port for remote installation
+        :param config:  dify plugin env config
+        :return: host and port
+        """
         if config.REMOTE_INSTALL_URL:
             if ":" in config.REMOTE_INSTALL_URL:
                 split = config.REMOTE_INSTALL_URL.split(":")
