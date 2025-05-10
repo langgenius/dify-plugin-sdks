@@ -82,7 +82,6 @@ class Plugin(IOServer, Router):
             raise ValueError("Missing remote install key")
 
         remote_install_host, remote_install_port = self._get_remote_install_host_and_port(config)
-
         logging.debug(f"Remote installing to {remote_install_host}:{remote_install_port}")
 
         tcp_stream = TCPReaderWriter(
