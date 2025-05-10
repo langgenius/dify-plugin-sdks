@@ -5,7 +5,6 @@ from collections.abc import Generator
 from typing import Any, Optional
 
 from pydantic import RootModel
-from yarl import URL
 
 from dify_plugin.config.config import DifyPluginEnv, InstallMethod
 from dify_plugin.config.logger_format import plugin_logger_handler
@@ -83,9 +82,12 @@ class Plugin(IOServer, Router):
             raise ValueError("Missing remote install key")
 
         if config.REMOTE_INSTALL_URL:
-            remote_install_url = URL(config.REMOTE_INSTALL_URL)
-            remote_install_host = remote_install_url.host
-            remote_install_port = remote_install_url.port
+            if ":" in config.REMOTE_INSTALL_URL:
+                split = config.REMOTE_INSTALL_URL.split(":")
+                remote_install_host = split[0]
+                remote_install_port = split[1]
+            else:
+                raise ValueError("Invalid remote install URL, should be in the format host:port")
         else:
             remote_install_host = config.REMOTE_INSTALL_HOST
             remote_install_port = config.REMOTE_INSTALL_PORT
