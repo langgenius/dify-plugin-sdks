@@ -82,7 +82,7 @@ class Plugin(IOServer, Router):
         if not config.REMOTE_INSTALL_KEY:
             raise ValueError("Missing remote install key")
 
-        if config.REMOTE_INSTALL_URL and ":" in config.REMOTE_INSTALL_URL:
+        if config.REMOTE_INSTALL_URL:
             remote_install_url = URL(config.REMOTE_INSTALL_URL)
             remote_install_host = remote_install_url.host
             remote_install_port = remote_install_url.port
