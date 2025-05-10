@@ -93,8 +93,8 @@ class Plugin(IOServer, Router):
         logging.debug(f"Remote installing to {remote_install_host}:{remote_install_port}")
 
         tcp_stream = TCPReaderWriter(
-            remote_install_host,
-            remote_install_port,
+            config.REMOTE_INSTALL_HOST,
+            config.REMOTE_INSTALL_PORT,
             config.REMOTE_INSTALL_KEY,
             on_connected=lambda: self._initialize_tcp_stream(tcp_stream),
         )
@@ -156,7 +156,7 @@ class Plugin(IOServer, Router):
 
         for file in self.registration.files:
             # divide the file into chunks
-            chunks = [file.data[i: i + 8192] for i in range(0, len(file.data), 8192)]
+            chunks = [file.data[i : i + 8192] for i in range(0, len(file.data), 8192)]
             for sequence, chunk in enumerate(chunks):
                 tcp_stream.write(
                     InitializeMessage(
@@ -216,97 +216,97 @@ class Plugin(IOServer, Router):
         self.register_route(
             self.plugin_executer.invoke_tool,
             lambda data: data.get("type") == PluginInvokeType.Tool.value
-                         and data.get("action") == ToolActions.InvokeTool.value,
+            and data.get("action") == ToolActions.InvokeTool.value,
         )
 
         self.register_route(
             self.plugin_executer.validate_tool_provider_credentials,
             lambda data: data.get("type") == PluginInvokeType.Tool.value
-                         and data.get("action") == ToolActions.ValidateCredentials.value,
+            and data.get("action") == ToolActions.ValidateCredentials.value,
         )
 
         self.register_route(
             self.plugin_executer.invoke_agent_strategy,
             lambda data: data.get("type") == PluginInvokeType.Agent.value
-                         and data.get("action") == AgentActions.InvokeAgentStrategy.value,
+            and data.get("action") == AgentActions.InvokeAgentStrategy.value,
         )
 
         self.register_route(
             self.plugin_executer.invoke_llm,
             lambda data: data.get("type") == PluginInvokeType.Model.value
-                         and data.get("action") == ModelActions.InvokeLLM.value,
+            and data.get("action") == ModelActions.InvokeLLM.value,
         )
 
         self.register_route(
             self.plugin_executer.get_llm_num_tokens,
             lambda data: data.get("type") == PluginInvokeType.Model.value
-                         and data.get("action") == ModelActions.GetLLMNumTokens.value,
+            and data.get("action") == ModelActions.GetLLMNumTokens.value,
         )
 
         self.register_route(
             self.plugin_executer.invoke_text_embedding,
             lambda data: data.get("type") == PluginInvokeType.Model.value
-                         and data.get("action") == ModelActions.InvokeTextEmbedding.value,
+            and data.get("action") == ModelActions.InvokeTextEmbedding.value,
         )
 
         self.register_route(
             self.plugin_executer.get_text_embedding_num_tokens,
             lambda data: data.get("type") == PluginInvokeType.Model.value
-                         and data.get("action") == ModelActions.GetTextEmbeddingNumTokens.value,
+            and data.get("action") == ModelActions.GetTextEmbeddingNumTokens.value,
         )
 
         self.register_route(
             self.plugin_executer.invoke_rerank,
             lambda data: data.get("type") == PluginInvokeType.Model.value
-                         and data.get("action") == ModelActions.InvokeRerank.value,
+            and data.get("action") == ModelActions.InvokeRerank.value,
         )
 
         self.register_route(
             self.plugin_executer.invoke_tts,
             lambda data: data.get("type") == PluginInvokeType.Model.value
-                         and data.get("action") == ModelActions.InvokeTTS.value,
+            and data.get("action") == ModelActions.InvokeTTS.value,
         )
 
         self.register_route(
             self.plugin_executer.get_tts_model_voices,
             lambda data: data.get("type") == PluginInvokeType.Model.value
-                         and data.get("action") == ModelActions.GetTTSVoices.value,
+            and data.get("action") == ModelActions.GetTTSVoices.value,
         )
 
         self.register_route(
             self.plugin_executer.invoke_speech_to_text,
             lambda data: data.get("type") == PluginInvokeType.Model.value
-                         and data.get("action") == ModelActions.InvokeSpeech2Text.value,
+            and data.get("action") == ModelActions.InvokeSpeech2Text.value,
         )
 
         self.register_route(
             self.plugin_executer.invoke_moderation,
             lambda data: data.get("type") == PluginInvokeType.Model.value
-                         and data.get("action") == ModelActions.InvokeModeration.value,
+            and data.get("action") == ModelActions.InvokeModeration.value,
         )
 
         self.register_route(
             self.plugin_executer.validate_model_provider_credentials,
             lambda data: data.get("type") == PluginInvokeType.Model.value
-                         and data.get("action") == ModelActions.ValidateProviderCredentials.value,
+            and data.get("action") == ModelActions.ValidateProviderCredentials.value,
         )
 
         self.register_route(
             self.plugin_executer.validate_model_credentials,
             lambda data: data.get("type") == PluginInvokeType.Model.value
-                         and data.get("action") == ModelActions.ValidateModelCredentials.value,
+            and data.get("action") == ModelActions.ValidateModelCredentials.value,
         )
 
         self.register_route(
             self.plugin_executer.invoke_endpoint,
             lambda data: data.get("type") == PluginInvokeType.Endpoint.value
-                         and data.get("action") == EndpointActions.InvokeEndpoint.value,
+            and data.get("action") == EndpointActions.InvokeEndpoint.value,
         )
 
         self.register_route(
             self.plugin_executer.get_ai_model_schemas,
             lambda data: data.get("type") == PluginInvokeType.Model.value
-                         and data.get("action") == ModelActions.GetAIModelSchemas.value,
+            and data.get("action") == ModelActions.GetAIModelSchemas.value,
         )
 
     def _execute_request(
@@ -350,7 +350,7 @@ class Plugin(IOServer, Router):
                         blob = message.message.blob
                         message.message.blob = id_.encode("utf-8")
                         # split the blob into chunks
-                        chunks = [blob[i: i + 8192] for i in range(0, len(blob), 8192)]
+                        chunks = [blob[i : i + 8192] for i in range(0, len(blob), 8192)]
                         for sequence, chunk in enumerate(chunks):
                             writer.session_message(
                                 session_id=session_id,
