@@ -49,7 +49,7 @@ class ModelActions(Enum):
 
 
 class EndpointActions(Enum):
-    Setup = "setup"
+    SetupEndpoint = "setup_endpoint"
     InvokeEndpoint = "invoke_endpoint"
 
 
@@ -219,7 +219,7 @@ class ModelGetAIModelSchemas(PluginAccessModelRequest):
 
 class EndpointSetupRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Endpoint
-    action: EndpointActions = EndpointActions.Setup
+    action: EndpointActions = EndpointActions.SetupEndpoint
     endpoint_group: str = Field(default="default", description="The endpoint group name")
     credentials: Mapping
 
