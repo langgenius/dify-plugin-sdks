@@ -1,7 +1,8 @@
+from collections.abc import Mapping
 from enum import Enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.message import (
@@ -48,6 +49,7 @@ class ModelActions(Enum):
 
 
 class EndpointActions(Enum):
+    Setup = "setup"
     InvokeEndpoint = "invoke_endpoint"
 
 
@@ -215,8 +217,15 @@ class ModelGetAIModelSchemas(PluginAccessModelRequest):
     action: ModelActions = ModelActions.GetAIModelSchemas
 
 
+class EndpointSetupRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.Endpoint
+    action: EndpointActions = EndpointActions.Setup
+    endpoint_group: str = Field(default="default", description="The endpoint group name")
+    credentials: Mapping
+
+
 class EndpointInvokeRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Endpoint
     action: EndpointActions = EndpointActions.InvokeEndpoint
-    settings: dict
+    settings: Mapping
     raw_http_request: str

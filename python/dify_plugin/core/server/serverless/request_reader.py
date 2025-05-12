@@ -3,8 +3,6 @@ import time
 from collections.abc import Generator
 from queue import Empty, Queue
 
-from flask import Flask, request
-
 from dify_plugin.core.entities.plugin.io import (
     PluginInStream,
     PluginInStreamEvent,
@@ -27,6 +25,8 @@ class ServerlessRequestReader(RequestReader):
         """
         Initialize the ServerlessStream and wait for jobs
         """
+        from flask import Flask
+
         super().__init__()
         self.app = Flask(__name__)
         self.host = host
@@ -46,6 +46,8 @@ class ServerlessRequestReader(RequestReader):
             yield self.request_queue.get()
 
     def handler(self):
+        from flask import request
+
         try:
             queue = Queue[str]()
             data = request.get_json()

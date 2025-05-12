@@ -8,6 +8,7 @@ from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.entities.plugin.request import (
     AgentInvokeRequest,
     EndpointInvokeRequest,
+    EndpointSetupRequest,
     ModelGetAIModelSchemas,
     ModelGetLLMNumTokens,
     ModelGetTextEmbeddingNumTokens,
@@ -273,6 +274,13 @@ class PluginExecutor:
             }
         else:
             raise ValueError(f"Model `{data.model_type}` not found for provider `{data.provider}`")
+
+    def setup_endpoint_group(self, session: Session, data: EndpointSetupRequest):
+        endpoint_group_cls = self.registration.get_endpoint_group_cls(data.endpoint_group)
+        if endpoint_group_cls is None:
+            raise ValueError(f"Endpoint group `{data.endpoint_group}` not found")
+
+        endpoint_group_cls().setup(data.credentials)
 
     def invoke_endpoint(self, session: Session, data: EndpointInvokeRequest):
         bytes_data = binascii.unhexlify(data.raw_http_request)

@@ -18,7 +18,7 @@ from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.provider import ModelProviderConfiguration
 from dify_plugin.entities.tool import ToolConfiguration, ToolProviderConfiguration
 from dify_plugin.interfaces.agent import AgentStrategy
-from dify_plugin.interfaces.endpoint import Endpoint
+from dify_plugin.interfaces.endpoint import Endpoint, EndpointGroup
 from dify_plugin.interfaces.model import ModelProvider
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
@@ -62,6 +62,7 @@ class PluginRegistration:
         ],
     ]
     endpoints_configuration: list[EndpointProviderConfiguration]
+    endpoint_groups: list[type[EndpointGroup]]  # only support one group by now
     endpoints: Map
     files: list[PluginAsset]
 
@@ -239,6 +240,18 @@ class PluginRegistration:
         load endpoints
         """
         for endpoint_provider in self.endpoints_configuration:
+            # load endpoint group if exists
+            if endpoint_provider.extra and endpoint_provider.custom_initialize_process_enabled:
+                module_source = os.path.splitext(endpoint_provider.extra.python.source)[0]
+                # replace / with .
+                module_source = module_source.replace("/", ".")
+                endpoint_group_cls = load_single_subclass_from_source(
+                    module_name=module_source,
+                    script_path=os.path.join(os.getcwd(), endpoint_provider.extra.python.source),
+                    parent_type=EndpointGroup,
+                )
+                self.endpoint_groups.append(endpoint_group_cls)
+
             # load endpoints
             for endpoint in endpoint_provider.endpoints:
                 # remove extension
@@ -337,6 +350,19 @@ class PluginRegistration:
                 registration = self.models_mapping[provider_registration][2].get(model_type)
                 if registration:
                     return registration
+
+    def get_endpoint_group_cls(self, endpoint_group: str):
+        """
+        get the endpoint group class by endpoint group name
+
+        NOTE: only support one group by now
+        :param endpoint_group: endpoint group name
+        :return: endpoint group class
+        """
+        if endpoint_group == "default":
+            return self.endpoint_groups[0]
+        else:
+            raise ValueError(f"Endpoint group `{endpoint_group}` not found")
 
     def dispatch_endpoint_request(self, request: Request) -> tuple[type[Endpoint], Mapping]:
         """
