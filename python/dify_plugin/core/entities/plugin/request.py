@@ -221,7 +221,7 @@ class EndpointSetupRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Endpoint
     action: EndpointActions = EndpointActions.SetupEndpoint
     endpoint_group: str = Field(default="default", description="The endpoint group name")
-    credentials: Mapping
+    settings: Mapping
 
 
 class EndpointInvokeRequest(BaseModel):

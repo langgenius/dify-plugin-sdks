@@ -8,11 +8,11 @@ from dify_plugin.core.runtime import Session
 
 
 class EndpointGroup(ABC):
-    def setup(self, credentials: Mapping):
-        return self._setup(credentials)
+    def setup(self, settings: Mapping):
+        return self._setup(settings)
 
     @abstractmethod
-    def _setup(self, credentials: Mapping):
+    def _setup(self, settings: Mapping):
         pass
 
 

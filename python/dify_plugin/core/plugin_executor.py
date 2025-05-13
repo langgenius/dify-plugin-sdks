@@ -280,7 +280,7 @@ class PluginExecutor:
         if endpoint_group_cls is None:
             raise ValueError(f"Endpoint group `{data.endpoint_group}` not found")
 
-        endpoint_group_cls().setup(data.credentials)
+        endpoint_group_cls().setup(data.settings)
 
     def invoke_endpoint(self, session: Session, data: EndpointInvokeRequest):
         bytes_data = binascii.unhexlify(data.raw_http_request)
