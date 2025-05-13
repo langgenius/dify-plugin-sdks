@@ -75,6 +75,7 @@ class PluginRegistration:
         self.tools_mapping = {}
         self.models_mapping = {}
         self.endpoints_configuration = []
+        self.endpoint_groups = []
         self.endpoints = Map()
         self.files = []
         self.agent_strategies_configuration = []
