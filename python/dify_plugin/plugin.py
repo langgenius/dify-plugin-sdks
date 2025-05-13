@@ -394,23 +394,26 @@ class Plugin(IOServer, Router):
     def _get_remote_install_host_and_port(config: DifyPluginEnv) -> tuple[str, int]:
         """
         Get host and port for remote installation
-        :param config:  dify plugin env config
+        :param config: Dify plugin env config
         :return: host and port
         """
-        if config.REMOTE_INSTALL_URL:
-            if ":" in config.REMOTE_INSTALL_URL:
-                url = URL(config.REMOTE_INSTALL_URL)
+        install_url = config.REMOTE_INSTALL_URL
+        if install_url:
+            if ":" in install_url:
+                url = URL(install_url)
                 if url.host and url.port:
                     # for the url with protocol prefix
                     host = url.host
                     port = url.port
                 else:
                     # for "host:port" format
-                    split = config.REMOTE_INSTALL_URL.split(":")
+                    split = install_url.split(":")
                     host = split[0]
                     port = int(split[1])
             else:
-                raise ValueError("Invalid remote install URL, which should be in the format of host:port")
+                raise ValueError(
+                    f'Invalid remote install URL {install_url}, which should be in the format of "host:port"'
+                )
         else:
             host = config.REMOTE_INSTALL_HOST
             port = config.REMOTE_INSTALL_PORT
