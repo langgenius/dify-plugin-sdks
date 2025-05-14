@@ -7,7 +7,7 @@ def test_launch():
     """
     env = DifyPluginEnv()
 
-    assert env.INSTALL_METHOD == InstallMethod.Local
+    assert InstallMethod.Local == env.INSTALL_METHOD
 
 
 def test_launch_local_plugin():
@@ -18,7 +18,7 @@ def test_launch_local_plugin():
         INSTALL_METHOD=InstallMethod.Local,
     )
 
-    assert env.INSTALL_METHOD == InstallMethod.Local
+    assert InstallMethod.Local == env.INSTALL_METHOD
 
 
 def test_launch_remote_plugin():
@@ -31,7 +31,7 @@ def test_launch_remote_plugin():
         REMOTE_INSTALL_KEY="19dcf2f3-2856-4fa4-b32b-9ece9b741977",
     )
 
-    assert env.INSTALL_METHOD == InstallMethod.Remote
+    assert InstallMethod.Remote == env.INSTALL_METHOD
     assert env.REMOTE_INSTALL_URL == "debug.dify.ai:5003"
     assert env.REMOTE_INSTALL_KEY == "19dcf2f3-2856-4fa4-b32b-9ece9b741977"
 
@@ -46,6 +46,6 @@ def test_launch_serverless_plugin():
         SERVERLESS_PORT=8080,
     )
 
-    assert env.INSTALL_METHOD == InstallMethod.Serverless
+    assert InstallMethod.Serverless == env.INSTALL_METHOD
     assert env.SERVERLESS_HOST == "0.0.0.0"
     assert env.SERVERLESS_PORT == 8080
