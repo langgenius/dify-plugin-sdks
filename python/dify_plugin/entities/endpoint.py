@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 from dify_plugin.core.documentation.schema_doc import docs
@@ -28,6 +30,17 @@ class EndpointConfiguration(BaseModel):
 
 
 @docs(
+    name="EndpointGroupExtra",
+    description="The extra of the endpoint group",
+)
+class EndpointGroupConfigurationExtra(BaseModel):
+    class Python(BaseModel):
+        source: str
+
+    python: Python
+
+
+@docs(
     name="EndpointGroup",
     description="The Manifest of the endpoint group",
     outside_reference_fields={"endpoints": EndpointConfiguration},
@@ -35,6 +48,15 @@ class EndpointConfiguration(BaseModel):
 class EndpointProviderConfiguration(BaseModel):
     settings: list[ProviderConfig] = Field(default_factory=list)
     endpoints: list[EndpointConfiguration] = Field(default_factory=list)
+    custom_initialize_process_enabled: bool = Field(
+        default=False,
+        description="Whether enable custom initialize process, "
+        "please ensure `extra` is not None and `python.source` is set",
+    )
+    extra: Optional[EndpointGroupConfigurationExtra] = Field(
+        default=None,
+        description="The extra of the endpoint group",
+    )
 
     @classmethod
     def _load_yaml_file(cls, path: str) -> dict:
