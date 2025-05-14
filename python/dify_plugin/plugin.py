@@ -398,7 +398,7 @@ class Plugin(IOServer, Router):
         :return: host and port
         """
         install_url = config.REMOTE_INSTALL_URL
-        if install_url:
+        if install_url is not None:
             if ":" in install_url:
                 url = URL(install_url)
                 if url.host and url.port:
