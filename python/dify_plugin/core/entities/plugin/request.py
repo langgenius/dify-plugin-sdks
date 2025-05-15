@@ -51,6 +51,10 @@ class EndpointActions(Enum):
     InvokeEndpoint = "invoke_endpoint"
 
 
+# merge all the access actions
+PluginAccessAction = AgentActions | ToolActions | ModelActions | EndpointActions
+
+
 class PluginAccessRequest(BaseModel):
     type: PluginInvokeType
     user_id: str
