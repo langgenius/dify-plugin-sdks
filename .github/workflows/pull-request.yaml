@@ -54,6 +54,6 @@ jobs:
       - name: Run linter
         run: ./python/scripts/lint.sh
       - name: Launch mock server
-        run: ./scripts/launch_mock_server.sh
+        run: ./python/scripts/launch_mock_server.sh
       - name: Run tests
         run: ./python/scripts/test.sh
