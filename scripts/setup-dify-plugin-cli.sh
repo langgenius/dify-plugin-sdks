@@ -1,7 +1,6 @@
 # download dify-plugin-cli from https://github.com/langgenius/dify-plugin-daemon/releases
 # and install it to ~/.dify/bin
 
-# download the latest release
 #!/bin/bash
 set -e
 
@@ -54,8 +53,14 @@ chmod +x "${DIFY_BIN}/dify-plugin${EXT:-}"
 # Create symlink to dify
 ln -sf "${DIFY_BIN}/dify-plugin${EXT:-}" "${DIFY_BIN}/dify${EXT:-}"
 
-# Add to PATH for the current session
-export PATH="${PATH}:${DIFY_BIN}"
+# Add to PATH for GitHub Actions
+if [[ -n "${GITHUB_PATH}" ]]; then
+  echo "${DIFY_BIN}" >> $GITHUB_PATH
+  echo "Added ${DIFY_BIN} to GITHUB_PATH"
+fi
+
+# For local development, add to current session PATH
+export PATH="${DIFY_BIN}:${PATH}"
 
 # Add to PATH if not already there and if not in CI environment
 if [[ ":$PATH:" != *":${DIFY_BIN}:"* ]] && [[ -z "${CI}" ]]; then
@@ -74,66 +79,20 @@ if [[ ":$PATH:" != *":${DIFY_BIN}:"* ]] && [[ -z "${CI}" ]]; then
   fi
   
   if [[ -n "$SHELL_PROFILE" ]]; then
-    echo "export PATH=\"\$PATH:${DIFY_BIN}\"" >> "$SHELL_PROFILE"
+    echo "export PATH=\"${DIFY_BIN}:\$PATH\"" >> "$SHELL_PROFILE"
     echo "Added ${DIFY_BIN} to PATH in ${SHELL_PROFILE}"
     echo "Please run 'source ${SHELL_PROFILE}' or start a new terminal session to use dify-plugin-cli"
   else
     echo "Could not determine shell profile. Please add ${DIFY_BIN} to your PATH manually"
   fi
-else
-  echo "PATH has been updated for the current session"
 fi
 
 echo "dify-plugin-cli has been installed to ${DIFY_BIN}/dify-plugin${EXT:-}"
 echo "Version information:"
 "${DIFY_BIN}/dify-plugin${EXT:-}" version
 
-# Verify the installation
-if command -v dify-plugin >/dev/null 2>&1; then
-  echo "dify-plugin is now available in your PATH"
-else
-  echo "Warning: dify-plugin is not in your PATH yet"
-  
-  # Try to add to system PATH for all users if running with sudo
-  if [[ $EUID -eq 0 ]]; then
-    echo "Running as root, attempting to add dify-plugin to system PATH..."
-    
-    # Create a symlink in a common bin directory
-    if [[ -d "/usr/local/bin" ]]; then
-      ln -sf "${DIFY_BIN}/dify-plugin${EXT:-}" "/usr/local/bin/dify-plugin${EXT:-}"
-      ln -sf "${DIFY_BIN}/dify-plugin${EXT:-}" "/usr/local/bin/dify${EXT:-}"
-      echo "Created symlinks in /usr/local/bin"
-    elif [[ -d "/usr/bin" ]]; then
-      ln -sf "${DIFY_BIN}/dify-plugin${EXT:-}" "/usr/bin/dify-plugin${EXT:-}"
-      ln -sf "${DIFY_BIN}/dify-plugin${EXT:-}" "/usr/bin/dify${EXT:-}"
-      echo "Created symlinks in /usr/bin"
-    else
-      echo "Could not find a suitable directory in system PATH to create symlinks"
-    fi
-  else
-    # add to current user's PATH
-    echo "Adding ${DIFY_BIN} to PATH in your profile..."
-    echo "export PATH=\"\$PATH:${DIFY_BIN}\"" >> "$HOME/.bashrc"
-    echo "export PATH=\"\$PATH:${DIFY_BIN}\"" >> "$HOME/.zshrc"
-    echo "Added ${DIFY_BIN} to PATH in your profile"
-    # Create symlinks in user's bin directory if it exists
-    if [[ -d "$HOME/bin" ]]; then
-      ln -sf "${DIFY_BIN}/dify-plugin${EXT:-}" "$HOME/bin/dify-plugin${EXT:-}"
-      ln -sf "${DIFY_BIN}/dify-plugin${EXT:-}" "$HOME/bin/dify${EXT:-}"
-      echo "Created symlinks in $HOME/bin"
-    fi
-    
-    # Create symlinks in ~/.local/bin if it exists (common in many Linux distributions)
-    if [[ -d "$HOME/.local/bin" ]]; then
-      ln -sf "${DIFY_BIN}/dify-plugin${EXT:-}" "$HOME/.local/bin/dify-plugin${EXT:-}"
-      ln -sf "${DIFY_BIN}/dify-plugin${EXT:-}" "$HOME/.local/bin/dify${EXT:-}"
-      echo "Created symlinks in $HOME/.local/bin"
-    fi
-  fi
+# Create a GitHub Actions environment file to make the binary available in subsequent steps
+if [[ -n "${GITHUB_ENV}" ]]; then
+  echo "PATH=${DIFY_BIN}:${PATH}" >> $GITHUB_ENV
+  echo "Updated PATH in GITHUB_ENV for subsequent steps"
 fi
-
-# Print usage instructions
-echo ""
-echo "You can now use dify-plugin with the following commands:"
-echo "  dify-plugin --help    # Show help information"
-echo "  dify --help           # Same as above (using the symlink)"
