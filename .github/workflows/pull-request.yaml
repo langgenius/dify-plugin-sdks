@@ -54,9 +54,6 @@ jobs:
       - name: Run linter
         run: ./python/scripts/lint.sh
       - name: Launch mock server
-        run: |
-          pdm run python tests/__mock_server/__init__.py &
-          echo $! > mock_server_pid
-          echo "Mock server started with PID $(cat mock_server_pid)"
+        run: ./scripts/launch_mock_server.sh
       - name: Run tests
         run: ./python/scripts/test.sh
