@@ -1,5 +1,6 @@
 import logging
 import os
+import signal
 import subprocess
 import threading
 import uuid
@@ -17,6 +18,7 @@ from dify_plugin.core.entities.plugin.request import (
     PluginInvokeType,
 )
 from dify_plugin.integration.entities import PluginGenericResponse, PluginInvokeRequest, ResponseType
+from dify_plugin.integration.exc import PluginStopped
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -30,9 +32,22 @@ class PluginRunner:
 
     Usage:
     ```python
-    with PluginRunner(config, plugin_package_path) as runner:
-        for result in runner.invoke(PluginInvokeType.ACCESS, PluginAccessAction.GET, payload):
-            print(result)
+    with PluginRunner(
+        config=IntegrationConfig(),
+        plugin_package_path="./langgenius-agent_0.0.14.difypkg",
+    ) as runner:
+        for result in runner.invoke(
+            PluginInvokeType.Agent,
+            AgentActions.InvokeAgentStrategy,
+            payload=request.AgentInvokeRequest(
+                user_id="hello",
+                agent_strategy_provider="agent",
+                agent_strategy="function_calling",
+                agent_strategy_params=agent_strategy_params,
+            ),
+            response_type=AgentInvokeMessage,
+        ):
+            assert result
     ```
     """
 
@@ -51,13 +66,16 @@ class PluginRunner:
         # stdin write lock
         self.stdin_write_lock = Lock()
 
+        # setup stop flag
+        self.stop_flag = False
+
         logger.info(f"Running plugin from {plugin_package_path}")
 
         self.process = subprocess.Popen(  # noqa: S603
             [config.dify_cli_path, "plugin", "run", plugin_package_path, "--response-format", "json", *self.extra_args],
             stdout=self.stdout_pipe_write,
             stderr=self.stderr_pipe_write,
-            stdin=self.stdin_pipe_write,
+            stdin=self.stdin_pipe_read,
         )
 
         logger.info(f"Plugin process created with pid {self.process.pid}")
@@ -72,7 +90,7 @@ class PluginRunner:
         except Exception as e:
             raise e
 
-        self.q = dict[str, Queue[PluginGenericResponse]]()
+        self.q = dict[str, Queue[PluginGenericResponse | None]]()
         self.q_lock = Lock()
 
         # wait for the plugin to be ready
@@ -83,14 +101,21 @@ class PluginRunner:
     def _read_async(self, fd: int) -> bytes:
         # read data from stdin using tp_read in 64KB chunks.
         # the OS buffer for stdin is usually 64KB, so using a larger value doesn't make sense.
-        return tp_read(fd, 65536)
+        bytes = tp_read(fd, 65536)
+        if not bytes:
+            raise PluginStopped()
+        return bytes
 
     def _message_reader(self, pipe: int):
         # create a scanner to read the message line by line
         """Read messages line by line from the pipe."""
         buffer = b""
         while True:
-            data = self._read_async(pipe)
+            try:
+                data = self._read_async(pipe)
+            except PluginStopped:
+                break
+
             if not data:
                 continue
 
@@ -109,8 +134,6 @@ class PluginRunner:
                 line = line.strip()
                 if not line:
                     continue
-
-                print(line)
 
                 self._publish_message(line.decode("utf-8"))
 
@@ -133,7 +156,11 @@ class PluginRunner:
         with self.q_lock:
             if parsed_message.invoke_id not in self.q:
                 return
-            self.q[parsed_message.invoke_id].put(parsed_message)
+            if parsed_message.type == ResponseType.PLUGIN_INVOKE_END:
+                self.q[parsed_message.invoke_id].put(None)
+                del self.q[parsed_message.invoke_id]
+            else:
+                self.q[parsed_message.invoke_id].put(parsed_message)
 
     def _write_to_pipe(self, data: bytes):
         # split the data into chunks of 4096 bytes
@@ -160,7 +187,7 @@ class PluginRunner:
             request=payload,
         )
 
-        q = Queue[PluginGenericResponse]()
+        q = Queue[PluginGenericResponse | None]()
         with self.q_lock:
             self.q[invoke_id] = q
 
@@ -168,8 +195,7 @@ class PluginRunner:
         self._write_to_pipe(request.model_dump_json().encode("utf-8") + b"\n")
 
         # wait for events
-        while True:
-            message = q.get()
+        while message := q.get():
             if message.invoke_id == invoke_id:
                 if message.type == ResponseType.PLUGIN_RESPONSE:
                     yield response_type.model_validate(message.response)
@@ -184,11 +210,17 @@ class PluginRunner:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.process.terminate()
+        # stop the plugin
+        self.stop_flag = True
+
+        # send signal SIGTERM to the plugin, so it can exit gracefully
+        # do collect garbage like removing temporary files
+        os.kill(self.process.pid, signal.SIGTERM)
+
+        # wait for the plugin to exit
         self.process.wait()
-        os.close(self.stdout_pipe_read)
-        os.close(self.stderr_pipe_read)
-        os.close(self.stdin_pipe_read)
+
+        # close the pipes
         os.close(self.stdout_pipe_write)
         os.close(self.stderr_pipe_write)
-        os.close(self.stdin_pipe_write)
+        os.close(self.stdin_pipe_read)

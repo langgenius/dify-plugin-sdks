@@ -1,0 +1,2 @@
+class PluginStopped(Exception):
+    pass

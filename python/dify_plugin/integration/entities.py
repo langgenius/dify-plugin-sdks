@@ -27,6 +27,7 @@ class ResponseType(StrEnum):
     ERROR = "error"
     PLUGIN_RESPONSE = "plugin_response"
     PLUGIN_READY = "plugin_ready"
+    PLUGIN_INVOKE_END = "plugin_invoke_end"
 
 
 class PluginGenericResponse(BaseModel):
