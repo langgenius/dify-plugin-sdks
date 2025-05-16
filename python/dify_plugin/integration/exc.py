@@ -1,2 +1,6 @@
-class PluginStopped(Exception):
+class PluginStoppedError(Exception):
+    """
+    The plugin has stopped.
+    """
+
     pass

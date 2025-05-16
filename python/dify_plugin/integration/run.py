@@ -18,7 +18,7 @@ from dify_plugin.core.entities.plugin.request import (
     PluginInvokeType,
 )
 from dify_plugin.integration.entities import PluginGenericResponse, PluginInvokeRequest, ResponseType
-from dify_plugin.integration.exc import PluginStopped
+from dify_plugin.integration.exc import PluginStoppedError
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -101,10 +101,10 @@ class PluginRunner:
     def _read_async(self, fd: int) -> bytes:
         # read data from stdin using tp_read in 64KB chunks.
         # the OS buffer for stdin is usually 64KB, so using a larger value doesn't make sense.
-        bytes = tp_read(fd, 65536)
-        if not bytes:
-            raise PluginStopped()
-        return bytes
+        b = tp_read(fd, 65536)
+        if not b:
+            raise PluginStoppedError()
+        return b
 
     def _message_reader(self, pipe: int):
         # create a scanner to read the message line by line
@@ -113,7 +113,7 @@ class PluginRunner:
         while True:
             try:
                 data = self._read_async(pipe)
-            except PluginStopped:
+            except PluginStoppedError:
                 break
 
             if not data:
