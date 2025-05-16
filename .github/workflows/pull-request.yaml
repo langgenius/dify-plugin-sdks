@@ -42,6 +42,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: true
           cache-dependency-path: python/pdm.lock
+      - name: Setup dify-plugin-cli
+        run: ./scripts/setup-dify-plugin-cli.sh
       - name: Install dependencies
         run: ./python/scripts/install-deps.sh
       - name: Run linter

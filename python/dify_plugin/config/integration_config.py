@@ -6,7 +6,7 @@ import shutil
 import subprocess
 
 from packaging.version import Version
-from pydantic import Field, ValidationError, field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _PLUGIN_NAMES = [
@@ -37,7 +37,7 @@ class IntegrationConfig(BaseSettings):
                     break
 
             if not v:
-                raise ValidationError("dify cli not found")
+                raise ValueError("dify cli not found")
 
         # check dify version
         version = subprocess.check_output([v, "version"]).decode("utf-8")  # noqa: S603
@@ -45,10 +45,10 @@ class IntegrationConfig(BaseSettings):
         try:
             version = Version(version)
         except Exception as e:
-            raise ValidationError("dify cli version is not valid") from e
+            raise ValueError("dify cli version is not valid") from e
 
         if version < Version("0.1.0"):
-            raise ValidationError("dify cli version must be greater than 0.1.0 to support plugin run")
+            raise ValueError("dify cli version must be greater than 0.1.0 to support plugin run")
 
         return v
 
