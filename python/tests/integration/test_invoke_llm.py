@@ -1,7 +1,6 @@
 import json
 import threading
 
-import requests
 from flask import Response
 from yarl import URL
 
@@ -56,6 +55,8 @@ def openai_server_mock():
 
 
 def test_invoke_llm():
+    import requests
+
     # download latest langgenius-openai plugin
     url = str(URL(_MARKETPLACE_API_URL) / "api/v1/plugins/batch")
     response = requests.post(url, json={"plugin_ids": ["langgenius/openai"]}, timeout=10)

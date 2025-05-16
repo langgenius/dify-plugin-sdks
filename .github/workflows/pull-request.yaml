@@ -48,7 +48,5 @@ jobs:
         run: ./python/scripts/install-deps.sh
       - name: Run linter
         run: ./python/scripts/lint.sh
-      - name: SSH
-        uses: mxschmitt/action-tmate@v3
       - name: Run tests
         run: ./python/scripts/test.sh
