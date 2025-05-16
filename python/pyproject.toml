@@ -17,6 +17,7 @@ dependencies = [
     "socksio==1.0.0",
     "tiktoken~=0.8.0",
     "yarl>=1.9.4,<2.0",
+    "packaging>=25.0",
 ]
 requires-python = ">=3.11"
 readme = "README.md"
