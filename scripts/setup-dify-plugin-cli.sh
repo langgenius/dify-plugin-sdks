@@ -55,7 +55,7 @@ ln -sf "${DIFY_BIN}/dify-plugin${EXT:-}" "${DIFY_BIN}/dify${EXT:-}"
 
 # Add to PATH for GitHub Actions
 if [[ -n "${GITHUB_PATH}" ]]; then
-  echo "${DIFY_BIN}" >> $GITHUB_PATH
+  echo "${DIFY_BIN}" >> "$GITHUB_PATH"
   echo "Added ${DIFY_BIN} to GITHUB_PATH"
 fi
 
@@ -93,6 +93,6 @@ echo "Version information:"
 
 # Create a GitHub Actions environment file to make the binary available in subsequent steps
 if [[ -n "${GITHUB_ENV}" ]]; then
-  echo "PATH=${DIFY_BIN}:${PATH}" >> $GITHUB_ENV
+  echo "PATH=${DIFY_BIN}:${PATH}" >> "$GITHUB_ENV"
   echo "Updated PATH in GITHUB_ENV for subsequent steps"
 fi
