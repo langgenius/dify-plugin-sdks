@@ -1,15 +1,16 @@
-from collections.abc import Generator
+import logging
 import os
-from queue import Queue
 import subprocess
-from threading import Lock, Semaphore
 import threading
 import uuid
-from typing import Type, TypeVar
-import logging
-from gevent.os import tp_read
+from collections.abc import Generator
+from queue import Queue
+from threading import Lock, Semaphore
+from typing import TypeVar
 
+from gevent.os import tp_read
 from pydantic import BaseModel, ValidationError
+
 from dify_plugin.config.integration_config import IntegrationConfig
 from dify_plugin.core.entities.plugin.request import (
     PluginAccessAction,
@@ -52,7 +53,7 @@ class PluginRunner:
 
         logger.info(f"Running plugin from {plugin_package_path}")
 
-        self.process = subprocess.Popen(
+        self.process = subprocess.Popen(  # noqa: S603
             [config.dify_cli_path, "plugin", "run", plugin_package_path, "--response-format", "json", *self.extra_args],
             stdout=self.stdout_pipe_write,
             stderr=self.stderr_pipe_write,
@@ -148,12 +149,12 @@ class PluginRunner:
         access_type: PluginInvokeType,
         access_action: PluginAccessAction,
         payload: BaseModel,
-        response_type: Type[R],
+        response_type: type[R],
     ) -> Generator[R, None, None]:
-        invokeId = uuid.uuid4().hex
+        invoke_id = uuid.uuid4().hex
 
         request = PluginInvokeRequest(
-            invoke_id=invokeId,
+            invoke_id=invoke_id,
             type=access_type,
             action=access_action,
             request=payload,
@@ -161,7 +162,7 @@ class PluginRunner:
 
         q = Queue[PluginGenericResponse]()
         with self.q_lock:
-            self.q[invokeId] = q
+            self.q[invoke_id] = q
 
         # send invoke request to the plugin
         self._write_to_pipe(request.model_dump_json().encode("utf-8") + b"\n")
@@ -169,7 +170,7 @@ class PluginRunner:
         # wait for events
         while True:
             message = q.get()
-            if message.invoke_id == invokeId:
+            if message.invoke_id == invoke_id:
                 if message.type == ResponseType.PLUGIN_RESPONSE:
                     yield response_type.model_validate(message.response)
                 elif message.type == ResponseType.ERROR:

@@ -1,7 +1,8 @@
+from collections.abc import Mapping
 from enum import StrEnum
-from typing import Any, Generic, Mapping, TypeVar
-from pydantic import BaseModel
+from typing import Any, Generic, TypeVar
 
+from pydantic import BaseModel
 
 from dify_plugin.core.entities.plugin.request import (
     AgentActions,
@@ -10,7 +11,6 @@ from dify_plugin.core.entities.plugin.request import (
     PluginInvokeType,
     ToolActions,
 )
-
 
 T = TypeVar("T", bound=BaseModel)
 
