@@ -1,7 +1,7 @@
 import json
 
-from flask import Flask, jsonify, request, Response
 import flask.cli
+from flask import Flask, Response, jsonify, request
 
 flask.cli.show_server_banner = lambda *args: None
 
