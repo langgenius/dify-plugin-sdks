@@ -1,21 +1,23 @@
 import json
 import threading
+
+import requests
 from flask import Response
 from yarl import URL
+
 from dify_plugin.config.integration_config import IntegrationConfig
 from dify_plugin.core.entities.plugin.request import ModelActions, ModelInvokeLLMRequest, PluginInvokeType
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.entities.model.message import UserPromptMessage
 from dify_plugin.integration.run import PluginRunner
-import requests
 
 _MARKETPLACE_API_URL = "https://marketplace.dify.ai"
 
 
 def openai_server_mock():
-    from flask import Flask, request, jsonify
     import flask.cli
+    from flask import Flask, jsonify, request
 
     flask.cli.show_server_banner = lambda *args: None
 
@@ -56,11 +58,11 @@ def openai_server_mock():
 def test_invoke_llm():
     # download latest langgenius-openai plugin
     url = str(URL(_MARKETPLACE_API_URL) / "api/v1/plugins/batch")
-    response = requests.post(url, json={"plugin_ids": ["langgenius/openai"]})
+    response = requests.post(url, json={"plugin_ids": ["langgenius/openai"]}, timeout=10)
     latest_identifier = response.json()["data"]["plugins"][0]["latest_package_identifier"]
 
     url = str((URL(_MARKETPLACE_API_URL) / "api/v1/plugins/download").with_query(unique_identifier=latest_identifier))
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
 
     # save the response to a file
     with open("langgenius-openai.difypkg", "wb") as f:
