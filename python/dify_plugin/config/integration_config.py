@@ -21,15 +21,17 @@ class IntegrationConfig(BaseSettings):
             v = shutil.which("dify")
             if not v:
                 raise ValueError("dify cli not found")
-            # check dify version
-            version = subprocess.check_output([v, "version"]).decode("utf-8")  # noqa: S603
-            try:
-                version = Version(version)
-            except Exception as e:
-                raise ValueError("dify cli version is not valid") from e
 
-            if version < Version("0.4.0"):
-                raise ValueError("dify cli version must be greater than 0.4.0 to support plugin run")
+        # check dify version
+        version = subprocess.check_output([v, "version"]).decode("utf-8")  # noqa: S603
+
+        try:
+            version = Version(version)
+        except Exception as e:
+            raise ValueError("dify cli version is not valid") from e
+
+        if version < Version("0.1.0"):
+            raise ValueError("dify cli version must be greater than 0.1.0 to support plugin run")
 
         return v
 
