@@ -1,6 +1,3 @@
-# download dify-plugin-cli from https://github.com/langgenius/dify-plugin-daemon/releases
-# and install it to ~/.dify/bin
-
 #!/bin/bash
 set -e
 
