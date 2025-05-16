@@ -44,11 +44,19 @@ jobs:
           cache-dependency-path: python/pdm.lock
       - name: Setup dify-plugin-cli
         run: ./scripts/setup-dify-plugin-cli.sh
+      # setup uv and get uv path to env
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "UV_PATH=$(which uv)" >> $GITHUB_ENV
       - name: Install dependencies
         run: ./python/scripts/install-deps.sh
       - name: Run linter
         run: ./python/scripts/lint.sh
-      - name: SSH
-        uses: mxschmitt/action-tmate@v3
+      - name: Launch mock server
+        run: |
+          pdm run python tests/__mock_server/__init__.py &
+          echo $! > mock_server_pid
+          echo "Mock server started with PID $(cat mock_server_pid)"
       - name: Run tests
         run: ./python/scripts/test.sh
