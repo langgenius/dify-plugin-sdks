@@ -2,10 +2,8 @@ from collections.abc import Sequence
 
 from pydantic import BaseModel, Field
 
-from dify_plugin.entities.provider_config import ProviderConfig
-
-
 from dify_plugin.core.documentation.schema_doc import docs
+from dify_plugin.entities.provider_config import ProviderConfig
 
 
 @docs(
