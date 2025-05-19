@@ -19,6 +19,6 @@ When depending on this SDK, it's recommended to specify version constraints that
 Example in your project's dependency management:
 
 ```
-dify_plugin>=0.1.0,<0.2.0
+dify_plugin>=0.2.0,<0.3.0
 ```
 

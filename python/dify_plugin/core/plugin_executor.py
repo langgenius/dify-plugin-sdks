@@ -29,6 +29,7 @@ from dify_plugin.core.entities.plugin.request import (
 from dify_plugin.core.plugin_registration import PluginRegistration
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.utils.http_parser import parse_raw_request
+from dify_plugin.entities.agent import AgentRuntime
 from dify_plugin.entities.tool import ToolRuntime
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model.ai_model import AIModel
@@ -86,7 +87,12 @@ class PluginExecutor:
                 f"Agent `{request.agent_strategy}` not found for provider `{request.agent_strategy_provider}`"
             )
 
-        agent = agent_cls(session=session)
+        agent = agent_cls(
+            runtime=AgentRuntime(
+                user_id=request.user_id,
+            ),
+            session=session,
+        )
         yield from agent.invoke(request.agent_strategy_params)
 
     def get_tool_runtime_parameters(self, session: Session, data: ToolGetRuntimeParametersRequest):

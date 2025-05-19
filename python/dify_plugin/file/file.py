@@ -22,11 +22,22 @@ class File(BaseModel):
         Get the file content as a bytes object.
 
         If the file content is not loaded yet, it will be loaded from the URL and stored in the `_blob` attribute.
+
+        Raises:
+            ValueError: If the URL uses an unsupported protocol (e.g., missing 'http://' or 'https://'),
+                        suggesting configuration of the FILES_URL environment variable.
+            httpx.HTTPStatusError: If the request to fetch the file fails.
         """
         if self._blob is None:
-            response = httpx.get(self.url)
-            response.raise_for_status()
-            self._blob = response.content
+            try:
+                response = httpx.get(self.url)
+                response.raise_for_status()
+                self._blob = response.content
+            except httpx.UnsupportedProtocol as e:
+                raise ValueError(
+                    f"Invalid file URL '{self.url}': {e}. "
+                    "Ensure the `FILES_URL` environment variable is set in your .env file"
+                ) from e
 
         assert self._blob is not None
         return self._blob

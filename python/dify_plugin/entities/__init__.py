@@ -2,7 +2,12 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from dify_plugin.core.documentation.schema_doc import docs
 
+
+@docs(
+    description="Common i18n object",
+)
 class I18nObject(BaseModel):
     """
     Model class for i18n object.

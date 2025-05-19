@@ -3,6 +3,7 @@ from typing import Optional, Union
 
 from pydantic import BaseModel, Field
 
+from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.entities import I18nObject
 
 
@@ -16,6 +17,9 @@ class LogMetadata(str, Enum):
     CURRENCY = "currency"
 
 
+@docs(
+    description="The type of the parameter",
+)
 class CommonParameterType(Enum):
     SECRET_INPUT = "secret-input"
     TEXT_INPUT = "text-input"
@@ -32,6 +36,9 @@ class CommonParameterType(Enum):
     ANY = "any"
 
 
+@docs(
+    description="The scope of the app selector",
+)
 class AppSelectorScope(Enum):
     ALL = "all"
     CHAT = "chat"
@@ -39,6 +46,9 @@ class AppSelectorScope(Enum):
     COMPLETION = "completion"
 
 
+@docs(
+    description="The scope of the model config",
+)
 class ModelConfigScope(Enum):
     LLM = "llm"
     TEXT_EMBEDDING = "text-embedding"
@@ -49,6 +59,9 @@ class ModelConfigScope(Enum):
     VISION = "vision"
 
 
+@docs(
+    description="The scope of the tool selector",
+)
 class ToolSelectorScope(Enum):
     ALL = "all"
     PLUGIN = "plugin"
@@ -56,11 +69,17 @@ class ToolSelectorScope(Enum):
     WORKFLOW = "workflow"
 
 
+@docs(
+    description="The option of the credentials",
+)
 class ConfigOption(BaseModel):
     value: str = Field(..., description="The value of the option")
     label: I18nObject = Field(..., description="The label of the option")
 
 
+@docs(
+    description="A common config schema",
+)
 class ProviderConfig(BaseModel):
     class Config(Enum):
         SECRET_INPUT = CommonParameterType.SECRET_INPUT.value

@@ -13,35 +13,12 @@ from pydantic import (
     model_validator,
 )
 
+from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model.message import PromptMessageTool
 from dify_plugin.entities.oauth import OAuthSchema
 from dify_plugin.entities.provider_config import CommonParameterType, LogMetadata, ProviderConfig
-
-
-class AppSelectorScope(Enum):
-    ALL = "all"
-    CHAT = "chat"
-    WORKFLOW = "workflow"
-    COMPLETION = "completion"
-
-
-class ModelConfigScope(Enum):
-    LLM = "llm"
-    TEXT_EMBEDDING = "text-embedding"
-    RERANK = "rerank"
-    TTS = "tts"
-    SPEECH2TEXT = "speech2text"
-    MODERATION = "moderation"
-    VISION = "vision"
-
-
-class ToolSelectorScope(Enum):
-    ALL = "all"
-    PLUGIN = "plugin"
-    API = "api"
-    WORKFLOW = "workflow"
 
 
 class ToolRuntime(BaseModel):
@@ -58,7 +35,7 @@ class ToolInvokeMessage(BaseModel):
             return {"text": self.text}
 
     class JsonMessage(BaseModel):
-        json_object: Mapping
+        json_object: Mapping | list
 
         def to_dict(self):
             return {"json_object": self.json_object}
@@ -183,12 +160,18 @@ class ToolInvokeMessage(BaseModel):
         return v
 
 
+@docs(
+    description="The identity of the tool",
+)
 class ToolIdentity(BaseModel):
     author: str = Field(..., description="The author of the tool")
     name: str = Field(..., description="The name of the tool")
     label: I18nObject = Field(..., description="The label of the tool")
 
 
+@docs(
+    description="The option of the tool parameter",
+)
 class ToolParameterOption(BaseModel):
     value: str = Field(..., description="The value of the option")
     label: I18nObject = Field(..., description="The label of the option")
@@ -202,6 +185,9 @@ class ToolParameterOption(BaseModel):
             return value
 
 
+@docs(
+    description="The auto generate of the parameter",
+)
 class ParameterAutoGenerate(BaseModel):
     class Type(StrEnum):
         PROMPT_INSTRUCTION = "prompt_instruction"
@@ -209,10 +195,16 @@ class ParameterAutoGenerate(BaseModel):
     type: Type
 
 
+@docs(
+    description="The template of the parameter",
+)
 class ParameterTemplate(BaseModel):
     enabled: bool = Field(..., description="Whether the parameter is jinja enabled")
 
 
+@docs(
+    description="The type of the parameter",
+)
 class ToolParameter(BaseModel):
     class ToolParameterType(str, Enum):
         STRING = CommonParameterType.STRING.value
@@ -251,11 +243,18 @@ class ToolParameter(BaseModel):
     options: Optional[list[ToolParameterOption]] = None
 
 
+@docs(
+    description="The description of the tool",
+)
 class ToolDescription(BaseModel):
     human: I18nObject = Field(..., description="The description presented to the user")
     llm: str = Field(..., description="The description presented to the LLM")
 
 
+@docs(
+    name="ToolExtra",
+    description="The extra of the tool",
+)
 class ToolConfigurationExtra(BaseModel):
     class Python(BaseModel):
         source: str
@@ -263,6 +262,10 @@ class ToolConfigurationExtra(BaseModel):
     python: Python
 
 
+@docs(
+    name="Tool",
+    description="The manifest of the tool",
+)
 class ToolConfiguration(BaseModel):
     identity: ToolIdentity
     parameters: list[ToolParameter] = Field(default=[], description="The parameters of the tool")
@@ -272,6 +275,9 @@ class ToolConfiguration(BaseModel):
     output_schema: Optional[Mapping[str, Any]] = None
 
 
+@docs(
+    description="The label of the tool",
+)
 class ToolLabelEnum(Enum):
     SEARCH = "search"
     IMAGE = "image"
@@ -291,6 +297,9 @@ class ToolLabelEnum(Enum):
     OTHER = "other"
 
 
+@docs(
+    description="The identity of the tool provider",
+)
 class ToolProviderIdentity(BaseModel):
     author: str = Field(..., description="The author of the tool")
     name: str = Field(..., description="The name of the tool")
@@ -303,6 +312,10 @@ class ToolProviderIdentity(BaseModel):
     )
 
 
+@docs(
+    name="ToolProviderExtra",
+    description="The extra of the tool provider",
+)
 class ToolProviderConfigurationExtra(BaseModel):
     class Python(BaseModel):
         source: str
@@ -310,6 +323,11 @@ class ToolProviderConfigurationExtra(BaseModel):
     python: Python
 
 
+@docs(
+    name="ToolProvider",
+    description="The Manifest of the tool provider",
+    outside_reference_fields={"tools": ToolConfiguration},
+)
 class ToolProviderConfiguration(BaseModel):
     identity: ToolProviderIdentity
     credentials_schema: list[ProviderConfig] = Field(

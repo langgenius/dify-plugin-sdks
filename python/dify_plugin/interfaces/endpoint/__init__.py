@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
+from typing import final
 
 from werkzeug import Request, Response
 
@@ -7,7 +8,14 @@ from dify_plugin.core.runtime import Session
 
 
 class Endpoint(ABC):
+    @final
     def __init__(self, session: Session) -> None:
+        """
+        Initialize the endpoint
+
+        NOTE:
+        - This method has been marked as final, DO NOT OVERRIDE IT.
+        """
         self.session = session
 
     ############################################################

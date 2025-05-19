@@ -76,8 +76,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         """
         Receive data from the socket
         """
-        with self.opt_lock:
-            return self.sock.recv(size)
+        return self.sock.recv(size)
 
     def write(self, data: str):
         if not self.alive:

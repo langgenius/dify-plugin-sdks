@@ -22,7 +22,7 @@ resource:
       tts: true
       speech2text: true
       text_embedding: true
-    storage: 
+    storage:
       enabled: true
       size: 1048576
     node:

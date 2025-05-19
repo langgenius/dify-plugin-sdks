@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Generic, Optional, TypeVar, final
 
 from werkzeug import Request
 
@@ -27,7 +27,7 @@ class ToolLike(ABC, Generic[T]):
             message=ToolInvokeMessage.TextMessage(text=text),
         )
 
-    def create_json_message(self, json: Mapping) -> T:
+    def create_json_message(self, json: Mapping | list) -> T:
         return self.response_type(
             type=ToolInvokeMessage.MessageType.JSON,
             message=ToolInvokeMessage.JsonMessage(json_object=json),
@@ -248,11 +248,18 @@ class Tool(ToolLike[ToolInvokeMessage]):
     runtime: ToolRuntime
     session: Session
 
+    @final
     def __init__(
         self,
         runtime: ToolRuntime,
         session: Session,
     ):
+        """
+        Initialize the tool
+
+        NOTE:
+        - This method has been marked as final, DO NOT OVERRIDE IT.
+        """
         self.runtime = runtime
         self.session = session
         self.response_type = ToolInvokeMessage
