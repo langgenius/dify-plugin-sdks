@@ -7,6 +7,15 @@ from werkzeug import Request, Response
 from dify_plugin.core.runtime import Session
 
 
+class EndpointGroup(ABC):
+    def setup(self, settings: Mapping):
+        return self._setup(settings)
+
+    @abstractmethod
+    def _setup(self, settings: Mapping):
+        pass
+
+
 class Endpoint(ABC):
     @final
     def __init__(self, session: Session) -> None:

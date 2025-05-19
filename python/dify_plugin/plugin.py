@@ -297,6 +297,12 @@ class Plugin(IOServer, Router):
         )
 
         self.register_route(
+            self.plugin_executer.setup_endpoint_group,
+            lambda data: data.get("type") == PluginInvokeType.Endpoint.value
+            and data.get("action") == EndpointActions.SetupEndpoint.value,
+        )
+
+        self.register_route(
             self.plugin_executer.get_ai_model_schemas,
             lambda data: data.get("type") == PluginInvokeType.Model.value
             and data.get("action") == ModelActions.GetAIModelSchemas.value,
