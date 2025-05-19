@@ -51,6 +51,10 @@ class EndpointActions(Enum):
     InvokeEndpoint = "invoke_endpoint"
 
 
+# merge all the access actions
+PluginAccessAction = AgentActions | ToolActions | ModelActions | EndpointActions
+
+
 class PluginAccessRequest(BaseModel):
     type: PluginInvokeType
     user_id: str
@@ -109,6 +113,9 @@ class PromptMessageMixin(BaseModel):
             raise ValueError("prompt_messages must be a list")
 
         for i in range(len(v)):
+            if isinstance(v[i], PromptMessage):
+                continue
+
             if v[i]["role"] == PromptMessageRole.USER.value:
                 v[i] = UserPromptMessage(**v[i])
             elif v[i]["role"] == PromptMessageRole.ASSISTANT.value:

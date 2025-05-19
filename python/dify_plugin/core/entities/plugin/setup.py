@@ -146,6 +146,7 @@ class PluginConfiguration(BaseModel):
     type: PluginType
     author: Optional[str] = Field(..., pattern=r"^[a-zA-Z0-9_-]{1,64}$")
     name: str = Field(..., pattern=r"^[a-z0-9_-]{1,128}$")
+    repo: Optional[str] = Field(None, description="The repository URL of the plugin")
     description: I18nObject
     icon: str
     label: I18nObject

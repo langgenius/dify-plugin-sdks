@@ -5,6 +5,7 @@ from collections.abc import Generator
 from typing import Any, Optional
 
 from pydantic import RootModel
+from yarl import URL
 
 from dify_plugin.config.config import DifyPluginEnv, InstallMethod
 from dify_plugin.config.logger_format import plugin_logger_handler
@@ -81,9 +82,12 @@ class Plugin(IOServer, Router):
         if not config.REMOTE_INSTALL_KEY:
             raise ValueError("Missing remote install key")
 
+        install_host, install_port = self._get_remote_install_host_and_port(config)
+        logging.debug(f"Remote installing to {install_host}:{install_port}")
+
         tcp_stream = TCPReaderWriter(
-            config.REMOTE_INSTALL_HOST,
-            config.REMOTE_INSTALL_PORT,
+            install_host,
+            install_port,
             config.REMOTE_INSTALL_KEY,
             on_connected=lambda: self._initialize_tcp_stream(tcp_stream),
         )
@@ -385,3 +389,33 @@ class Plugin(IOServer, Router):
                     session_id=session_id,
                     data=writer.stream_object(data=response),
                 )
+
+    @staticmethod
+    def _get_remote_install_host_and_port(config: DifyPluginEnv) -> tuple[str, int]:
+        """
+        Get host and port for remote installation
+        :param config: Dify plugin env config
+        :return: host and port
+        """
+        install_url = config.REMOTE_INSTALL_URL
+        if install_url is not None:
+            if ":" in install_url:
+                url = URL(install_url)
+                if url.host and url.port:
+                    # for the url with protocol prefix
+                    host = url.host
+                    port = url.port
+                else:
+                    # for "host:port" format
+                    split = install_url.split(":")
+                    host = split[0]
+                    port = int(split[1])
+            else:
+                raise ValueError(
+                    f'Invalid remote install URL {install_url}, which should be in the format of "host:port"'
+                )
+        else:
+            host = config.REMOTE_INSTALL_HOST
+            port = config.REMOTE_INSTALL_PORT
+
+        return host, port
