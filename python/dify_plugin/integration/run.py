@@ -21,7 +21,6 @@ from dify_plugin.integration.entities import PluginGenericResponse, PluginInvoke
 from dify_plugin.integration.exc import PluginStoppedError
 
 T = TypeVar("T")
-R = TypeVar("R")
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +67,7 @@ class PluginRunner:
 
         # setup stop flag
         self.stop_flag = False
+        self.stop_flag_lock = Lock()
 
         logger.info(f"Running plugin from {plugin_package_path}")
 
@@ -98,6 +98,26 @@ class PluginRunner:
 
         logger.info("Plugin ready")
 
+    def _close(self):
+        with self.stop_flag_lock:
+            if self.stop_flag:
+                return
+
+            # stop the plugin
+            self.stop_flag = True
+
+        # send signal SIGTERM to the plugin, so it can exit gracefully
+        # do collect garbage like removing temporary files
+        os.kill(self.process.pid, signal.SIGTERM)
+
+        # wait for the plugin to exit
+        self.process.wait()
+
+        # close the pipes
+        os.close(self.stdout_pipe_write)
+        os.close(self.stderr_pipe_write)
+        os.close(self.stdin_pipe_read)
+
     def _read_async(self, fd: int) -> bytes:
         # read data from stdin using tp_read in 64KB chunks.
         # the OS buffer for stdin is usually 64KB, so using a larger value doesn't make sense.
@@ -110,32 +130,35 @@ class PluginRunner:
         # create a scanner to read the message line by line
         """Read messages line by line from the pipe."""
         buffer = b""
-        while True:
-            try:
-                data = self._read_async(pipe)
-            except PluginStoppedError:
-                break
+        try:
+            while True:
+                try:
+                    data = self._read_async(pipe)
+                except PluginStoppedError:
+                    break
 
-            if not data:
-                continue
-
-            buffer += data
-
-            # if no b"\n" is in data, skip to the next iteration
-            if data.find(b"\n") == -1:
-                continue
-
-            # process line by line and keep the last line if it is not complete
-            lines = buffer.split(b"\n")
-            buffer = lines[-1]
-
-            lines = lines[:-1]
-            for line in lines:
-                line = line.strip()
-                if not line:
+                if not data:
                     continue
 
-                self._publish_message(line.decode("utf-8"))
+                buffer += data
+
+                # if no b"\n" is in data, skip to the next iteration
+                if data.find(b"\n") == -1:
+                    continue
+
+                # process line by line and keep the last line if it is not complete
+                lines = buffer.split(b"\n")
+                buffer = lines[-1]
+
+                lines = lines[:-1]
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+
+                    self._publish_message(line.decode("utf-8"))
+        finally:
+            self._close()
 
     def _publish_message(self, message: str):
         # parse the message
@@ -158,7 +181,6 @@ class PluginRunner:
                 return
             if parsed_message.type == ResponseType.PLUGIN_INVOKE_END:
                 self.q[parsed_message.invoke_id].put(None)
-                del self.q[parsed_message.invoke_id]
             else:
                 self.q[parsed_message.invoke_id].put(parsed_message)
 
@@ -178,8 +200,11 @@ class PluginRunner:
         payload: BaseModel,
         response_type: type[R],
     ) -> Generator[R, None, None]:
-        invoke_id = uuid.uuid4().hex
+        with self.stop_flag_lock:
+            if self.stop_flag:
+                raise PluginStoppedError()
 
+        invoke_id = uuid.uuid4().hex
         request = PluginInvokeRequest(
             invoke_id=invoke_id,
             type=access_type,
@@ -191,36 +216,27 @@ class PluginRunner:
         with self.q_lock:
             self.q[invoke_id] = q
 
-        # send invoke request to the plugin
-        self._write_to_pipe(request.model_dump_json().encode("utf-8") + b"\n")
+        try:
+            # send invoke request to the plugin
+            self._write_to_pipe(request.model_dump_json().encode("utf-8") + b"\n")
 
-        # wait for events
-        while message := q.get():
-            if message.invoke_id == invoke_id:
-                if message.type == ResponseType.PLUGIN_RESPONSE:
-                    yield response_type.model_validate(message.response)
-                elif message.type == ResponseType.ERROR:
-                    raise ValueError(message.response)
+            # wait for events
+            while message := q.get():
+                if message.invoke_id == invoke_id:
+                    if message.type == ResponseType.PLUGIN_RESPONSE:
+                        yield response_type.model_validate(message.response)
+                    elif message.type == ResponseType.ERROR:
+                        raise ValueError(message.response)
+                    else:
+                        raise ValueError("Invalid response type")
                 else:
-                    raise ValueError("Invalid response type")
-            else:
-                raise ValueError("Invalid invoke id")
+                    raise ValueError("Invalid invoke id")
+        finally:
+            with self.q_lock:
+                del self.q[invoke_id]
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        # stop the plugin
-        self.stop_flag = True
-
-        # send signal SIGTERM to the plugin, so it can exit gracefully
-        # do collect garbage like removing temporary files
-        os.kill(self.process.pid, signal.SIGTERM)
-
-        # wait for the plugin to exit
-        self.process.wait()
-
-        # close the pipes
-        os.close(self.stdout_pipe_write)
-        os.close(self.stderr_pipe_write)
-        os.close(self.stdin_pipe_read)
+        self._close()
