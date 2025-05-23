@@ -1,6 +1,7 @@
+from enum import StrEnum
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from dify_plugin.core.documentation.schema_doc import docs
 
@@ -26,3 +27,36 @@ class I18nObject(BaseModel):
 
     def to_dict(self) -> dict:
         return {"zh_Hans": self.zh_Hans, "en_US": self.en_US, "pt_BR": self.pt_BR}
+
+
+@docs(
+    description="The option of the tool parameter",
+)
+class ParameterOption(BaseModel):
+    value: str = Field(..., description="The value of the option")
+    label: I18nObject = Field(..., description="The label of the option")
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def transform_id_to_str(cls, value) -> str:
+        if not isinstance(value, str):
+            return str(value)
+        else:
+            return value
+
+
+@docs(
+    description="The auto generate of the parameter",
+)
+class ParameterAutoGenerate(BaseModel):
+    class Type(StrEnum):
+        PROMPT_INSTRUCTION = "prompt_instruction"
+
+    type: Type
+
+
+@docs(
+    description="The template of the parameter",
+)
+class ParameterTemplate(BaseModel):
+    enabled: bool = Field(..., description="Whether the parameter is jinja enabled")

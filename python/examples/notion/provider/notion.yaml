@@ -1,0 +1,5 @@
+datasources:
+  - datasources/notion.yaml
+extra:
+  python:
+    source: "provider/notion.py"

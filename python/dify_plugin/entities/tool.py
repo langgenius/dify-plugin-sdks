@@ -2,7 +2,7 @@ import base64
 import contextlib
 import uuid
 from collections.abc import Mapping
-from enum import Enum, StrEnum
+from enum import Enum
 from typing import Any, Optional, Union
 
 from pydantic import (
@@ -15,7 +15,7 @@ from pydantic import (
 
 from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
-from dify_plugin.entities import I18nObject
+from dify_plugin.entities import I18nObject, ParameterAutoGenerate, ParameterOption, ParameterTemplate
 from dify_plugin.entities.model.message import PromptMessageTool
 from dify_plugin.entities.oauth import OAuthSchema
 from dify_plugin.entities.provider_config import CommonParameterType, LogMetadata, ProviderConfig
@@ -170,39 +170,6 @@ class ToolIdentity(BaseModel):
 
 
 @docs(
-    description="The option of the tool parameter",
-)
-class ToolParameterOption(BaseModel):
-    value: str = Field(..., description="The value of the option")
-    label: I18nObject = Field(..., description="The label of the option")
-
-    @field_validator("value", mode="before")
-    @classmethod
-    def transform_id_to_str(cls, value) -> str:
-        if not isinstance(value, str):
-            return str(value)
-        else:
-            return value
-
-
-@docs(
-    description="The auto generate of the parameter",
-)
-class ParameterAutoGenerate(BaseModel):
-    class Type(StrEnum):
-        PROMPT_INSTRUCTION = "prompt_instruction"
-
-    type: Type
-
-
-@docs(
-    description="The template of the parameter",
-)
-class ParameterTemplate(BaseModel):
-    enabled: bool = Field(..., description="Whether the parameter is jinja enabled")
-
-
-@docs(
     description="The type of the parameter",
 )
 class ToolParameter(BaseModel):
@@ -240,7 +207,7 @@ class ToolParameter(BaseModel):
     min: Optional[Union[float, int]] = None
     max: Optional[Union[float, int]] = None
     precision: Optional[int] = None
-    options: Optional[list[ToolParameterOption]] = None
+    options: Optional[list[ParameterOption]] = None
 
 
 @docs(
@@ -416,7 +383,7 @@ class ToolSelector(BaseModel):
         required: bool = Field(..., description="Whether the parameter is required")
         description: str = Field(..., description="The description of the parameter")
         default: Optional[Union[int, float, str]] = None
-        options: Optional[list[ToolParameterOption]] = None
+        options: Optional[list[ParameterOption]] = None
 
     provider_id: str = Field(..., description="The id of the provider")
     tool_name: str = Field(..., description="The name of the tool")
