@@ -1,7 +1,9 @@
 import logging
 import os
+import shutil
 import signal
 import subprocess
+import tempfile
 import threading
 import uuid
 from collections.abc import Generator
@@ -56,6 +58,7 @@ class PluginRunner:
         self.config = config
         self.plugin_package_path = plugin_package_path
         self.extra_args = extra_args or []
+        self.resources_need_to_be_cleaned = []
 
         # create pipe to communicate with the plugin
         self.stdout_pipe_read, self.stdout_pipe_write = os.pipe()
@@ -71,8 +74,26 @@ class PluginRunner:
 
         logger.info(f"Running plugin from {plugin_package_path}")
 
+        # check if plugin is a directory
+        if os.path.isdir(plugin_package_path):
+            logger.info("plugin source directory detected, building plugin")
+            with tempfile.TemporaryDirectory(delete=False) as temp_dir:
+                output_path = os.path.join(temp_dir, "plugin.difypkg")
+                self._build_plugin(plugin_package_path, output_path)
+                self.plugin_package_path = output_path
+                logger.info(f"Plugin built in {self.plugin_package_path}")
+                self.resources_need_to_be_cleaned.append(temp_dir)
+
         self.process = subprocess.Popen(  # noqa: S603
-            [config.dify_cli_path, "plugin", "run", plugin_package_path, "--response-format", "json", *self.extra_args],
+            [
+                self.config.dify_cli_path,
+                "plugin",
+                "run",
+                self.plugin_package_path,
+                "--response-format",
+                "json",
+                *self.extra_args,
+            ],
             stdout=self.stdout_pipe_write,
             stderr=self.stderr_pipe_write,
             stdin=self.stdin_pipe_read,
@@ -97,6 +118,13 @@ class PluginRunner:
         self.ready_semaphore.acquire()
 
         logger.info("Plugin ready")
+
+    def _build_plugin(self, package_path: str, output_path: str):
+        # build plugin
+        output = subprocess.check_output(  # noqa: S603
+            [self.config.dify_cli_path, "plugin", "package", package_path, "-o", output_path],
+        )
+        logger.info(output.decode("utf-8"))
 
     def _close(self):
         with self.stop_flag_lock:
@@ -240,3 +268,6 @@ class PluginRunner:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._close()
+
+        for resource in self.resources_need_to_be_cleaned:
+            shutil.rmtree(resource)
