@@ -13,11 +13,15 @@ from dify_plugin.core.entities.plugin.setup import PluginAsset, PluginConfigurat
 from dify_plugin.core.utils.class_loader import load_multi_subclasses_from_source, load_single_subclass_from_source
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
 from dify_plugin.entities.agent import AgentStrategyConfiguration, AgentStrategyProviderConfiguration
+from dify_plugin.entities.datasource_manifest import DatasourceProviderManifest, DatasourceProviderType
 from dify_plugin.entities.endpoint import EndpointProviderConfiguration
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.provider import ModelProviderConfiguration
 from dify_plugin.entities.tool import ToolConfiguration, ToolProviderConfiguration
 from dify_plugin.interfaces.agent import AgentStrategy
+from dify_plugin.interfaces.datasource import DatasourceProvider
+from dify_plugin.interfaces.datasource.online_document import OnlineDocumentDatasource
+from dify_plugin.interfaces.datasource.website import WebsiteCrawlDatasource
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model import ModelProvider
 from dify_plugin.interfaces.model.ai_model import AIModel
@@ -31,6 +35,30 @@ from dify_plugin.interfaces.tool import Tool, ToolProvider
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
 T = TypeVar("T")
+
+
+class DatasourceProviderMapping:
+    """
+    mapping of datasource provider to datasource provider configuration
+    """
+
+    provider: str
+    provider_cls: type[DatasourceProvider]
+
+    website_crawl_datasource_mapping: Mapping[str, type[WebsiteCrawlDatasource]]
+    online_document_datasource_mapping: Mapping[str, type[OnlineDocumentDatasource]]
+
+    def __init__(
+        self,
+        provider: str,
+        provider_cls: type[DatasourceProvider],
+        website_crawl_datasource_mapping: Mapping[str, type[WebsiteCrawlDatasource]] | None = None,
+        online_document_datasource_mapping: Mapping[str, type[OnlineDocumentDatasource]] | None = None,
+    ) -> None:
+        self.provider = provider
+        self.provider_cls = provider_cls
+        self.website_crawl_datasource_mapping = website_crawl_datasource_mapping or {}
+        self.online_document_datasource_mapping = online_document_datasource_mapping or {}
 
 
 class PluginRegistration:
@@ -64,14 +92,11 @@ class PluginRegistration:
     ]
     endpoints_configuration: list[EndpointProviderConfiguration]
     endpoints: Map
-    datasource_configuration: list[None]  # TBD
-    datasource_mapping: dict[  # provider -> (provider_cls, datasource_mapping)
+    datasource_configuration: list[DatasourceProviderManifest]
+    datasource_mapping: dict[
         str,
-        tuple[
-            None,
-            dict[str, tuple[None, type[None]]],  # datasource_name -> (datasource_configuration, datasource_cls)
-        ],
-    ]  # TBD
+        DatasourceProviderMapping,
+    ]
 
     files: list[PluginAsset]
 
@@ -88,6 +113,8 @@ class PluginRegistration:
         self.files = []
         self.agent_strategies_configuration = []
         self.agent_strategies_mapping = {}
+        self.datasource_configuration = []
+        self.datasource_mapping = {}
 
         # load plugin configuration
         self._load_plugin_configuration()
@@ -131,6 +158,10 @@ class PluginRegistration:
                 fs = load_yaml_file(provider)
                 agent_provider_configuration = AgentStrategyProviderConfiguration(**fs)
                 self.agent_strategies_configuration.append(agent_provider_configuration)
+            for provider in self.configuration.plugins.datasources:
+                fs = load_yaml_file(provider)
+                datasource_provider_configuration = DatasourceProviderManifest(**fs)
+                self.datasource_configuration.append(datasource_provider_configuration)
 
         except Exception as e:
             raise ValueError(f"Error loading plugin configuration: {e!s}") from e
@@ -190,6 +221,46 @@ class PluginRegistration:
                 strategies[strategy.identity.name] = (strategy, strategy_cls)
 
             self.agent_strategies_mapping[provider.identity.name] = (provider, strategies)
+
+    def _resolve_datasource_providers(self):
+        """
+        walk through all the datasource providers and datasources and load the classes from sources
+        """
+        for provider in self.datasource_configuration:
+            # load class
+            source = provider.extra.python.source
+            # remove extension
+            module_source = os.path.splitext(source)[0]
+            # replace / with .
+            module_source = module_source.replace("/", ".")
+            provider_cls = load_single_subclass_from_source(
+                module_name=module_source,
+                script_path=os.path.join(os.getcwd(), source),
+                parent_type=DatasourceProvider,
+            )
+
+            datasource_mappings = {
+                DatasourceProviderType.WEBSITE_CRAWL: (WebsiteCrawlDatasource, {}),
+                DatasourceProviderType.ONLINE_DOCUMENT: (OnlineDocumentDatasource, {}),
+            }
+
+            if provider.provider_type in datasource_mappings:
+                parent_type, mapping = datasource_mappings[provider.provider_type]
+                for datasource in provider.datasources:
+                    module_source = os.path.splitext(datasource.extra.python.source)[0].replace("/", ".")
+                    cls = load_single_subclass_from_source(
+                        module_name=module_source,
+                        script_path=os.path.join(os.getcwd(), datasource.extra.python.source),
+                        parent_type=parent_type,
+                    )
+                    mapping[datasource.identity.name] = cls
+
+            self.datasource_mapping[provider.identity.name] = DatasourceProviderMapping(
+                provider=provider.identity.name,
+                provider_cls=provider_cls,
+                website_crawl_datasource_mapping=datasource_mappings[DatasourceProviderType.WEBSITE_CRAWL][1],
+                online_document_datasource_mapping=datasource_mappings[DatasourceProviderType.ONLINE_DOCUMENT][1],
+            )
 
     def _is_strict_subclass(self, cls: type[T], *parent_cls: type[T]) -> bool:
         """
@@ -279,6 +350,9 @@ class PluginRegistration:
         # load agent providers and strategies
         self._resolve_agent_providers()
 
+        # load datasource providers and datasources
+        self._resolve_datasource_providers()
+
     def get_tool_provider_cls(self, provider: str):
         """
         get the tool provider class by provider name
@@ -359,6 +433,42 @@ class PluginRegistration:
                 return self.tools_mapping[provider_registration][1]
 
         return None
+
+    def get_datasource_provider_cls(self, provider: str):
+        """
+        get the datasource provider class by provider name
+        :param provider: provider name
+        :return: datasource provider class
+        """
+        if provider in self.datasource_mapping:
+            return self.datasource_mapping[provider].provider_cls
+        raise ValueError(f"Datasource provider {provider} not found")
+
+    def get_website_crawl_datasource_cls(self, provider: str, datasource: str):
+        """
+        get the website crawl datasource class by provider and datasource name
+        :param provider: provider name
+        :param datasource: datasource name
+        :return: website crawl datasource class
+        """
+        if provider in self.datasource_mapping:
+            result = self.datasource_mapping[provider].website_crawl_datasource_mapping.get(datasource)
+            if result:
+                return result
+        raise ValueError(f"Website crawl datasource {datasource} not found for provider {provider}")
+
+    def get_online_document_datasource_cls(self, provider: str, datasource: str):
+        """
+        get the online document datasource class by provider and datasource name
+        :param provider: provider name
+        :param datasource: datasource name
+        :return: online document datasource class
+        """
+        if provider in self.datasource_mapping:
+            result = self.datasource_mapping[provider].online_document_datasource_mapping.get(datasource)
+            if result:
+                return result
+        raise ValueError(f"Online document datasource {datasource} not found for provider {provider}")
 
     def dispatch_endpoint_request(self, request: Request) -> tuple[type[Endpoint], Mapping]:
         """

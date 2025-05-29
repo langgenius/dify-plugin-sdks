@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from dify_plugin.entities.datasource import GetOnlineDocumentPageContentRequest
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -22,6 +23,7 @@ class PluginInvokeType(StrEnum):
     Endpoint = "endpoint"
     Agent = "agent_strategy"
     OAuth = "oauth"
+    Datasource = "datasource"
 
 
 class AgentActions(StrEnum):
@@ -56,6 +58,13 @@ class EndpointActions(StrEnum):
 class OAuthActions(StrEnum):
     GetAuthorizationUrl = "get_authorization_url"
     GetCredentials = "get_credentials"
+
+
+class DatasourceActions(StrEnum):
+    ValidateCredentials = "validate_datasource_credentials"
+    InvokeWebsiteDatasourceGetCrawl = "invoke_website_datasource_get_crawl"
+    InvokeOnlineDocumentDatasourceGetPages = "invoke_online_document_datasource_get_pages"
+    InvokeOnlineDocumentDatasourceGetPageContent = "invoke_online_document_datasource_get_page_content"
 
 
 # merge all the access actions
@@ -236,16 +245,50 @@ class EndpointInvokeRequest(BaseModel):
     raw_http_request: str
 
 
-class OAuthGetAuthorizationUrlRequest(BaseModel):
+class OAuthGetAuthorizationUrlRequest(PluginAccessRequest):
     type: PluginInvokeType = PluginInvokeType.OAuth
     action: OAuthActions = OAuthActions.GetAuthorizationUrl
     provider: str
     system_credentials: Mapping[str, Any]
 
 
-class OAuthGetCredentialsRequest(BaseModel):
+class OAuthGetCredentialsRequest(PluginAccessRequest):
     type: PluginInvokeType = PluginInvokeType.OAuth
     action: OAuthActions = OAuthActions.GetCredentials
     provider: str
     system_credentials: Mapping[str, Any]
     raw_http_request: str
+
+
+class DatasourceValidateCredentialsRequest(PluginAccessRequest):
+    type: PluginInvokeType = PluginInvokeType.Datasource
+    action: DatasourceActions = DatasourceActions.ValidateCredentials
+    provider: str
+    credentials: Mapping[str, Any]
+
+
+class DatasourceCrawlWebsiteRequest(PluginAccessRequest):
+    type: PluginInvokeType = PluginInvokeType.Datasource
+    action: DatasourceActions = DatasourceActions.InvokeWebsiteDatasourceGetCrawl
+    provider: str
+    datasource: str
+    credentials: Mapping[str, Any]
+    datasource_parameters: Mapping[str, Any]
+
+
+class DatasourceGetPagesRequest(PluginAccessRequest):
+    type: PluginInvokeType = PluginInvokeType.Datasource
+    action: DatasourceActions = DatasourceActions.InvokeOnlineDocumentDatasourceGetPages
+    provider: str
+    datasource: str
+    credentials: Mapping[str, Any]
+    datasource_parameters: Mapping[str, Any]
+
+
+class DatasourceGetPageContentRequest(PluginAccessRequest):
+    type: PluginInvokeType = PluginInvokeType.Datasource
+    action: DatasourceActions = DatasourceActions.InvokeOnlineDocumentDatasourceGetPageContent
+    provider: str
+    datasource: str
+    credentials: Mapping[str, Any]
+    page: GetOnlineDocumentPageContentRequest

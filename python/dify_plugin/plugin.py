@@ -147,6 +147,15 @@ class Plugin(IOServer, Router):
                 + "\n\n"
             )
 
+        if self.registration.datasource_configuration:
+            tcp_stream.write(
+                InitializeMessage(
+                    type=InitializeMessage.Type.DATASOURCE_DECLARATION,
+                    data=List(root=self.registration.datasource_configuration).model_dump(),
+                ).model_dump_json()
+                + "\n\n"
+            )
+
         for file in self.registration.files:
             # divide the file into chunks
             chunks = [file.data[i : i + 8192] for i in range(0, len(file.data), 8192)]

@@ -6,14 +6,11 @@ from pydantic import BaseModel, Field, field_validator
 
 from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
-from dify_plugin.entities import I18nObject
+from dify_plugin.entities import I18nObject, ParameterAutoGenerate, ParameterOption, ParameterTemplate
 from dify_plugin.entities.tool import (
     CommonParameterType,
-    ParameterAutoGenerate,
-    ParameterTemplate,
     ToolIdentity,
     ToolInvokeMessage,
-    ToolParameterOption,
     ToolProviderIdentity,
 )
 
@@ -75,7 +72,7 @@ class AgentStrategyParameter(BaseModel):
     min: Optional[Union[float, int]] = None
     max: Optional[Union[float, int]] = None
     precision: Optional[int] = None
-    options: Optional[list[ToolParameterOption]] = None
+    options: Optional[list[ParameterOption]] = None
 
 
 @docs(
