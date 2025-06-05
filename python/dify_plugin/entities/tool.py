@@ -241,6 +241,8 @@ class ToolParameter(BaseModel):
     max: Optional[Union[float, int]] = None
     precision: Optional[int] = None
     options: Optional[list[ToolParameterOption]] = None
+    # MCP object and array type parameters use this field to store the schema
+    input_schema: Optional[Mapping[str, Any]] = None
 
 
 @docs(
