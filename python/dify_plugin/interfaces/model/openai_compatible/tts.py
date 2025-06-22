@@ -31,6 +31,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         credentials: dict,
         content_text: str,
         voice: str,
+        instruction: Optional[str] = None,
         user: Optional[str] = None,
     ) -> Generator[bytes, None, None]:
         """
@@ -41,6 +42,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         :param credentials: model credentials
         :param content_text: text content to be translated
         :param voice: model voice/speaker
+        :param instruction: control the voice of your generated audio with additional instructions.
         :param user: unique user id
         :return: audio data as bytes iterator
         """
@@ -68,6 +70,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
                 "model": model,
                 "input": sentence,
                 "voice": voice,
+                "instruction": instruction,
                 "response_format": audio_format,
             }
 
