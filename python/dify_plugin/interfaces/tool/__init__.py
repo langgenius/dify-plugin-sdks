@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
 from typing import Any, Generic, Optional, TypeVar, final
-from typing_extensions import deprecated
 
+from typing_extensions import deprecated
 from werkzeug import Request
 
 from dify_plugin.core.runtime import Session

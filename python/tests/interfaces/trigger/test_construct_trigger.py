@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+
 from werkzeug import Request
 
 from dify_plugin.core.runtime import Session

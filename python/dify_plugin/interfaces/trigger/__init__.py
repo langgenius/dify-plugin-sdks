@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any, Mapping, final
+from collections.abc import Mapping
+from typing import Any, final
+
 from werkzeug import Request
 
 from dify_plugin.core.runtime import Session
