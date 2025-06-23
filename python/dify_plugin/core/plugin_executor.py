@@ -7,6 +7,7 @@ from werkzeug import Response
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.entities.plugin.request import (
     AgentInvokeRequest,
+    DynamicParameterFetchParameterOptionsRequest,
     EndpointInvokeRequest,
     ModelGetAIModelSchemas,
     ModelGetLLMNumTokens,
@@ -40,6 +41,7 @@ from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
 from dify_plugin.interfaces.tool import ToolProvider
+from dify_plugin.protocol.dynamic_select import DynamicSelectProtocol
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
 
@@ -350,4 +352,33 @@ class PluginExecutor:
 
         return {
             "credentials": provider_instance.oauth_get_credentials(data.system_credentials, request),
+        }
+
+    def _get_dynamic_parameter_action(
+        self, session: Session, data: DynamicParameterFetchParameterOptionsRequest
+    ) -> DynamicSelectProtocol | None:
+        """
+        get the dynamic parameter provider class by provider name
+
+        :param session: session
+        :param data: data
+        :return: dynamic parameter provider class
+        """
+        # get tool
+        tool_cls = self.registration.get_tool_cls(data.provider, data.provider_action)
+        if tool_cls is not None:
+            return tool_cls(
+                runtime=ToolRuntime(credentials=data.credentials, user_id=data.user_id, session_id=session.session_id),
+                session=session,
+            )
+
+        # TODO: trigger
+
+    def fetch_parameter_options(self, session: Session, data: DynamicParameterFetchParameterOptionsRequest):
+        action_instance = self._get_dynamic_parameter_action(session, data)
+        if action_instance is None:
+            raise ValueError(f"Provider `{data.provider}` not found")
+
+        return {
+            "options": action_instance.fetch_parameter_options(data.parameter),
         }

@@ -314,5 +314,6 @@ class Tool(ToolLike[ToolInvokeMessage]):
         Fetch the parameter options of the tool.
 
         To be implemented by subclasses.
+
         """
         return self._fetch_parameter_options(parameter)
