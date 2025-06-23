@@ -1,7 +1,9 @@
 from gevent import monkey
 
-# patch all the blocking calls
-monkey.patch_all(sys=True)
+# patch all the blocking calls only when debugging
+import os
+if os.getenv('DEBUG', '').lower() not in ('true', '1', 'yes'):
+    monkey.patch_all(sys=True)
 
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.interfaces.agent import AgentProvider, AgentStrategy
