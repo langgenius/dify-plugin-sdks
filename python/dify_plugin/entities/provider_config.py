@@ -37,6 +37,7 @@ class CommonParameterType(Enum):
     # MCP object and array type parameters
     OBJECT = "object"
     ARRAY = "array"
+    DYNAMIC_SELECT = "dynamic-select"
 
 
 @docs(
