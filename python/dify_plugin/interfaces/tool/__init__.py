@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
 from typing import Any, Generic, Optional, TypeVar, final
+from typing_extensions import deprecated
 
 from werkzeug import Request
 
@@ -292,5 +293,6 @@ class Tool(ToolLike[ToolInvokeMessage]):
         tool_parameters = self._convert_parameters(tool_parameters)
         return self._invoke(tool_parameters)
 
+    @deprecated("This feature is deprecated, will soon be replaced by dynamic select parameter")
     def get_runtime_parameters(self) -> list[ToolParameter]:
         return self._get_runtime_parameters()

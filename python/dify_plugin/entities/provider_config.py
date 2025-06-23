@@ -37,6 +37,10 @@ class CommonParameterType(Enum):
     # MCP object and array type parameters
     OBJECT = "object"
     ARRAY = "array"
+    # Dynamic select parameter
+    # Once you are not sure about the available options until authorization is done
+    # eg: Select a Slack channel from a Slack workspace
+    DYNAMIC_SELECT = "dynamic-select"
 
 
 @docs(
