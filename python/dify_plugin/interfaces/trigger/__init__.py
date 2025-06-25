@@ -18,19 +18,21 @@ class TriggerProvider:
         return self._validate_credentials(credentials)
 
     def _validate_credentials(self, credentials: dict):
-        raise NotImplementedError("This method should be implemented by a subclass")
+        raise NotImplementedError(
+            "This plugin should implement `_validate_credentials` method to enable credentials validation"
+        )
 
     def oauth_get_authorization_url(self, system_credentials: Mapping[str, Any]) -> str:
         return self._oauth_get_authorization_url(system_credentials)
 
     def _oauth_get_authorization_url(self, system_credentials: Mapping[str, Any]) -> str:
-        raise NotImplementedError("This method should be implemented by a subclass")
+        raise NotImplementedError("This plugin should implement `_oauth_get_authorization_url` method to enable oauth")
 
     def oauth_get_credentials(self, system_credentials: Mapping[str, Any], request: Request) -> Mapping[str, Any]:
         return self._oauth_get_credentials(system_credentials, request)
 
     def _oauth_get_credentials(self, system_credentials: Mapping[str, Any], request: Request) -> Mapping[str, Any]:
-        raise NotImplementedError("This method should be implemented by a subclass")
+        raise NotImplementedError("This plugin should implement `_oauth_get_credentials` method to enable oauth")
 
 
 class Trigger(ABC):
@@ -76,7 +78,9 @@ class Trigger(ABC):
 
         Also, it's optional to implement, that's why it's not an abstract method.
         """
-        raise NotImplementedError("This method should be implemented by a subclass")
+        raise NotImplementedError(
+            "This plugin should implement `_fetch_parameter_options` method to enable dynamic select parameter"
+        )
 
     ############################################################
     #                 For executor use only                    #
