@@ -13,8 +13,27 @@ description:
   llm: A tool for invoking a large language model
 parameters:
   - name: prompt
-    type: string
+    type: dynamic-select
     required: true
+    label:
+      en_US: Prompt string
+      zh_Hans: 提示字符串
+      pt_BR: Prompt string
+    human_description:
+      en_US: used for searching
+      zh_Hans: 用于搜索网页内容
+      pt_BR: used for searching
+    llm_description: key words for searching
+    form: llm
+  - name: prompt1
+    type: select
+    required: true
+    options:
+      - value: 1
+        label:
+          en_US: Prompt string
+          zh_Hans: 提示字符串
+          pt_BR: Prompt string
     label:
       en_US: Prompt string
       zh_Hans: 提示字符串
