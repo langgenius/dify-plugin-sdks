@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from dify_plugin.core.documentation.schema_doc import docs
 
@@ -26,3 +26,22 @@ class I18nObject(BaseModel):
 
     def to_dict(self) -> dict:
         return {"zh_Hans": self.zh_Hans, "en_US": self.en_US, "pt_BR": self.pt_BR}
+
+
+@docs(
+    description="The option of the parameter",
+)
+class ParameterOption(BaseModel):
+    value: str = Field(..., description="The value of the option")
+    label: I18nObject = Field(..., description="The label of the option")
+    icon: Optional[str] = Field(
+        default=None, description="The icon of the option, can be a URL or a base64 encoded string"
+    )
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def transform_id_to_str(cls, value) -> str:
+        if not isinstance(value, str):
+            return str(value)
+        else:
+            return value

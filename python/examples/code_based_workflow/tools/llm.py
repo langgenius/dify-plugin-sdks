@@ -2,12 +2,21 @@ from collections.abc import Generator
 from typing import Any
 
 from dify_plugin import Tool
+from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.model.llm import LLMModelConfig
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 from dify_plugin.entities.tool import ToolInvokeMessage
 
 
 class LLMTool(Tool):
+    def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        return [
+            ParameterOption(
+                value="hello world",
+                label=I18nObject(en_US="Prompt string"),
+            )
+        ]
+
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         response = self.session.model.llm.invoke(
             model_config=LLMModelConfig(

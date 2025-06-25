@@ -22,6 +22,7 @@ class PluginInvokeType(StrEnum):
     Endpoint = "endpoint"
     Agent = "agent_strategy"
     OAuth = "oauth"
+    DynamicParameter = "dynamic_parameter"
 
 
 class AgentActions(StrEnum):
@@ -58,8 +59,12 @@ class OAuthActions(StrEnum):
     GetCredentials = "get_credentials"
 
 
+class DynamicParameterActions(StrEnum):
+    FetchParameterOptions = "fetch_parameter_options"
+
+
 # merge all the access actions
-PluginAccessAction = AgentActions | ToolActions | ModelActions | EndpointActions
+PluginAccessAction = AgentActions | ToolActions | ModelActions | EndpointActions | DynamicParameterActions
 
 
 class PluginAccessRequest(BaseModel):
@@ -249,3 +254,15 @@ class OAuthGetCredentialsRequest(BaseModel):
     provider: str
     system_credentials: Mapping[str, Any]
     raw_http_request: str
+
+
+class DynamicParameterFetchParameterOptionsRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.DynamicParameter
+    action: DynamicParameterActions = DynamicParameterActions.FetchParameterOptions
+    credentials: dict
+    provider: str
+    provider_action: str
+    user_id: str
+    parameter: str
+
+    model_config = ConfigDict(protected_namespaces=())
