@@ -33,3 +33,4 @@ For the manifest specification, we've introduced two versioning fields:
 | 1.4.0                | 0.0.1-beta.49 | Support LLM multimodal output |
 | 1.4.0                | 0.3.1         | Support OAuth functionality for plugins |
 | 1.6.0                | 0.4.0         | Support `dynamic-select` parameter type |
+| 1.6.0                | 0.4.0         | Support LLM structured output |
