@@ -65,7 +65,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         for sentence in sentences:
             # Prepare request payload
             payload = {
-                "model": credentials.get('endpoint_model_name', model),
+                "model": credentials.get("endpoint_model_name", model),
                 "input": sentence,
                 "voice": voice,
                 "response_format": audio_format,
