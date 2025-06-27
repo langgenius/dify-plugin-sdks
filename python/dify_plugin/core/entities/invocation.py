@@ -4,6 +4,7 @@ from enum import Enum
 class InvokeType(Enum):
     Tool = "tool"
     LLM = "llm"
+    LLMStructuredOutput = "llm_structured_output"
     TextEmbedding = "text_embedding"
     Rerank = "rerank"
     TTS = "tts"
