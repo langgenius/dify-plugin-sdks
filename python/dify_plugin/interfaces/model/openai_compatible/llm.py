@@ -203,7 +203,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300), stream=True)
                 if response.status_code != 200:
                     raise CredentialsValidateFailedError(
-                        f"Credentials validation failed with status code {response.status_code} and response body {response.text}"
+                        f"Credentials validation failed with status code {response.status_code} "
+                        f"and response body {response.text}"
                     )
                 return
 
@@ -212,13 +213,16 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
             if response.status_code != 200:
                 raise CredentialsValidateFailedError(
-                    f"Credentials validation failed with status code {response.status_code} and response body {response.text}"
+                    f"Credentials validation failed with status code {response.status_code} "
+                    f"and response body {response.text}"
                 )
 
             try:
                 json_result = response.json()
             except json.JSONDecodeError:
-                raise CredentialsValidateFailedError(f"Credentials validation failed: JSON decode error, response body {response.text}") from None
+                raise CredentialsValidateFailedError(
+                    f"Credentials validation failed: JSON decode error, response body {response.text}"
+                ) from None
 
             if completion_type is LLMMode.CHAT and json_result.get("object", "") == "":
                 json_result["object"] = "chat.completion"
@@ -229,18 +233,22 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 "object" not in json_result or json_result["object"] != "chat.completion"
             ):
                 raise CredentialsValidateFailedError(
-                    f"Credentials validation failed: invalid response object, must be 'chat.completion', response body {response.text}"
+                    f"Credentials validation failed: invalid response object, "
+                    f"must be 'chat.completion', response body {response.text}"
                 )
             elif completion_type is LLMMode.COMPLETION and (
                 "object" not in json_result or json_result["object"] != "text_completion"
             ):
                 raise CredentialsValidateFailedError(
-                    f"Credentials validation failed: invalid response object, must be 'text_completion', response body {response.text}"
+                    f"Credentials validation failed: invalid response object, "
+                    f"must be 'text_completion', response body {response.text}"
                 )
         except CredentialsValidateFailedError:
             raise
         except Exception as ex:
-            raise CredentialsValidateFailedError(f"An error occurred during credentials validation: {ex!s}, response body {response.text}") from ex
+            raise CredentialsValidateFailedError(
+                f"An error occurred during credentials validation: {ex!s}, response body {response.text}"
+            ) from ex
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
         """
