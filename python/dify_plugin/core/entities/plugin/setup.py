@@ -137,10 +137,21 @@ class PluginConfiguration(BaseModel):
             version: str
             entrypoint: str
 
-        version: str
+        version: str = Field(
+            ...,
+            description="The version of the manifest specification, designed for backward compatibility,"
+            "when installing an older plugin to a newer Dify, it's hard to ensure breaking changes never happen,"
+            " but at least, Dify can detect it by this field, it knows which version of the manifest is supported.",
+        )
         arch: list[PluginArch]
         runner: PluginRunner
-        minimum_dify_version: Optional[str] = Field(None, pattern=r"^\d{1,4}(\.\d{1,4}){1,3}(-\w{1,16})?$")
+        minimum_dify_version: Optional[str] = Field(
+            None,
+            description="The minimum version of Dify, designed for forward compatibility."
+            "When installing a newer plugin to an older Dify, many new features may not be available,"
+            "but showing the minimum Dify version helps users understand how to upgrade.",
+            pattern=r"^\d{1,4}(\.\d{1,4}){1,3}(-\w{1,16})?$",
+        )
 
     version: str = Field(..., pattern=r"^\d{1,4}(\.\d{1,4}){1,3}(-\w{1,16})?$")
     type: PluginType

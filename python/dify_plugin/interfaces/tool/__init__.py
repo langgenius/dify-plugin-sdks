@@ -2,9 +2,11 @@ from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
 from typing import Any, Generic, Optional, TypeVar, final
 
+from typing_extensions import deprecated
 from werkzeug import Request
 
 from dify_plugin.core.runtime import Session
+from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.agent import AgentInvokeMessage
 from dify_plugin.entities.tool import LogMetadata, ToolInvokeMessage, ToolParameter, ToolRuntime, ToolSelector
 from dify_plugin.file.constants import DIFY_FILE_IDENTITY, DIFY_TOOL_SELECTOR_IDENTITY
@@ -167,6 +169,7 @@ class ToolLike(ABC, Generic[T]):
             ),
         )
 
+    @deprecated("This feature is deprecated, will soon be replaced by dynamic select parameter")
     def _get_runtime_parameters(self) -> list[ToolParameter]:
         """
         get the runtime parameters of the tool
@@ -229,19 +232,21 @@ class ToolProvider:
         return self._validate_credentials(credentials)
 
     def _validate_credentials(self, credentials: dict):
-        raise NotImplementedError("This method should be implemented by a subclass")
+        raise NotImplementedError(
+            "This plugin should implement `_validate_credentials` method to enable credentials validation"
+        )
 
     def oauth_get_authorization_url(self, system_credentials: Mapping[str, Any]) -> str:
         return self._oauth_get_authorization_url(system_credentials)
 
     def _oauth_get_authorization_url(self, system_credentials: Mapping[str, Any]) -> str:
-        raise NotImplementedError("This method should be implemented by a subclass")
+        raise NotImplementedError("This plugin should implement `_oauth_get_authorization_url` method to enable oauth")
 
     def oauth_get_credentials(self, system_credentials: Mapping[str, Any], request: Request) -> Mapping[str, Any]:
         return self._oauth_get_credentials(system_credentials, request)
 
     def _oauth_get_credentials(self, system_credentials: Mapping[str, Any], request: Request) -> Mapping[str, Any]:
-        raise NotImplementedError("This method should be implemented by a subclass")
+        raise NotImplementedError("This plugin should implement `_oauth_get_credentials` method to enable oauth")
 
 
 class Tool(ToolLike[ToolInvokeMessage]):
@@ -283,6 +288,18 @@ class Tool(ToolLike[ToolInvokeMessage]):
     def _invoke(self, tool_parameters: dict) -> Generator[ToolInvokeMessage, None, None]:
         pass
 
+    def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        """
+        Fetch the parameter options of the tool.
+
+        To be implemented by subclasses.
+
+        Also, it's optional to implement, that's why it's not an abstract method.
+        """
+        raise NotImplementedError(
+            "This plugin should implement `_fetch_parameter_options` method to enable dynamic select parameter"
+        )
+
     ############################################################
     #                 For executor use only                    #
     ############################################################
@@ -292,5 +309,15 @@ class Tool(ToolLike[ToolInvokeMessage]):
         tool_parameters = self._convert_parameters(tool_parameters)
         return self._invoke(tool_parameters)
 
+    @deprecated("This feature is deprecated, will soon be replaced by dynamic select parameter")
     def get_runtime_parameters(self) -> list[ToolParameter]:
         return self._get_runtime_parameters()
+
+    def fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        """
+        Fetch the parameter options of the tool.
+
+        To be implemented by subclasses.
+
+        """
+        return self._fetch_parameter_options(parameter)

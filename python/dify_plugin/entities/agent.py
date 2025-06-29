@@ -60,6 +60,9 @@ class AgentStrategyParameter(BaseModel):
         TOOLS_SELECTOR = CommonParameterType.TOOLS_SELECTOR.value
         # TOOL_SELECTOR = CommonParameterType.TOOL_SELECTOR.value
         ANY = CommonParameterType.ANY.value
+        # MCP object and array type parameters
+        OBJECT = CommonParameterType.OBJECT.value
+        ARRAY = CommonParameterType.ARRAY.value
 
     name: str = Field(..., description="The name of the parameter")
     label: I18nObject = Field(..., description="The label presented to the user")

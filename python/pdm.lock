@@ -5,7 +5,7 @@
 groups = ["default", "lint", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:c7da7bb41f30c2b1e1c224f461576794593afa3966794c44be2160c930d58448"
+content_hash = "sha256:1e261e2588a41a0068cfd2f7db3f9254c993583ffb2d1bec72b2e9e45e9cada0"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
@@ -218,42 +218,43 @@ files = [
 
 [[package]]
 name = "gevent"
-version = "24.11.1"
+version = "25.5.1"
 requires_python = ">=3.9"
 summary = "Coroutine-based network library"
 groups = ["default"]
 dependencies = [
     "cffi>=1.17.1; platform_python_implementation == \"CPython\" and sys_platform == \"win32\"",
-    "greenlet>=3.1.1; platform_python_implementation == \"CPython\"",
+    "greenlet>=3.2.2; platform_python_implementation == \"CPython\"",
     "zope-event",
     "zope-interface",
 ]
 files = [
-    {file = "gevent-24.11.1-cp311-cp311-macosx_11_0_universal2.whl", hash = "sha256:351d1c0e4ef2b618ace74c91b9b28b3eaa0dd45141878a964e03c7873af09f62"},
-    {file = "gevent-24.11.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b5efe72e99b7243e222ba0c2c2ce9618d7d36644c166d63373af239da1036bab"},
-    {file = "gevent-24.11.1-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:9d3b249e4e1f40c598ab8393fc01ae6a3b4d51fc1adae56d9ba5b315f6b2d758"},
-    {file = "gevent-24.11.1-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:81d918e952954675f93fb39001da02113ec4d5f4921bf5a0cc29719af6824e5d"},
-    {file = "gevent-24.11.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c9c935b83d40c748b6421625465b7308d87c7b3717275acd587eef2bd1c39546"},
-    {file = "gevent-24.11.1-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:ff96c5739834c9a594db0e12bf59cb3fa0e5102fc7b893972118a3166733d61c"},
-    {file = "gevent-24.11.1-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:d6c0a065e31ef04658f799215dddae8752d636de2bed61365c358f9c91e7af61"},
-    {file = "gevent-24.11.1-cp311-cp311-win_amd64.whl", hash = "sha256:97e2f3999a5c0656f42065d02939d64fffaf55861f7d62b0107a08f52c984897"},
-    {file = "gevent-24.11.1-cp312-cp312-macosx_11_0_universal2.whl", hash = "sha256:a3d75fa387b69c751a3d7c5c3ce7092a171555126e136c1d21ecd8b50c7a6e46"},
-    {file = "gevent-24.11.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:beede1d1cff0c6fafae3ab58a0c470d7526196ef4cd6cc18e7769f207f2ea4eb"},
-    {file = "gevent-24.11.1-cp312-cp312-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:85329d556aaedced90a993226d7d1186a539c843100d393f2349b28c55131c85"},
-    {file = "gevent-24.11.1-cp312-cp312-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:816b3883fa6842c1cf9d2786722014a0fd31b6312cca1f749890b9803000bad6"},
-    {file = "gevent-24.11.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b24d800328c39456534e3bc3e1684a28747729082684634789c2f5a8febe7671"},
-    {file = "gevent-24.11.1-cp312-cp312-musllinux_1_1_aarch64.whl", hash = "sha256:a5f1701ce0f7832f333dd2faf624484cbac99e60656bfbb72504decd42970f0f"},
-    {file = "gevent-24.11.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:d740206e69dfdfdcd34510c20adcb9777ce2cc18973b3441ab9767cd8948ca8a"},
-    {file = "gevent-24.11.1-cp312-cp312-win_amd64.whl", hash = "sha256:68bee86b6e1c041a187347ef84cf03a792f0b6c7238378bf6ba4118af11feaae"},
-    {file = "gevent-24.11.1-cp313-cp313-macosx_11_0_universal2.whl", hash = "sha256:d618e118fdb7af1d6c1a96597a5cd6ac84a9f3732b5be8515c6a66e098d498b6"},
-    {file = "gevent-24.11.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2142704c2adce9cd92f6600f371afb2860a446bfd0be5bd86cca5b3e12130766"},
-    {file = "gevent-24.11.1-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:92e0d7759de2450a501effd99374256b26359e801b2d8bf3eedd3751973e87f5"},
-    {file = "gevent-24.11.1-cp313-cp313-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:ca845138965c8c56d1550499d6b923eb1a2331acfa9e13b817ad8305dde83d11"},
-    {file = "gevent-24.11.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:356b73d52a227d3313f8f828025b665deada57a43d02b1cf54e5d39028dbcf8d"},
-    {file = "gevent-24.11.1-cp313-cp313-musllinux_1_1_aarch64.whl", hash = "sha256:58851f23c4bdb70390f10fc020c973ffcf409eb1664086792c8b1e20f25eef43"},
-    {file = "gevent-24.11.1-cp313-cp313-musllinux_1_1_x86_64.whl", hash = "sha256:1ea50009ecb7f1327347c37e9eb6561bdbc7de290769ee1404107b9a9cba7cf1"},
-    {file = "gevent-24.11.1-cp313-cp313-win_amd64.whl", hash = "sha256:ec68e270543ecd532c4c1d70fca020f90aa5486ad49c4f3b8b2e64a66f5c9274"},
-    {file = "gevent-24.11.1.tar.gz", hash = "sha256:8bd1419114e9e4a3ed33a5bad766afff9a3cf765cb440a582a1b3a9bc80c1aca"},
+    {file = "gevent-25.5.1-cp311-cp311-macosx_11_0_universal2.whl", hash = "sha256:12380aba5c316e9ff53cc21d8ab80f4a91c0df3ada58f65d4f5eb2cf693db00e"},
+    {file = "gevent-25.5.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7f0694daab1a041b69a53f53c2141c12994892b2503870515cabe6a5dbd2a928"},
+    {file = "gevent-25.5.1-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:2797885e9aeffdc98e1846723e5aa212e7ce53007dbef40d6fd2add264235c41"},
+    {file = "gevent-25.5.1-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:cde6aaac36b54332e10ea2a5bc0de6a8aba6c205c92603fe4396e3777c88e05d"},
+    {file = "gevent-25.5.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:24484f80f14befb8822bf29554cfb3a26a26cb69cd1e5a8be9e23b4bd7a96e25"},
+    {file = "gevent-25.5.1-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:8fdc7446895fa184890d8ca5ea61e502691114f9db55c9b76adc33f3086c4368"},
+    {file = "gevent-25.5.1-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:5b6106e2414b1797133786258fa1962a5e836480e4d5e861577f9fc63b673a5a"},
+    {file = "gevent-25.5.1-cp311-cp311-win_amd64.whl", hash = "sha256:bc899212d90f311784c58938a9c09c59802fb6dc287a35fabdc36d180f57f575"},
+    {file = "gevent-25.5.1-cp312-cp312-macosx_11_0_universal2.whl", hash = "sha256:d87c0a1bd809d8f70f96b9b229779ec6647339830b8888a192beed33ac8d129f"},
+    {file = "gevent-25.5.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b87a4b66edb3808d4d07bbdb0deed5a710cf3d3c531e082759afd283758bb649"},
+    {file = "gevent-25.5.1-cp312-cp312-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:f076779050029a82feb0cb1462021d3404d22f80fa76a181b1a7889cd4d6b519"},
+    {file = "gevent-25.5.1-cp312-cp312-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:bb673eb291c19370f69295f7a881a536451408481e2e3deec3f41dedb7c281ec"},
+    {file = "gevent-25.5.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c1325ed44225c8309c0dd188bdbbbee79e1df8c11ceccac226b861c7d52e4837"},
+    {file = "gevent-25.5.1-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:fcd5bcad3102bde686d0adcc341fade6245186050ce14386d547ccab4bd54310"},
+    {file = "gevent-25.5.1-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:1a93062609e8fa67ec97cd5fb9206886774b2a09b24887f40148c9c37e6fb71c"},
+    {file = "gevent-25.5.1-cp312-cp312-win_amd64.whl", hash = "sha256:2534c23dc32bed62b659ed4fd9e198906179e68b26c9276a897e04163bdde806"},
+    {file = "gevent-25.5.1-cp313-cp313-macosx_11_0_universal2.whl", hash = "sha256:a022a9de9275ce0b390b7315595454258c525dc8287a03f1a6cacc5878ab7cbc"},
+    {file = "gevent-25.5.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3fae8533f9d0ef3348a1f503edcfb531ef7a0236b57da1e24339aceb0ce52922"},
+    {file = "gevent-25.5.1-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:c7b32d9c3b5294b39ea9060e20c582e49e1ec81edbfeae6cf05f8ad0829cb13d"},
+    {file = "gevent-25.5.1-cp313-cp313-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:7b95815fe44f318ebbfd733b6428b4cb18cc5e68f1c40e8501dd69cc1f42a83d"},
+    {file = "gevent-25.5.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2d316529b70d325b183b2f3f5cde958911ff7be12eb2b532b5c301f915dbbf1e"},
+    {file = "gevent-25.5.1-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:f6ba33c13db91ffdbb489a4f3d177a261ea1843923e1d68a5636c53fe98fa5ce"},
+    {file = "gevent-25.5.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:37ee34b77c7553777c0b8379915f75934c3f9c8cd32f7cd098ea43c9323c2276"},
+    {file = "gevent-25.5.1-cp313-cp313-win_amd64.whl", hash = "sha256:9fa6aa0da224ed807d3b76cdb4ee8b54d4d4d5e018aed2478098e685baae7896"},
+    {file = "gevent-25.5.1-cp314-cp314-macosx_11_0_universal2.whl", hash = "sha256:0bacf89a65489d26c7087669af89938d5bfd9f7afb12a07b57855b9fad6ccbd0"},
+    {file = "gevent-25.5.1.tar.gz", hash = "sha256:582c948fa9a23188b890d0bc130734a506d039a2e5ad87dae276a456cc683e61"},
 ]
 
 [[package]]

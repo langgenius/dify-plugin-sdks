@@ -15,7 +15,7 @@ from pydantic import (
 
 from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
-from dify_plugin.entities import I18nObject
+from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.model.message import PromptMessageTool
 from dify_plugin.entities.oauth import OAuthSchema
 from dify_plugin.entities.provider_config import CommonParameterType, LogMetadata, ProviderConfig
@@ -172,17 +172,8 @@ class ToolIdentity(BaseModel):
 @docs(
     description="The option of the tool parameter",
 )
-class ToolParameterOption(BaseModel):
-    value: str = Field(..., description="The value of the option")
-    label: I18nObject = Field(..., description="The label of the option")
-
-    @field_validator("value", mode="before")
-    @classmethod
-    def transform_id_to_str(cls, value) -> str:
-        if not isinstance(value, str):
-            return str(value)
-        else:
-            return value
+class ToolParameterOption(ParameterOption):
+    pass
 
 
 @docs(
@@ -218,6 +209,10 @@ class ToolParameter(BaseModel):
         APP_SELECTOR = CommonParameterType.APP_SELECTOR.value
         # TOOL_SELECTOR = CommonParameterType.TOOL_SELECTOR.value
         ANY = CommonParameterType.ANY.value
+        # MCP object and array type parameters
+        OBJECT = CommonParameterType.OBJECT.value
+        ARRAY = CommonParameterType.ARRAY.value
+        DYNAMIC_SELECT = CommonParameterType.DYNAMIC_SELECT.value
 
     class ToolParameterForm(Enum):
         SCHEMA = "schema"  # should be set while adding tool
@@ -241,6 +236,8 @@ class ToolParameter(BaseModel):
     max: Optional[Union[float, int]] = None
     precision: Optional[int] = None
     options: Optional[list[ToolParameterOption]] = None
+    # MCP object and array type parameters use this field to store the schema
+    input_schema: Optional[Mapping[str, Any]] = None
 
 
 @docs(
