@@ -2,7 +2,7 @@ import base64
 import contextlib
 import uuid
 from collections.abc import Mapping
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any, Optional, Union
 
 from pydantic import (
@@ -41,6 +41,30 @@ class ToolIdentity(BaseModel):
 
 
 @docs(
+    description="The option of the tool parameter",
+)
+class ToolParameterOption(ParameterOption):
+    pass
+
+
+@docs(
+    description="The auto generate of the parameter",
+)
+class ParameterAutoGenerate(BaseModel):
+    class Type(StrEnum):
+        PROMPT_INSTRUCTION = "prompt_instruction"
+
+    type: Type
+
+
+@docs(
+    description="The template of the parameter",
+)
+class ParameterTemplate(BaseModel):
+    enabled: bool = Field(..., description="Whether the parameter is jinja enabled")
+
+
+@docs(
     description="The type of the parameter",
 )
 class ToolParameter(BaseModel):
@@ -56,6 +80,10 @@ class ToolParameter(BaseModel):
         APP_SELECTOR = CommonParameterType.APP_SELECTOR.value
         # TOOL_SELECTOR = CommonParameterType.TOOL_SELECTOR.value
         ANY = CommonParameterType.ANY.value
+        # MCP object and array type parameters
+        OBJECT = CommonParameterType.OBJECT.value
+        ARRAY = CommonParameterType.ARRAY.value
+        DYNAMIC_SELECT = CommonParameterType.DYNAMIC_SELECT.value
 
     class ToolParameterForm(Enum):
         SCHEMA = "schema"  # should be set while adding tool
@@ -79,6 +107,8 @@ class ToolParameter(BaseModel):
     max: Optional[Union[float, int]] = None
     precision: Optional[int] = None
     options: Optional[list[ParameterOption]] = None
+    # MCP object and array type parameters use this field to store the schema
+    input_schema: Optional[Mapping[str, Any]] = None
 
 
 @docs(
@@ -232,6 +262,7 @@ class ToolProviderType(Enum):
     API = "api"
     APP = "app"
     DATASET_RETRIEVAL = "dataset-retrieval"
+    MCP = "mcp"
 
     @classmethod
     def value_of(cls, value: str) -> "ToolProviderType":

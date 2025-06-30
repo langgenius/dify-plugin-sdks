@@ -12,6 +12,7 @@ from dify_plugin.config.logger_format import plugin_logger_handler
 from dify_plugin.core.entities.message import InitializeMessage
 from dify_plugin.core.entities.plugin.request import (
     AgentActions,
+    DynamicParameterActions,
     EndpointActions,
     ModelActions,
     PluginInvokeType,
@@ -360,6 +361,12 @@ class Plugin(IOServer, Router):
             self.plugin_executer.datasource_online_drive_download_file,
             lambda data: data.get("type") == PluginInvokeType.Datasource.value
             and data.get("action") == DatasourceActions.InvokeOnlineDriveDownloadFile.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.fetch_parameter_options,
+            lambda data: data.get("type") == PluginInvokeType.DynamicParameter.value
+            and data.get("action") == DynamicParameterActions.FetchParameterOptions.value,
         )
 
     def _execute_request(

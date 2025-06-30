@@ -6,7 +6,7 @@ from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.entities.model.message import UserPromptMessage
 from dify_plugin.integration.run import PluginRunner
-from tests.__mock_server.openai import OPENAI_MOCK_SERVER_PORT
+from tests.consts.mockserver import OPENAI_MOCK_SERVER_PORT
 
 _MARKETPLACE_API_URL = "https://marketplace.dify.ai"
 

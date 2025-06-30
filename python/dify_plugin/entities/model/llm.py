@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
@@ -106,6 +107,22 @@ class LLMResultChunk(BaseModel):
         return []
 
 
+class LLMStructuredOutput(BaseModel):
+    """
+    Model class for llm structured output.
+    """
+
+    structured_output: Optional[Mapping] = None
+
+
+class LLMResultChunkWithStructuredOutput(LLMResultChunk, LLMStructuredOutput):
+    """
+    Model class for llm result chunk with structured output.
+    """
+
+    pass
+
+
 class LLMResult(BaseModel):
     """
     Model class for llm result.
@@ -142,6 +159,25 @@ class LLMResult(BaseModel):
                 usage=self.usage,
                 finish_reason=None,
             ),
+        )
+
+
+class LLMResultWithStructuredOutput(LLMResult, LLMStructuredOutput):
+    """
+    Model class for llm result with structured output.
+    """
+
+    def to_llm_result_chunk_with_structured_output(self) -> "LLMResultChunkWithStructuredOutput":
+        return LLMResultChunkWithStructuredOutput(
+            model=self.model,
+            system_fingerprint=self.system_fingerprint,
+            delta=LLMResultChunkDelta(
+                index=0,
+                message=self.message,
+                usage=self.usage,
+                finish_reason=None,
+            ),
+            structured_output=self.structured_output,
         )
 
 

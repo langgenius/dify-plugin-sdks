@@ -28,6 +28,7 @@ from dify_plugin.core.server.tcp.request_reader import TCPReaderWriter
 class ModelInvocations:
     def __init__(self, session: "Session") -> None:
         from dify_plugin.invocations.model.llm import LLMInvocation, SummaryInvocation
+        from dify_plugin.invocations.model.llm_structured_output import LLMStructuredOutputInvocation
         from dify_plugin.invocations.model.moderation import ModerationInvocation
         from dify_plugin.invocations.model.rerank import RerankInvocation
         from dify_plugin.invocations.model.speech2text import Speech2TextInvocation
@@ -35,6 +36,7 @@ class ModelInvocations:
         from dify_plugin.invocations.model.tts import TTSInvocation
 
         self.llm = LLMInvocation(session)
+        self.llm_structured_output = LLMStructuredOutputInvocation(session)
         self.text_embedding = TextEmbeddingInvocation(session)
         self.rerank = RerankInvocation(session)
         self.speech2text = Speech2TextInvocation(session)

@@ -3,9 +3,9 @@ import json
 import flask.cli
 from flask import Flask, Response, jsonify, request
 
-flask.cli.show_server_banner = lambda *args: None
+from tests.consts.mockserver import OPENAI_MOCK_SERVER_PORT
 
-OPENAI_MOCK_SERVER_PORT = 11451
+flask.cli.show_server_banner = lambda *args: None
 
 
 def openai_server_mock():
@@ -40,4 +40,4 @@ def openai_server_mock():
                 }
             )
 
-    app.run(port=11451)
+    app.run(port=OPENAI_MOCK_SERVER_PORT)
