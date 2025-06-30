@@ -1,0 +1,39 @@
+identity:
+  author: "yeuoly"
+  name: "notion"
+  description:
+    zh_Hans: "Notion"
+    en_US: "Notion"
+  icon: "notion.svg"
+  label:
+    zh_Hans: "Notion"
+    en_US: "Notion"
+oauth_schema:
+  client_schema:
+    - name: "client_id"
+      type: "secret-input"
+      label:
+        zh_Hans: "Client ID"
+        en_US: "Client ID"
+    - name: "client_secret"
+      type: "secret-input"
+      label:
+        zh_Hans: "Client Secret"
+        en_US: "Client Secret"
+    - name: "redirect_uri"
+      type: "text-input"
+      label:
+        zh_Hans: "Redirect URI"
+        en_US: "Redirect URI"
+  credentials_schema:
+    - name: "access_token"
+      type: "secret-input"
+      label:
+        zh_Hans: "Access Token"
+        en_US: "Access Token"
+provider_type: "online_document"
+datasources:
+  - datasources/notion.yaml
+extra:
+  python:
+    source: "provider/notion.py"

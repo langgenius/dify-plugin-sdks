@@ -17,6 +17,7 @@ from dify_plugin.core.entities.plugin.request import (
     ModelActions,
     PluginInvokeType,
     ToolActions,
+    OAuthActions,
 )
 from dify_plugin.core.plugin_executor import PluginExecutor
 from dify_plugin.core.plugin_registration import PluginRegistration
@@ -30,6 +31,8 @@ from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 from dify_plugin.core.server.tcp.request_reader import TCPReaderWriter
 from dify_plugin.entities.tool import ToolInvokeMessage
+
+from dify_plugin.core.entities.plugin.request import DatasourceActions
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -144,6 +147,15 @@ class Plugin(IOServer, Router):
                 InitializeMessage(
                     type=InitializeMessage.Type.AGENT_STRATEGY_DECLARATION,
                     data=List(root=self.registration.agent_strategies_configuration).model_dump(),
+                ).model_dump_json()
+                + "\n\n"
+            )
+
+        if self.registration.datasource_configuration:
+            tcp_stream.write(
+                InitializeMessage(
+                    type=InitializeMessage.Type.DATASOURCE_DECLARATION,
+                    data=List(root=self.registration.datasource_configuration).model_dump(),
                 ).model_dump_json()
                 + "\n\n"
             )
@@ -301,6 +313,54 @@ class Plugin(IOServer, Router):
             self.plugin_executer.get_ai_model_schemas,
             lambda data: data.get("type") == PluginInvokeType.Model.value
             and data.get("action") == ModelActions.GetAIModelSchemas.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.validate_datasource_credentials,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.ValidateCredentials.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_crawl_website,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeWebsiteDatasourceGetCrawl.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_get_page_content,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeOnlineDocumentDatasourceGetPageContent.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_get_pages,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeOnlineDocumentDatasourceGetPages.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.get_oauth_authorization_url,
+            lambda data: data.get("type") == PluginInvokeType.OAuth.value
+            and data.get("action") == OAuthActions.GetAuthorizationUrl.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.get_oauth_credentials,
+            lambda data: data.get("type") == PluginInvokeType.OAuth.value
+            and data.get("action") == OAuthActions.GetCredentials.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_online_drive_browse_files,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeOnlineDriveBrowseFiles.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_online_drive_download_file,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeOnlineDriveDownloadFile.value,
         )
 
         self.register_route(

@@ -1,0 +1,15 @@
+identity:
+  author: "yeuoly"
+  name: "notion"
+  description:
+    zh_Hans: "Notion"
+    en_US: "Notion"
+  label:
+    zh_Hans: "Notion"
+    en_US: "Notion"
+description:
+  zh_Hans: "Notion"
+  en_US: "Notion"
+extra:
+  python:
+    source: "datasources/notion.py"

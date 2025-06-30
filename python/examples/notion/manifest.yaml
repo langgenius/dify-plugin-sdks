@@ -1,0 +1,39 @@
+version: 0.0.1
+type: plugin
+author: "langgenius"
+name: "notion"
+description:
+  en_US: Notion is a note-taking app.
+  zh_Hans: Notion
+label:
+  en_US: "Notion"
+created_at: "2024-07-12T08:03:44.658609186Z"
+icon: notion.svg
+resource:
+  memory: 1048576
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      tts: true
+    endpoint:
+      enabled: true
+    app:
+      enabled: true
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  datasources:
+    - "provider/notion.yaml"
+meta:
+  version: 0.0.1
+  arch:
+    - "amd64"
+    - "arm64"
+  runner:
+    language: "python"
+    version: "3.12"
+    entrypoint: "main"
