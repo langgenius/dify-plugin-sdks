@@ -46,20 +46,3 @@ class ParameterOption(BaseModel):
             return str(value)
         else:
             return value
-
-
-@docs(
-    description="The auto generate of the parameter",
-)
-class ParameterAutoGenerate(BaseModel):
-    class Type(StrEnum):
-        PROMPT_INSTRUCTION = "prompt_instruction"
-
-    type: Type
-
-
-@docs(
-    description="The template of the parameter",
-)
-class ParameterTemplate(BaseModel):
-    enabled: bool = Field(..., description="Whether the parameter is jinja enabled")
