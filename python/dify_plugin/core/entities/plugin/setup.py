@@ -160,6 +160,7 @@ class PluginConfiguration(BaseModel):
     repo: Optional[str] = Field(None, description="The repository URL of the plugin")
     description: I18nObject
     icon: str
+    icon_dark: Optional[str] = Field(None, description="The dark mode icon of the plugin")
     label: I18nObject
     created_at: datetime.datetime
     resource: PluginResourceRequirements
