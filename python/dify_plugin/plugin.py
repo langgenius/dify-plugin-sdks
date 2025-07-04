@@ -2,7 +2,7 @@ import base64
 import logging
 import uuid
 from collections.abc import Generator
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import RootModel
 from yarl import URL
@@ -12,9 +12,11 @@ from dify_plugin.config.logger_format import plugin_logger_handler
 from dify_plugin.core.entities.message import InitializeMessage
 from dify_plugin.core.entities.plugin.request import (
     AgentActions,
+    DatasourceActions,
     DynamicParameterActions,
     EndpointActions,
     ModelActions,
+    OAuthActions,
     PluginInvokeType,
     ToolActions,
 )
@@ -65,7 +67,7 @@ class Plugin(IOServer, Router):
         # register io routes
         self._register_request_routes()
 
-    def _launch_local_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, Optional[ResponseWriter]]:
+    def _launch_local_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, ResponseWriter | None]:
         """
         Launch local stream
         """
@@ -76,7 +78,7 @@ class Plugin(IOServer, Router):
         self._log_configuration()
         return reader, writer
 
-    def _launch_remote_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, Optional[ResponseWriter]]:
+    def _launch_remote_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, ResponseWriter | None]:
         """
         Launch remote stream
         """
@@ -148,6 +150,15 @@ class Plugin(IOServer, Router):
                 + "\n\n"
             )
 
+        if self.registration.datasource_configuration:
+            tcp_stream.write(
+                InitializeMessage(
+                    type=InitializeMessage.Type.DATASOURCE_DECLARATION,
+                    data=List(root=self.registration.datasource_configuration).model_dump(),
+                ).model_dump_json()
+                + "\n\n"
+            )
+
         for file in self.registration.files:
             # divide the file into chunks
             chunks = [file.data[i : i + 8192] for i in range(0, len(file.data), 8192)]
@@ -174,7 +185,7 @@ class Plugin(IOServer, Router):
 
         self._log_configuration()
 
-    def _launch_serverless_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, Optional[ResponseWriter]]:
+    def _launch_serverless_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, ResponseWriter | None]:
         """
         Launch Serverless stream
         """
@@ -304,6 +315,54 @@ class Plugin(IOServer, Router):
         )
 
         self.register_route(
+            self.plugin_executer.validate_datasource_credentials,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.ValidateCredentials.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_crawl_website,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeWebsiteDatasourceGetCrawl.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_get_page_content,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeOnlineDocumentDatasourceGetPageContent.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_get_pages,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeOnlineDocumentDatasourceGetPages.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.get_oauth_authorization_url,
+            lambda data: data.get("type") == PluginInvokeType.OAuth.value
+            and data.get("action") == OAuthActions.GetAuthorizationUrl.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.get_oauth_credentials,
+            lambda data: data.get("type") == PluginInvokeType.OAuth.value
+            and data.get("action") == OAuthActions.GetCredentials.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_online_drive_browse_files,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeOnlineDriveBrowseFiles.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_online_drive_download_file,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeOnlineDriveDownloadFile.value,
+        )
+
+        self.register_route(
             self.plugin_executer.fetch_parameter_options,
             lambda data: data.get("type") == PluginInvokeType.DynamicParameter.value
             and data.get("action") == DynamicParameterActions.FetchParameterOptions.value,
@@ -315,10 +374,10 @@ class Plugin(IOServer, Router):
         data: dict,
         reader: RequestReader,
         writer: ResponseWriter,
-        conversation_id: Optional[str] = None,
-        message_id: Optional[str] = None,
-        app_id: Optional[str] = None,
-        endpoint_id: Optional[str] = None,
+        conversation_id: str | None = None,
+        message_id: str | None = None,
+        app_id: str | None = None,
+        endpoint_id: str | None = None,
     ):
         """
         accept requests and execute

@@ -1,7 +1,6 @@
 import json
 import time
 from decimal import Decimal
-from typing import Optional
 from urllib.parse import urljoin
 
 import requests
@@ -37,7 +36,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         model: str,
         credentials: dict,
         texts: list[str],
-        user: Optional[str] = None,
+        user: str | None = None,
         input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
     ) -> TextEmbeddingResult:
         """

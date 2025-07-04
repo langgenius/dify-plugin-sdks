@@ -1,7 +1,6 @@
 from collections.abc import Mapping
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -77,8 +76,8 @@ class LLMResultChunkDelta(BaseModel):
 
     index: int
     message: AssistantPromptMessage
-    usage: Optional[LLMUsage] = None
-    finish_reason: Optional[str] = None
+    usage: LLMUsage | None = None
+    finish_reason: str | None = None
 
 
 class LLMResultChunk(BaseModel):
@@ -88,7 +87,7 @@ class LLMResultChunk(BaseModel):
 
     model: str
     prompt_messages: list[PromptMessage] = Field(default_factory=list)
-    system_fingerprint: Optional[str] = None
+    system_fingerprint: str | None = None
     delta: LLMResultChunkDelta
 
     @field_validator("prompt_messages", mode="before")
@@ -112,7 +111,7 @@ class LLMStructuredOutput(BaseModel):
     Model class for llm structured output.
     """
 
-    structured_output: Optional[Mapping] = None
+    structured_output: Mapping | None = None
 
 
 class LLMResultChunkWithStructuredOutput(LLMResultChunk, LLMStructuredOutput):
@@ -132,7 +131,7 @@ class LLMResult(BaseModel):
     prompt_messages: list[PromptMessage] = Field(default_factory=list)
     message: AssistantPromptMessage
     usage: LLMUsage
-    system_fingerprint: Optional[str] = None
+    system_fingerprint: str | None = None
 
     @field_validator("prompt_messages", mode="before")
     @classmethod

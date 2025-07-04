@@ -4,7 +4,7 @@ import logging
 import uuid
 from collections.abc import Generator
 from decimal import Decimal
-from typing import Any, Optional, Union, cast
+from typing import Any, Union, cast
 from urllib.parse import urljoin
 
 import requests
@@ -110,10 +110,10 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -146,7 +146,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         model: str,
         credentials: dict,
         prompt_messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
+        tools: list[PromptMessageTool] | None = None,
     ) -> int:
         """
         Get number of tokens for given prompt messages
@@ -375,10 +375,10 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke llm completion model
@@ -701,7 +701,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         return result
 
-    def _convert_prompt_message_to_dict(self, message: PromptMessage, credentials: Optional[dict] = None) -> dict:
+    def _convert_prompt_message_to_dict(self, message: PromptMessage, credentials: dict | None = None) -> dict:
         """
         Convert PromptMessage to dict for OpenAI API format
         """
@@ -774,7 +774,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
     def _num_tokens_from_string(
         self,
         text: Union[str, list[PromptMessageContent]],
-        tools: Optional[list[PromptMessageTool]] = None,
+        tools: list[PromptMessageTool] | None = None,
     ) -> int:
         """
         Approximate num tokens for model with gpt2 tokenizer.
@@ -802,8 +802,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
     def _num_tokens_from_messages(
         self,
         messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
-        credentials: Optional[dict] = None,
+        tools: list[PromptMessageTool] | None = None,
+        credentials: dict | None = None,
     ) -> int:
         """
         Approximate num tokens with GPT2 tokenizer.

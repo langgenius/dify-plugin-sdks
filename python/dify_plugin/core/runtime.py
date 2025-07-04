@@ -3,7 +3,7 @@ from abc import ABC
 from collections.abc import Generator, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import Any, Generic, Optional, TypeVar, Union
+from typing import Any, Generic, TypeVar, Union
 
 import httpx
 from pydantic import BaseModel, TypeAdapter
@@ -81,12 +81,12 @@ class Session:
         executor: ThreadPoolExecutor,
         reader: RequestReader,
         writer: ResponseWriter,
-        install_method: Optional[InstallMethod] = None,
-        dify_plugin_daemon_url: Optional[str] = None,
-        conversation_id: Optional[str] = None,
-        message_id: Optional[str] = None,
-        app_id: Optional[str] = None,
-        endpoint_id: Optional[str] = None,
+        install_method: InstallMethod | None = None,
+        dify_plugin_daemon_url: str | None = None,
+        conversation_id: str | None = None,
+        message_id: str | None = None,
+        app_id: str | None = None,
+        endpoint_id: str | None = None,
     ) -> None:
         # current session id
         self.session_id: str = session_id
@@ -99,22 +99,22 @@ class Session:
         self.writer: ResponseWriter = writer
 
         # conversation id
-        self.conversation_id: Optional[str] = conversation_id
+        self.conversation_id: str | None = conversation_id
 
         # message id
-        self.message_id: Optional[str] = message_id
+        self.message_id: str | None = message_id
 
         # app id
-        self.app_id: Optional[str] = app_id
+        self.app_id: str | None = app_id
 
         # endpoint id
-        self.endpoint_id: Optional[str] = endpoint_id
+        self.endpoint_id: str | None = endpoint_id
 
         # install method
-        self.install_method: Optional[InstallMethod] = install_method
+        self.install_method: InstallMethod | None = install_method
 
         # dify plugin daemon url
-        self.dify_plugin_daemon_url: Optional[str] = dify_plugin_daemon_url
+        self.dify_plugin_daemon_url: str | None = dify_plugin_daemon_url
 
         # register invocations
         self._register_invocations()
@@ -157,7 +157,7 @@ class BackwardsInvocationResponseEvent(BaseModel):
     backwards_request_id: str
     event: Event
     message: str
-    data: Optional[dict]
+    data: dict | None
 
 
 T = TypeVar("T", bound=Union[BaseModel, dict, str])
@@ -166,7 +166,7 @@ T = TypeVar("T", bound=Union[BaseModel, dict, str])
 class BackwardsInvocation(Generic[T], ABC):
     def __init__(
         self,
-        session: Optional[Session] = None,
+        session: Session | None = None,
     ) -> None:
         self.session = session
 

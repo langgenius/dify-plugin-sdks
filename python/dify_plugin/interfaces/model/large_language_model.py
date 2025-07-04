@@ -3,7 +3,7 @@ import re
 import time
 from abc import abstractmethod
 from collections.abc import Generator, Mapping
-from typing import Optional, Union
+from typing import Union
 
 from pydantic import ConfigDict
 
@@ -55,10 +55,10 @@ class LargeLanguageModel(AIModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk, None, None]]:
         """
         Invoke large language model
@@ -81,7 +81,7 @@ class LargeLanguageModel(AIModel):
         model: str,
         credentials: dict,
         prompt_messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
+        tools: list[PromptMessageTool] | None = None,
     ) -> int:
         """
         Get number of tokens for given prompt messages
@@ -116,7 +116,7 @@ class LargeLanguageModel(AIModel):
 
         return []
 
-    def get_model_mode(self, model: str, credentials: Optional[Mapping] = None) -> LLMMode:
+    def get_model_mode(self, model: str, credentials: Mapping | None = None) -> LLMMode:
         """
         Get model mode
 
@@ -275,10 +275,10 @@ class LargeLanguageModel(AIModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk, None, None]]:
         """
         Code block mode wrapper, ensure the response is a code block with output markdown quote
@@ -553,11 +553,11 @@ if you are not sure about the structure.
         model: str,
         credentials: dict,
         prompt_messages: list[PromptMessage],
-        model_parameters: Optional[dict] = None,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
+        model_parameters: dict | None = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> Generator[LLMResultChunk, None, None]:
         """
         Invoke large language model

@@ -1,7 +1,7 @@
 import inspect
 import logging
 from collections.abc import Callable
-from typing import Any, Optional
+from typing import Any
 
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.__base.request_reader import RequestReader
@@ -23,7 +23,7 @@ class Router:
     routes: list[Route]
     request_reader: RequestReader
 
-    def __init__(self, request_reader: RequestReader, response_writer: Optional[ResponseWriter]) -> None:
+    def __init__(self, request_reader: RequestReader, response_writer: ResponseWriter | None) -> None:
         self.routes = []
         self.request_reader = request_reader
         self.response_writer = response_writer

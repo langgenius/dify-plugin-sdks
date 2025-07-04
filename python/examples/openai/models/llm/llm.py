@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Generator
 from decimal import Decimal
-from typing import Optional, Union, cast
+from typing import Union, cast
 
 import tiktoken
 from openai import OpenAI, Stream
@@ -71,10 +71,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -127,10 +127,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> Union[LLMResult, Generator]:
         """
         Code block mode wrapper for invoking large language model
@@ -293,7 +293,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         model: str,
         credentials: dict,
         prompt_messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
+        tools: list[PromptMessageTool] | None = None,
     ) -> int:
         """
         Get number of tokens for given prompt messages
@@ -429,9 +429,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        stop: Optional[list[str]] = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke llm completion model
@@ -612,10 +612,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke llm chat model
@@ -687,7 +687,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         credentials: dict,
         response: ChatCompletion,
         prompt_messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
+        tools: list[PromptMessageTool] | None = None,
     ) -> LLMResult:
         """
         Handle llm chat response
@@ -738,7 +738,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         credentials: dict,
         response: Stream[ChatCompletionChunk],
         prompt_messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
+        tools: list[PromptMessageTool] | None = None,
     ) -> Generator:
         """
         Handle llm chat stream response
@@ -750,7 +750,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :return: llm response chunk generator
         """
         full_assistant_content = ""
-        delta_assistant_message_function_call_storage: Optional[ChoiceDeltaFunctionCall] = None
+        delta_assistant_message_function_call_storage: ChoiceDeltaFunctionCall | None = None
         prompt_tokens = 0
         completion_tokens = 0
         final_tool_calls = []
@@ -888,8 +888,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         return tool_calls
 
     def _extract_response_function_call(
-        self, response_function_call: Optional[FunctionCall | ChoiceDeltaFunctionCall]
-    ) -> Optional[AssistantPromptMessage.ToolCall]:
+        self, response_function_call: FunctionCall | ChoiceDeltaFunctionCall | None
+    ) -> AssistantPromptMessage.ToolCall | None:
         """
         Extract function call from response
 
@@ -1005,7 +1005,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         return message_dict
 
-    def _num_tokens_from_string(self, model: str, text: str, tools: Optional[list[PromptMessageTool]] = None) -> int:
+    def _num_tokens_from_string(self, model: str, text: str, tools: list[PromptMessageTool] | None = None) -> int:
         """
         Calculate num tokens for text completion model with tiktoken package.
 
@@ -1030,7 +1030,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         self,
         model: str,
         messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
+        tools: list[PromptMessageTool] | None = None,
     ) -> int:
         """Calculate num tokens for gpt-3.5-turbo and gpt-4 with tiktoken package.
 

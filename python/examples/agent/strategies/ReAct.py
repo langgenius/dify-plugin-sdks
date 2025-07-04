@@ -1,7 +1,7 @@
 import json
 import time
 from collections.abc import Generator, Mapping
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import pydantic
 from pydantic import BaseModel, Field
@@ -96,7 +96,7 @@ class ReActAgentStrategy(AgentStrategy):
         iteration_step = 1
         max_iteration_steps = react_params.maximum_iterations
         run_agent_state = True
-        llm_usage: dict[str, Optional[LLMUsage]] = {"usage": None}
+        llm_usage: dict[str, LLMUsage | None] = {"usage": None}
         final_answer = ""
         prompt_messages: list[PromptMessage] = []
 
@@ -147,7 +147,7 @@ class ReActAgentStrategy(AgentStrategy):
                 stop=stop,
             )
 
-            usage_dict: dict[str, Optional[LLMUsage]] = {"usage": None}
+            usage_dict: dict[str, LLMUsage | None] = {"usage": None}
             react_chunks = CotAgentOutputParser.handle_react_stream_output(chunks, usage_dict)
             scratchpad = AgentScratchpadUnit(
                 agent_response="",

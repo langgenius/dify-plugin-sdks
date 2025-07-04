@@ -1,5 +1,4 @@
 from collections.abc import Generator
-from typing import Optional
 from urllib.parse import urljoin
 
 import requests
@@ -31,7 +30,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         credentials: dict,
         content_text: str,
         voice: str,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> Generator[bytes, None, None]:
         """
         Invoke TTS model
@@ -107,7 +106,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex)) from ex
 
-    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity | None:
         """
         Get customizable model schema
         """
@@ -146,7 +145,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
             },
         )
 
-    def get_tts_model_voices(self, model: str, credentials: dict, language: Optional[str] = None) -> list:
+    def get_tts_model_voices(self, model: str, credentials: dict, language: str | None = None) -> list:
         """
         Override base get_tts_model_voices to handle customizable voices
         """
