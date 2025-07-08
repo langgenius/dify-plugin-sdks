@@ -3,7 +3,6 @@ import operator
 from collections.abc import Generator
 from functools import reduce
 from io import BytesIO
-from typing import Optional
 
 from openai import OpenAI
 from pydub import AudioSegment
@@ -29,7 +28,7 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         credentials: dict,
         content_text: str,
         voice: str,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> bytes | Generator[bytes, None, None]:
         """
         _invoke text2speech model
@@ -53,7 +52,7 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         # if streaming:
         return self._tts_invoke_streaming(model=model, credentials=credentials, content_text=content_text, voice=voice)
 
-    def validate_credentials(self, model: str, credentials: dict, user: Optional[str] = None) -> None:
+    def validate_credentials(self, model: str, credentials: dict, user: str | None = None) -> None:
         """
         validate credentials text2speech model
 

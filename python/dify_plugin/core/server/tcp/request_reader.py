@@ -6,7 +6,7 @@ import socket as native_socket
 import time
 from collections.abc import Callable, Generator
 from threading import Lock
-from typing import Any, Optional
+from typing import Any
 
 from gevent import sleep
 from gevent import socket as gevent_socket
@@ -32,7 +32,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         key: str,
         reconnect_attempts: int = 3,
         reconnect_timeout: int = 5,
-        on_connected: Optional[Callable] = None,
+        on_connected: Callable | None = None,
     ):
         """
         Initialize the TCPStream and connect to the target, raise exception if connection failed

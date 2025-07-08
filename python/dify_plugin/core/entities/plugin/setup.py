@@ -1,6 +1,5 @@
 import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -44,57 +43,55 @@ class PluginResourceRequirements(BaseModel):
             description="Permission of tool",
         )
         class Tool(BaseModel):
-            enabled: Optional[bool] = Field(default=False)
+            enabled: bool | None = Field(default=False)
 
         @docs(
             description="Permission of model",
         )
         class Model(BaseModel):
-            enabled: Optional[bool] = Field(default=False, description="Whether to enable invocation of model")
-            llm: Optional[bool] = Field(default=False, description="Whether to enable invocation of llm")
-            text_embedding: Optional[bool] = Field(
+            enabled: bool | None = Field(default=False, description="Whether to enable invocation of model")
+            llm: bool | None = Field(default=False, description="Whether to enable invocation of llm")
+            text_embedding: bool | None = Field(
                 default=False, description="Whether to enable invocation of text embedding"
             )
-            rerank: Optional[bool] = Field(default=False, description="Whether to enable invocation of rerank")
-            tts: Optional[bool] = Field(default=False, description="Whether to enable invocation of tts")
-            speech2text: Optional[bool] = Field(
-                default=False, description="Whether to enable invocation of speech2text"
-            )
-            moderation: Optional[bool] = Field(default=False, description="Whether to enable invocation of moderation")
+            rerank: bool | None = Field(default=False, description="Whether to enable invocation of rerank")
+            tts: bool | None = Field(default=False, description="Whether to enable invocation of tts")
+            speech2text: bool | None = Field(default=False, description="Whether to enable invocation of speech2text")
+            moderation: bool | None = Field(default=False, description="Whether to enable invocation of moderation")
 
         @docs(
             description="Permission of node",
         )
         class Node(BaseModel):
-            enabled: Optional[bool] = Field(default=False, description="Whether to enable invocation of node")
+            enabled: bool | None = Field(default=False, description="Whether to enable invocation of node")
 
         @docs(
             description="Permission of endpoint",
         )
         class Endpoint(BaseModel):
-            enabled: Optional[bool] = Field(default=False, description="Whether to enable registration of endpoint")
+            enabled: bool | None = Field(default=False, description="Whether to enable registration of endpoint")
 
         @docs(
             description="Permission of app",
         )
         class App(BaseModel):
-            enabled: Optional[bool] = Field(default=False, description="Whether to enable invocation of app")
+            enabled: bool | None = Field(default=False, description="Whether to enable invocation of app")
 
         @docs(
             description="Permission of storage",
         )
         class Storage(BaseModel):
-            enabled: Optional[bool] = Field(default=False, description="Whether to enable uses of storage")
+            enabled: bool | None = Field(default=False, description="Whether to enable uses of storage")
             size: int = Field(ge=1024, le=1073741824, default=1048576, description="Size of storage")
 
-        tool: Optional[Tool] = Field(default=None, description="Permission of tool")
-        model: Optional[Model] = Field(default=None, description="Permission of model")
-        node: Optional[Node] = Field(default=None, description="Permission of node")
-        endpoint: Optional[Endpoint] = Field(default=None, description="Permission of endpoint")
-        app: Optional[App] = Field(default=None, description="Permission of app")
-        storage: Optional[Storage] = Field(default=None, description="Permission of storage")
+        tool: Tool | None = Field(default=None, description="Permission of tool")
+        model: Model | None = Field(default=None, description="Permission of model")
+        node: Node | None = Field(default=None, description="Permission of node")
+        endpoint: Endpoint | None = Field(default=None, description="Permission of endpoint")
+        app: App | None = Field(default=None, description="Permission of app")
+        storage: Storage | None = Field(default=None, description="Permission of storage")
 
-    permission: Optional[Permission] = Field(default=None, description="Permission of plugin")
+    permission: Permission | None = Field(default=None, description="Permission of plugin")
 
 
 @docs(
@@ -124,6 +121,11 @@ class PluginConfiguration(BaseModel):
             description="manifest paths of agent strategy providers in yaml format,"
             "refers to [AgentStrategyProvider](#agentstrategyprovider)",
         )
+        datasources: list[str] = Field(
+            default_factory=list,
+            description="manifest paths of datasource providers in yaml format"
+            " refers to [DatasourceProvider](#datasourceprovider)",
+        )
 
     @docs(
         description="Meta information of plugin",
@@ -145,7 +147,7 @@ class PluginConfiguration(BaseModel):
         )
         arch: list[PluginArch]
         runner: PluginRunner
-        minimum_dify_version: Optional[str] = Field(
+        minimum_dify_version: str | None = Field(
             None,
             description="The minimum version of Dify, designed for forward compatibility."
             "When installing a newer plugin to an older Dify, many new features may not be available,"
@@ -155,9 +157,9 @@ class PluginConfiguration(BaseModel):
 
     version: str = Field(..., pattern=r"^\d{1,4}(\.\d{1,4}){1,3}(-\w{1,16})?$")
     type: PluginType
-    author: Optional[str] = Field(..., pattern=r"^[a-zA-Z0-9_-]{1,64}$")
+    author: str | None = Field(..., pattern=r"^[a-zA-Z0-9_-]{1,64}$")
     name: str = Field(..., pattern=r"^[a-z0-9_-]{1,128}$")
-    repo: Optional[str] = Field(None, description="The repository URL of the plugin")
+    repo: str | None = Field(None, description="The repository URL of the plugin")
     description: I18nObject
     icon: str
     label: I18nObject

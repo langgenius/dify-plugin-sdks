@@ -1,6 +1,6 @@
 import os
 from abc import abstractmethod
-from typing import IO, Optional
+from typing import IO
 
 from pydantic import ConfigDict
 
@@ -23,7 +23,7 @@ class Speech2TextModel(AIModel):
     ############################################################
 
     @abstractmethod
-    def _invoke(self, model: str, credentials: dict, file: IO[bytes], user: Optional[str] = None) -> str:
+    def _invoke(self, model: str, credentials: dict, file: IO[bytes], user: str | None = None) -> str:
         """
         Invoke large language model
 
@@ -55,7 +55,7 @@ class Speech2TextModel(AIModel):
     #                 For executor use only                    #
     ############################################################
 
-    def invoke(self, model: str, credentials: dict, file: IO[bytes], user: Optional[str] = None) -> str:
+    def invoke(self, model: str, credentials: dict, file: IO[bytes], user: str | None = None) -> str:
         """
         Invoke large language model
 

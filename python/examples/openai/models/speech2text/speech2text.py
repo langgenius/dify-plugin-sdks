@@ -1,4 +1,4 @@
-from typing import IO, Optional
+from typing import IO
 
 from openai import OpenAI
 
@@ -13,7 +13,7 @@ class OpenAISpeech2TextModel(_CommonOpenAI, Speech2TextModel):
     Model class for OpenAI Speech to text model.
     """
 
-    def _invoke(self, model: str, credentials: dict, file: IO[bytes], user: Optional[str] = None) -> str:
+    def _invoke(self, model: str, credentials: dict, file: IO[bytes], user: str | None = None) -> str:
         """
         Invoke speech2text model
 
