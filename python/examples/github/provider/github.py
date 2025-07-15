@@ -56,10 +56,10 @@ class GithubProvider(ToolProvider):
 
     def _validate_credentials(self, credentials: dict) -> None:
         try:
-            if "access_tokens" not in credentials or not credentials.get("access_tokens"):
+            if "access_token" not in credentials or not credentials.get("access_token"):
                 raise ToolProviderCredentialValidationError("GitHub API Access Token is required.")
             headers = {
-                "Authorization": f"Bearer {credentials['access_tokens']}",
+                "Authorization": f"Bearer {credentials['access_token']}",
                 "Accept": "application/vnd.github+json",
             }
             response = requests.get(self._API_USER_URL, headers=headers, timeout=10)
