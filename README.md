@@ -36,3 +36,4 @@ For the manifest specification, we've introduced two versioning fields:
 | 1.5.1                | 0.4.0         | Support `dynamic-select` parameter type |
 | 1.5.1                | 0.4.0         | Support LLM structured output           |
 | 1.6.0                | 0.4.1         | Support `dark-icon` field in manifest |
+| 1.6.1                | 0.4.2         | Support OAuth functionality for plugins |
