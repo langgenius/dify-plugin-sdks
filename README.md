@@ -21,16 +21,18 @@ For the manifest specification, we've introduced two versioning fields:
 
 ### Meta.Version Reference
 
-| Manifest Version | Description |
-|------------------|-------------|
-| 0.0.1            | Initial release |
+| Manifest Version | Description                                                                                                                                                                                                                   |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.0.2            | As `ToolProviderType` now supports `mcp`, an elder implementation is going to broken when user selected a `mcp` tool in Dify, so we bump it to 0.0.2 to ensure Dify knows that `mcp` is disabled if meta.version under 0.0.2. |
+| 0.0.1            | Initial release                                                                                                                                                                                                               |
 
 ### Meta.MinimumDifyVersion Reference
 
-| Minimum Dify Version| SDK Version | Description |
-|----------------------|-------------|-------------|
-| 1.2.0                | 0.2.0         | Support fetching application info |
-| 1.4.0                | 0.0.1-beta.49 | Support LLM multimodal output |
+| Minimum Dify Version | SDK Version   | Description                             |
+| -------------------- | ------------- | --------------------------------------- |
+| 1.2.0                | 0.2.0         | Support fetching application info       |
+| 1.4.0                | 0.0.1-beta.49 | Support LLM multimodal output           |
 | 1.4.0                | 0.3.1         | Support OAuth functionality for plugins |
 | 1.5.1                | 0.4.0         | Support `dynamic-select` parameter type |
-| 1.5.1                | 0.4.0         | Support LLM structured output |
+| 1.5.1                | 0.4.0         | Support LLM structured output           |
+| 1.6.0                | 0.4.1         | Support `dark-icon` field in manifest |
