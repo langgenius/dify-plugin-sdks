@@ -24,13 +24,13 @@ class GithubRepositoryReadmeTool(Tool):
             yield self.create_text_message("Please input owner")
         if not repo:
             yield self.create_text_message("Please input repo")
-        if credential_type == CredentialType.API_KEY and "access_token" not in self.runtime.credentials:
+        if credential_type == CredentialType.API_KEY and "access_tokens" not in self.runtime.credentials:
             yield self.create_text_message("GitHub API Access Tokens is required.")
 
-        if credential_type == CredentialType.OAUTH and "access_token" not in self.runtime.credentials:
+        if credential_type == CredentialType.OAUTH and "access_tokens" not in self.runtime.credentials:
             yield self.create_text_message("GitHub OAuth Access Tokens is required.")
 
-        access_token = self.runtime.credentials.get("access_token")
+        access_token = self.runtime.credentials.get("access_tokens")
         try:
             headers = {
                 "Content-Type": "application/vnd.github+json",
