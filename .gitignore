@@ -7,3 +7,6 @@
 **/*.secret
 **/*.token
 **/*.pub
+
+# dify plugins
+**/*.difypkg
