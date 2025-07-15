@@ -21,26 +21,20 @@ class GithubRepositoriesTool(Tool):
         credential_type = self.runtime.credential_type
         if not query:
             yield self.create_text_message("Please input symbol")
-        if (
-            credential_type == CredentialType.API_KEY and "access_tokens" not in self.runtime.credentials
-        ) or not self.runtime.credentials.get("access_tokens"):
+
+        if credential_type == CredentialType.API_KEY and "access_token" not in self.runtime.credentials:
             yield self.create_text_message("GitHub API Access Tokens is required.")
 
-        if (
-            credential_type == CredentialType.OAUTH and "access_tokens" not in self.runtime.credentials
-        ) or not self.runtime.credentials.get("access_tokens"):
+        if credential_type == CredentialType.OAUTH and "access_token" not in self.runtime.credentials:
             yield self.create_text_message("GitHub OAuth Access Tokens is required.")
 
-        if "api_version" not in self.runtime.credentials or not self.runtime.credentials.get("api_version"):
-            api_version = "2022-11-28"
-        else:
-            api_version = self.runtime.credentials.get("api_version")
-
+        access_token = self.runtime.credentials.get("access_token")
         try:
             headers = {
                 "Content-Type": "application/vnd.github+json",
-                "Authorization": f"Bearer {self.runtime.credentials.get('access_tokens')}",
-                "X-GitHub-Api-Version": api_version,
+                "Authorization": f"Bearer {access_token}",
+                # fixed api version
+                "X-GitHub-Api-Version": "2022-11-28",
             }
             s = requests.session()
             api_domain = "https://api.github.com"
