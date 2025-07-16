@@ -117,7 +117,7 @@ class GithubRepositoryContentsTool(Tool):
                                 file_info["content"] = (
                                     decoded_content[:2000] + "..." if len(decoded_content) > 2000 else decoded_content
                                 )
-                            except:
+                            except Exception:
                                 file_info["content"] = "Unable to decode content"
 
                         result = {"type": "file", "file_info": file_info}

@@ -20,7 +20,7 @@ class GithubUserReposTool(Tool):
         per_page = tool_parameters.get("per_page", 10)
         sort = tool_parameters.get("sort", "updated")
         direction = tool_parameters.get("direction", "desc")
-        type = tool_parameters.get("type", "all")
+        type = tool_parameters.get("type", "all")  # noqa: A001
 
         credential_type = self.runtime.credential_type
 
