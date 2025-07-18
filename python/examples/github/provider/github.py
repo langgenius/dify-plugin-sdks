@@ -7,7 +7,7 @@ import requests
 from werkzeug import Request
 
 from dify_plugin import ToolProvider
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError, ToolProviderOAuthError
 
 
 class GithubProvider(ToolProvider):
@@ -37,7 +37,7 @@ class GithubProvider(ToolProvider):
         """
         code = request.args.get("code")
         if not code:
-            raise ValueError("No code provided")
+            raise ToolProviderOAuthError("No code provided")
         # Optionally: validate state here
 
         data = {
@@ -51,7 +51,7 @@ class GithubProvider(ToolProvider):
         response_json = response.json()
         access_tokens = response_json.get("access_token")
         if not access_tokens:
-            raise ValueError(f"Error in GitHub OAuth: {response_json}")
+            raise ToolProviderOAuthError(f"Error in GitHub OAuth: {response_json}")
         return {"access_tokens": access_tokens}
 
     def _validate_credentials(self, credentials: dict) -> None:
