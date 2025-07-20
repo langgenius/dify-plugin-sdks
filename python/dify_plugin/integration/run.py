@@ -147,6 +147,12 @@ class PluginRunner:
         os.close(self.stdin_pipe_read)
 
     def _read_async(self, fd: int) -> bytes:
+        import select
+
+        ready, _, _ = select.select([fd], [], [], 0.1)
+        if not ready:
+            return b""
+
         # read data from stdin using os.read in 64KB chunks.
         # the OS buffer for stdin is usually 64KB, so using a larger value doesn't make sense.
         b = os.read(fd, 65536)
@@ -155,6 +161,8 @@ class PluginRunner:
         return b
 
     def _message_reader(self, pipe: int):
+        import time
+
         # create a scanner to read the message line by line
         """Read messages line by line from the pipe."""
         buffer = b""
@@ -166,6 +174,7 @@ class PluginRunner:
                     break
 
                 if not data:
+                    time.sleep(0.01)
                     continue
 
                 buffer += data
