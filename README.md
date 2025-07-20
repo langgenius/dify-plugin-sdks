@@ -29,11 +29,11 @@ For the manifest specification, we've introduced two versioning fields:
 ### Meta.MinimumDifyVersion Reference
 
 | Minimum Dify Version | SDK Version   | Description                             |
-| -------------------- | ------------- | --------------------------------------- |
+|----------------------| ------------- | --------------------------------------- |
 | 1.2.0                | 0.2.0         | Support fetching application info       |
 | 1.4.0                | 0.0.1-beta.49 | Support LLM multimodal output           |
 | 1.4.0                | 0.3.1         | Support OAuth functionality for plugins |
 | 1.5.1                | 0.4.0         | Support `dynamic-select` parameter type |
 | 1.5.1                | 0.4.0         | Support LLM structured output           |
 | 1.6.0                | 0.4.1         | Support `dark-icon` field in manifest |
-| 1.6.1                | 0.4.2         | Support OAuth functionality for plugins |
+| 1.7.0                | 0.4.2         | Support OAuth functionality for plugins |
