@@ -234,24 +234,63 @@ class ToolProvider:
 
     def _validate_credentials(self, credentials: dict):
         raise NotImplementedError(
-            "This plugin should implement `_validate_credentials` method to enable credentials validation"
+            "The tool you are using does not support credentials validation, please implement `_validate_credentials` method"
         )
 
     def oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+        """
+        Get the authorization url
+
+        :param redirect_uri: redirect uri
+        :param system_credentials: system credentials
+        :return: authorization url
+        """
         return self._oauth_get_authorization_url(redirect_uri, system_credentials)
 
     def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
-        raise NotImplementedError("This method should be implemented by a subclass")
+        raise NotImplementedError(
+            "The tool you are using does not support OAuth, please implement `_oauth_get_authorization_url` method"
+        )
 
     def oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> Mapping[str, Any]:
+        """
+        Get the credentials
+
+        :param redirect_uri: redirect uri
+        :param system_credentials: system credentials
+        :param request: raw http request
+        :return: credentials
+        """
         return self._oauth_get_credentials(redirect_uri, system_credentials, request)
 
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> Mapping[str, Any]:
-        raise NotImplementedError("This method should be implemented by a subclass")
+        raise NotImplementedError(
+            "The tool you are using does not support OAuth, please implement `_oauth_get_credentials` method"
+        )
+
+    def oauth_refresh_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
+    ) -> Mapping[str, Any]:
+        """
+        Refresh the credentials
+
+        :param redirect_uri: redirect uri
+        :param system_credentials: system credentials
+        :param credentials: credentials
+        :return: refreshed credentials
+        """
+        return self._oauth_refresh_credentials(redirect_uri, system_credentials, credentials)
+
+    def _oauth_refresh_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
+    ) -> Mapping[str, Any]:
+        raise NotImplementedError(
+            "The tool you are using does not support OAuth, please implement `_oauth_refresh_credentials` method"
+        )
 
 
 class Tool(ToolLike[ToolInvokeMessage]):

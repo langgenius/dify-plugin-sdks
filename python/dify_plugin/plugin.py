@@ -322,6 +322,12 @@ class Plugin(IOServer, Router):
             and data.get("action") == OAuthActions.GetCredentials.value,
         )
 
+        self.register_route(
+            self.plugin_executer.refresh_oauth_credentials,
+            lambda data: data.get("type") == PluginInvokeType.OAuth.value
+            and data.get("action") == OAuthActions.RefreshCredentials.value,
+        )
+
     def _execute_request(
         self,
         session_id: str,

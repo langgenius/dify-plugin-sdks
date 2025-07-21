@@ -23,6 +23,7 @@ from dify_plugin.core.entities.plugin.request import (
     ModelValidateProviderCredentialsRequest,
     OAuthGetAuthorizationUrlRequest,
     OAuthGetCredentialsRequest,
+    OAuthRefreshCredentialsRequest,
     ToolGetRuntimeParametersRequest,
     ToolInvokeRequest,
     ToolValidateCredentialsRequest,
@@ -351,6 +352,14 @@ class PluginExecutor:
 
         return {
             "credentials": provider_instance.oauth_get_credentials(data.redirect_uri, data.system_credentials, request),
+        }
+
+    def refresh_oauth_credentials(self, session: Session, data: OAuthRefreshCredentialsRequest):
+        provider_instance = self._get_oauth_provider_instance(data.provider)
+        return {
+            "credentials": provider_instance.oauth_refresh_credentials(
+                data.redirect_uri, data.system_credentials, data.credentials
+            ),
         }
 
     def _get_dynamic_parameter_action(

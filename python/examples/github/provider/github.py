@@ -54,6 +54,15 @@ class GithubProvider(ToolProvider):
             raise ToolProviderOAuthError(f"Error in GitHub OAuth: {response_json}")
         return {"access_tokens": access_tokens}
 
+    def _oauth_refresh_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
+    ) -> Mapping[str, Any]:
+        """
+        Refresh the credentials
+        """
+        # TODO: Implement the refresh credentials logic
+        return {}
+
     def _validate_credentials(self, credentials: dict) -> None:
         try:
             if "access_tokens" not in credentials or not credentials.get("access_tokens"):

@@ -28,3 +28,18 @@ class OAuthProviderProtocol(Protocol):
         :return: credentials
         """
         ...
+
+    def oauth_refresh_credentials(
+        self,
+        redirect_uri: str,
+        system_credentials: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        """
+        Refresh the credentials
+        :param redirect_uri: redirect uri
+        :param system_credentials: system credentials
+        :param credentials: credentials
+        :return: credentials
+        """
+        ...
