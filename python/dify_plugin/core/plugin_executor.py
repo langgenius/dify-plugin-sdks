@@ -353,6 +353,7 @@ class PluginExecutor:
         credentials = provider_instance.oauth_get_credentials(data.redirect_uri, data.system_credentials, request)
 
         return {
+            "metadata": credentials.metadata or {},
             "credentials": credentials.credentials,
             "expires_at": credentials.expires_at,
         }
