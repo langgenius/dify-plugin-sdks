@@ -235,7 +235,8 @@ class ToolProvider:
 
     def _validate_credentials(self, credentials: dict):
         raise NotImplementedError(
-            "The tool you are using does not support credentials validation, please implement `_validate_credentials` method"
+            "The tool you are using does not support credentials validation, "
+            "please implement `_validate_credentials` method"
         )
 
     def oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
