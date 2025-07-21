@@ -8,8 +8,9 @@ from werkzeug import Request
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.invoke_message import InvokeMessage
+from dify_plugin.entities.oauth import ToolOAuthCredentials
 from dify_plugin.entities.provider_config import LogMetadata
-from dify_plugin.entities.tool import ToolInvokeMessage, ToolOAuthCredentials, ToolParameter, ToolRuntime, ToolSelector
+from dify_plugin.entities.tool import ToolInvokeMessage, ToolParameter, ToolRuntime, ToolSelector
 from dify_plugin.file.constants import DIFY_FILE_IDENTITY, DIFY_TOOL_SELECTOR_IDENTITY
 from dify_plugin.file.entities import FileType
 from dify_plugin.file.file import File
