@@ -350,16 +350,22 @@ class PluginExecutor:
         bytes_data = binascii.unhexlify(data.raw_http_request)
         request = parse_raw_request(bytes_data)
 
+        credentials = provider_instance.oauth_get_credentials(data.redirect_uri, data.system_credentials, request)
+
         return {
-            "credentials": provider_instance.oauth_get_credentials(data.redirect_uri, data.system_credentials, request),
+            "credentials": credentials.credentials,
+            "expires_at": credentials.expires_at,
         }
 
     def refresh_oauth_credentials(self, session: Session, data: OAuthRefreshCredentialsRequest):
         provider_instance = self._get_oauth_provider_instance(data.provider)
+        credentials = provider_instance.oauth_refresh_credentials(
+            data.redirect_uri, data.system_credentials, data.credentials
+        )
+
         return {
-            "credentials": provider_instance.oauth_refresh_credentials(
-                data.redirect_uri, data.system_credentials, data.credentials
-            ),
+            "credentials": credentials.credentials,
+            "expires_at": credentials.expires_at,
         }
 
     def _get_dynamic_parameter_action(

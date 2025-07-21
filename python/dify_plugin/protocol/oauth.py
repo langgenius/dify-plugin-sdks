@@ -3,6 +3,8 @@ from typing import Any, Protocol
 
 from werkzeug import Request
 
+from dify_plugin.entities.oauth import OAuthCredentials
+
 
 class OAuthProviderProtocol(Protocol):
     def oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
@@ -19,7 +21,7 @@ class OAuthProviderProtocol(Protocol):
         redirect_uri: str,
         system_credentials: Mapping[str, Any],
         request: Request,
-    ) -> Mapping[str, Any]:
+    ) -> OAuthCredentials:
         """
         Get the credentials
         :param redirect_uri: redirect uri
@@ -34,7 +36,7 @@ class OAuthProviderProtocol(Protocol):
         redirect_uri: str,
         system_credentials: Mapping[str, Any],
         credentials: Mapping[str, Any],
-    ) -> Mapping[str, Any]:
+    ) -> OAuthCredentials:
         """
         Refresh the credentials
         :param redirect_uri: redirect uri

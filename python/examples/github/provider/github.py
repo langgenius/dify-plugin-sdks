@@ -7,6 +7,7 @@ import requests
 from werkzeug import Request
 
 from dify_plugin import ToolProvider
+from dify_plugin.entities.oauth import OAuthCredentials
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError, ToolProviderOAuthError
 
 
@@ -31,7 +32,7 @@ class GithubProvider(ToolProvider):
 
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
-    ) -> Mapping[str, Any]:
+    ) -> OAuthCredentials:
         """
         Exchange code for access_token.
         """
@@ -52,16 +53,17 @@ class GithubProvider(ToolProvider):
         access_tokens = response_json.get("access_token")
         if not access_tokens:
             raise ToolProviderOAuthError(f"Error in GitHub OAuth: {response_json}")
-        return {"access_tokens": access_tokens}
+
+        return OAuthCredentials(credentials={"access_tokens": access_tokens}, expires_at=-1)
 
     def _oauth_refresh_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
-    ) -> Mapping[str, Any]:
+    ) -> OAuthCredentials:
         """
         Refresh the credentials
         """
         # TODO: Implement the refresh credentials logic
-        return {}
+        return OAuthCredentials(credentials=credentials, expires_at=-1)
 
     def _validate_credentials(self, credentials: dict) -> None:
         try:

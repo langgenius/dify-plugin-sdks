@@ -8,6 +8,7 @@ from werkzeug import Request
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.invoke_message import InvokeMessage
+from dify_plugin.entities.oauth import OAuthCredentials
 from dify_plugin.entities.provider_config import LogMetadata
 from dify_plugin.entities.tool import ToolInvokeMessage, ToolParameter, ToolRuntime, ToolSelector
 from dify_plugin.file.constants import DIFY_FILE_IDENTITY, DIFY_TOOL_SELECTOR_IDENTITY
@@ -254,7 +255,7 @@ class ToolProvider:
 
     def oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
-    ) -> Mapping[str, Any]:
+    ) -> OAuthCredentials:
         """
         Get the credentials
 
@@ -267,14 +268,14 @@ class ToolProvider:
 
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
-    ) -> Mapping[str, Any]:
+    ) -> OAuthCredentials:
         raise NotImplementedError(
             "The tool you are using does not support OAuth, please implement `_oauth_get_credentials` method"
         )
 
     def oauth_refresh_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
-    ) -> Mapping[str, Any]:
+    ) -> OAuthCredentials:
         """
         Refresh the credentials
 
@@ -287,7 +288,7 @@ class ToolProvider:
 
     def _oauth_refresh_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
-    ) -> Mapping[str, Any]:
+    ) -> OAuthCredentials:
         raise NotImplementedError(
             "The tool you are using does not support OAuth, please implement `_oauth_refresh_credentials` method"
         )
