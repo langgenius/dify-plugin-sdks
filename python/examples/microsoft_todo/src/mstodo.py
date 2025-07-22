@@ -1,3 +1,4 @@
+import base64
 import datetime
 import json
 from collections.abc import Generator
@@ -46,7 +47,7 @@ class MSTodoPlugin(BasePlugin):
         description="Get all tasks from the Microsoft To Do list",
     )
     def get_tasks(self) -> Generator:
-        token: Token = Token(**json.loads(self.credentials.token))
+        token: Token = Token(**json.loads(base64.b64decode(self.credentials.token).decode()))
         todo_client = ToDoConnection(client_id="", client_secret="", token=token)
 
         lists = [
@@ -82,7 +83,7 @@ class MSTodoPlugin(BasePlugin):
             ),
         ] = "",
     ) -> Generator:
-        token: Token = Token(**json.loads(self.credentials.token))
+        token: Token = Token(**json.loads(base64.b64decode(self.credentials.token).decode()))
         todo_client = ToDoConnection(client_id="", client_secret="", token=token)
 
         todo_list = todo_client.get_list(list_id)
@@ -104,7 +105,7 @@ class MSTodoPlugin(BasePlugin):
         description="Get all tasks from the Microsoft To Do list",
     )
     def get_all_tasks(self) -> Generator:
-        token: Token = Token(**json.loads(self.credentials.token))
+        token: Token = Token(**json.loads(base64.b64decode(self.credentials.token).decode()))
         todo_client = ToDoConnection(client_id="", client_secret="", token=token)
 
         tasks: list[Task] = []
@@ -145,7 +146,7 @@ class MSTodoPlugin(BasePlugin):
             ),
         ],
     ) -> Generator:
-        token: Token = Token(**json.loads(self.credentials.token))
+        token: Token = Token(**json.loads(base64.b64decode(self.credentials.token).decode()))
         todo_client = ToDoConnection(client_id="", client_secret="", token=token)
 
         tasks: list[Task] = todo_client.get_tasks(list_id)
@@ -195,7 +196,7 @@ class MSTodoPlugin(BasePlugin):
             ),
         ],
     ) -> Generator:
-        token: Token = Token(**json.loads(self.credentials.token))
+        token: Token = Token(**json.loads(base64.b64decode(self.credentials.token).decode()))
         todo_client = ToDoConnection(client_id="", client_secret="", token=token)
 
         task = todo_client.get_task(task_id, list_id)
@@ -264,7 +265,7 @@ class MSTodoPlugin(BasePlugin):
             ),
         ],
     ) -> Generator:
-        token: Token = Token(**json.loads(self.credentials.token))
+        token: Token = Token(**json.loads(base64.b64decode(self.credentials.token).decode()))
         todo_client = ToDoConnection(client_id="", client_secret="", token=token)
 
         task = todo_client.create_task(
@@ -316,7 +317,7 @@ class MSTodoPlugin(BasePlugin):
             ),
         ],
     ) -> Generator:
-        token: Token = Token(**json.loads(self.credentials.token))
+        token: Token = Token(**json.loads(base64.b64decode(self.credentials.token).decode()))
         todo_client = ToDoConnection(client_id="", client_secret="", token=token)
 
         task = todo_client.complete_task(task_id=task_id, list_id=list_id)

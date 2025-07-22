@@ -3,12 +3,13 @@ from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from examples.microsoft_todo.src.mstodo import MSTodoCredentials, MSTodoPlugin
+
+from src.mstodo import *  # noqa: F403
 
 
 class DifyPluginPdmTemplateTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, Any, Any]:
-        plugin = MSTodoPlugin(credentials=MSTodoCredentials(**self.runtime.credentials))
+        plugin = MSTodoPlugin(credentials=MSTodoCredentials(**self.runtime.credentials))  # noqa: F405
 
         for res in plugin.complete_task(**tool_parameters):
             if isinstance(res, str):

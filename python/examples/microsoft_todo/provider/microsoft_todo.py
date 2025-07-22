@@ -1,3 +1,4 @@
+import base64
 import json
 from collections.abc import Mapping
 from pprint import pprint as debug_print
@@ -10,7 +11,7 @@ from werkzeug import Request
 
 from dify_plugin import ToolProvider
 from dify_plugin.entities.oauth import ToolOAuthCredentials
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
+from dify_plugin.errors.tool import ToolProviderOAuthError, ToolProviderCredentialValidationError
 
 
 class MicrosoftTodoProvider(ToolProvider):
@@ -23,8 +24,10 @@ class MicrosoftTodoProvider(ToolProvider):
             raise ToolProviderCredentialValidationError("Client ID is required for OAuth.")
 
         ToDoConnection._redirect = redirect_uri
-
-        return ToDoConnection.get_auth_url(client_id)
+        try:
+            return ToDoConnection.get_auth_url(client_id)
+        except Exception as e:
+            raise ToolProviderOAuthError(str(e)) from e
 
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
@@ -44,9 +47,14 @@ class MicrosoftTodoProvider(ToolProvider):
             scope=ToDoConnection._scope,
             redirect_uri=ToDoConnection._redirect,
         )
-        token = oa_sess.fetch_token(token_url, client_secret=system_credentials["client_secret"], code=code)
-        expires_at = token["expires_at"]
-        return ToolOAuthCredentials(credentials={"token": json.dumps(token)}, expires_at=expires_at)
+        try:
+            token = oa_sess.fetch_token(token_url, client_secret=system_credentials["client_secret"], code=code)
+            expires_at = token["expires_at"]
+            token_str = json.dumps(token)
+            base64_token = base64.b64encode(token_str.encode()).decode()
+            return ToolOAuthCredentials(credentials={"token": base64_token}, expires_at=expires_at)
+        except Exception as e:
+            raise ToolProviderOAuthError(str(e)) from e
 
     def _oauth_refresh_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
@@ -57,21 +65,26 @@ class MicrosoftTodoProvider(ToolProvider):
 
         ToDoConnection._redirect = redirect_uri
         token_url = f"{ToDoConnection._authority}{ToDoConnection._token_endpoint}"
-        token = json.loads(credentials["token"])
+        token = json.loads(base64.b64decode(credentials["token"]).decode())
         refresh_token = token["refresh_token"]
         oa_sess = OAuth2Session(
             system_credentials["client_id"],
             scope=ToDoConnection._scope,
             redirect_uri=ToDoConnection._redirect,
         )
-        new_token = oa_sess.refresh_token(
-            token_url,
-            refresh_token=refresh_token,
-            client_id=system_credentials["client_id"],
-            client_secret=system_credentials["client_secret"],
-        )
-        expires_at = new_token["expires_at"]
-        return ToolOAuthCredentials(credentials={"token": json.dumps(new_token)}, expires_at=expires_at)
+        try:
+            new_token = oa_sess.refresh_token(
+                token_url,
+                refresh_token=refresh_token,
+                client_id=system_credentials["client_id"],
+                client_secret=system_credentials["client_secret"],
+            )
+            expires_at = new_token["expires_at"]
+            token_str = json.dumps(new_token)
+            base64_token = base64.b64encode(token_str.encode()).decode()
+            return ToolOAuthCredentials(credentials={"token": base64_token}, expires_at=expires_at)
+        except Exception as e:
+            raise ToolProviderOAuthError(str(e)) from e
 
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         debug_print(f"Validating credentials: {credentials}")

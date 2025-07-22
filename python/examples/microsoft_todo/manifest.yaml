@@ -1,4 +1,4 @@
-version: 0.0.1
+version: 0.1.0
 type: plugin
 author: langgenius
 name: microsoft_todo
@@ -16,17 +16,17 @@ resource:
   permission: {}
 plugins:
   tools:
-  - provider/microsoft_todo.yaml
+    - provider/microsoft_todo.yaml
 meta:
-  version: 0.0.1
+  version: 0.1.0
   arch:
-  - amd64
-  - arm64
+    - amd64
+    - arm64
   runner:
     language: python
-    version: '3.12'
+    version: "3.12"
     entrypoint: main
   minimum_dify_version: 1.7.0
-created_at: '2025-07-17T23:25:53.108316Z'
+created_at: "2025-07-17T23:25:53.108316Z"
 privacy: PRIVACY.md
 verified: false

@@ -1,3 +1,4 @@
+import base64
 import json
 from collections.abc import Generator
 from typing import Any
@@ -11,7 +12,7 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 
 class GetListsTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
-        token: Token = Token(**json.loads(self.runtime.credentials["token"]))
+        token: Token = Token(**json.loads(base64.b64decode(self.runtime.credentials["token"]).decode()))
         if not token:
             raise ValueError("Token is required to invoke this tool.")
 
