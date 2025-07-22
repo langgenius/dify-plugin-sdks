@@ -59,7 +59,7 @@ extra:
   python:
     source: provider/github.py
 identity:
-  author: CharlieWei
+  author: langgenius
   description:
     en_US: GitHub is an online software source code hosting service.
     pt_BR:
