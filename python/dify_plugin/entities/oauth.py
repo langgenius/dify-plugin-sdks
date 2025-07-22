@@ -19,11 +19,12 @@ class OAuthSchema(BaseModel):
 
 
 class OAuthCredentials(BaseModel):
-    metadata: Mapping[str, Any] | None = Field(description="The metadata like avatar_url, name, etc.")
+    metadata: Mapping[str, Any] = Field(default_factory=dict, description="The metadata like avatar_url, name, etc.")
     credentials: Mapping[str, Any] = Field(..., description="The credentials of the OAuth")
     expires_at: int = Field(
         default=-1, description="The timestamp of the credentials expiration, -1 means never expires"
     )
+
 
 class ToolOAuthCredentials(BaseModel):
     credentials: Mapping[str, Any] = Field(..., description="The credentials of the tool")
