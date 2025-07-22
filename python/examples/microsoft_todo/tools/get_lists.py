@@ -2,15 +2,15 @@ import json
 from collections.abc import Generator
 from typing import Any
 
-from dify_plugin import Tool
-from dify_plugin.entities.tool import ToolInvokeMessage
 from pymstodo import ToDoConnection
 from pymstodo.client import Token
+
+from dify_plugin import Tool
+from dify_plugin.entities.tool import ToolInvokeMessage
 
 
 class GetListsTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
-
         token: Token = Token(**json.loads(self.runtime.credentials["token"]))
         if not token:
             raise ValueError("Token is required to invoke this tool.")

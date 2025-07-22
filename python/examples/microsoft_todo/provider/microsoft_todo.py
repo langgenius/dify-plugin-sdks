@@ -1,14 +1,16 @@
 import json
+from collections.abc import Mapping
 from pprint import pprint as debug_print
-from typing import Any, Mapping
+from typing import Any
 
-from dify_plugin import ToolProvider
-from dify_plugin.entities.oauth import ToolOAuthCredentials
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from pymstodo import ToDoConnection
 from pymstodo.client import Token
 from requests_oauthlib import OAuth2Session
 from werkzeug import Request
+
+from dify_plugin import ToolProvider
+from dify_plugin.entities.oauth import ToolOAuthCredentials
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
 
 class MicrosoftTodoProvider(ToolProvider):
@@ -90,4 +92,4 @@ class MicrosoftTodoProvider(ToolProvider):
             raise Exception(f"token: {token}\nlists: {lists}\ncredentials: {credentials}")
 
         except Exception as e:
-            raise ToolProviderCredentialValidationError(str(e))
+            raise ToolProviderCredentialValidationError(str(e)) from e

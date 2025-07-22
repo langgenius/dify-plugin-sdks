@@ -1,6 +1,7 @@
 import datetime
 import json
-from typing import Annotated, Generator
+from collections.abc import Generator
+from typing import Annotated
 
 from dify_easy.model import (
     BasePlugin,
@@ -45,7 +46,6 @@ class MSTodoPlugin(BasePlugin):
         description="Get all tasks from the Microsoft To Do list",
     )
     def get_tasks(self) -> Generator:
-
         token: Token = Token(**json.loads(self.credentials.token))
         todo_client = ToDoConnection(client_id="", client_secret="", token=token)
 
@@ -85,18 +85,18 @@ class MSTodoPlugin(BasePlugin):
         token: Token = Token(**json.loads(self.credentials.token))
         todo_client = ToDoConnection(client_id="", client_secret="", token=token)
 
-        list = todo_client.get_list(list_id)
+        todo_list = todo_client.get_list(list_id)
 
-        list = {
-            "list_id": list.list_id,
-            "display_name": list.displayName,
-            "is_owner": list.isOwner,
-            "is_shared": list.isShared,
-            "link": list.link,
+        todo_list_dict = {
+            "list_id": todo_list.list_id,
+            "display_name": todo_list.displayName,
+            "is_owner": todo_list.isOwner,
+            "is_shared": todo_list.isShared,
+            "link": todo_list.link,
         }
 
-        yield list
-        yield str(list)
+        yield todo_list_dict
+        yield str(todo_list_dict)
 
     @tool(
         name="get_all_tasks",
@@ -270,9 +270,7 @@ class MSTodoPlugin(BasePlugin):
         task = todo_client.create_task(
             list_id=list_id,
             title=title,
-            due_date=(
-                datetime.datetime.strptime(due_date, "%Y-%m-%d") if due_date else None
-            ),
+            due_date=(datetime.datetime.strptime(due_date, "%Y-%m-%d") if due_date else None),
             body_text=body_text,
         )
 
