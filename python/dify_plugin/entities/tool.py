@@ -18,8 +18,10 @@ from dify_plugin.entities.oauth import OAuthSchema
 from dify_plugin.entities.provider_config import (
     CommonParameterType,
     CredentialType,
-    LogMetadata as CommonLogMetadata,
     ProviderConfig,
+)
+from dify_plugin.entities.provider_config import (
+    LogMetadata as CommonLogMetadata,
 )
 
 # TODO: this is a temporary solution to avoid breaking changes from agent imports
