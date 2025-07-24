@@ -18,8 +18,15 @@ from dify_plugin.entities.oauth import OAuthSchema
 from dify_plugin.entities.provider_config import (
     CommonParameterType,
     CredentialType,
+    LogMetadata as CommonLogMetadata,
     ProviderConfig,
 )
+
+# TODO: this is a temporary solution to avoid breaking changes from agent imports
+# ImportError: cannot import name "LogMetadata" from "dify_plugin.entities.tool"
+# which will be removed in 0.5.0
+# ISSUE: https://github.com/langgenius/dify-plugin-sdks/issues/181
+LogMetadata = CommonLogMetadata
 
 
 class ToolRuntime(BaseModel):
