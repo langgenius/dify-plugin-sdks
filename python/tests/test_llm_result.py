@@ -1,5 +1,5 @@
-from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta, LLMUsage
-from dify_plugin.entities.model.message import AssistantPromptMessage, TextPromptMessageContent
+from shai_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta, LLMUsage
+from shai_plugin.entities.model.message import AssistantPromptMessage, TextPromptMessageContent
 
 
 def test_build_llm_result_chunk_with_prompt_messages():
@@ -14,8 +14,8 @@ def test_build_llm_result_chunk_with_prompt_messages():
     assert isinstance(chunk.prompt_messages, list)
     """
     NOTE:
-    - https://github.com/langgenius/dify/issues/17799
-    - https://github.com/langgenius/dify-official-plugins/issues/648
+    - https://github.com/langgenius/shai/issues/17799
+    - https://github.com/langgenius/shai-official-plugins/issues/648
 
     The `prompt_messages` field is deprecated, but to keep backward compatibility
     we need to always set it to an empty list.
@@ -34,8 +34,8 @@ def test_build_llm_result_with_prompt_messages():
     assert isinstance(result.prompt_messages, list)
     """
     NOTE:
-    - https://github.com/langgenius/dify/issues/17799
-    - https://github.com/langgenius/dify-official-plugins/issues/648
+    - https://github.com/langgenius/shai/issues/17799
+    - https://github.com/langgenius/shai-official-plugins/issues/648
 
     The `prompt_messages` field is deprecated, but to keep backward compatibility
     we need to always set it to an empty list.

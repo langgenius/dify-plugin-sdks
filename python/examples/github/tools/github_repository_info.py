@@ -5,10 +5,10 @@ from typing import Any
 
 import requests
 
-from dify_plugin import Tool
-from dify_plugin.entities.provider_config import CredentialType
-from dify_plugin.entities.tool import ToolInvokeMessage
-from dify_plugin.errors.model import InvokeError
+from shai_plugin import Tool
+from shai_plugin.entities.provider_config import CredentialType
+from shai_plugin.entities.tool import ToolInvokeMessage
+from shai_plugin.errors.model import InvokeError
 
 
 class GithubRepositoryInfoTool(Tool):

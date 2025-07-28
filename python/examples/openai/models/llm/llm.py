@@ -17,21 +17,21 @@ from openai.types.chat.chat_completion_chunk import (
 )
 from openai.types.chat.chat_completion_message import FunctionCall
 
-from dify_plugin import LargeLanguageModel
-from dify_plugin.entities import I18nObject
-from dify_plugin.entities.model import (
+from shai_plugin import LargeLanguageModel
+from shai_plugin.entities import I18nObject
+from shai_plugin.entities.model import (
     AIModelEntity,
     FetchFrom,
     ModelType,
     PriceConfig,
 )
-from dify_plugin.entities.model.llm import (
+from shai_plugin.entities.model.llm import (
     LLMMode,
     LLMResult,
     LLMResultChunk,
     LLMResultChunkDelta,
 )
-from dify_plugin.entities.model.message import (
+from shai_plugin.entities.model.message import (
     AssistantPromptMessage,
     ImagePromptMessageContent,
     PromptMessage,
@@ -42,7 +42,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from dify_plugin.errors.model import (
+from shai_plugin.errors.model import (
     CredentialsValidateFailedError,
 )
 

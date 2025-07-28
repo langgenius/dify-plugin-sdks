@@ -7,15 +7,15 @@ from typing import Any, cast
 
 from pydantic import BaseModel
 
-from dify_plugin.entities.agent import AgentInvokeMessage
-from dify_plugin.entities.model import ModelFeature
-from dify_plugin.entities.model.llm import (
+from shai_plugin.entities.agent import AgentInvokeMessage
+from shai_plugin.entities.model import ModelFeature
+from shai_plugin.entities.model.llm import (
     LLMModelConfig,
     LLMResult,
     LLMResultChunk,
     LLMUsage,
 )
-from dify_plugin.entities.model.message import (
+from shai_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
     PromptMessageContentType,
@@ -23,9 +23,9 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from dify_plugin.entities.provider_config import LogMetadata
-from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
-from dify_plugin.interfaces.agent import (
+from shai_plugin.entities.provider_config import LogMetadata
+from shai_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
+from shai_plugin.interfaces.agent import (
     AgentModelConfig,
     AgentStrategy,
     ToolEntity,

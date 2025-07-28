@@ -3,7 +3,7 @@ from collections.abc import Mapping
 import openai
 from httpx import Timeout
 
-from dify_plugin.errors.model import (
+from shai_plugin.errors.model import (
     InvokeAuthorizationError,
     InvokeBadRequestError,
     InvokeConnectionError,

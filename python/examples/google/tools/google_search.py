@@ -3,8 +3,8 @@ from typing import Any
 
 import requests
 
-from dify_plugin import Tool
-from dify_plugin.entities.tool import ToolInvokeMessage
+from shai_plugin import Tool
+from shai_plugin.entities.tool import ToolInvokeMessage
 
 SERP_API_URL = "https://serpapi.com/search"
 

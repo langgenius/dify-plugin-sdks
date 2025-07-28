@@ -1,10 +1,10 @@
-site_name: Dify Plugin SDK
-site_url: https://langgenius.github.io/dify-plugin-sdks/
-site_description: Dify Plugin SDK Documentation
-site_author: Dify Team
+site_name: Shai Plugin SDK
+site_url: https://langgenius.github.io/shai-plugin-sdks/
+site_description: Shai Plugin SDK Documentation
+site_author: Shai Team
 
-repo_name: langgenius/dify-plugin-sdks
-repo_url: https://github.com/langgenius/dify-plugin-sdks
+repo_name: langgenius/shai-plugin-sdks
+repo_url: https://github.com/langgenius/shai-plugin-sdks
 
 theme:
   name: material
@@ -50,4 +50,4 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/langgenius/dify-plugin-sdks
+      link: https://github.com/langgenius/shai-plugin-sdks

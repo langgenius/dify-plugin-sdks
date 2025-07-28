@@ -6,21 +6,21 @@ from typing import Any, cast
 import pydantic
 from pydantic import BaseModel, Field
 
-from dify_plugin.entities.agent import AgentInvokeMessage
-from dify_plugin.entities.model.llm import LLMModelConfig, LLMUsage
-from dify_plugin.entities.model.message import (
+from shai_plugin.entities.agent import AgentInvokeMessage
+from shai_plugin.entities.model.llm import LLMModelConfig, LLMUsage
+from shai_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
     SystemPromptMessage,
     UserPromptMessage,
 )
-from dify_plugin.entities.provider_config import LogMetadata
-from dify_plugin.entities.tool import (
+from shai_plugin.entities.provider_config import LogMetadata
+from shai_plugin.entities.tool import (
     ToolInvokeMessage,
     ToolParameter,
     ToolProviderType,
 )
-from dify_plugin.interfaces.agent import (
+from shai_plugin.interfaces.agent import (
     AgentModelConfig,
     AgentScratchpadUnit,
     AgentStrategy,

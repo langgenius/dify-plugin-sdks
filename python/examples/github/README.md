@@ -2,7 +2,7 @@
 
 ## Overview
 
-GitHub is a web-based platform for version control and collaboration, primarily used for software development. As a tool in Dify, it provides users the ability to search repositories by keywords.
+GitHub is a web-based platform for version control and collaboration, primarily used for software development. As a tool in Shai, it provides users the ability to search repositories by keywords.
 
 ## Configuration
 
@@ -14,9 +14,9 @@ Please apply for an [API Key](https://github.com/settings/personal-access-tokens
 
 The GitHub tools can be found in the Plugin Marketplace. Please install it first.
 
-### 3. Fill in the configuration in Dify
+### 3. Fill in the configuration in Shai
 
-On the Dify navigation page, click `Tools > GitHub > Authorize` and fill in the API Key.
+On the Shai navigation page, click `Tools > GitHub > Authorize` and fill in the API Key.
 
 ![](./_assets/github_1.PNG)
 

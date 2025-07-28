@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Mapping
 
-from dify_plugin import ModelProvider
+from shai_plugin import ModelProvider
 
 logger = logging.getLogger(__name__)
 

@@ -6,13 +6,13 @@ import numpy as np
 import tiktoken
 from openai import OpenAI
 
-from dify_plugin import TextEmbeddingModel
-from dify_plugin.entities.model import EmbeddingInputType, PriceType
-from dify_plugin.entities.model.text_embedding import (
+from shai_plugin import TextEmbeddingModel
+from shai_plugin.entities.model import EmbeddingInputType, PriceType
+from shai_plugin.entities.model.text_embedding import (
     EmbeddingUsage,
     TextEmbeddingResult,
 )
-from dify_plugin.errors.model import CredentialsValidateFailedError
+from shai_plugin.errors.model import CredentialsValidateFailedError
 
 from ..common_openai import _CommonOpenAI
 

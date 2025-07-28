@@ -8,5 +8,5 @@
 **/*.token
 **/*.pub
 
-# dify plugins
-**/*.difypkg
+# shai plugins
+**/*.shaipkg

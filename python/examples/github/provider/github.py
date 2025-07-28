@@ -6,9 +6,9 @@ from typing import Any
 import requests
 from werkzeug import Request
 
-from dify_plugin import ToolProvider
-from dify_plugin.entities.oauth import ToolOAuthCredentials
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError, ToolProviderOAuthError
+from shai_plugin import ToolProvider
+from shai_plugin.entities.oauth import ToolOAuthCredentials
+from shai_plugin.errors.tool import ToolProviderCredentialValidationError, ToolProviderOAuthError
 
 
 class GithubProvider(ToolProvider):

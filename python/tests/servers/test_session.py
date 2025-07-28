@@ -1,10 +1,10 @@
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
-from dify_plugin.core.runtime import Session
-from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
-from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
-from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
+from shai_plugin.core.runtime import Session
+from shai_plugin.core.server.stdio.request_reader import StdioRequestReader
+from shai_plugin.core.server.stdio.response_writer import StdioResponseWriter
+from shai_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
 
 
 def test_session_context_tool_credentials():

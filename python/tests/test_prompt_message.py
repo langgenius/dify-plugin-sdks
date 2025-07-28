@@ -1,4 +1,4 @@
-from dify_plugin.entities.model.message import ImagePromptMessageContent, TextPromptMessageContent, UserPromptMessage
+from shai_plugin.entities.model.message import ImagePromptMessageContent, TextPromptMessageContent, UserPromptMessage
 
 
 def test_build_prompt_message_with_prompt_message_contents():

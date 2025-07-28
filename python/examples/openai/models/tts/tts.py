@@ -7,8 +7,8 @@ from io import BytesIO
 from openai import OpenAI
 from pydub import AudioSegment
 
-from dify_plugin import TTSModel
-from dify_plugin.errors.model import (
+from shai_plugin import TTSModel
+from shai_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeBadRequestError,
 )
@@ -65,7 +65,7 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
             self._tts_invoke(
                 model=model,
                 credentials=credentials,
-                content_text="Hello Dify!",
+                content_text="Hello Shai!",
                 voice=self._get_model_default_voice(model, credentials),
             )
         except Exception as ex:

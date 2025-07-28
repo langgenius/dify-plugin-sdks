@@ -1,10 +1,10 @@
-from dify_plugin.entities.model.llm import (
+from shai_plugin.entities.model.llm import (
     LLMResult,
     LLMResultChunk,
     LLMResultChunkDelta,
     LLMUsage,
 )
-from dify_plugin.entities.model.message import (
+from shai_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
     PromptMessageRole,

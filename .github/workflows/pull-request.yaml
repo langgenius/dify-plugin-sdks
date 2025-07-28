@@ -42,8 +42,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: true
           cache-dependency-path: python/pdm.lock
-      - name: Setup dify-plugin-cli
-        run: ./scripts/setup-dify-plugin-cli.sh
+      - name: Setup shai-plugin-cli
+        run: ./scripts/setup-shai-plugin-cli.sh
       # setup uv and get uv path to env
       - name: Install uv
         run: |

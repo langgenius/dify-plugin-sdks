@@ -1,13 +1,13 @@
 from collections.abc import Generator, Mapping
 from concurrent.futures import ThreadPoolExecutor
 
-from dify_plugin.core.runtime import Session
-from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
-from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
-from dify_plugin.entities import I18nObject, ParameterOption
-from dify_plugin.entities.provider_config import CredentialType
-from dify_plugin.entities.tool import ToolInvokeMessage, ToolRuntime
-from dify_plugin.interfaces.tool import Tool
+from shai_plugin.core.runtime import Session
+from shai_plugin.core.server.stdio.request_reader import StdioRequestReader
+from shai_plugin.core.server.stdio.response_writer import StdioResponseWriter
+from shai_plugin.entities import I18nObject, ParameterOption
+from shai_plugin.entities.provider_config import CredentialType
+from shai_plugin.entities.tool import ToolInvokeMessage, ToolRuntime
+from shai_plugin.interfaces.tool import Tool
 
 
 def test_construct_tool():

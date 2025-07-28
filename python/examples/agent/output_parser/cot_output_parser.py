@@ -3,8 +3,8 @@ import re
 from collections.abc import Generator
 from typing import Union
 
-from dify_plugin.entities.model.llm import LLMResultChunk
-from dify_plugin.interfaces.agent import AgentScratchpadUnit
+from shai_plugin.entities.model.llm import LLMResultChunk
+from shai_plugin.interfaces.agent import AgentScratchpadUnit
 
 
 class CotAgentOutputParser:

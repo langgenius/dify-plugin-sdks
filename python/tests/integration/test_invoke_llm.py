@@ -1,14 +1,14 @@
 from yarl import URL
 
-from dify_plugin.config.integration_config import IntegrationConfig
-from dify_plugin.core.entities.plugin.request import ModelActions, ModelInvokeLLMRequest, PluginInvokeType
-from dify_plugin.entities.model import ModelType
-from dify_plugin.entities.model.llm import LLMResultChunk
-from dify_plugin.entities.model.message import UserPromptMessage
-from dify_plugin.integration.run import PluginRunner
+from shai_plugin.config.integration_config import IntegrationConfig
+from shai_plugin.core.entities.plugin.request import ModelActions, ModelInvokeLLMRequest, PluginInvokeType
+from shai_plugin.entities.model import ModelType
+from shai_plugin.entities.model.llm import LLMResultChunk
+from shai_plugin.entities.model.message import UserPromptMessage
+from shai_plugin.integration.run import PluginRunner
 from tests.consts.mockserver import OPENAI_MOCK_SERVER_PORT
 
-_MARKETPLACE_API_URL = "https://marketplace.dify.ai"
+_MARKETPLACE_API_URL = "https://marketplace.shai.ai"
 
 
 def test_invoke_llm():
@@ -23,11 +23,11 @@ def test_invoke_llm():
     response = requests.get(url, timeout=10)
 
     # save the response to a file
-    with open("langgenius-openai.difypkg", "wb") as f:
+    with open("langgenius-openai.shaipkg", "wb") as f:
         f.write(response.content)
 
     # run the plugin
-    with PluginRunner(config=IntegrationConfig(), plugin_package_path="langgenius-openai.difypkg") as runner:
+    with PluginRunner(config=IntegrationConfig(), plugin_package_path="langgenius-openai.shaipkg") as runner:
         for result in runner.invoke(
             access_type=PluginInvokeType.Model,
             access_action=ModelActions.InvokeLLM,

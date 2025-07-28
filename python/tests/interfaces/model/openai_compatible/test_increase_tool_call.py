@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 
-from dify_plugin.entities.model.message import AssistantPromptMessage
-from dify_plugin.interfaces.model.openai_compatible.llm import _increase_tool_call
+from shai_plugin.entities.model.message import AssistantPromptMessage
+from shai_plugin.interfaces.model.openai_compatible.llm import _increase_tool_call
 
 ToolCall = AssistantPromptMessage.ToolCall
 
@@ -95,5 +95,5 @@ def test__increase_tool_call():
     # case 4:
     mock_id_generator = MagicMock()
     mock_id_generator.side_effect = [_exp_case.id for _exp_case in EXPECTED_CASE_4]
-    with patch("dify_plugin.interfaces.model.openai_compatible.llm._gen_tool_call_id", mock_id_generator):
+    with patch("shai_plugin.interfaces.model.openai_compatible.llm._gen_tool_call_id", mock_id_generator):
         _run_case(INPUTS_CASE_4, EXPECTED_CASE_4)

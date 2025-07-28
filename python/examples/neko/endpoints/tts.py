@@ -2,8 +2,8 @@ from collections.abc import Mapping
 
 from werkzeug import Request, Response
 
-from dify_plugin import Endpoint
-from dify_plugin.entities.model.tts import TTSModelConfig
+from shai_plugin import Endpoint
+from shai_plugin.entities.model.tts import TTSModelConfig
 
 
 class Tts(Endpoint):

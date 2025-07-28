@@ -1,4 +1,4 @@
-from dify_plugin.interfaces.model.openai_compatible.llm import (
+from shai_plugin.interfaces.model.openai_compatible.llm import (
     OAICompatLargeLanguageModel,
 )
 

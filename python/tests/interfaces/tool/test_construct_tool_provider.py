@@ -1,6 +1,6 @@
 import pytest
 
-from dify_plugin.interfaces.tool import ToolProvider
+from shai_plugin.interfaces.tool import ToolProvider
 
 
 def test_construct_tool_provider():

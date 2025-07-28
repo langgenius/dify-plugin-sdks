@@ -1,9 +1,9 @@
 from openai import OpenAI
 from openai.types import ModerationCreateResponse
 
-from dify_plugin import ModerationModel
-from dify_plugin.entities.model import ModelPropertyKey
-from dify_plugin.errors.model import CredentialsValidateFailedError
+from shai_plugin import ModerationModel
+from shai_plugin.entities.model import ModelPropertyKey
+from shai_plugin.errors.model import CredentialsValidateFailedError
 
 from ..common_openai import _CommonOpenAI
 

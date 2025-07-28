@@ -1,6 +1,6 @@
 identity:
   name: function_calling
-  author: Dify
+  author: Shai
   label:
     en_US: FunctionCalling
     zh_Hans: FunctionCalling

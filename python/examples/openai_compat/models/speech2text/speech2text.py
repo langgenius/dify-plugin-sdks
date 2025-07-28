@@ -1,4 +1,4 @@
-from dify_plugin.interfaces.model.openai_compatible.speech2text import (
+from shai_plugin.interfaces.model.openai_compatible.speech2text import (
     OAICompatSpeech2TextModel,
 )
 

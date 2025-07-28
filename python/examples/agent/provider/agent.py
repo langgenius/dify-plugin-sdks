@@ -1,4 +1,4 @@
-from dify_plugin.interfaces.agent import AgentProvider
+from shai_plugin.interfaces.agent import AgentProvider
 
 
 class LanggeniusAgentProvider(AgentProvider):

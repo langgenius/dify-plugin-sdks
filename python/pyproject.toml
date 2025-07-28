@@ -1,8 +1,8 @@
 [project]
-name = "dify_plugin"
+name = "shai_plugin"
 version = "0.4.3"
-description = "Dify Plugin SDK"
-authors = [{ name = "langgenius", email = "hello@dify.ai" }]
+description = "Shai Plugin SDK"
+authors = [{ name = "langgenius", email = "hello@shai.ai" }]
 dependencies = [
     "Flask~=3.0.3",
     "Werkzeug~=3.0.3",
@@ -21,10 +21,10 @@ dependencies = [
 requires-python = ">=3.11"
 readme = "README.md"
 license = { text = "Apache2.0" }
-keywords = ["dify", "plugin", "sdk"]
+keywords = ["shai", "plugin", "sdk"]
 
 [project.urls]
-Homepage = "https://github.com/langgenius/dify-plugin-sdks.git"
+Homepage = "https://github.com/langgenius/shai-plugin-sdks.git"
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"

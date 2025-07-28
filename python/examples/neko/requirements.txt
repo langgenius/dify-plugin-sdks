@@ -1,2 +1,2 @@
-dify_plugin~=0.0.1b22
+shai_plugin~=0.4.3
 flask~=3.0.3

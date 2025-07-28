@@ -4,7 +4,7 @@ import yaml
 
 os.environ["GEVENT_SUPPORT"] = "true"
 
-from dify_plugin.entities.endpoint import EndpointProviderConfiguration
+from shai_plugin.entities.endpoint import EndpointProviderConfiguration
 
 
 def test_load_endpoint_group():

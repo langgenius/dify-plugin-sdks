@@ -20,7 +20,7 @@ meta:
     language: python
     version: "3.12"
   version: 0.2.7
-  minimum_dify_version: 1.7.0
+      minimum_shai_version: 1.7.0
 name: github
 plugins:
   tools:

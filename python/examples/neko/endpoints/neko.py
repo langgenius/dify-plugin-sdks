@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from flask import Flask, render_template_string
 from werkzeug import Request, Response
 
-from dify_plugin import Endpoint
+from shai_plugin import Endpoint
 
 app = Flask(__name__)
 

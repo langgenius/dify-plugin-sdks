@@ -4,9 +4,9 @@ from json import JSONDecodeError, dumps
 from models.text_embedding.jina_tokenizer import JinaTokenizer
 from requests import post
 
-from dify_plugin import TextEmbeddingModel
-from dify_plugin.entities import I18nObject
-from dify_plugin.entities.model import (
+from shai_plugin import TextEmbeddingModel
+from shai_plugin.entities import I18nObject
+from shai_plugin.entities.model import (
     AIModelEntity,
     EmbeddingInputType,
     FetchFrom,
@@ -14,11 +14,11 @@ from dify_plugin.entities.model import (
     ModelType,
     PriceType,
 )
-from dify_plugin.entities.model.text_embedding import (
+from shai_plugin.entities.model.text_embedding import (
     EmbeddingUsage,
     TextEmbeddingResult,
 )
-from dify_plugin.errors.model import (
+from shai_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeAuthorizationError,
     InvokeBadRequestError,

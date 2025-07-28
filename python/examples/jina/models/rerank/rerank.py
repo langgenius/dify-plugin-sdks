@@ -1,18 +1,18 @@
 import httpx
 
-from dify_plugin import RerankModel
-from dify_plugin.entities import I18nObject
-from dify_plugin.entities.model import (
+from shai_plugin import RerankModel
+from shai_plugin.entities import I18nObject
+from shai_plugin.entities.model import (
     AIModelEntity,
     FetchFrom,
     ModelPropertyKey,
     ModelType,
 )
-from dify_plugin.entities.model.rerank import (
+from shai_plugin.entities.model.rerank import (
     RerankDocument,
     RerankResult,
 )
-from dify_plugin.errors.model import (
+from shai_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeAuthorizationError,
     InvokeBadRequestError,

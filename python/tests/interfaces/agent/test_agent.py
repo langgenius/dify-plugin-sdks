@@ -1,12 +1,12 @@
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
 
-from dify_plugin.core.runtime import Session
-from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
-from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
-from dify_plugin.entities.agent import AgentInvokeMessage, AgentRuntime
-from dify_plugin.entities.model.message import PromptMessage, PromptMessageRole
-from dify_plugin.interfaces.agent import AgentModelConfig, AgentStrategy
+from shai_plugin.core.runtime import Session
+from shai_plugin.core.server.stdio.request_reader import StdioRequestReader
+from shai_plugin.core.server.stdio.response_writer import StdioResponseWriter
+from shai_plugin.entities.agent import AgentInvokeMessage, AgentRuntime
+from shai_plugin.entities.model.message import PromptMessage, PromptMessageRole
+from shai_plugin.interfaces.agent import AgentModelConfig, AgentStrategy
 
 
 def _make_agent_model_config() -> AgentModelConfig:

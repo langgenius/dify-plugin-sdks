@@ -1,4 +1,4 @@
-from dify_plugin.core.utils.http_parser import convert_request_to_raw_data, parse_raw_request
+from shai_plugin.core.utils.http_parser import convert_request_to_raw_data, parse_raw_request
 
 
 def test_parse_raw_request():

@@ -1,6 +1,6 @@
-# Dify Plugin SDK
+# Shai Plugin SDK
 
-A Python SDK for building plugins for Dify.
+A Python SDK for building plugins for Shai.
 
 ## Version Management
 
@@ -20,5 +20,5 @@ When depending on this SDK, it's recommended to specify version constraints that
 Example in your project's dependency management:
 
 ```python
-dify_plugin>=0.3.0,<0.5.0
+shai_plugin>=0.3.0,<0.5.0
 ```

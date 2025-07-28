@@ -1,5 +1,5 @@
 # Overview
-The Agent node in Dify Chatflow/Workflow lets LLMs autonomously use tools. This plugin features two official Dify Agent reasoning strategies, enabling LLMs to dynamically select and run tools during runtime for multi-step problem-solving.
+The Agent node in Shai Chatflow/Workflow lets LLMs autonomously use tools. This plugin features two official Shai Agent reasoning strategies, enabling LLMs to dynamically select and run tools during runtime for multi-step problem-solving.
 
 ## Strategies
 

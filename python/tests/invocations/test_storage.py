@@ -3,8 +3,8 @@ from typing import Any
 
 import pytest
 
-from dify_plugin.core.entities.invocation import InvokeType
-from dify_plugin.invocations.storage import (
+from shai_plugin.core.entities.invocation import InvokeType
+from shai_plugin.invocations.storage import (
     StorageInvocation,
     StorageInvocationError,
 )
