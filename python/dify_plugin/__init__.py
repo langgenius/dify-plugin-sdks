@@ -2,7 +2,7 @@ import os
 from gevent import monkey
 
 # patch all the blocking calls
-if os.environ.get("NATIVE_MODE", "False") == "False":
+if os.environ.get("DIFY_PLUGIN_SDK_NATIVE_MODE", "False") == "False":
     monkey.patch_all(sys=True)
 
 from dify_plugin.config.config import DifyPluginEnv
