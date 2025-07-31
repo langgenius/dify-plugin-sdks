@@ -2,6 +2,21 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Github",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "program": "${workspaceFolder}/examples/github/main.py",
+            "cwd": "${workspaceFolder}/examples/github",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/examples/github/.env",
+            "env": {
+                "GEVENT_SUPPORT": "True",
+                "DEBUG": "1"
+            }
+        },
+        {
             "name": "Agents",
             "type": "debugpy",
             "request": "launch",
@@ -67,6 +82,30 @@
             "request": "launch",
             "program": "${workspaceFolder}/examples/kawaii_filter/main.py",
             "cwd": "${workspaceFolder}/examples/kawaii_filter",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "GEVENT_SUPPORT": "True"
+            }
+        },
+        {
+            "name": "NotionDatasource",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/notion_datasource/main.py",
+            "cwd": "${workspaceFolder}/examples/notion_datasource",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "GEVENT_SUPPORT": "True"
+            }
+        },
+        {
+            "name": "GoogleCloudStorageDatasource",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/google_cloud_storage/main.py",
+            "cwd": "${workspaceFolder}/examples/google_cloud_storage",
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {

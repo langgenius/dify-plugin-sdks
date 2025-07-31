@@ -1,7 +1,9 @@
+import os
 from gevent import monkey
 
 # patch all the blocking calls
-monkey.patch_all(sys=True)
+if os.environ.get("NATIVE_MODE", "False") == "False":
+    monkey.patch_all(sys=True)
 
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.interfaces.agent import AgentProvider, AgentStrategy
