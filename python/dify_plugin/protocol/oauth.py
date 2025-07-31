@@ -27,7 +27,7 @@ class OAuthProviderProtocol(Protocol):
         :param redirect_uri: redirect uri
         :param request: request
         :param system_credentials: system credentials
-        :return: credentials
+        :return: { "metadata": { "avatar_url": str, "name": str }, "credentials": credentials }
         """
         ...
 
