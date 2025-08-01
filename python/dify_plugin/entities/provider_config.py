@@ -112,7 +112,7 @@ class ProviderConfig(BaseModel):
     type: Config = Field(..., description="The type of the credentials")
     scope: str | None = None
     required: bool = False
-    default: Union[int, float, str] | None = None
+    default: Union[int, float, str, bool] | None = None
     options: list[ConfigOption] | None = None
     label: I18nObject
     help: I18nObject | None = None
