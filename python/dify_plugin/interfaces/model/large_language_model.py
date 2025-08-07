@@ -1,8 +1,10 @@
 import logging
 import re
 import time
+import threading
 from abc import abstractmethod
 from collections.abc import Generator, Mapping
+from contextlib import contextmanager
 from typing import Union
 
 from pydantic import ConfigDict
@@ -43,6 +45,23 @@ class LargeLanguageModel(AIModel):
 
     # pydantic configs
     model_config = ConfigDict(protected_namespaces=())
+    
+    # Thread-local storage for timing context
+    _local = threading.local()
+
+    @contextmanager
+    def _timing_context(self):
+        """Context manager for timing requests using thread-local storage"""
+        started_at = time.perf_counter()
+        self._local.started_at = started_at
+        try:
+            yield started_at
+        finally:
+            # Clean up thread-local storage - simple deletion without checks
+            try:
+                del self._local.started_at
+            except AttributeError:
+                pass
 
     ############################################################
     #        Methods that can be implemented by plugin         #
@@ -160,6 +179,11 @@ class LargeLanguageModel(AIModel):
             tokens=completion_tokens,
         )
 
+        # Calculate latency from thread-local storage or provided start time
+        started_at = getattr(self._local, 'started_at', None)
+        current_time = time.perf_counter()
+        latency = current_time - started_at if started_at is not None else 0.0
+
         # transform usage
         usage = LLMUsage(
             prompt_tokens=prompt_tokens,
@@ -173,7 +197,7 @@ class LargeLanguageModel(AIModel):
             total_tokens=prompt_tokens + completion_tokens,
             total_price=prompt_price_info.total_amount + completion_price_info.total_amount,
             currency=prompt_price_info.currency,
-            latency=time.perf_counter() - self.started_at,
+            latency=latency,
         )
 
         return usage
@@ -579,35 +603,35 @@ if you are not sure about the structure.
 
         model_parameters = self._validate_and_filter_model_parameters(model, model_parameters, credentials)
 
-        self.started_at = time.perf_counter()
+        with self._timing_context():
+            try:
+                if "response_format" in model_parameters and model_parameters["response_format"] in {"JSON", "XML"}:
+                    result = self._code_block_mode_wrapper(
+                        model=model,
+                        credentials=credentials,
+                        prompt_messages=prompt_messages,
+                        model_parameters=model_parameters,
+                        tools=tools,
+                        stop=stop,
+                        stream=stream,
+                        user=user,
+                    )
+                else:
+                    result = self._invoke(
+                        model,
+                        credentials,
+                        prompt_messages,
+                        model_parameters,
+                        tools,
+                        stop,
+                        stream,
+                        user,
+                    )
+            except Exception as e:
+                raise self._transform_invoke_error(e) from e
 
-        try:
-            if "response_format" in model_parameters and model_parameters["response_format"] in {"JSON", "XML"}:
-                result = self._code_block_mode_wrapper(
-                    model=model,
-                    credentials=credentials,
-                    prompt_messages=prompt_messages,
-                    model_parameters=model_parameters,
-                    tools=tools,
-                    stop=stop,
-                    stream=stream,
-                    user=user,
-                )
+            if isinstance(result, LLMResult):
+                yield result.to_llm_result_chunk()
             else:
-                result = self._invoke(
-                    model,
-                    credentials,
-                    prompt_messages,
-                    model_parameters,
-                    tools,
-                    stop,
-                    stream,
-                    user,
-                )
-        except Exception as e:
-            raise self._transform_invoke_error(e) from e
+                yield from result
 
-        if isinstance(result, LLMResult):
-            yield result.to_llm_result_chunk()
-        else:
-            yield from result
