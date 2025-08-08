@@ -1,0 +1,30 @@
+identity:
+  name: google_cloud_storage
+  author: langgenius
+  label:
+    en_US: Google Cloud Storage
+    zh_Hans: Google Cloud Storage
+description:
+  en_US: Get files from your Google Cloud Storage bucket
+  zh_Hans: 从您的 Google Cloud Storage 存储桶中获取文件
+
+parameters:
+
+output_schema:
+  type: object
+  properties:
+    result:
+      $ref: "#/$defs/file"
+    result2:
+      $ref: "#/$defs/website_crawl"
+    result3:
+      $ref: "#/$defs/online_document"
+    result4:
+      $ref: "#/$defs/general_structure_chunk"
+    result5:
+      $ref: "#/$defs/parent_child_structure_chunk"
+    result6:
+      $ref: "#/$defs/qa_structure_chunk"
+extra:
+  python:
+    source: datasources/google_cloud_storage.py
