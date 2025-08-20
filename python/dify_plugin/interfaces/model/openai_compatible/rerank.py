@@ -1,5 +1,4 @@
 from json import dumps
-from typing import Optional
 
 from requests import HTTPError, post
 from yarl import URL
@@ -27,9 +26,9 @@ class OAICompatRerankModel(RerankModel):
         credentials: dict,
         query: str,
         docs: list[str],
-        score_threshold: Optional[float] = None,
-        top_n: Optional[int] = None,
-        user: Optional[str] = None,
+        score_threshold: float | None = None,
+        top_n: int | None = None,
+        user: str | None = None,
     ) -> RerankResult:
         """
         Invoke rerank model
@@ -63,7 +62,7 @@ class OAICompatRerankModel(RerankModel):
         # TODO: Do we need truncate docs to avoid llama.cpp return error?
 
         data = {
-            "model": model_name,
+            "model": credentials.get("endpoint_model_name", model),
             "query": query,
             "documents": docs,
             "top_n": top_n,

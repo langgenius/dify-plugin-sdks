@@ -2,7 +2,7 @@ import decimal
 import socket
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Optional, final
+from typing import final
 
 import gevent.socket
 from pydantic import ConfigDict
@@ -108,7 +108,7 @@ class AIModel(ABC):
         model_schema = self.get_model_schema(model, credentials)
 
         # get price info from predefined model schema
-        price_config: Optional[PriceConfig] = None
+        price_config: PriceConfig | None = None
         if model_schema and model_schema.pricing:
             price_config = model_schema.pricing
 
@@ -149,7 +149,7 @@ class AIModel(ABC):
         """
         return self.model_schemas
 
-    def get_model_schema(self, model: str, credentials: Optional[Mapping] = None) -> Optional[AIModelEntity]:
+    def get_model_schema(self, model: str, credentials: Mapping | None = None) -> AIModelEntity | None:
         """
         Get model schema by model name and credentials
 
@@ -171,9 +171,7 @@ class AIModel(ABC):
 
         return None
 
-    def get_customizable_model_schema_from_credentials(
-        self, model: str, credentials: Mapping
-    ) -> Optional[AIModelEntity]:
+    def get_customizable_model_schema_from_credentials(self, model: str, credentials: Mapping) -> AIModelEntity | None:
         """
         Get customizable model schema from credentials
 
@@ -183,7 +181,7 @@ class AIModel(ABC):
         """
         return self._get_customizable_model_schema(model, credentials)
 
-    def _get_customizable_model_schema(self, model: str, credentials: Mapping) -> Optional[AIModelEntity]:
+    def _get_customizable_model_schema(self, model: str, credentials: Mapping) -> AIModelEntity | None:
         """
         Get customizable model schema and fill in the template
         """
@@ -236,7 +234,7 @@ class AIModel(ABC):
 
         return schema
 
-    def get_customizable_model_schema(self, model: str, credentials: Mapping) -> Optional[AIModelEntity]:
+    def get_customizable_model_schema(self, model: str, credentials: Mapping) -> AIModelEntity | None:
         """
         Get customizable model schema
 

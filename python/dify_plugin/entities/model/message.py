@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from enum import Enum, StrEnum
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, BeforeValidator, Field, field_validator
 
@@ -128,8 +128,8 @@ class PromptMessage(BaseModel):
     """
 
     role: PromptMessageRole
-    content: Optional[str | list[PromptMessageContentUnionTypes]] = None
-    name: Optional[str] = None
+    content: str | list[PromptMessageContentUnionTypes] | None = None
+    name: str | None = None
 
     def is_empty(self) -> bool:
         """
@@ -143,7 +143,7 @@ class PromptMessage(BaseModel):
     @classmethod
     def transform_content(
         cls, value: list[dict] | Sequence[PromptMessageContent] | str | None
-    ) -> Optional[str | list[PromptMessageContent]]:
+    ) -> str | list[PromptMessageContent] | None:
         """
         Transform content to list of prompt message content.
         """
@@ -183,7 +183,7 @@ class UserPromptMessage(PromptMessage):
     role: PromptMessageRole = PromptMessageRole.USER
 
 
-def _ensure_field_empty_str(value: Optional[str]) -> str:
+def _ensure_field_empty_str(value: str | None) -> str:
     if value is None:
         return ""
     return value

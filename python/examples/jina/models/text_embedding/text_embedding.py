@@ -1,6 +1,5 @@
 import time
 from json import JSONDecodeError, dumps
-from typing import Optional
 
 from models.text_embedding.jina_tokenizer import JinaTokenizer
 from requests import post
@@ -42,7 +41,7 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         model: str,
         credentials: dict,
         texts: list[str],
-        user: Optional[str] = None,
+        user: str | None = None,
         input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
     ) -> TextEmbeddingResult:
         """

@@ -1,7 +1,7 @@
 import logging
 from abc import abstractmethod
 from collections.abc import Generator, Mapping
-from typing import Any, Optional, Union, final
+from typing import Any, Union, final
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
@@ -18,6 +18,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
+from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolDescription, ToolIdentity, ToolParameter, ToolProviderType
 from dify_plugin.interfaces.tool import ToolLike, ToolProvider
 
@@ -73,11 +74,11 @@ class AgentScratchpadUnit(BaseModel):
                 "action_input": self.action_input,
             }
 
-    agent_response: Optional[str] = ""
-    thought: Optional[str] = ""
-    action_str: Optional[str] = ""
-    observation: Optional[str] = ""
-    action: Optional[Action] = None
+    agent_response: str | None = ""
+    thought: str | None = ""
+    action_str: str | None = ""
+    observation: str | None = ""
+    action: Action | None = None
 
     def is_final(self) -> bool:
         """
@@ -92,8 +93,8 @@ class ToolInvokeMeta(BaseModel):
     """
 
     time_cost: float = Field(..., description="The time cost of the tool invoke")
-    error: Optional[str] = None
-    tool_config: Optional[dict] = None
+    error: str | None = None
+    tool_config: dict | None = None
 
     @classmethod
     def empty(cls) -> "ToolInvokeMeta":
@@ -120,8 +121,10 @@ class ToolInvokeMeta(BaseModel):
 class ToolEntity(BaseModel):
     identity: AgentToolIdentity
     parameters: list[ToolParameter] = Field(default_factory=list)
-    description: Optional[ToolDescription] = None
-    output_schema: Optional[dict] = None
+    description: ToolDescription | None = None
+    output_schema: dict | None = None
+    credential_id: str | None = None
+    credential_type: CredentialType | None = None
     has_runtime_parameters: bool = Field(default=False, description="Whether the tool has runtime parameters")
     # provider type
     provider_type: ToolProviderType = ToolProviderType.BUILT_IN
@@ -182,7 +185,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         parameters = self._convert_parameters(parameters)
         return self._invoke(parameters)
 
-    def increase_usage(self, final_llm_usage_dict: dict[str, Optional[LLMUsage]], usage: LLMUsage):
+    def increase_usage(self, final_llm_usage_dict: dict[str, LLMUsage | None], usage: LLMUsage):
         if not final_llm_usage_dict["usage"]:
             final_llm_usage_dict["usage"] = usage
         else:

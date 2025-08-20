@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from enum import StrEnum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -14,6 +14,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
+from dify_plugin.entities.provider_config import CredentialType
 
 
 class PluginInvokeType(StrEnum):
@@ -57,6 +58,7 @@ class EndpointActions(StrEnum):
 class OAuthActions(StrEnum):
     GetAuthorizationUrl = "get_authorization_url"
     GetCredentials = "get_credentials"
+    RefreshCredentials = "refresh_credentials"
 
 
 class DynamicParameterActions(StrEnum):
@@ -78,6 +80,7 @@ class ToolInvokeRequest(PluginAccessRequest):
     provider: str
     tool: str
     credentials: dict
+    credential_type: CredentialType = CredentialType.API_KEY
     tool_parameters: dict[str, Any]
 
 
@@ -146,8 +149,8 @@ class ModelInvokeLLMRequest(PluginAccessModelRequest, PromptMessageMixin):
     action: ModelActions = ModelActions.InvokeLLM
 
     model_parameters: dict[str, Any]
-    stop: Optional[list[str]]
-    tools: Optional[list[PromptMessageTool]]
+    stop: list[str] | None
+    tools: list[PromptMessageTool] | None
     stream: bool = True
 
     model_config = ConfigDict(protected_namespaces=())
@@ -156,7 +159,7 @@ class ModelInvokeLLMRequest(PluginAccessModelRequest, PromptMessageMixin):
 class ModelGetLLMNumTokens(PluginAccessModelRequest, PromptMessageMixin):
     action: ModelActions = ModelActions.GetLLMNumTokens
 
-    tools: Optional[list[PromptMessageTool]]
+    tools: list[PromptMessageTool] | None
 
 
 class ModelInvokeTextEmbeddingRequest(PluginAccessModelRequest):
@@ -176,8 +179,8 @@ class ModelInvokeRerankRequest(PluginAccessModelRequest):
 
     query: str
     docs: list[str]
-    score_threshold: Optional[float]
-    top_n: Optional[int]
+    score_threshold: float | None
+    top_n: int | None
 
 
 class ModelInvokeTTSRequest(PluginAccessModelRequest):
@@ -191,7 +194,7 @@ class ModelInvokeTTSRequest(PluginAccessModelRequest):
 class ModelGetTTSVoices(PluginAccessModelRequest):
     action: ModelActions = ModelActions.GetTTSVoices
 
-    language: Optional[str]
+    language: str | None
 
 
 class ModelInvokeSpeech2TextRequest(PluginAccessModelRequest):
@@ -241,19 +244,30 @@ class EndpointInvokeRequest(BaseModel):
     raw_http_request: str
 
 
-class OAuthGetAuthorizationUrlRequest(BaseModel):
+class OAuthGetAuthorizationUrlRequest(PluginAccessRequest):
     type: PluginInvokeType = PluginInvokeType.OAuth
     action: OAuthActions = OAuthActions.GetAuthorizationUrl
     provider: str
+    redirect_uri: str
     system_credentials: Mapping[str, Any]
 
 
-class OAuthGetCredentialsRequest(BaseModel):
+class OAuthGetCredentialsRequest(PluginAccessRequest):
     type: PluginInvokeType = PluginInvokeType.OAuth
     action: OAuthActions = OAuthActions.GetCredentials
     provider: str
+    redirect_uri: str
     system_credentials: Mapping[str, Any]
     raw_http_request: str
+
+
+class OAuthRefreshCredentialsRequest(PluginAccessRequest):
+    type: PluginInvokeType = PluginInvokeType.OAuth
+    action: OAuthActions = OAuthActions.RefreshCredentials
+    provider: str
+    redirect_uri: str
+    system_credentials: Mapping[str, Any]
+    credentials: Mapping[str, Any]
 
 
 class DynamicParameterFetchParameterOptionsRequest(BaseModel):

@@ -1,18 +1,18 @@
 from collections.abc import Mapping
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 from pydantic import BaseModel, Field, field_validator
 
 from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
 from dify_plugin.entities import I18nObject
+from dify_plugin.entities.invoke_message import InvokeMessage
 from dify_plugin.entities.tool import (
     CommonParameterType,
     ParameterAutoGenerate,
     ParameterTemplate,
     ToolIdentity,
-    ToolInvokeMessage,
     ToolParameterOption,
     ToolProviderIdentity,
 )
@@ -26,7 +26,7 @@ class AgentStrategyProviderIdentity(ToolProviderIdentity):
 
 
 class AgentRuntime(BaseModel):
-    user_id: Optional[str]
+    user_id: str | None
 
 
 @docs(
@@ -66,19 +66,17 @@ class AgentStrategyParameter(BaseModel):
 
     name: str = Field(..., description="The name of the parameter")
     label: I18nObject = Field(..., description="The label presented to the user")
-    help: Optional[I18nObject] = None
+    help: I18nObject | None = None
     type: ToolParameterType = Field(..., description="The type of the parameter")
-    auto_generate: Optional[ParameterAutoGenerate] = Field(
-        default=None, description="The auto generate of the parameter"
-    )
-    template: Optional[ParameterTemplate] = Field(default=None, description="The template of the parameter")
+    auto_generate: ParameterAutoGenerate | None = Field(default=None, description="The auto generate of the parameter")
+    template: ParameterTemplate | None = Field(default=None, description="The template of the parameter")
     scope: str | None = None
-    required: Optional[bool] = False
-    default: Optional[Union[int, float, str]] = None
-    min: Optional[Union[float, int]] = None
-    max: Optional[Union[float, int]] = None
-    precision: Optional[int] = None
-    options: Optional[list[ToolParameterOption]] = None
+    required: bool | None = False
+    default: Union[int, float, str] | None = None
+    min: Union[float, int] | None = None
+    max: Union[float, int] | None = None
+    precision: int | None = None
+    options: list[ToolParameterOption] | None = None
 
 
 @docs(
@@ -107,7 +105,7 @@ class AgentStrategyConfiguration(BaseModel):
     description: I18nObject
     extra: AgentStrategyConfigurationExtra
     has_runtime_parameters: bool = Field(default=False, description="Whether the tool has runtime parameters")
-    output_schema: Optional[Mapping[str, Any]] = None
+    output_schema: Mapping[str, Any] | None = None
     features: list[AgentStrategyFeature] = Field(default=[], description="The features of the agent")
 
 
@@ -168,5 +166,5 @@ class AgentStrategyProviderConfiguration(BaseModel):
         return strategies
 
 
-class AgentInvokeMessage(ToolInvokeMessage):
+class AgentInvokeMessage(InvokeMessage):
     pass

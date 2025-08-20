@@ -1,5 +1,4 @@
 from collections.abc import Mapping
-from typing import Optional
 
 from werkzeug import Request, Response
 
@@ -14,7 +13,7 @@ class Tts(Endpoint):
         """
         content_text = r.get_json().get("content_text")
 
-        tts_model: Optional[dict] = settings.get("tts_model")
+        tts_model: dict | None = settings.get("tts_model")
         if not tts_model:
             return Response("tts_model is required", status=400)
 

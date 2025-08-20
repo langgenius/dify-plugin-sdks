@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -27,8 +26,8 @@ class ResponseWriter(ABC):
     def put(
         self,
         event: Event,
-        session_id: Optional[str] = None,
-        data: Optional[dict | BaseModel] = None,
+        session_id: str | None = None,
+        data: dict | BaseModel | None = None,
     ):
         """
         serialize the output to the daemon
@@ -39,19 +38,19 @@ class ResponseWriter(ABC):
         self.write(StreamOutputMessage(event=event, session_id=session_id, data=data).model_dump_json())
         self.write("\n\n")
 
-    def error(self, session_id: Optional[str] = None, data: Optional[dict | BaseModel] = None):
+    def error(self, session_id: str | None = None, data: dict | BaseModel | None = None):
         return self.put(Event.ERROR, session_id, data)
 
-    def log(self, data: Optional[dict] = None):
+    def log(self, data: dict | None = None):
         return self.put(Event.LOG, None, data)
 
     def heartbeat(self):
         return self.put(Event.HEARTBEAT, None, {})
 
-    def session_message(self, session_id: Optional[str] = None, data: Optional[dict | BaseModel] = None):
+    def session_message(self, session_id: str | None = None, data: dict | BaseModel | None = None):
         return self.put(Event.SESSION, session_id, data)
 
-    def session_message_text(self, session_id: Optional[str] = None, data: Optional[dict | BaseModel] = None) -> str:
+    def session_message_text(self, session_id: str | None = None, data: dict | BaseModel | None = None) -> str:
         if isinstance(data, BaseModel):
             data = data.model_dump()
 

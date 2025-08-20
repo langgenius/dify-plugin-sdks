@@ -1,6 +1,5 @@
 import json
 from collections.abc import Mapping
-from typing import Optional
 
 from werkzeug import Request, Response
 
@@ -13,7 +12,7 @@ class GirlsTalk(Endpoint):
         Invokes the endpoint with the given request.
         """
 
-        app: Optional[dict] = settings.get("app")
+        app: dict | None = settings.get("app")
         if not app:
             return Response("App is required", status=400)
 

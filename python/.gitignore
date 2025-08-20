@@ -92,4 +92,6 @@ cython_debug/
 # LSP config files
 pyrightconfig.json
 
+.idea/
+
 # End of https://www.toptal.com/developers/gitignore/api/python

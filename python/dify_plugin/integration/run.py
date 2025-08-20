@@ -11,7 +11,6 @@ from queue import Queue
 from threading import Lock, Semaphore
 from typing import TypeVar
 
-from gevent.os import tp_read
 from pydantic import BaseModel, ValidationError
 
 from dify_plugin.config.integration_config import IntegrationConfig
@@ -114,8 +113,9 @@ class PluginRunner:
         self.q = dict[str, Queue[PluginGenericResponse | None]]()
         self.q_lock = Lock()
 
-        # wait for the plugin to be ready
-        self.ready_semaphore.acquire()
+        # wait for the plugin to be ready with timeout
+        if not self.ready_semaphore.acquire(timeout=30):  # 30 seconds timeout
+            raise TimeoutError("Plugin failed to start within 30 seconds")
 
         logger.info("Plugin ready")
 
@@ -147,14 +147,22 @@ class PluginRunner:
         os.close(self.stdin_pipe_read)
 
     def _read_async(self, fd: int) -> bytes:
-        # read data from stdin using tp_read in 64KB chunks.
+        import select
+
+        ready, _, _ = select.select([fd], [], [], 0.1)
+        if not ready:
+            return b""
+
+        # read data from stdin using os.read in 64KB chunks.
         # the OS buffer for stdin is usually 64KB, so using a larger value doesn't make sense.
-        b = tp_read(fd, 65536)
+        b = os.read(fd, 65536)
         if not b:
             raise PluginStoppedError()
         return b
 
     def _message_reader(self, pipe: int):
+        import time
+
         # create a scanner to read the message line by line
         """Read messages line by line from the pipe."""
         buffer = b""
@@ -166,6 +174,7 @@ class PluginRunner:
                     break
 
                 if not data:
+                    time.sleep(0.01)
                     continue
 
                 buffer += data
@@ -193,12 +202,15 @@ class PluginRunner:
         try:
             parsed_message = PluginGenericResponse.model_validate_json(message)
         except ValidationError:
+            logger.warning(f"Failed to parse message: {message}")
             return
 
         if not parsed_message.invoke_id:
             if parsed_message.type == ResponseType.PLUGIN_READY:
+                logger.info("Plugin is ready")
                 self.ready_semaphore.release()
             elif parsed_message.type == ResponseType.ERROR:
+                logger.error(f"Plugin error: {parsed_message.response}")
                 raise ValueError(parsed_message.response)
             elif parsed_message.type == ResponseType.INFO:
                 logger.info(parsed_message.response)

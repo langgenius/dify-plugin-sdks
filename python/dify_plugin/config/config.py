@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,10 +23,10 @@ class DifyPluginEnv(BaseSettings):
         description="Installation method, local or network",
     )
 
-    REMOTE_INSTALL_URL: Optional[str] = Field(default=None, description="Remote installation URL")
+    REMOTE_INSTALL_URL: str | None = Field(default=None, description="Remote installation URL")
     REMOTE_INSTALL_HOST: str = Field(default="localhost", description="Remote installation host")
     REMOTE_INSTALL_PORT: int = Field(default=5003, description="Remote installation port")
-    REMOTE_INSTALL_KEY: Optional[str] = Field(default=None, description="Remote installation key")
+    REMOTE_INSTALL_KEY: str | None = Field(default=None, description="Remote installation key")
 
     SERVERLESS_HOST: str = Field(default="0.0.0.0", description="Serverless host")
     SERVERLESS_PORT: int = Field(default=8080, description="Serverless port")

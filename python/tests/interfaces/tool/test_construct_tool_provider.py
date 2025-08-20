@@ -17,4 +17,4 @@ def test_oauth_get_authorization_url():
     """
     provider = ToolProvider()
     with pytest.raises(NotImplementedError):
-        provider.oauth_get_authorization_url({})
+        provider.oauth_get_authorization_url("", {})

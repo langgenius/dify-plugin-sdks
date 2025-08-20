@@ -1,7 +1,7 @@
 import json
 import time
 from collections.abc import Generator, Mapping
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import pydantic
 from pydantic import BaseModel, Field
@@ -14,8 +14,8 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     UserPromptMessage,
 )
+from dify_plugin.entities.provider_config import LogMetadata
 from dify_plugin.entities.tool import (
-    LogMetadata,
     ToolInvokeMessage,
     ToolParameter,
     ToolProviderType,
@@ -96,7 +96,7 @@ class ReActAgentStrategy(AgentStrategy):
         iteration_step = 1
         max_iteration_steps = react_params.maximum_iterations
         run_agent_state = True
-        llm_usage: dict[str, Optional[LLMUsage]] = {"usage": None}
+        llm_usage: dict[str, LLMUsage | None] = {"usage": None}
         final_answer = ""
         prompt_messages: list[PromptMessage] = []
 
@@ -147,7 +147,7 @@ class ReActAgentStrategy(AgentStrategy):
                 stop=stop,
             )
 
-            usage_dict: dict[str, Optional[LLMUsage]] = {"usage": None}
+            usage_dict: dict[str, LLMUsage | None] = {"usage": None}
             react_chunks = CotAgentOutputParser.handle_react_stream_output(chunks, usage_dict)
             scratchpad = AgentScratchpadUnit(
                 agent_response="",
@@ -402,6 +402,7 @@ class ReActAgentStrategy(AgentStrategy):
                 provider=tool_instance.identity.provider,
                 tool_name=tool_instance.identity.name,
                 parameters=tool_invoke_parameters,
+                credential_id=tool_instance.credential_id,
             )
             result = ""
             additional_messages = []  # Collect messages that need to be yielded

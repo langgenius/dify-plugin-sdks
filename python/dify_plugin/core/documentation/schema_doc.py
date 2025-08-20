@@ -1,5 +1,5 @@
 from collections.abc import Callable, Mapping
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -9,10 +9,10 @@ class SchemaDoc:
         self,
         cls: type[BaseModel],
         description: str,
-        name: Optional[str] = None,
+        name: str | None = None,
         top: bool = False,
-        ignore_fields: Optional[list[str]] = None,
-        outside_reference_fields: Optional[Mapping[str, type[BaseModel]]] = None,
+        ignore_fields: list[str] | None = None,
+        outside_reference_fields: Mapping[str, type[BaseModel]] | None = None,
     ):
         self.cls = cls
         self.description = description
@@ -27,10 +27,10 @@ __cls_mapping__: dict[type[BaseModel], SchemaDoc] = {}
 
 def docs(
     description: str,
-    name: Optional[str] = None,
+    name: str | None = None,
     top: bool = False,
-    ignore_fields: Optional[list[str]] = None,
-    outside_reference_fields: Optional[Mapping[str, type[BaseModel]]] = None,
+    ignore_fields: list[str] | None = None,
+    outside_reference_fields: Mapping[str, type[BaseModel]] | None = None,
 ) -> Callable:
     """
     Decorator to add schema documentation to a class

@@ -1,7 +1,7 @@
 import queue
 from collections.abc import Callable, Generator
 from queue import Queue
-from typing import Optional, overload
+from typing import overload
 
 from dify_plugin.core.entities.plugin.io import PluginInStream
 
@@ -9,12 +9,12 @@ from dify_plugin.core.entities.plugin.io import PluginInStream
 class FilterReader:
     filter: Callable[[PluginInStream], bool]
     queue: Queue[PluginInStream | None]
-    close_callback: Optional[Callable]
+    close_callback: Callable | None
 
     def __init__(
         self,
         filter: Callable[[PluginInStream], bool],  # noqa: A002
-        close_callback: Optional[Callable] = None,
+        close_callback: Callable | None = None,
     ) -> None:
         self.filter = filter
         self.queue = Queue()
@@ -26,7 +26,7 @@ class FilterReader:
     @overload
     def read(self) -> Generator[PluginInStream, None, None]: ...
 
-    def read(self, timeout_for_round: Optional[float] = None) -> Generator[PluginInStream | None, None, None]:
+    def read(self, timeout_for_round: float | None = None) -> Generator[PluginInStream | None, None, None]:
         while True:
             try:
                 data = self.queue.get(timeout=timeout_for_round)

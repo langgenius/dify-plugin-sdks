@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, Union
+from typing import Union
 
 from pydantic import BaseModel, Field
 
@@ -37,9 +37,6 @@ class CommonParameterType(Enum):
     # MCP object and array type parameters
     OBJECT = "object"
     ARRAY = "array"
-    # Dynamic select parameter
-    # Once you are not sure about the available options until authorization is done
-    # eg: Select a Slack channel from a Slack workspace
     DYNAMIC_SELECT = "dynamic-select"
 
 
@@ -115,9 +112,14 @@ class ProviderConfig(BaseModel):
     type: Config = Field(..., description="The type of the credentials")
     scope: str | None = None
     required: bool = False
-    default: Optional[Union[int, float, str]] = None
-    options: Optional[list[ConfigOption]] = None
+    default: Union[int, float, str, bool] | None = None
+    options: list[ConfigOption] | None = None
     label: I18nObject
-    help: Optional[I18nObject] = None
-    url: Optional[str] = None
-    placeholder: Optional[I18nObject] = None
+    help: I18nObject | None = None
+    url: str | None = None
+    placeholder: I18nObject | None = None
+
+
+class CredentialType(Enum):
+    API_KEY = "api-key"
+    OAUTH = "oauth2"

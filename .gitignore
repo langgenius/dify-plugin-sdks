@@ -1,0 +1,12 @@
+# IDE
+.idea
+
+# secret keys
+**/*.pem
+**/*.key
+**/*.secret
+**/*.token
+**/*.pub
+
+# dify plugins
+**/*.difypkg

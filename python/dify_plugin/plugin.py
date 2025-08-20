@@ -2,7 +2,7 @@ import base64
 import logging
 import uuid
 from collections.abc import Generator
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import RootModel
 from yarl import URL
@@ -15,6 +15,7 @@ from dify_plugin.core.entities.plugin.request import (
     DynamicParameterActions,
     EndpointActions,
     ModelActions,
+    OAuthActions,
     PluginInvokeType,
     ToolActions,
 )
@@ -65,7 +66,7 @@ class Plugin(IOServer, Router):
         # register io routes
         self._register_request_routes()
 
-    def _launch_local_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, Optional[ResponseWriter]]:
+    def _launch_local_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, ResponseWriter | None]:
         """
         Launch local stream
         """
@@ -76,7 +77,7 @@ class Plugin(IOServer, Router):
         self._log_configuration()
         return reader, writer
 
-    def _launch_remote_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, Optional[ResponseWriter]]:
+    def _launch_remote_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, ResponseWriter | None]:
         """
         Launch remote stream
         """
@@ -174,7 +175,7 @@ class Plugin(IOServer, Router):
 
         self._log_configuration()
 
-    def _launch_serverless_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, Optional[ResponseWriter]]:
+    def _launch_serverless_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, ResponseWriter | None]:
         """
         Launch Serverless stream
         """
@@ -309,16 +310,35 @@ class Plugin(IOServer, Router):
             and data.get("action") == DynamicParameterActions.FetchParameterOptions.value,
         )
 
+        self.register_route(
+            self.plugin_executer.get_oauth_authorization_url,
+            lambda data: data.get("type") == PluginInvokeType.OAuth.value
+            and data.get("action") == OAuthActions.GetAuthorizationUrl.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.get_oauth_credentials,
+            lambda data: data.get("type") == PluginInvokeType.OAuth.value
+            and data.get("action") == OAuthActions.GetCredentials.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.refresh_oauth_credentials,
+            lambda data: data.get("type") == PluginInvokeType.OAuth.value
+            and data.get("action") == OAuthActions.RefreshCredentials.value,
+        )
+
     def _execute_request(
         self,
         session_id: str,
         data: dict,
         reader: RequestReader,
         writer: ResponseWriter,
-        conversation_id: Optional[str] = None,
-        message_id: Optional[str] = None,
-        app_id: Optional[str] = None,
-        endpoint_id: Optional[str] = None,
+        conversation_id: str | None = None,
+        message_id: str | None = None,
+        app_id: str | None = None,
+        endpoint_id: str | None = None,
+        context: dict | None = None,
     ):
         """
         accept requests and execute
@@ -337,6 +357,7 @@ class Plugin(IOServer, Router):
             message_id=message_id,
             app_id=app_id,
             endpoint_id=endpoint_id,
+            context=context,
         )
         response = self.dispatch(session, data)
         if response:

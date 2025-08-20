@@ -1,4 +1,4 @@
-from typing import IO, Optional
+from typing import IO
 from urllib.parse import urljoin
 
 import requests
@@ -16,7 +16,7 @@ class OAICompatSpeech2TextModel(_CommonOaiApiCompat, Speech2TextModel):
     Model class for OpenAI Compatible Speech to text model.
     """
 
-    def _invoke(self, model: str, credentials: dict, file: IO[bytes], user: Optional[str] = None) -> str:
+    def _invoke(self, model: str, credentials: dict, file: IO[bytes], user: str | None = None) -> str:
         """
         Invoke speech2text model
 
@@ -37,7 +37,7 @@ class OAICompatSpeech2TextModel(_CommonOaiApiCompat, Speech2TextModel):
             endpoint_url += "/"
         endpoint_url = urljoin(endpoint_url, "audio/transcriptions")
 
-        payload = {"model": model}
+        payload = {"model": credentials.get("endpoint_model_name", model)}
         files = [("file", file)]
         response = requests.post(endpoint_url, headers=headers, data=payload, files=files)  # noqa: S113
 

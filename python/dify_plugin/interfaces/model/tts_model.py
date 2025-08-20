@@ -4,7 +4,7 @@ import re
 import uuid
 from abc import abstractmethod
 from collections.abc import Generator
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import ConfigDict
 
@@ -36,7 +36,7 @@ class TTSModel(AIModel):
         credentials: dict,
         content_text: str,
         voice: str,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> bytes | Generator[bytes, None, None]:
         """
         Invoke large language model
@@ -52,7 +52,7 @@ class TTSModel(AIModel):
         """
         raise NotImplementedError
 
-    def get_tts_model_voices(self, model: str, credentials: dict, language: Optional[str] = None) -> Optional[list]:
+    def get_tts_model_voices(self, model: str, credentials: dict, language: str | None = None) -> list | None:
         """
         Get voice for given tts model voices
 
@@ -91,7 +91,7 @@ class TTSModel(AIModel):
         if model_schema and ModelPropertyKey.DEFAULT_VOICE in model_schema.model_properties:
             return model_schema.model_properties[ModelPropertyKey.DEFAULT_VOICE]
 
-    def _get_model_audio_type(self, model: str, credentials: dict) -> Optional[str]:
+    def _get_model_audio_type(self, model: str, credentials: dict) -> str | None:
         """
         Get audio type for given tts model
 
@@ -104,7 +104,7 @@ class TTSModel(AIModel):
         if model_schema and ModelPropertyKey.AUDIO_TYPE in model_schema.model_properties:
             return model_schema.model_properties[ModelPropertyKey.AUDIO_TYPE]
 
-    def _get_model_word_limit(self, model: str, credentials: dict) -> Optional[int]:
+    def _get_model_word_limit(self, model: str, credentials: dict) -> int | None:
         """
         Get audio type for given tts model
         :return: audio type
@@ -114,7 +114,7 @@ class TTSModel(AIModel):
         if model_schema and ModelPropertyKey.WORD_LIMIT in model_schema.model_properties:
             return model_schema.model_properties[ModelPropertyKey.WORD_LIMIT]
 
-    def _get_model_workers_limit(self, model: str, credentials: dict) -> Optional[int]:
+    def _get_model_workers_limit(self, model: str, credentials: dict) -> int | None:
         """
         Get audio max workers for given tts model
         :return: audio type
@@ -167,7 +167,7 @@ class TTSModel(AIModel):
         credentials: dict,
         content_text: str,
         voice: str,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> bytes | Generator[bytes, None, None]:
         """
         Invoke large language model

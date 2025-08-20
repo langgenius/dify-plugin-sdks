@@ -3,7 +3,7 @@ import logging
 import time
 from collections.abc import Generator
 from copy import deepcopy
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from pydantic import BaseModel
 
@@ -23,7 +23,8 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from dify_plugin.entities.tool import LogMetadata, ToolInvokeMessage, ToolProviderType
+from dify_plugin.entities.provider_config import LogMetadata
+from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
 from dify_plugin.interfaces.agent import (
     AgentModelConfig,
     AgentStrategy,
@@ -85,7 +86,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         max_iteration_steps = fc_params.maximum_iterations
         current_thoughts: list[PromptMessage] = []
         function_call_state = True  # continue to run until there is not any tool call
-        llm_usage: dict[str, Optional[LLMUsage]] = {"usage": None}
+        llm_usage: dict[str, LLMUsage | None] = {"usage": None}
         final_answer = ""
 
         while function_call_state and iteration_step <= max_iteration_steps:
@@ -270,6 +271,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 **tool_instance.runtime_parameters,
                                 **tool_call_args,
                             },
+                            credential_id=tool_instance.credential_id,
                         )
                         tool_result = ""
                         for tool_invoke_response in tool_invoke_responses:
