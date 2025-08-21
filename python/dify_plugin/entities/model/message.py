@@ -14,6 +14,7 @@ class PromptMessageRole(Enum):
     USER = "user"
     ASSISTANT = "assistant"
     TOOL = "tool"
+    DEVELOPER = "developer"
 
     @classmethod
     def value_of(cls, value: str) -> "PromptMessageRole":
@@ -239,6 +240,14 @@ class SystemPromptMessage(PromptMessage):
     """
 
     role: PromptMessageRole = PromptMessageRole.SYSTEM
+
+
+class DeveloperPromptMessage(PromptMessage):
+    """
+    Model class for developer prompt message.
+    """
+
+    role: PromptMessageRole = PromptMessageRole.DEVELOPER
 
 
 class ToolPromptMessage(PromptMessage):
