@@ -6,7 +6,7 @@ from werkzeug import Request
 
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities import ParameterOption
-from dify_plugin.entities.trigger import TriggerResponse, TriggerRuntime
+from dify_plugin.entities.trigger import TriggerEvent, TriggerResponse, TriggerRuntime
 
 
 class TriggerProvider:
@@ -34,6 +34,8 @@ class TriggerProvider:
     def _oauth_get_credentials(self, system_credentials: Mapping[str, Any], request: Request) -> Mapping[str, Any]:
         raise NotImplementedError("This plugin should implement `_oauth_get_credentials` method to enable oauth")
 
+    def _dispatch_event(self, settings: Mapping[str, Any], request: Request) -> TriggerEvent:
+        raise NotImplementedError("This plugin should implement `_dispatch_event` method to enable event dispatch")
 
 class Trigger(ABC):
     """

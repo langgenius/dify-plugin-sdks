@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from enum import StrEnum
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 from pydantic import BaseModel, Field
 
@@ -12,8 +12,14 @@ from dify_plugin.entities.tool import ParameterAutoGenerate, ParameterTemplate
 
 class TriggerRuntime(BaseModel):
     credentials: dict[str, Any]
-    session_id: Optional[str]
+    session_id: str | None
 
+class TriggerEvent(BaseModel):
+    """
+    The event of the trigger
+    """
+
+    event: str = Field(..., description="The event of the trigger")
 
 @docs(
     description="The response of the trigger",
@@ -64,15 +70,15 @@ class TriggerParameter(BaseModel):
     name: str = Field(..., description="The name of the parameter")
     label: I18nObject = Field(..., description="The label presented to the user")
     type: TriggerParameterType = Field(..., description="The type of the parameter")
-    auto_generate: Optional[ParameterAutoGenerate] = Field(
+    auto_generate: ParameterAutoGenerate | None = Field(
         default=None, description="The auto generate of the parameter"
     )
-    template: Optional[ParameterTemplate] = Field(default=None, description="The template of the parameter")
+    template: ParameterTemplate | None = Field(default=None, description="The template of the parameter")
     scope: str | None = None
-    required: Optional[bool] = False
-    default: Optional[Union[int, float, str]] = None
-    min: Optional[Union[float, int]] = None
-    max: Optional[Union[float, int]] = None
-    precision: Optional[int] = None
-    options: Optional[list[TriggerParameterOption]] = None
-    description: Optional[I18nObject] = None
+    required: bool | None = False
+    default: Union[int, float, str] | None = None
+    min: Union[float, int] | None = None
+    max: Union[float, int] | None = None
+    precision: int | None = None
+    options: list[TriggerParameterOption] | None = None
+    description: I18nObject | None = None
