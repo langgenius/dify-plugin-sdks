@@ -2,29 +2,38 @@ from collections.abc import Mapping
 from enum import StrEnum
 from typing import Any, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from dify_plugin.core.documentation.schema_doc import docs
+from dify_plugin.core.utils.yaml_loader import load_yaml_file
 from dify_plugin.entities import I18nObject, ParameterOption
-from dify_plugin.entities.provider_config import CommonParameterType
+from dify_plugin.entities.oauth import OAuthSchema
+from dify_plugin.entities.provider_config import CommonParameterType, ProviderConfig
 from dify_plugin.entities.tool import ParameterAutoGenerate, ParameterTemplate
+from werkzeug import Response
 
 
 class TriggerRuntime(BaseModel):
     credentials: dict[str, Any]
     session_id: str | None
 
-class TriggerEvent(BaseModel):
+
+class TriggerEventDispatch(BaseModel):
     """
-    The event of the trigger
+    The event dispatch result from trigger provider
     """
 
-    event: str = Field(..., description="The event of the trigger")
+    event: str = Field(..., description="The event type dispatched by the trigger provider")
+    response: Response = Field(
+        ...,
+        description="The HTTP Response object returned to third-party calls. For example, webhook calls, etc.",
+    )
+
 
 @docs(
     description="The response of the trigger",
 )
-class TriggerResponse(BaseModel):
+class TriggerEvent(BaseModel):
     """
     The response of the trigger
     """
@@ -60,9 +69,6 @@ class TriggerParameter(BaseModel):
         FILES = CommonParameterType.FILES.value
         MODEL_SELECTOR = CommonParameterType.MODEL_SELECTOR.value
         APP_SELECTOR = CommonParameterType.APP_SELECTOR.value
-        # TOOL_SELECTOR = CommonParameterType.TOOL_SELECTOR.value
-        # ANY = CommonParameterType.ANY.value
-        # MCP object and array type parameters
         OBJECT = CommonParameterType.OBJECT.value
         ARRAY = CommonParameterType.ARRAY.value
         DYNAMIC_SELECT = CommonParameterType.DYNAMIC_SELECT.value
@@ -70,9 +76,7 @@ class TriggerParameter(BaseModel):
     name: str = Field(..., description="The name of the parameter")
     label: I18nObject = Field(..., description="The label presented to the user")
     type: TriggerParameterType = Field(..., description="The type of the parameter")
-    auto_generate: ParameterAutoGenerate | None = Field(
-        default=None, description="The auto generate of the parameter"
-    )
+    auto_generate: ParameterAutoGenerate | None = Field(default=None, description="The auto generate of the parameter")
     template: ParameterTemplate | None = Field(default=None, description="The template of the parameter")
     scope: str | None = None
     required: bool | None = False
@@ -82,3 +86,170 @@ class TriggerParameter(BaseModel):
     precision: int | None = None
     options: list[TriggerParameterOption] | None = None
     description: I18nObject | None = None
+
+
+@docs(
+    description="The identity of the trigger provider",
+)
+class TriggerProviderIdentity(BaseModel):
+    """
+    The identity of the trigger provider
+    """
+
+    author: str = Field(..., description="The author of the trigger provider")
+    name: str = Field(..., description="The name of the trigger provider")
+    label: I18nObject = Field(..., description="The label of the trigger provider")
+    description: I18nObject = Field(..., description="The description of the trigger provider")
+    icon: str | None = Field(default=None, description="The icon of the trigger provider")
+    tags: list[str] = Field(default_factory=list, description="The tags of the trigger provider")
+
+
+@docs(
+    description="The identity of the trigger",
+)
+class TriggerIdentity(BaseModel):
+    """
+    The identity of the trigger
+    """
+
+    author: str = Field(..., description="The author of the trigger")
+    name: str = Field(..., description="The name of the trigger")
+    label: I18nObject = Field(..., description="The label of the trigger")
+
+
+@docs(
+    description="The description of the trigger",
+)
+class TriggerDescription(BaseModel):
+    """
+    The description of the trigger
+    """
+
+    human: I18nObject = Field(..., description="Human readable description")
+    llm: I18nObject = Field(..., description="LLM readable description")
+
+
+@docs(
+    description="The extra configuration for trigger",
+)
+class TriggerConfigurationExtra(BaseModel):
+    """
+    The extra configuration for trigger
+    """
+
+    @docs(
+        name="Python",
+        description="The python configuration for trigger",
+    )
+    class Python(BaseModel):
+        source: str = Field(..., description="The source file path for the trigger implementation")
+
+    python: Python
+
+
+@docs(
+    name="Trigger",
+    description="The configuration of a trigger",
+)
+class TriggerConfiguration(BaseModel):
+    """
+    The configuration of a trigger
+    """
+
+    identity: TriggerIdentity = Field(..., description="The identity of the trigger")
+    parameters: list[TriggerParameter] = Field(default=[], description="The parameters of the trigger")
+    description: TriggerDescription = Field(..., description="The description of the trigger")
+    extra: TriggerConfigurationExtra = Field(..., description="The extra configuration of the trigger")
+    output_schema: Mapping[str, Any] | None = Field(
+        default=None, description="The output schema that this trigger produces"
+    )
+
+
+@docs(
+    description="The extra configuration for trigger provider",
+)
+class TriggerProviderConfigurationExtra(BaseModel):
+    """
+    The extra configuration for trigger provider
+    """
+
+    @docs(
+        name="Python",
+        description="The python configuration for trigger provider",
+    )
+    class Python(BaseModel):
+        source: str = Field(..., description="The source file path for the trigger provider implementation")
+
+    python: Python
+
+
+@docs(
+    name="TriggerProvider",
+    description="The configuration of a trigger provider",
+    outside_reference_fields={"triggers": TriggerConfiguration},
+)
+class TriggerProviderConfiguration(BaseModel):
+    """
+    The configuration of a trigger provider
+    """
+
+    identity: TriggerProviderIdentity = Field(..., description="The identity of the trigger provider")
+    credentials_schema: list[ProviderConfig] = Field(
+        default_factory=list,
+        description="The credentials schema of the trigger provider",
+    )
+    oauth_schema: OAuthSchema | None = Field(
+        default=None,
+        description="The OAuth schema of the trigger provider if OAuth is supported",
+    )
+    subscription_schema: list[ProviderConfig] = Field(
+        default_factory=list,
+        description="The subscription schema for webhook/trigger subscription parameters",
+    )
+    triggers: list[TriggerConfiguration] = Field(default=[], description="The triggers of the trigger provider")
+    extra: TriggerProviderConfigurationExtra = Field(..., description="The extra configuration of the trigger provider")
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_subscription_schema(cls, data: dict) -> dict:
+        # Handle subscription_schema conversion from dict to list format
+        original_subscription_schema = data.get("subscription_schema", [])
+        if isinstance(original_subscription_schema, dict):
+            subscription_schema: list[dict[str, Any]] = []
+            for name, param in original_subscription_schema.items():
+                param["name"] = name
+                subscription_schema.append(param)
+            data["subscription_schema"] = subscription_schema
+        elif isinstance(original_subscription_schema, list):
+            # Already in list format, no conversion needed
+            data["subscription_schema"] = original_subscription_schema
+        
+        return data
+
+    @field_validator("triggers", mode="before")
+    @classmethod
+    def validate_triggers(cls, value) -> list[TriggerConfiguration]:
+        if not isinstance(value, list):
+            raise ValueError("triggers should be a list")
+
+        triggers: list[TriggerConfiguration] = []
+
+        for trigger in value:
+            # read from yaml
+            if not isinstance(trigger, str):
+                raise ValueError("trigger path should be a string")
+            try:
+                file = load_yaml_file(trigger)
+                triggers.append(
+                    TriggerConfiguration(
+                        identity=TriggerIdentity(**file["identity"]),
+                        parameters=[TriggerParameter(**param) for param in file.get("parameters", []) or []],
+                        description=TriggerDescription(**file["description"]),
+                        extra=TriggerConfigurationExtra(**file.get("extra", {})),
+                        output_schema=file.get("output_schema", None),
+                    )
+                )
+            except Exception as e:
+                raise ValueError(f"Error loading trigger configuration: {e!s}") from e
+
+        return triggers

@@ -121,6 +121,11 @@ class PluginConfiguration(BaseModel):
             description="manifest paths of agent strategy providers in yaml format,"
             "refers to [AgentStrategyProvider](#agentstrategyprovider)",
         )
+        triggers: list[str] = Field(
+            default_factory=list,
+            description="manifest paths of trigger providers in yaml format, "
+            "refers to [TriggerProvider](#triggerprovider)",
+        )
 
     @docs(
         description="Meta information of plugin",

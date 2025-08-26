@@ -6,7 +6,7 @@ from werkzeug import Request
 
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities import ParameterOption
-from dify_plugin.entities.trigger import TriggerEvent, TriggerResponse, TriggerRuntime
+from dify_plugin.entities.trigger import TriggerEvent, TriggerEventDispatch, TriggerResponse, TriggerRuntime
 
 
 class TriggerProvider:
@@ -34,8 +34,12 @@ class TriggerProvider:
     def _oauth_get_credentials(self, system_credentials: Mapping[str, Any], request: Request) -> Mapping[str, Any]:
         raise NotImplementedError("This plugin should implement `_oauth_get_credentials` method to enable oauth")
 
-    def _dispatch_event(self, settings: Mapping[str, Any], request: Request) -> TriggerEvent:
+    def dispatch_event(self, settings: Mapping[str, Any], request: Request) -> TriggerEventDispatch:
+        return self._dispatch_event(settings, request)
+
+    def _dispatch_event(self, settings: Mapping[str, Any], request: Request) -> TriggerEventDispatch:
         raise NotImplementedError("This plugin should implement `_dispatch_event` method to enable event dispatch")
+
 
 class Trigger(ABC):
     """
@@ -65,7 +69,7 @@ class Trigger(ABC):
     ############################################################
 
     @abstractmethod
-    def _trigger(self, request: Request, values: Mapping, parameters: Mapping) -> TriggerResponse:
+    def _trigger(self, request: Request, values: Mapping[str, Any], parameters: Mapping[str, Any]) -> TriggerEvent:
         """
         Trigger the trigger with the given request.
 
@@ -88,7 +92,7 @@ class Trigger(ABC):
     #                 For executor use only                    #
     ############################################################
 
-    def trigger(self, request: Request, values: Mapping, parameters: Mapping) -> TriggerResponse:
+    def trigger(self, request: Request, values: Mapping[str, Any], parameters: Mapping[str, Any]) -> TriggerEvent:
         """
         Trigger the trigger with the given request.
         """
@@ -99,3 +103,10 @@ class Trigger(ABC):
         Fetch the parameter options of the trigger.
         """
         return self._fetch_parameter_options(parameter)
+
+    @classmethod
+    def _is_fetch_parameter_options_overridden(cls) -> bool:
+        """
+        Check if the _fetch_parameter_options method is overridden by the subclass
+        """
+        return cls._fetch_parameter_options is not Trigger._fetch_parameter_options

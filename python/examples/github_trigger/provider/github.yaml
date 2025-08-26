@@ -1,0 +1,94 @@
+credentials_schema:
+  access_tokens:
+    help:
+      en_US: Get your Access Tokens from GitHub
+      pt_BR: Obtenha sua chave da API do Google no Google
+      zh_Hans: 从 GitHub 获取您的 Access Tokens
+    label:
+      en_US: Access Tokens
+      pt_BR: Tokens de acesso
+      zh_Hans: Access Tokens
+    placeholder:
+      en_US: Please input your GitHub Access Tokens
+      pt_BR: Insira seus Tokens de Acesso do GitHub
+      zh_Hans: 请输入你的 GitHub Access Tokens
+    required: true
+    type: secret-input
+    url: https://github.com/settings/tokens?type=beta
+
+oauth_schema:
+  client_schema:
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      url: https://github.com/settings/applications/new
+      placeholder:
+        en_US: "Please input your Client ID"
+        zh_Hans: "请输入你的 Client ID"
+        pt_BR: "Insira seu Client ID"
+      help:
+        en_US: "Client ID is used to authenticate requests to the GitHub API."
+        zh_Hans: "Client ID 用于认证请求到 GitHub API。"
+        pt_BR: "Client ID é usado para autenticar solicitações à API do GitHub."
+      label:
+        zh_Hans: "Client ID"
+        en_US: "Client ID"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      url: https://github.com/settings/applications/new
+      placeholder:
+        en_US: "Please input your Client Secret"
+        zh_Hans: "请输入你的 Client Secret"
+        pt_BR: "Insira seu Client Secret"
+      help:
+        en_US: "Client Secret is used to authenticate requests to the GitHub API."
+        zh_Hans: "Client Secret 用于认证请求到 GitHub API。"
+        pt_BR: "Client Secret é usado para autenticar solicitações à API do GitHub."
+      label:
+        zh_Hans: "Client Secret"
+        en_US: "Client Secret"
+  credentials_schema:
+    - name: "access_tokens"
+      type: "secret-input"
+      label:
+        zh_Hans: "Access Token"
+        en_US: "Access Token"
+
+subscription_schema:
+  - name: "webhook_secret"
+    type: "secret-input"
+    required: true
+    label:
+      zh_Hans: "Webhook Secret"
+      en_US: "Webhook Secret"
+    help:
+      en_US: "Webhook secret for validating GitHub webhook requests"
+      pt_BR: "Segredo do webhook para validar solicitações do webhook do GitHub"
+      zh_Hans: "用于验证 GitHub webhook 请求的 webhook 密钥"
+
+triggers:
+  - triggers/push_trigger.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: GitHub is an online software source code hosting service with webhook trigger support.
+    pt_BR:
+      GitHub é uma plataforma online para serviços de hospedagem de código fonte
+      de software com suporte a triggers de webhook.
+    zh_Hans: GitHub 是一个在线软件源代码托管服务平台，支持 webhook 触发器。
+  icon: icon.svg
+  label:
+    en_US: GitHub Triggers
+    pt_BR: GitHub Triggers
+    zh_Hans: GitHub 触发器
+  name: github
+  tags:
+    - utilities
+    - webhooks
+    - triggers
+
+extra:
+  python:
+    source: provider/github.py

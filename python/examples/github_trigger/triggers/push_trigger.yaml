@@ -1,0 +1,82 @@
+identity:
+  name: push_trigger
+  author: langgenius
+  label:
+    en_US: Push Event
+    zh_Hans: 推送事件
+    pt_BR: Evento de Push
+
+description:
+  human:
+    en_US: Triggers when someone pushes code to a repository
+    zh_Hans: 当有人向仓库推送代码时触发
+    pt_BR: Dispara quando alguém envia código para um repositório
+  llm:
+    en_US: This trigger activates when a push event occurs in a GitHub repository, providing information about the commits, repository, and pusher.
+    zh_Hans: 当GitHub仓库中发生推送事件时，此触发器会被激活，提供有关提交、仓库和推送者的信息。
+    pt_BR: Este gatilho é ativado quando um evento de push ocorre em um repositório GitHub, fornecendo informações sobre os commits, repositório e quem fez o push.
+
+parameters:
+  - name: repository_filter
+    label:
+      en_US: Repository Filter
+      zh_Hans: 仓库过滤器
+      pt_BR: Filtro de Repositório
+    type: string
+    required: false
+    description:
+      en_US: Filter by repository name (optional)
+      zh_Hans: 按仓库名称过滤（可选）
+      pt_BR: Filtrar por nome do repositório (opcional)
+  - name: branch_filter
+    label:
+      en_US: Branch Filter
+      zh_Hans: 分支过滤器
+      pt_BR: Filtro de Branch
+    type: string
+    required: false
+    description:
+      en_US: Filter by branch name (optional)
+      zh_Hans: 按分支名称过滤（可选）
+      pt_BR: Filtrar por nome da branch (opcional)
+
+output_schema:
+  type: object
+  properties:
+    push_event:
+      type: object
+      properties:
+        repository_name:
+          type: string
+          description: The name of the repository
+        repository_full_name:
+          type: string
+          description: The full name of the repository (owner/repo)
+        repository_url:
+          type: string
+          description: The URL of the repository
+        branch:
+          type: string
+          description: The branch name that was pushed to
+        ref:
+          type: string
+          description: The git reference that was pushed (e.g., refs/heads/main)
+        pusher_name:
+          type: string
+          description: The name of the user who pushed
+        pusher_email:
+          type: string
+          description: The email of the user who pushed
+        commits_count:
+          type: number
+          description: The number of commits in this push
+        commits:
+          type: array
+          description: List of commits in this push
+        head_commit:
+          type: object
+          description: Information about the head commit
+
+extra:
+  python:
+    source: triggers/push_trigger.py

@@ -17,9 +17,11 @@ from dify_plugin.entities.endpoint import EndpointProviderConfiguration
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.provider import ModelProviderConfiguration
 from dify_plugin.entities.tool import ToolConfiguration, ToolProviderConfiguration
+from dify_plugin.entities.trigger import TriggerConfiguration, TriggerProviderConfiguration
 from dify_plugin.interfaces.agent import AgentStrategy
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model import ModelProvider
+from dify_plugin.interfaces.trigger import Trigger, TriggerProvider
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from dify_plugin.interfaces.model.moderation_model import ModerationModel
@@ -50,6 +52,16 @@ class PluginRegistration:
         tuple[
             AgentStrategyProviderConfiguration,
             dict[str, tuple[AgentStrategyConfiguration, type[AgentStrategy]]],
+        ],
+    ]
+
+    triggers_configuration: list[TriggerProviderConfiguration]
+    triggers_mapping: dict[
+        str,
+        tuple[
+            TriggerProviderConfiguration,
+            type[TriggerProvider],
+            dict[str, tuple[TriggerConfiguration, type[Trigger]]],
         ],
     ]
 
@@ -88,6 +100,8 @@ class PluginRegistration:
         self.files = []
         self.agent_strategies_configuration = []
         self.agent_strategies_mapping = {}
+        self.triggers_configuration = []
+        self.triggers_mapping = {}
 
         # load plugin configuration
         self._load_plugin_configuration()
@@ -131,6 +145,10 @@ class PluginRegistration:
                 fs = load_yaml_file(provider)
                 agent_provider_configuration = AgentStrategyProviderConfiguration(**fs)
                 self.agent_strategies_configuration.append(agent_provider_configuration)
+            for provider in self.configuration.plugins.triggers:
+                fs = load_yaml_file(provider)
+                trigger_provider_configuration = TriggerProviderConfiguration(**fs)
+                self.triggers_configuration.append(trigger_provider_configuration)
 
         except Exception as e:
             raise ValueError(f"Error loading plugin configuration: {e!s}") from e
@@ -190,6 +208,42 @@ class PluginRegistration:
                 strategies[strategy.identity.name] = (strategy, strategy_cls)
 
             self.agent_strategies_mapping[provider.identity.name] = (provider, strategies)
+
+    def _resolve_trigger_providers(self):
+        """
+        walk through all the trigger providers and triggers and load the classes from sources
+        """
+        for provider in self.triggers_configuration:
+            # load provider class
+            source = provider.extra.python.source
+            # remove extension
+            module_source = os.path.splitext(source)[0]
+            # replace / with .
+            module_source = module_source.replace("/", ".")
+            cls = load_single_subclass_from_source(
+                module_name=module_source,
+                script_path=os.path.join(os.getcwd(), source),
+                parent_type=TriggerProvider,
+            )
+
+            # load triggers class
+            triggers = {}
+            for trigger in provider.triggers:
+                trigger_source = trigger.extra.python.source
+                trigger_module_source = os.path.splitext(trigger_source)[0]
+                trigger_module_source = trigger_module_source.replace("/", ".")
+                trigger_cls = load_single_subclass_from_source(
+                    module_name=trigger_module_source,
+                    script_path=os.path.join(os.getcwd(), trigger_source),
+                    parent_type=Trigger,
+                )
+
+                if trigger_cls._is_fetch_parameter_options_overridden():
+                    trigger.has_runtime_parameters = True
+
+                triggers[trigger.identity.name] = (trigger, trigger_cls)
+
+            self.triggers_mapping[provider.identity.name] = (provider, cls, triggers)
 
     def _is_strict_subclass(self, cls: type[T], *parent_cls: type[T]) -> bool:
         """
@@ -279,6 +333,9 @@ class PluginRegistration:
         # load agent providers and strategies
         self._resolve_agent_providers()
 
+        # load trigger providers and triggers
+        self._resolve_trigger_providers()
+
     def get_tool_provider_cls(self, provider: str):
         """
         get the tool provider class by provider name
@@ -347,6 +404,29 @@ class PluginRegistration:
                 registration = self.models_mapping[provider_registration][2].get(model_type)
                 if registration:
                     return registration
+
+    def get_trigger_provider_cls(self, provider: str):
+        """
+        get the trigger provider class by provider name
+        :param provider: provider name
+        :return: trigger provider class
+        """
+        for provider_registration in self.triggers_mapping:
+            if provider_registration == provider:
+                return self.triggers_mapping[provider_registration][1]
+
+    def get_trigger_cls(self, provider: str, trigger: str):
+        """
+        get the trigger class by provider
+        :param provider: provider name
+        :param trigger: trigger name
+        :return: trigger class
+        """
+        for provider_registration in self.triggers_mapping:
+            if provider_registration == provider:
+                registration = self.triggers_mapping[provider_registration][2].get(trigger)
+                if registration:
+                    return registration[1]
 
     def get_supported_oauth_provider_cls(self, provider: str) -> type[OAuthProviderProtocol] | None:
         """
