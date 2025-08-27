@@ -29,6 +29,8 @@ from dify_plugin.core.entities.plugin.request import (
     ToolValidateCredentialsRequest,
     TriggerDispatchEventRequest,
     TriggerInvokeRequest,
+    TriggerRefreshRequest,
+    TriggerResubscribeRequest,
     TriggerSubscribeRequest,
     TriggerUnsubscribeRequest,
     TriggerValidateProviderCredentialsRequest,
@@ -38,7 +40,7 @@ from dify_plugin.core.runtime import Session
 from dify_plugin.core.utils.http_parser import parse_raw_request
 from dify_plugin.entities.agent import AgentRuntime
 from dify_plugin.entities.tool import ToolRuntime
-from dify_plugin.entities.trigger import TriggerRuntime
+from dify_plugin.entities.trigger import Subscription, TriggerRuntime
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
@@ -431,7 +433,9 @@ class PluginExecutor:
         response = trigger.trigger(http_request, request.values, request.parameters)
         return response
 
-    def validate_trigger_provider_credentials(self, session: Session, request: TriggerValidateProviderCredentialsRequest):
+    def validate_trigger_provider_credentials(
+        self, session: Session, request: TriggerValidateProviderCredentialsRequest
+    ):
         """
         Validate trigger provider credentials
         """
@@ -479,13 +483,42 @@ class PluginExecutor:
         if not trigger_provider_cls:
             raise ValueError(f"Trigger provider {request.provider} not found")
 
+        # Reconstruct Subscription object from dict
+        subscription = Subscription(**request.subscription)
+
         provider_instance = trigger_provider_cls()
-        unsubscription = provider_instance.unsubscribe(
-            request.subscription_id, 
-            request.credentials, 
-            request.subscription_metadata
-        )
+        unsubscription = provider_instance.unsubscribe(subscription, request.credentials, request.settings)
         return unsubscription
+
+    def refresh_trigger(self, session: Session, request: TriggerRefreshRequest):
+        """
+        Refresh/extend an existing trigger subscription without changing configuration
+        """
+        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
+        if not trigger_provider_cls:
+            raise ValueError(f"Trigger provider {request.provider} not found")
+
+        # Reconstruct Subscription object from dict
+        subscription = Subscription(**request.subscription)
+
+        provider_instance = trigger_provider_cls()
+        refreshed_subscription = provider_instance.refresh(subscription, request.credentials)
+        return refreshed_subscription
+
+    def resubscribe_trigger(self, session: Session, request: TriggerResubscribeRequest):
+        """
+        Update an existing trigger subscription with new configuration settings
+        """
+        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
+        if not trigger_provider_cls:
+            raise ValueError(f"Trigger provider {request.provider} not found")
+
+        # Reconstruct Subscription object from dict
+        subscription = Subscription(**request.subscription)
+
+        provider_instance = trigger_provider_cls()
+        new_subscription = provider_instance.resubscribe(subscription, request.credentials, request.settings)
+        return new_subscription
 
     def fetch_parameter_options(self, session: Session, data: DynamicParameterFetchParameterOptionsRequest):
         action_instance = self._get_dynamic_parameter_action(session, data)

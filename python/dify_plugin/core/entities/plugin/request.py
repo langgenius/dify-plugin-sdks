@@ -34,9 +34,11 @@ class AgentActions(StrEnum):
 class TriggerActions(StrEnum):
     InvokeTrigger = "invoke_trigger"
     ValidateProviderCredentials = "validate_provider_credentials"
-    DispatchEvent = "dispatch_event"
+    DispatchTriggerEvent = "dispatch_trigger_event"
     SubscribeTrigger = "subscribe_trigger"
     UnsubscribeTrigger = "unsubscribe_trigger"
+    RefreshTrigger = "refresh_trigger"
+    ResubscribeTrigger = "resubscribe_trigger"
 
 
 class ToolActions(StrEnum):
@@ -319,7 +321,7 @@ class TriggerValidateProviderCredentialsRequest(BaseModel):
 
 class TriggerDispatchEventRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Trigger
-    action: TriggerActions = TriggerActions.DispatchEvent
+    action: TriggerActions = TriggerActions.DispatchTriggerEvent
     provider: str
     settings: dict
     request: dict
@@ -343,9 +345,32 @@ class TriggerUnsubscribeRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Trigger
     action: TriggerActions = TriggerActions.UnsubscribeTrigger
     provider: str
-    subscription_id: str
-    credentials: dict
-    subscription_metadata: dict
+    subscription: dict  # Subscription object serialized as dict
+    credentials: dict  # From credentials_schema
+    settings: dict  # From subscription_schema
+    user_id: str
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerRefreshRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.Trigger
+    action: TriggerActions = TriggerActions.RefreshTrigger
+    provider: str
+    subscription: dict  # Subscription object serialized as dict
+    credentials: dict  # From credentials_schema
+    user_id: str
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerResubscribeRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.Trigger
+    action: TriggerActions = TriggerActions.ResubscribeTrigger
+    provider: str
+    subscription: dict  # Subscription object serialized as dict
+    credentials: dict  # From credentials_schema
+    settings: dict  # From subscription_schema
     user_id: str
 
     model_config = ConfigDict(protected_namespaces=())

@@ -358,7 +358,7 @@ class Plugin(IOServer, Router):
         self.register_route(
             self.plugin_executer.dispatch_trigger_event,
             lambda data: data.get("type") == PluginInvokeType.Trigger.value
-            and data.get("action") == TriggerActions.DispatchEvent.value,
+            and data.get("action") == TriggerActions.DispatchTriggerEvent.value,
         )
         self.register_route(
             self.plugin_executer.subscribe_trigger,
@@ -369,6 +369,16 @@ class Plugin(IOServer, Router):
             self.plugin_executer.unsubscribe_trigger,
             lambda data: data.get("type") == PluginInvokeType.Trigger.value
             and data.get("action") == TriggerActions.UnsubscribeTrigger.value,
+        )
+        self.register_route(
+            self.plugin_executer.refresh_trigger,
+            lambda data: data.get("type") == PluginInvokeType.Trigger.value
+            and data.get("action") == TriggerActions.RefreshTrigger.value,
+        )
+        self.register_route(
+            self.plugin_executer.resubscribe_trigger,
+            lambda data: data.get("type") == PluginInvokeType.Trigger.value
+            and data.get("action") == TriggerActions.ResubscribeTrigger.value,
         )
 
     def _execute_request(

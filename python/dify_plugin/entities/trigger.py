@@ -2,7 +2,7 @@ from collections.abc import Mapping
 from enum import StrEnum
 from typing import Any, Union
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
@@ -22,6 +22,7 @@ class TriggerEventDispatch(BaseModel):
     """
     The event dispatch result from trigger provider
     """
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     event: str = Field(..., description="The event type dispatched by the trigger provider")
     response: Response = Field(

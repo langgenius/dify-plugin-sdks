@@ -21,7 +21,7 @@ from dify_plugin.entities.trigger import TriggerConfiguration, TriggerProviderCo
 from dify_plugin.interfaces.agent import AgentStrategy
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model import ModelProvider
-from dify_plugin.interfaces.trigger import Trigger, TriggerProvider
+from dify_plugin.interfaces.trigger import TriggerEvent, TriggerProvider
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from dify_plugin.interfaces.model.moderation_model import ModerationModel
@@ -61,7 +61,7 @@ class PluginRegistration:
         tuple[
             TriggerProviderConfiguration,
             type[TriggerProvider],
-            dict[str, tuple[TriggerConfiguration, type[Trigger]]],
+            dict[str, tuple[TriggerConfiguration, type[TriggerEvent]]],
         ],
     ]
 
@@ -235,7 +235,7 @@ class PluginRegistration:
                 trigger_cls = load_single_subclass_from_source(
                     module_name=trigger_module_source,
                     script_path=os.path.join(os.getcwd(), trigger_source),
-                    parent_type=Trigger,
+                    parent_type=TriggerEvent,
                 )
 
                 if trigger_cls._is_fetch_parameter_options_overridden():

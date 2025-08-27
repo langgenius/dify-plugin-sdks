@@ -2,17 +2,19 @@ import hashlib
 import hmac
 import json
 import secrets
+import time
 import urllib.parse
 from collections.abc import Mapping
 from typing import Any
 
 import requests
-from werkzeug import Request
+from werkzeug import Request, Response
 
 from dify_plugin.interfaces.trigger import TriggerProvider
-from dify_plugin.entities.trigger import TriggerEventDispatch
+from dify_plugin.entities.trigger import TriggerEventDispatch, Subscription, Unsubscription
 from dify_plugin.entities.oauth import ToolOAuthCredentials
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError, ToolProviderOAuthError
+from dify_plugin.errors.trigger import SubscriptionError, WebhookValidationError, TriggerDispatchError
 
 
 class GithubProvider(TriggerProvider):
@@ -70,14 +72,14 @@ class GithubProvider(TriggerProvider):
 
     def _dispatch_event(self, settings: Mapping[str, Any], request: Request) -> TriggerEventDispatch:
         """
-        Dispatch GitHub webhook events
+        Dispatch GitHub webhook events - focusing on issue comment events
         """
         # Verify webhook signature if secret is provided
         webhook_secret = settings.get("webhook_secret")
         if webhook_secret:
             signature = request.headers.get("X-Hub-Signature-256")
             if not signature:
-                raise ValueError("Missing webhook signature")
+                raise WebhookValidationError("Missing webhook signature")
 
             # Verify the signature
             expected_signature = (
@@ -85,22 +87,192 @@ class GithubProvider(TriggerProvider):
             )
 
             if not hmac.compare_digest(signature, expected_signature):
-                raise ValueError("Invalid webhook signature")
+                raise WebhookValidationError("Invalid webhook signature")
 
         event_type = request.headers.get("X-GitHub-Event")
         if not event_type:
-            raise ValueError("Missing GitHub event type header")
+            raise TriggerDispatchError("Missing GitHub event type header")
 
         try:
             payload = request.get_json()
             if not payload:
-                raise ValueError("Empty request body")
+                raise TriggerDispatchError("Empty request body")
         except Exception as e:
-            raise ValueError(f"Failed to parse JSON payload: {e}")
-
-        from werkzeug import Response
+            raise TriggerDispatchError(f"Failed to parse JSON payload: {e}")
 
         response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
 
         # Create trigger event dispatch with GitHub event type
-        return TriggerEventDispatch(event=f"github.{event_type}", response=response)
+        # Map GitHub events to our trigger events
+        if event_type == "issue_comment":
+            return TriggerEventDispatch(event="issue_comment", response=response)
+        elif event_type == "issues":
+            return TriggerEventDispatch(event="issues", response=response)
+        else:
+            # For other events, pass them through with prefix
+            return TriggerEventDispatch(event=f"github.{event_type}", response=response)
+    
+    def _subscribe(self, credentials: Mapping[str, Any], subscription_params: Mapping[str, Any]) -> Subscription:
+        """
+        Create a GitHub webhook subscription for issue comment events
+        """
+        # Extract parameters
+        callback_url = subscription_params.get("callback_url")
+        webhook_secret = subscription_params.get("webhook_secret")
+        repository = subscription_params.get("repository")  # format: "owner/repo"
+        events = subscription_params.get("events", ["issue_comment", "issues"])
+        
+        if not callback_url:
+            raise ValueError("callback_url is required for webhook subscription")
+        if not repository:
+            raise ValueError("repository is required (format: owner/repo)")
+        
+        # Parse repository owner and name
+        try:
+            owner, repo = repository.split("/")
+        except ValueError:
+            raise ValueError("repository must be in format 'owner/repo'")
+        
+        # Create webhook using GitHub API
+        url = f"https://api.github.com/repos/{owner}/{repo}/hooks"
+        headers = {
+            "Authorization": f"Bearer {credentials.get('access_tokens')}",
+            "Accept": "application/vnd.github+json",
+        }
+        
+        webhook_data = {
+            "name": "web",
+            "active": True,
+            "events": events,
+            "config": {
+                "url": callback_url,
+                "content_type": "json",
+                "insecure_ssl": "0"
+            }
+        }
+        
+        # Add secret if provided
+        if webhook_secret:
+            webhook_data["config"]["secret"] = webhook_secret
+        
+        try:
+            response = requests.post(url, json=webhook_data, headers=headers, timeout=10)
+            if response.status_code == 201:
+                webhook = response.json()
+                # Return subscription with webhook details
+                return Subscription(
+                    expire_at=int(time.time()) + 30 * 24 * 60 * 60,  # 30 days expiration
+                    metadata={
+                        "external_id": str(webhook["id"]),
+                        "webhook_url": webhook["url"],
+                        "callback_url": callback_url,
+                        "repository": repository,
+                        "events": events,
+                        "active": webhook["active"]
+                    }
+                )
+            else:
+                error_msg = response.json().get("message", "Unknown error")
+                raise SubscriptionError(f"Failed to create GitHub webhook: {error_msg}", 
+                                      error_code="WEBHOOK_CREATION_FAILED",
+                                      external_response=response.json())
+        except requests.RequestException as e:
+            raise SubscriptionError(f"Network error while creating webhook: {e}", 
+                                  error_code="NETWORK_ERROR")
+    
+    def _unsubscribe(self, subscription: Subscription, credentials: Mapping[str, Any], settings: Mapping[str, Any]) -> Unsubscription:
+        """
+        Remove a GitHub webhook subscription
+        """
+        # Extract webhook details from metadata
+        external_id = subscription.metadata.get("external_id")
+        repository = subscription.metadata.get("repository")
+        
+        if not external_id or not repository:
+            return Unsubscription(
+                success=False,
+                message="Missing webhook ID or repository information",
+                error_code="MISSING_METADATA"
+            )
+        
+        # Parse repository
+        try:
+            owner, repo = repository.split("/")
+        except ValueError:
+            return Unsubscription(
+                success=False,
+                message="Invalid repository format in metadata",
+                error_code="INVALID_REPOSITORY"
+            )
+        
+        # Delete webhook using GitHub API
+        url = f"https://api.github.com/repos/{owner}/{repo}/hooks/{external_id}"
+        headers = {
+            "Authorization": f"Bearer {credentials.get('access_tokens')}",
+            "Accept": "application/vnd.github+json",
+        }
+        
+        try:
+            response = requests.delete(url, headers=headers, timeout=10)
+            if response.status_code == 204:
+                return Unsubscription(
+                    success=True,
+                    message=f"Successfully removed webhook {external_id} from {repository}"
+                )
+            elif response.status_code == 404:
+                return Unsubscription(
+                    success=False,
+                    message=f"Webhook {external_id} not found in repository {repository}",
+                    error_code="WEBHOOK_NOT_FOUND"
+                )
+            else:
+                return Unsubscription(
+                    success=False,
+                    message=f"Failed to delete webhook: {response.json().get('message', 'Unknown error')}",
+                    error_code="API_ERROR",
+                    external_response=response.json()
+                )
+        except requests.RequestException as e:
+            return Unsubscription(
+                success=False,
+                message=f"Network error while deleting webhook: {e}",
+                error_code="NETWORK_ERROR"
+            )
+    
+    def _refresh(self, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
+        """
+        Refresh a GitHub webhook subscription (extend expiration)
+        GitHub webhooks don't expire, so we just extend our internal expiration
+        """
+        # Simply return the subscription with extended expiration
+        # GitHub webhooks don't have built-in expiration
+        return Subscription(
+            expire_at=int(time.time()) + 30 * 24 * 60 * 60,  # Extend by 30 days
+            metadata=subscription.metadata  # Keep the same metadata
+        )
+    
+    def _resubscribe(self, subscription: Subscription, credentials: Mapping[str, Any], settings: Mapping[str, Any]) -> Subscription:
+        """
+        Update a GitHub webhook subscription with new settings
+        """
+        # First unsubscribe the old webhook
+        unsubscribe_result = self._unsubscribe(subscription, credentials, settings)
+        if not unsubscribe_result.success:
+            # If we can't delete the old one, still try to create a new one
+            # This handles cases where the old webhook was already deleted
+            pass
+        
+        # Extract new subscription parameters from settings
+        repository = subscription.metadata.get("repository")
+        callback_url = subscription.metadata.get("callback_url")
+        
+        # Create new subscription params with updated settings
+        new_subscription_params = {
+            "callback_url": callback_url,
+            "repository": repository,
+            "webhook_secret": settings.get("webhook_secret"),
+            "events": settings.get("events", ["issue_comment", "issues"])
+        }
+        
+        # Create new webhook with updated settings
+        return self._subscribe(credentials, new_subscription_params)

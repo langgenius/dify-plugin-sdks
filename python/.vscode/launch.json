@@ -72,6 +72,18 @@
             "env": {
                 "GEVENT_SUPPORT": "True"
             }
-        }
+        },
+        {
+            "name": "GithubTrigger",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/github_trigger/main.py",
+            "cwd": "${workspaceFolder}/examples/github_trigger",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "GEVENT_SUPPORT": "True"
+            }
+        },
     ]
 }
