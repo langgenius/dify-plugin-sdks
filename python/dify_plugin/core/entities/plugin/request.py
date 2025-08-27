@@ -22,12 +22,23 @@ class PluginInvokeType(StrEnum):
     Model = "model"
     Endpoint = "endpoint"
     Agent = "agent_strategy"
+    Trigger = "trigger"
     OAuth = "oauth"
     DynamicParameter = "dynamic_parameter"
 
 
 class AgentActions(StrEnum):
     InvokeAgentStrategy = "invoke_agent_strategy"
+
+
+class TriggerActions(StrEnum):
+    InvokeTrigger = "invoke_trigger"
+    ValidateProviderCredentials = "validate_provider_credentials"
+    DispatchTriggerEvent = "dispatch_trigger_event"
+    SubscribeTrigger = "subscribe_trigger"
+    UnsubscribeTrigger = "unsubscribe_trigger"
+    RefreshTrigger = "refresh_trigger"
+    ResubscribeTrigger = "resubscribe_trigger"
 
 
 class ToolActions(StrEnum):
@@ -66,7 +77,9 @@ class DynamicParameterActions(StrEnum):
 
 
 # merge all the access actions
-PluginAccessAction = AgentActions | ToolActions | ModelActions | EndpointActions | DynamicParameterActions
+PluginAccessAction = (
+    AgentActions | TriggerActions | ToolActions | ModelActions | EndpointActions | DynamicParameterActions
+)
 
 
 class PluginAccessRequest(BaseModel):
@@ -278,5 +291,86 @@ class DynamicParameterFetchParameterOptionsRequest(BaseModel):
     provider_action: str
     user_id: str
     parameter: str
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerInvokeRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.Trigger
+    action: TriggerActions = TriggerActions.InvokeTrigger
+    provider: str
+    trigger: str
+    credentials: dict
+    user_id: str
+    request: dict
+    values: dict
+    parameters: dict
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerValidateProviderCredentialsRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.Trigger
+    action: TriggerActions = TriggerActions.ValidateProviderCredentials
+    provider: str
+    credentials: dict
+    user_id: str
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerDispatchEventRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.Trigger
+    action: TriggerActions = TriggerActions.DispatchTriggerEvent
+    provider: str
+    settings: dict
+    request: dict
+    user_id: str
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerSubscribeRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.Trigger
+    action: TriggerActions = TriggerActions.SubscribeTrigger
+    provider: str
+    credentials: dict
+    subscription_params: dict
+    user_id: str
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerUnsubscribeRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.Trigger
+    action: TriggerActions = TriggerActions.UnsubscribeTrigger
+    provider: str
+    subscription: dict  # Subscription object serialized as dict
+    credentials: dict  # From credentials_schema
+    settings: dict  # From subscription_schema
+    user_id: str
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerRefreshRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.Trigger
+    action: TriggerActions = TriggerActions.RefreshTrigger
+    provider: str
+    subscription: dict  # Subscription object serialized as dict
+    credentials: dict  # From credentials_schema
+    user_id: str
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerResubscribeRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.Trigger
+    action: TriggerActions = TriggerActions.ResubscribeTrigger
+    provider: str
+    subscription: dict  # Subscription object serialized as dict
+    credentials: dict  # From credentials_schema
+    settings: dict  # From subscription_schema
+    user_id: str
 
     model_config = ConfigDict(protected_namespaces=())
