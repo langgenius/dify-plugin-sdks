@@ -204,7 +204,7 @@ class TriggerProviderConfiguration(BaseModel):
     )
     subscription_schema: list[ProviderConfig] = Field(
         default_factory=list,
-        description="The subscription schema for webhook/trigger subscription parameters",
+        description="The subscription schema for trigger(webhook, polling, etc.) subscription parameters",
     )
     triggers: list[TriggerConfiguration] = Field(default=[], description="The triggers of the trigger provider")
     extra: TriggerProviderConfigurationExtra = Field(..., description="The extra configuration of the trigger provider")
@@ -223,7 +223,7 @@ class TriggerProviderConfiguration(BaseModel):
         elif isinstance(original_subscription_schema, list):
             # Already in list format, no conversion needed
             data["subscription_schema"] = original_subscription_schema
-        
+
         return data
 
     @field_validator("triggers", mode="before")
@@ -253,3 +253,43 @@ class TriggerProviderConfiguration(BaseModel):
                 raise ValueError(f"Error loading trigger configuration: {e!s}") from e
 
         return triggers
+
+
+@docs(
+    description="Result of a successful trigger subscription operation",
+)
+class Subscription(BaseModel):
+    """
+    Result of a successful trigger subscription operation.
+
+    Contains all information needed to manage the subscription lifecycle.
+    """
+
+    expire_at: int = Field(
+        ..., description="The timestamp when the subscription will expire, this for refresh the subscription"
+    )
+
+    metadata: dict[str, Any] = Field(
+        ..., description="Metadata about the subscription in the external service, defined in subscription_schema"
+    )
+
+
+@docs(
+    description="Result of a trigger unsubscription operation",
+)
+class Unsubscription(BaseModel):
+    """
+    Result of a trigger unsubscription operation.
+
+    Provides detailed information about the unsubscription attempt,
+    including success status and error details if failed.
+    """
+
+    success: bool = Field(..., description="Whether the unsubscription was successful")
+
+    message: str | None = Field(
+        None,
+        description="Human-readable message about the operation result. "
+        "Success message for successful operations, "
+        "detailed error information for failures.",
+    )

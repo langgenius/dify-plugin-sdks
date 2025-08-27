@@ -35,6 +35,8 @@ class TriggerActions(StrEnum):
     InvokeTrigger = "invoke_trigger"
     ValidateProviderCredentials = "validate_provider_credentials"
     DispatchEvent = "dispatch_event"
+    SubscribeTrigger = "subscribe_trigger"
+    UnsubscribeTrigger = "unsubscribe_trigger"
 
 
 class ToolActions(StrEnum):
@@ -326,13 +328,24 @@ class TriggerDispatchEventRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
 
-class TriggerGetParameterOptionsRequest(BaseModel):
+class TriggerSubscribeRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Trigger
-    action: TriggerActions = TriggerActions.GetParameterOptions
+    action: TriggerActions = TriggerActions.SubscribeTrigger
     provider: str
-    trigger: str
-    parameter: str
     credentials: dict
+    subscription_params: dict
+    user_id: str
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerUnsubscribeRequest(BaseModel):
+    type: PluginInvokeType = PluginInvokeType.Trigger
+    action: TriggerActions = TriggerActions.UnsubscribeTrigger
+    provider: str
+    subscription_id: str
+    credentials: dict
+    subscription_metadata: dict
     user_id: str
 
     model_config = ConfigDict(protected_namespaces=())

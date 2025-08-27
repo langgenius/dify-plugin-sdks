@@ -28,8 +28,9 @@ from dify_plugin.core.entities.plugin.request import (
     ToolInvokeRequest,
     ToolValidateCredentialsRequest,
     TriggerDispatchEventRequest,
-    TriggerGetParameterOptionsRequest,
     TriggerInvokeRequest,
+    TriggerSubscribeRequest,
+    TriggerUnsubscribeRequest,
     TriggerValidateProviderCredentialsRequest,
 )
 from dify_plugin.core.plugin_registration import PluginRegistration
@@ -39,7 +40,6 @@ from dify_plugin.entities.agent import AgentRuntime
 from dify_plugin.entities.tool import ToolRuntime
 from dify_plugin.entities.trigger import TriggerRuntime
 from dify_plugin.interfaces.endpoint import Endpoint
-from dify_plugin.interfaces.trigger import Trigger, TriggerProvider
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from dify_plugin.interfaces.model.moderation_model import ModerationModel
@@ -459,23 +459,33 @@ class PluginExecutor:
         event = provider_instance.dispatch_event(request.settings, http_request)
         return event
 
-    def get_trigger_parameter_options(self, session: Session, request: TriggerGetParameterOptionsRequest):
+    def subscribe_trigger(self, session: Session, request: TriggerSubscribeRequest):
         """
-        Get trigger parameter options
+        Subscribe to a trigger with the external service
         """
-        trigger_cls = self.registration.get_trigger_cls(request.provider, request.trigger)
-        if not trigger_cls:
-            raise ValueError(f"Trigger {request.provider}.{request.trigger} not found")
+        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
+        if not trigger_provider_cls:
+            raise ValueError(f"Trigger provider {request.provider} not found")
 
-        # Create temporary trigger runtime and instance
-        trigger_runtime = TriggerRuntime(
-            credentials=request.credentials,
-            session_id=session.session_id,
+        provider_instance = trigger_provider_cls()
+        subscription = provider_instance.subscribe(request.credentials, request.subscription_params)
+        return subscription
+
+    def unsubscribe_trigger(self, session: Session, request: TriggerUnsubscribeRequest):
+        """
+        Unsubscribe from a trigger subscription
+        """
+        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
+        if not trigger_provider_cls:
+            raise ValueError(f"Trigger provider {request.provider} not found")
+
+        provider_instance = trigger_provider_cls()
+        unsubscription = provider_instance.unsubscribe(
+            request.subscription_id, 
+            request.credentials, 
+            request.subscription_metadata
         )
-        trigger = trigger_cls(runtime=trigger_runtime, session=session)
-
-        options = trigger.fetch_parameter_options(request.parameter)
-        return options
+        return unsubscription
 
     def fetch_parameter_options(self, session: Session, data: DynamicParameterFetchParameterOptionsRequest):
         action_instance = self._get_dynamic_parameter_action(session, data)

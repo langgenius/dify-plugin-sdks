@@ -360,11 +360,15 @@ class Plugin(IOServer, Router):
             lambda data: data.get("type") == PluginInvokeType.Trigger.value
             and data.get("action") == TriggerActions.DispatchEvent.value,
         )
-
         self.register_route(
-            self.plugin_executer.get_trigger_parameter_options,
+            self.plugin_executer.subscribe_trigger,
             lambda data: data.get("type") == PluginInvokeType.Trigger.value
-            and data.get("action") == TriggerActions.GetParameterOptions.value,
+            and data.get("action") == TriggerActions.SubscribeTrigger.value,
+        )
+        self.register_route(
+            self.plugin_executer.unsubscribe_trigger,
+            lambda data: data.get("type") == PluginInvokeType.Trigger.value
+            and data.get("action") == TriggerActions.UnsubscribeTrigger.value,
         )
 
     def _execute_request(
