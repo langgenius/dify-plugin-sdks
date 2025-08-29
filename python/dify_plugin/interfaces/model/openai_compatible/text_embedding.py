@@ -1,7 +1,6 @@
 import json
 import time
 from decimal import Decimal
-from typing import Optional
 from urllib.parse import urljoin
 
 import requests
@@ -37,7 +36,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         model: str,
         credentials: dict,
         texts: list[str],
-        user: Optional[str] = None,
+        user: str | None = None,
         input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
     ) -> TextEmbeddingResult:
         """
@@ -98,7 +97,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             # Prepare the payload for the request
             payload = {
                 "input": inputs[i : i + max_chunks],
-                "model": model,
+                "model": credentials.get("endpoint_model_name", model),
                 **extra_model_kwargs,
             }
 
@@ -158,7 +157,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
 
             endpoint_url = urljoin(endpoint_url, "embeddings")
 
-            payload = {"input": "ping", "model": model}
+            payload = {"input": "ping", "model": credentials.get("endpoint_model_name", model)}
 
             response = requests.post(
                 url=endpoint_url,

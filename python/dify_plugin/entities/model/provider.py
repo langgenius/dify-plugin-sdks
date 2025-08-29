@@ -2,7 +2,6 @@ import glob
 import os
 from collections.abc import Sequence
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -86,9 +85,9 @@ class CredentialFormSchema(BaseModel):
     label: I18nObject
     type: FormType
     required: bool = True
-    default: Optional[str] = None
-    options: Optional[list[FormOption]] = None
-    placeholder: Optional[I18nObject] = None
+    default: str | None = None
+    options: list[FormOption] | None = None
+    placeholder: I18nObject | None = None
     max_length: int = 0
     show_on: list[FormShowOnObject] = Field(default_factory=list)
 
@@ -111,7 +110,7 @@ class ProviderCredentialSchema(BaseModel):
 )
 class FieldModelSchema(BaseModel):
     label: I18nObject
-    placeholder: Optional[I18nObject] = None
+    placeholder: I18nObject | None = None
 
 
 class ModelCredentialSchema(BaseModel):
@@ -130,8 +129,10 @@ class SimpleProviderEntity(BaseModel):
 
     provider: str
     label: I18nObject
-    icon_small: Optional[I18nObject] = None
-    icon_large: Optional[I18nObject] = None
+    icon_small: I18nObject | None = None
+    icon_large: I18nObject | None = None
+    icon_small_dark: I18nObject | None = None
+    icon_large_dark: I18nObject | None = None
     supported_model_types: Sequence[ModelType]
     models: list[AIModelEntity] = []
 
@@ -158,22 +159,22 @@ class ModelPosition(BaseModel):
     Model class for ai models
     """
 
-    llm: Optional[list[str]] = Field(
+    llm: list[str] | None = Field(
         default_factory=list, description="Sorts of llm model in ascending order, fill model name here"
     )
-    text_embedding: Optional[list[str]] = Field(
+    text_embedding: list[str] | None = Field(
         default_factory=list, description="Sorts of text embedding model in ascending order, fill model name here"
     )
-    rerank: Optional[list[str]] = Field(
+    rerank: list[str] | None = Field(
         default_factory=list, description="Sorts of rerank model in ascending order, fill model name here"
     )
-    tts: Optional[list[str]] = Field(
+    tts: list[str] | None = Field(
         default_factory=list, description="Sorts of tts model in ascending order, fill model name here"
     )
-    speech2text: Optional[list[str]] = Field(
+    speech2text: list[str] | None = Field(
         default_factory=list, description="Sorts of speech2text model in ascending order, fill model name here"
     )
-    moderation: Optional[list[str]] = Field(
+    moderation: list[str] | None = Field(
         default_factory=list, description="Sorts of moderation model in ascending order, fill model name here"
     )
 
@@ -185,17 +186,17 @@ class ProviderEntity(BaseModel):
 
     provider: str
     label: I18nObject
-    description: Optional[I18nObject] = None
-    icon_small: Optional[I18nObject] = None
-    icon_large: Optional[I18nObject] = None
-    background: Optional[str] = None
-    help: Optional[ProviderHelpEntity] = None
+    description: I18nObject | None = None
+    icon_small: I18nObject | None = None
+    icon_large: I18nObject | None = None
+    background: str | None = None
+    help: ProviderHelpEntity | None = None
     supported_model_types: Sequence[ModelType]
     configurate_methods: list[ConfigurateMethod]
     models: list[AIModelEntity] = Field(default_factory=list)
-    provider_credential_schema: Optional[ProviderCredentialSchema] = None
-    model_credential_schema: Optional[ModelCredentialSchema] = None
-    position: Optional[ModelPosition] = None
+    provider_credential_schema: ProviderCredentialSchema | None = None
+    model_credential_schema: ModelCredentialSchema | None = None
+    position: ModelPosition | None = None
 
     # pydantic configs
     model_config = ConfigDict(protected_namespaces=())

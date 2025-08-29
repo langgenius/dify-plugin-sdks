@@ -7,6 +7,7 @@ from werkzeug import Response
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.entities.plugin.request import (
     AgentInvokeRequest,
+    DynamicParameterFetchParameterOptionsRequest,
     EndpointInvokeRequest,
     ModelGetAIModelSchemas,
     ModelGetLLMNumTokens,
@@ -20,6 +21,9 @@ from dify_plugin.core.entities.plugin.request import (
     ModelInvokeTTSRequest,
     ModelValidateModelCredentialsRequest,
     ModelValidateProviderCredentialsRequest,
+    OAuthGetAuthorizationUrlRequest,
+    OAuthGetCredentialsRequest,
+    OAuthRefreshCredentialsRequest,
     ToolGetRuntimeParametersRequest,
     ToolInvokeRequest,
     ToolValidateCredentialsRequest,
@@ -37,6 +41,8 @@ from dify_plugin.interfaces.model.rerank_model import RerankModel
 from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
+from dify_plugin.protocol.dynamic_select import DynamicSelectProtocol
+from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
 
 class PluginExecutor:
@@ -67,6 +73,7 @@ class PluginExecutor:
         tool = tool_cls(
             runtime=ToolRuntime(
                 credentials=request.credentials,
+                credential_type=request.credential_type,
                 user_id=request.user_id,
                 session_id=session.session_id,
             ),
@@ -321,3 +328,72 @@ class PluginExecutor:
                         result["result"] += binascii.hexlify(chunk.encode("utf-8")).decode()
 
             yield result
+
+    def _get_oauth_provider_instance(self, provider: str) -> OAuthProviderProtocol:
+        provider_cls = self.registration.get_supported_oauth_provider_cls(provider)
+        if provider_cls is None:
+            raise ValueError(f"Provider `{provider}` does not support OAuth")
+
+        return provider_cls()
+
+    def get_oauth_authorization_url(self, session: Session, data: OAuthGetAuthorizationUrlRequest):
+        provider_instance = self._get_oauth_provider_instance(data.provider)
+
+        return {
+            "authorization_url": provider_instance.oauth_get_authorization_url(
+                data.redirect_uri, data.system_credentials
+            ),
+        }
+
+    def get_oauth_credentials(self, session: Session, data: OAuthGetCredentialsRequest):
+        provider_instance = self._get_oauth_provider_instance(data.provider)
+        bytes_data = binascii.unhexlify(data.raw_http_request)
+        request = parse_raw_request(bytes_data)
+
+        credentials = provider_instance.oauth_get_credentials(data.redirect_uri, data.system_credentials, request)
+
+        return {
+            "metadata": credentials.metadata or {},
+            "credentials": credentials.credentials,
+            "expires_at": credentials.expires_at,
+        }
+
+    def refresh_oauth_credentials(self, session: Session, data: OAuthRefreshCredentialsRequest):
+        provider_instance = self._get_oauth_provider_instance(data.provider)
+        credentials = provider_instance.oauth_refresh_credentials(
+            data.redirect_uri, data.system_credentials, data.credentials
+        )
+
+        return {
+            "credentials": credentials.credentials,
+            "expires_at": credentials.expires_at,
+        }
+
+    def _get_dynamic_parameter_action(
+        self, session: Session, data: DynamicParameterFetchParameterOptionsRequest
+    ) -> DynamicSelectProtocol | None:
+        """
+        get the dynamic parameter provider class by provider name
+
+        :param session: session
+        :param data: data
+        :return: dynamic parameter provider class
+        """
+        # get tool
+        tool_cls = self.registration.get_tool_cls(data.provider, data.provider_action)
+        if tool_cls is not None:
+            return tool_cls(
+                runtime=ToolRuntime(credentials=data.credentials, user_id=data.user_id, session_id=session.session_id),
+                session=session,
+            )
+
+        # TODO: trigger
+
+    def fetch_parameter_options(self, session: Session, data: DynamicParameterFetchParameterOptionsRequest):
+        action_instance = self._get_dynamic_parameter_action(session, data)
+        if action_instance is None:
+            raise ValueError(f"Provider `{data.provider}` not found")
+
+        return {
+            "options": action_instance.fetch_parameter_options(data.parameter),
+        }

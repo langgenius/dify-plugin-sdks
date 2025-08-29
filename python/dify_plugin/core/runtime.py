@@ -3,10 +3,10 @@ from abc import ABC
 from collections.abc import Generator, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import Any, Generic, Optional, TypeVar, Union
+from typing import Any, Generic, TypeVar, Union
 
 import httpx
-from pydantic import BaseModel, TypeAdapter
+from pydantic import BaseModel, Field, TypeAdapter
 from yarl import URL
 
 from dify_plugin.config.config import InstallMethod
@@ -28,6 +28,9 @@ from dify_plugin.core.server.tcp.request_reader import TCPReaderWriter
 class ModelInvocations:
     def __init__(self, session: "Session") -> None:
         from dify_plugin.invocations.model.llm import LLMInvocation, SummaryInvocation
+        from dify_plugin.invocations.model.llm_structured_output import (
+            LLMStructuredOutputInvocation,
+        )
         from dify_plugin.invocations.model.moderation import ModerationInvocation
         from dify_plugin.invocations.model.rerank import RerankInvocation
         from dify_plugin.invocations.model.speech2text import Speech2TextInvocation
@@ -35,6 +38,7 @@ class ModelInvocations:
         from dify_plugin.invocations.model.tts import TTSInvocation
 
         self.llm = LLMInvocation(session)
+        self.llm_structured_output = LLMStructuredOutputInvocation(session)
         self.text_embedding = TextEmbeddingInvocation(session)
         self.rerank = RerankInvocation(session)
         self.speech2text = Speech2TextInvocation(session)
@@ -72,6 +76,35 @@ class WorkflowNodeInvocations:
         self.parameter_extractor = ParameterExtractorNodeInvocation(session)
 
 
+class InvokeCredentials(BaseModel):
+    """
+    Invoke credentials
+
+    Session Level Credentials, used to store session level credentials, such as tool call credentials.
+    Especially for the backwards invoke, when invoker is not specified
+    We need to use the credential id from the session context.
+    """
+
+    tool_credentials: dict[str, str] = Field(
+        default_factory=dict,
+        description="This is a map of tool provider to credential id.",
+    )
+
+    def get_credential_id(self, provider: str) -> str | None:
+        return self.tool_credentials.get(provider)
+
+
+class SessionContext(BaseModel):
+    """
+    Session Context
+
+    Session Context is used to store the session level context, such as credentials.
+    In the future, we will refactor message_id and conversation_id and the others to be part of the session context.
+    """
+
+    credentials: InvokeCredentials = Field(default_factory=InvokeCredentials)
+
+
 class Session:
     def __init__(
         self,
@@ -79,12 +112,13 @@ class Session:
         executor: ThreadPoolExecutor,
         reader: RequestReader,
         writer: ResponseWriter,
-        install_method: Optional[InstallMethod] = None,
-        dify_plugin_daemon_url: Optional[str] = None,
-        conversation_id: Optional[str] = None,
-        message_id: Optional[str] = None,
-        app_id: Optional[str] = None,
-        endpoint_id: Optional[str] = None,
+        install_method: InstallMethod | None = None,
+        dify_plugin_daemon_url: str | None = None,
+        conversation_id: str | None = None,
+        message_id: str | None = None,
+        app_id: str | None = None,
+        endpoint_id: str | None = None,
+        context: SessionContext | dict | None = None,
     ) -> None:
         # current session id
         self.session_id: str = session_id
@@ -97,22 +131,27 @@ class Session:
         self.writer: ResponseWriter = writer
 
         # conversation id
-        self.conversation_id: Optional[str] = conversation_id
+        self.conversation_id: str | None = conversation_id
 
         # message id
-        self.message_id: Optional[str] = message_id
+        self.message_id: str | None = message_id
 
         # app id
-        self.app_id: Optional[str] = app_id
+        self.app_id: str | None = app_id
 
         # endpoint id
-        self.endpoint_id: Optional[str] = endpoint_id
+        self.endpoint_id: str | None = endpoint_id
 
         # install method
-        self.install_method: Optional[InstallMethod] = install_method
+        self.install_method: InstallMethod | None = install_method
+
+        # context
+        self.context: SessionContext = (
+            SessionContext.model_validate(context) if isinstance(context, dict) else context or SessionContext()
+        )
 
         # dify plugin daemon url
-        self.dify_plugin_daemon_url: Optional[str] = dify_plugin_daemon_url
+        self.dify_plugin_daemon_url: str | None = dify_plugin_daemon_url
 
         # register invocations
         self._register_invocations()
@@ -138,6 +177,7 @@ class Session:
             writer=TCPReaderWriter(host="", port=0, key=""),
             install_method=None,
             dify_plugin_daemon_url=None,
+            context=None,
         )
 
 
@@ -155,7 +195,7 @@ class BackwardsInvocationResponseEvent(BaseModel):
     backwards_request_id: str
     event: Event
     message: str
-    data: Optional[dict]
+    data: dict | None
 
 
 T = TypeVar("T", bound=Union[BaseModel, dict, str])
@@ -164,7 +204,7 @@ T = TypeVar("T", bound=Union[BaseModel, dict, str])
 class BackwardsInvocation(Generic[T], ABC):
     def __init__(
         self,
-        session: Optional[Session] = None,
+        session: Session | None = None,
     ) -> None:
         self.session = session
 

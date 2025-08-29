@@ -2,17 +2,20 @@ import base64
 import logging
 import uuid
 from collections.abc import Generator
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import RootModel
+from yarl import URL
 
 from dify_plugin.config.config import DifyPluginEnv, InstallMethod
 from dify_plugin.config.logger_format import plugin_logger_handler
 from dify_plugin.core.entities.message import InitializeMessage
 from dify_plugin.core.entities.plugin.request import (
     AgentActions,
+    DynamicParameterActions,
     EndpointActions,
     ModelActions,
+    OAuthActions,
     PluginInvokeType,
     ToolActions,
 )
@@ -63,7 +66,7 @@ class Plugin(IOServer, Router):
         # register io routes
         self._register_request_routes()
 
-    def _launch_local_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, Optional[ResponseWriter]]:
+    def _launch_local_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, ResponseWriter | None]:
         """
         Launch local stream
         """
@@ -74,16 +77,19 @@ class Plugin(IOServer, Router):
         self._log_configuration()
         return reader, writer
 
-    def _launch_remote_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, Optional[ResponseWriter]]:
+    def _launch_remote_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, ResponseWriter | None]:
         """
         Launch remote stream
         """
         if not config.REMOTE_INSTALL_KEY:
             raise ValueError("Missing remote install key")
 
+        install_host, install_port = self._get_remote_install_host_and_port(config)
+        logging.debug(f"Remote installing to {install_host}:{install_port}")
+
         tcp_stream = TCPReaderWriter(
-            config.REMOTE_INSTALL_HOST,
-            config.REMOTE_INSTALL_PORT,
+            install_host,
+            install_port,
             config.REMOTE_INSTALL_KEY,
             on_connected=lambda: self._initialize_tcp_stream(tcp_stream),
         )
@@ -169,7 +175,7 @@ class Plugin(IOServer, Router):
 
         self._log_configuration()
 
-    def _launch_serverless_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, Optional[ResponseWriter]]:
+    def _launch_serverless_stream(self, config: DifyPluginEnv) -> tuple[RequestReader, ResponseWriter | None]:
         """
         Launch Serverless stream
         """
@@ -298,16 +304,41 @@ class Plugin(IOServer, Router):
             and data.get("action") == ModelActions.GetAIModelSchemas.value,
         )
 
+        self.register_route(
+            self.plugin_executer.fetch_parameter_options,
+            lambda data: data.get("type") == PluginInvokeType.DynamicParameter.value
+            and data.get("action") == DynamicParameterActions.FetchParameterOptions.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.get_oauth_authorization_url,
+            lambda data: data.get("type") == PluginInvokeType.OAuth.value
+            and data.get("action") == OAuthActions.GetAuthorizationUrl.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.get_oauth_credentials,
+            lambda data: data.get("type") == PluginInvokeType.OAuth.value
+            and data.get("action") == OAuthActions.GetCredentials.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.refresh_oauth_credentials,
+            lambda data: data.get("type") == PluginInvokeType.OAuth.value
+            and data.get("action") == OAuthActions.RefreshCredentials.value,
+        )
+
     def _execute_request(
         self,
         session_id: str,
         data: dict,
         reader: RequestReader,
         writer: ResponseWriter,
-        conversation_id: Optional[str] = None,
-        message_id: Optional[str] = None,
-        app_id: Optional[str] = None,
-        endpoint_id: Optional[str] = None,
+        conversation_id: str | None = None,
+        message_id: str | None = None,
+        app_id: str | None = None,
+        endpoint_id: str | None = None,
+        context: dict | None = None,
     ):
         """
         accept requests and execute
@@ -326,6 +357,7 @@ class Plugin(IOServer, Router):
             message_id=message_id,
             app_id=app_id,
             endpoint_id=endpoint_id,
+            context=context,
         )
         response = self.dispatch(session, data)
         if response:
@@ -385,3 +417,33 @@ class Plugin(IOServer, Router):
                     session_id=session_id,
                     data=writer.stream_object(data=response),
                 )
+
+    @staticmethod
+    def _get_remote_install_host_and_port(config: DifyPluginEnv) -> tuple[str, int]:
+        """
+        Get host and port for remote installation
+        :param config: Dify plugin env config
+        :return: host and port
+        """
+        install_url = config.REMOTE_INSTALL_URL
+        if install_url is not None:
+            if ":" in install_url:
+                url = URL(install_url)
+                if url.host and url.port:
+                    # for the url with protocol prefix
+                    host = url.host
+                    port = url.port
+                else:
+                    # for "host:port" format
+                    split = install_url.split(":")
+                    host = split[0]
+                    port = int(split[1])
+            else:
+                raise ValueError(
+                    f'Invalid remote install URL {install_url}, which should be in the format of "host:port"'
+                )
+        else:
+            host = config.REMOTE_INSTALL_HOST
+            port = config.REMOTE_INSTALL_PORT
+
+        return host, port

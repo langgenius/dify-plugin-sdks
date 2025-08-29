@@ -58,6 +58,7 @@ class ServerlessRequestReader(RequestReader):
                 app_id=data.get("app_id"),
                 endpoint_id=data.get("endpoint_id"),
                 data=data["data"],
+                context=data.get("context"),
                 reader=self,
                 writer=ServerlessResponseWriter(queue),
             )

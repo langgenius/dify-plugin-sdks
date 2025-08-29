@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -67,8 +66,8 @@ class ParameterConfig(BaseModel):
     name: str
     type: str
     options: list[str] = Field(default_factory=list)
-    description: Optional[str]
-    required: Optional[bool]
+    description: str | None
+    required: bool | None
 
 
 class ClassConfig(BaseModel):

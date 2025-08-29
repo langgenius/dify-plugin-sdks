@@ -1,15 +1,22 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
-from typing import Any, Generic, Optional, TypeVar, final
+from typing import Any, Generic, TypeVar, final
+
+from typing_extensions import deprecated
+from werkzeug import Request
 
 from dify_plugin.core.runtime import Session
-from dify_plugin.entities.agent import AgentInvokeMessage
-from dify_plugin.entities.tool import LogMetadata, ToolInvokeMessage, ToolParameter, ToolRuntime, ToolSelector
+from dify_plugin.entities import ParameterOption
+from dify_plugin.entities.invoke_message import InvokeMessage
+from dify_plugin.entities.oauth import ToolOAuthCredentials
+from dify_plugin.entities.provider_config import LogMetadata
+from dify_plugin.entities.tool import ToolInvokeMessage, ToolParameter, ToolRuntime, ToolSelector
 from dify_plugin.file.constants import DIFY_FILE_IDENTITY, DIFY_TOOL_SELECTOR_IDENTITY
 from dify_plugin.file.entities import FileType
 from dify_plugin.file.file import File
+from dify_plugin.protocol.oauth import OAuthCredentials
 
-T = TypeVar("T", bound=ToolInvokeMessage | AgentInvokeMessage)
+T = TypeVar("T", bound=InvokeMessage)
 
 
 class ToolLike(ABC, Generic[T]):
@@ -21,14 +28,14 @@ class ToolLike(ABC, Generic[T]):
 
     def create_text_message(self, text: str) -> T:
         return self.response_type(
-            type=ToolInvokeMessage.MessageType.TEXT,
-            message=ToolInvokeMessage.TextMessage(text=text),
+            type=InvokeMessage.MessageType.TEXT,
+            message=InvokeMessage.TextMessage(text=text),
         )
 
     def create_json_message(self, json: Mapping | list) -> T:
         return self.response_type(
-            type=ToolInvokeMessage.MessageType.JSON,
-            message=ToolInvokeMessage.JsonMessage(json_object=json),
+            type=InvokeMessage.MessageType.JSON,
+            message=InvokeMessage.JsonMessage(json_object=json),
         )
 
     def create_image_message(self, image_url: str) -> T:
@@ -39,8 +46,8 @@ class ToolLike(ABC, Generic[T]):
         :return: the image message
         """
         return self.response_type(
-            type=ToolInvokeMessage.MessageType.IMAGE,
-            message=ToolInvokeMessage.TextMessage(text=image_url),
+            type=InvokeMessage.MessageType.IMAGE,
+            message=InvokeMessage.TextMessage(text=image_url),
         )
 
     def create_link_message(self, link: str) -> T:
@@ -51,11 +58,11 @@ class ToolLike(ABC, Generic[T]):
         :return: the link message
         """
         return self.response_type(
-            type=ToolInvokeMessage.MessageType.LINK,
-            message=ToolInvokeMessage.TextMessage(text=link),
+            type=InvokeMessage.MessageType.LINK,
+            message=InvokeMessage.TextMessage(text=link),
         )
 
-    def create_blob_message(self, blob: bytes, meta: Optional[dict] = None) -> T:
+    def create_blob_message(self, blob: bytes, meta: dict | None = None) -> T:
         """
         create a blob message
 
@@ -63,8 +70,8 @@ class ToolLike(ABC, Generic[T]):
         :return: the blob message
         """
         return self.response_type(
-            type=ToolInvokeMessage.MessageType.BLOB,
-            message=ToolInvokeMessage.BlobMessage(blob=blob),
+            type=InvokeMessage.MessageType.BLOB,
+            message=InvokeMessage.BlobMessage(blob=blob),
             meta=meta,
         )
 
@@ -77,8 +84,8 @@ class ToolLike(ABC, Generic[T]):
         :return: the variable message
         """
         return self.response_type(
-            type=ToolInvokeMessage.MessageType.VARIABLE,
-            message=ToolInvokeMessage.VariableMessage(variable_name=variable_name, variable_value=variable_value),
+            type=InvokeMessage.MessageType.VARIABLE,
+            message=InvokeMessage.VariableMessage(variable_name=variable_name, variable_value=variable_value),
         )
 
     def create_stream_variable_message(self, variable_name: str, variable_value: str) -> T:
@@ -92,8 +99,8 @@ class ToolLike(ABC, Generic[T]):
         :return: the variable message
         """
         return self.response_type(
-            type=ToolInvokeMessage.MessageType.VARIABLE,
-            message=ToolInvokeMessage.VariableMessage(
+            type=InvokeMessage.MessageType.VARIABLE,
+            message=InvokeMessage.VariableMessage(
                 variable_name=variable_name,
                 variable_value=variable_value,
                 stream=True,
@@ -104,21 +111,21 @@ class ToolLike(ABC, Generic[T]):
         self,
         label: str,
         data: Mapping[str, Any],
-        status: ToolInvokeMessage.LogMessage.LogStatus = ToolInvokeMessage.LogMessage.LogStatus.SUCCESS,
+        status: InvokeMessage.LogMessage.LogStatus = InvokeMessage.LogMessage.LogStatus.SUCCESS,
         parent: T | None = None,
-        metadata: Optional[Mapping[LogMetadata, Any]] = None,
+        metadata: Mapping[LogMetadata, Any] | None = None,
     ) -> T:
         """
         create a log message with status "start"
         """
         return self.response_type(
-            type=ToolInvokeMessage.MessageType.LOG,
-            message=ToolInvokeMessage.LogMessage(
+            type=InvokeMessage.MessageType.LOG,
+            message=InvokeMessage.LogMessage(
                 label=label,
                 data=data,
                 status=status,
                 parent_id=parent.message.id
-                if parent and isinstance(parent.message, ToolInvokeMessage.LogMessage)
+                if parent and isinstance(parent.message, InvokeMessage.LogMessage)
                 else None,
                 metadata=metadata,
             ),
@@ -126,15 +133,15 @@ class ToolLike(ABC, Generic[T]):
 
     def create_retriever_resource_message(
         self,
-        retriever_resources: list[ToolInvokeMessage.RetrieverResourceMessage.RetrieverResource],
+        retriever_resources: list[InvokeMessage.RetrieverResourceMessage.RetrieverResource],
         context: str,
     ) -> T:
         """
         create a retriever resource message
         """
         return self.response_type(
-            type=ToolInvokeMessage.MessageType.RETRIEVER_RESOURCES,
-            message=ToolInvokeMessage.RetrieverResourceMessage(
+            type=InvokeMessage.MessageType.RETRIEVER_RESOURCES,
+            message=InvokeMessage.RetrieverResourceMessage(
                 retriever_resources=retriever_resources,
                 context=context,
             ),
@@ -143,18 +150,18 @@ class ToolLike(ABC, Generic[T]):
     def finish_log_message(
         self,
         log: T,
-        status: ToolInvokeMessage.LogMessage.LogStatus = ToolInvokeMessage.LogMessage.LogStatus.SUCCESS,
-        error: Optional[str] = None,
-        data: Optional[Mapping[str, Any]] = None,
-        metadata: Optional[Mapping[LogMetadata, Any]] = None,
+        status: InvokeMessage.LogMessage.LogStatus = InvokeMessage.LogMessage.LogStatus.SUCCESS,
+        error: str | None = None,
+        data: Mapping[str, Any] | None = None,
+        metadata: Mapping[LogMetadata, Any] | None = None,
     ) -> T:
         """
         mark log as finished
         """
-        assert isinstance(log.message, ToolInvokeMessage.LogMessage)
+        assert isinstance(log.message, InvokeMessage.LogMessage)
         return self.response_type(
-            type=ToolInvokeMessage.MessageType.LOG,
-            message=ToolInvokeMessage.LogMessage(
+            type=InvokeMessage.MessageType.LOG,
+            message=InvokeMessage.LogMessage(
                 id=log.message.id,
                 label=log.message.label,
                 data=data or log.message.data,
@@ -165,6 +172,7 @@ class ToolLike(ABC, Generic[T]):
             ),
         )
 
+    @deprecated("This feature is deprecated, will soon be replaced by dynamic select parameter")
     def _get_runtime_parameters(self) -> list[ToolParameter]:
         """
         get the runtime parameters of the tool
@@ -222,13 +230,76 @@ class ToolLike(ABC, Generic[T]):
         return tool_parameters
 
 
-class ToolProvider(ABC):
+class ToolProvider:
     def validate_credentials(self, credentials: dict):
         return self._validate_credentials(credentials)
 
-    @abstractmethod
     def _validate_credentials(self, credentials: dict):
-        pass
+        raise NotImplementedError(
+            "The tool you are using does not support credentials validation, "
+            "please implement `_validate_credentials` method"
+        )
+
+    def oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+        """
+        Get the authorization url
+
+        :param redirect_uri: redirect uri
+        :param system_credentials: system credentials
+        :return: authorization url
+        """
+        return self._oauth_get_authorization_url(redirect_uri, system_credentials)
+
+    def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+        raise NotImplementedError(
+            "The tool you are using does not support OAuth, please implement `_oauth_get_authorization_url` method"
+        )
+
+    def oauth_get_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
+    ) -> OAuthCredentials:
+        """
+        Get the credentials
+
+        :param redirect_uri: redirect uri
+        :param system_credentials: system credentials
+        :param request: raw http request
+        :return: credentials
+        """
+        tool_oauth_credentials = self._oauth_get_credentials(redirect_uri, system_credentials, request)
+        return OAuthCredentials(
+            credentials=tool_oauth_credentials.credentials, expires_at=tool_oauth_credentials.expires_at
+        )
+
+    def _oauth_get_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
+    ) -> ToolOAuthCredentials:
+        raise NotImplementedError(
+            "The tool you are using does not support OAuth, please implement `_oauth_get_credentials` method"
+        )
+
+    def oauth_refresh_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
+    ) -> OAuthCredentials:
+        """
+        Refresh the credentials
+
+        :param redirect_uri: redirect uri
+        :param system_credentials: system credentials
+        :param credentials: credentials
+        :return: refreshed credentials
+        """
+        tool_oauth_credentials = self._oauth_refresh_credentials(redirect_uri, system_credentials, credentials)
+        return OAuthCredentials(
+            credentials=tool_oauth_credentials.credentials, expires_at=tool_oauth_credentials.expires_at
+        )
+
+    def _oauth_refresh_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
+    ) -> ToolOAuthCredentials:
+        raise NotImplementedError(
+            "The tool you are using does not support OAuth, please implement `_oauth_refresh_credentials` method"
+        )
 
 
 class Tool(ToolLike[ToolInvokeMessage]):
@@ -255,7 +326,7 @@ class Tool(ToolLike[ToolInvokeMessage]):
     def from_credentials(
         cls,
         credentials: dict,
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
     ):
         return cls(
             runtime=ToolRuntime(credentials=credentials, user_id=user_id, session_id=None),
@@ -270,6 +341,18 @@ class Tool(ToolLike[ToolInvokeMessage]):
     def _invoke(self, tool_parameters: dict) -> Generator[ToolInvokeMessage, None, None]:
         pass
 
+    def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        """
+        Fetch the parameter options of the tool.
+
+        To be implemented by subclasses.
+
+        Also, it's optional to implement, that's why it's not an abstract method.
+        """
+        raise NotImplementedError(
+            "This plugin should implement `_fetch_parameter_options` method to enable dynamic select parameter"
+        )
+
     ############################################################
     #                 For executor use only                    #
     ############################################################
@@ -279,5 +362,15 @@ class Tool(ToolLike[ToolInvokeMessage]):
         tool_parameters = self._convert_parameters(tool_parameters)
         return self._invoke(tool_parameters)
 
+    @deprecated("This feature is deprecated, will soon be replaced by dynamic select parameter")
     def get_runtime_parameters(self) -> list[ToolParameter]:
         return self._get_runtime_parameters()
+
+    def fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        """
+        Fetch the parameter options of the tool.
+
+        To be implemented by subclasses.
+
+        """
+        return self._fetch_parameter_options(parameter)

@@ -1,6 +1,6 @@
+from collections.abc import Mapping
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -76,8 +76,8 @@ class LLMResultChunkDelta(BaseModel):
 
     index: int
     message: AssistantPromptMessage
-    usage: Optional[LLMUsage] = None
-    finish_reason: Optional[str] = None
+    usage: LLMUsage | None = None
+    finish_reason: str | None = None
 
 
 class LLMResultChunk(BaseModel):
@@ -87,7 +87,7 @@ class LLMResultChunk(BaseModel):
 
     model: str
     prompt_messages: list[PromptMessage] = Field(default_factory=list)
-    system_fingerprint: Optional[str] = None
+    system_fingerprint: str | None = None
     delta: LLMResultChunkDelta
 
     @field_validator("prompt_messages", mode="before")
@@ -106,6 +106,22 @@ class LLMResultChunk(BaseModel):
         return []
 
 
+class LLMStructuredOutput(BaseModel):
+    """
+    Model class for llm structured output.
+    """
+
+    structured_output: Mapping | None = None
+
+
+class LLMResultChunkWithStructuredOutput(LLMResultChunk, LLMStructuredOutput):
+    """
+    Model class for llm result chunk with structured output.
+    """
+
+    pass
+
+
 class LLMResult(BaseModel):
     """
     Model class for llm result.
@@ -115,7 +131,7 @@ class LLMResult(BaseModel):
     prompt_messages: list[PromptMessage] = Field(default_factory=list)
     message: AssistantPromptMessage
     usage: LLMUsage
-    system_fingerprint: Optional[str] = None
+    system_fingerprint: str | None = None
 
     @field_validator("prompt_messages", mode="before")
     @classmethod
@@ -142,6 +158,25 @@ class LLMResult(BaseModel):
                 usage=self.usage,
                 finish_reason=None,
             ),
+        )
+
+
+class LLMResultWithStructuredOutput(LLMResult, LLMStructuredOutput):
+    """
+    Model class for llm result with structured output.
+    """
+
+    def to_llm_result_chunk_with_structured_output(self) -> "LLMResultChunkWithStructuredOutput":
+        return LLMResultChunkWithStructuredOutput(
+            model=self.model,
+            system_fingerprint=self.system_fingerprint,
+            delta=LLMResultChunkDelta(
+                index=0,
+                message=self.message,
+                usage=self.usage,
+                finish_reason=None,
+            ),
+            structured_output=self.structured_output,
         )
 
 

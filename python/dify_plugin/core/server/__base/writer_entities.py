@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -13,5 +12,5 @@ class Event(Enum):
 
 class StreamOutputMessage(BaseModel):
     event: Event
-    session_id: Optional[str]
-    data: Optional[dict | BaseModel]
+    session_id: str | None
+    data: dict | BaseModel | None
