@@ -22,6 +22,7 @@ class TriggerEventDispatch(BaseModel):
     """
     The event dispatch result from trigger provider
     """
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     event: str = Field(..., description="The event type dispatched by the trigger provider")
@@ -209,6 +210,23 @@ class TriggerProviderConfiguration(BaseModel):
     )
     triggers: list[TriggerConfiguration] = Field(default=[], description="The triggers of the trigger provider")
     extra: TriggerProviderConfigurationExtra = Field(..., description="The extra configuration of the trigger provider")
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_credentials_schema(cls, data: dict) -> dict:
+        # Handle credentials_schema conversion from dict to list format
+        original_credentials_schema = data.get("credentials_schema", [])
+        if isinstance(original_credentials_schema, dict):
+            credentials_schema: list[dict[str, Any]] = []
+            for name, param in original_credentials_schema.items():
+                param["name"] = name
+                credentials_schema.append(param)
+            data["credentials_schema"] = credentials_schema
+        elif isinstance(original_credentials_schema, list):
+            data["credentials_schema"] = original_credentials_schema
+        else:
+            raise ValueError("credentials_schema should be a list or dict")
+        return data
 
     @model_validator(mode="before")
     @classmethod
