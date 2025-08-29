@@ -37,3 +37,4 @@ For the manifest specification, we've introduced two versioning fields:
 | 1.5.1                | 0.4.0         | Support LLM structured output           |
 | 1.6.0                | 0.4.1         | Support `dark-icon` field in manifest |
 | 1.7.0                | 0.4.2         | Support OAuth functionality for plugins |
+| 1.8.1                | 0.4.3         | Support filename in MultiModalPromptMessageContent |
