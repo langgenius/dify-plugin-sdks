@@ -237,10 +237,6 @@ class PluginRegistration:
                     script_path=os.path.join(os.getcwd(), trigger_source),
                     parent_type=TriggerEvent,
                 )
-
-                if trigger_cls._is_fetch_parameter_options_overridden():
-                    trigger.has_runtime_parameters = True
-
                 triggers[trigger.identity.name] = (trigger, trigger_cls)
 
             self.triggers_mapping[provider.identity.name] = (provider, cls, triggers)

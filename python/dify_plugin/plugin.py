@@ -375,11 +375,6 @@ class Plugin(IOServer, Router):
             lambda data: data.get("type") == PluginInvokeType.Trigger.value
             and data.get("action") == TriggerActions.RefreshTrigger.value,
         )
-        self.register_route(
-            self.plugin_executer.resubscribe_trigger,
-            lambda data: data.get("type") == PluginInvokeType.Trigger.value
-            and data.get("action") == TriggerActions.ResubscribeTrigger.value,
-        )
 
     def _execute_request(
         self,

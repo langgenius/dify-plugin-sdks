@@ -186,6 +186,26 @@ class TriggerProviderConfigurationExtra(BaseModel):
 
 
 @docs(
+    name="SubscriptionSchema",
+    description="The subscription schema of the trigger provider",
+)
+class SubscriptionSchema(BaseModel):
+    """
+    The subscription schema of the trigger provider
+    """
+
+    parameters_schema: list[ProviderConfig] | None = Field(
+        default_factory=list,
+        description="The parameters schema required to create a subscription",
+    )
+
+    properties_schema: list[ProviderConfig] | None = Field(
+        default_factory=list,
+        description="The configuration schema stored in the subscription entity",
+    )
+
+
+@docs(
     name="TriggerProvider",
     description="The configuration of a trigger provider",
     outside_reference_fields={"triggers": TriggerConfiguration},
@@ -204,9 +224,10 @@ class TriggerProviderConfiguration(BaseModel):
         default=None,
         description="The OAuth schema of the trigger provider if OAuth is supported",
     )
-    subscription_schema: list[ProviderConfig] = Field(
-        default_factory=list,
-        description="The subscription schema for trigger(webhook, polling, etc.) subscription parameters",
+    subscription_schema: SubscriptionSchema | None = Field(
+        default=None,
+        default_factory=SubscriptionSchema,
+        description="The subscription schema of the trigger provider",
     )
     triggers: list[TriggerConfiguration] = Field(default=[], description="The triggers of the trigger provider")
     extra: TriggerProviderConfigurationExtra = Field(..., description="The extra configuration of the trigger provider")
@@ -234,15 +255,12 @@ class TriggerProviderConfiguration(BaseModel):
         # Handle subscription_schema conversion from dict to list format
         original_subscription_schema = data.get("subscription_schema", [])
         if isinstance(original_subscription_schema, dict):
-            subscription_schema: list[dict[str, Any]] = []
-            for name, param in original_subscription_schema.items():
-                param["name"] = name
-                subscription_schema.append(param)
+            subscription_schema: SubscriptionSchema = SubscriptionSchema(**original_subscription_schema)
             data["subscription_schema"] = subscription_schema
         elif isinstance(original_subscription_schema, list):
-            # Already in list format, no conversion needed
             data["subscription_schema"] = original_subscription_schema
-
+        else:
+            raise ValueError("subscription_schema should be a dict or list")
         return data
 
     @field_validator("triggers", mode="before")
@@ -288,8 +306,15 @@ class Subscription(BaseModel):
         ..., description="The timestamp when the subscription will expire, this for refresh the subscription"
     )
 
-    metadata: dict[str, Any] = Field(
-        ..., description="Metadata about the subscription in the external service, defined in subscription_schema"
+    endpoint: str = Field(..., description="The webhook endpoint URL allocated by Dify for receiving events")
+
+    parameters: dict[str, Any] | None = Field(
+        default=None,
+        description="""The parameters of the subscription, this is the creation parameters.
+        Only available when creating a new subscription by credentials(auto subscription), not manual subscription""",
+    )
+    properties: dict[str, Any] = Field(
+        ..., description="Subscription data containing all properties and provider-specific information"
     )
 
 

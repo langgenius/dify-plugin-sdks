@@ -33,3 +33,12 @@ class ToolOAuthCredentials(BaseModel):
         description="""The expiration timestamp (in seconds since Unix epoch, UTC) of the credentials.
         Set to -1 or None if the credentials do not expire.""",
     )
+
+
+class TriggerOAuthCredentials(BaseModel):
+    credentials: Mapping[str, Any] = Field(..., description="The credentials of the trigger")
+    expires_at: int | None = Field(
+        default=-1,
+        description="""The expiration timestamp (in seconds since Unix epoch, UTC) of the credentials.
+        Set to -1 or None if the credentials do not expire.""",
+    )

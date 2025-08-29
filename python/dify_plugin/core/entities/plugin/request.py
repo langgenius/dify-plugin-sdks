@@ -38,7 +38,6 @@ class TriggerActions(StrEnum):
     SubscribeTrigger = "subscribe_trigger"
     UnsubscribeTrigger = "unsubscribe_trigger"
     RefreshTrigger = "refresh_trigger"
-    ResubscribeTrigger = "resubscribe_trigger"
 
 
 class ToolActions(StrEnum):
@@ -335,7 +334,7 @@ class TriggerSubscribeRequest(BaseModel):
     action: TriggerActions = TriggerActions.SubscribeTrigger
     provider: str
     credentials: dict
-    subscription_params: dict
+    parameters: dict
     user_id: str
 
     model_config = ConfigDict(protected_namespaces=())
@@ -347,7 +346,6 @@ class TriggerUnsubscribeRequest(BaseModel):
     provider: str
     subscription: dict  # Subscription object serialized as dict
     credentials: dict  # From credentials_schema
-    settings: dict  # From subscription_schema
     user_id: str
 
     model_config = ConfigDict(protected_namespaces=())
@@ -359,18 +357,6 @@ class TriggerRefreshRequest(BaseModel):
     provider: str
     subscription: dict  # Subscription object serialized as dict
     credentials: dict  # From credentials_schema
-    user_id: str
-
-    model_config = ConfigDict(protected_namespaces=())
-
-
-class TriggerResubscribeRequest(BaseModel):
-    type: PluginInvokeType = PluginInvokeType.Trigger
-    action: TriggerActions = TriggerActions.ResubscribeTrigger
-    provider: str
-    subscription: dict  # Subscription object serialized as dict
-    credentials: dict  # From credentials_schema
-    settings: dict  # From subscription_schema
     user_id: str
 
     model_config = ConfigDict(protected_namespaces=())

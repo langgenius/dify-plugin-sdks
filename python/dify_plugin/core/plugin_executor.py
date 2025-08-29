@@ -30,7 +30,6 @@ from dify_plugin.core.entities.plugin.request import (
     TriggerDispatchEventRequest,
     TriggerInvokeRequest,
     TriggerRefreshRequest,
-    TriggerResubscribeRequest,
     TriggerSubscribeRequest,
     TriggerUnsubscribeRequest,
     TriggerValidateProviderCredentialsRequest,
@@ -472,7 +471,7 @@ class PluginExecutor:
             raise ValueError(f"Trigger provider {request.provider} not found")
 
         provider_instance = trigger_provider_cls()
-        subscription = provider_instance.subscribe(request.credentials, request.subscription_params)
+        subscription = provider_instance.subscribe(request.credentials, request.parameters)
         return subscription
 
     def unsubscribe_trigger(self, session: Session, request: TriggerUnsubscribeRequest):
@@ -487,7 +486,7 @@ class PluginExecutor:
         subscription = Subscription(**request.subscription)
 
         provider_instance = trigger_provider_cls()
-        unsubscription = provider_instance.unsubscribe(subscription, request.credentials, request.settings)
+        unsubscription = provider_instance.unsubscribe(subscription, request.credentials)
         return unsubscription
 
     def refresh_trigger(self, session: Session, request: TriggerRefreshRequest):
@@ -504,21 +503,6 @@ class PluginExecutor:
         provider_instance = trigger_provider_cls()
         refreshed_subscription = provider_instance.refresh(subscription, request.credentials)
         return refreshed_subscription
-
-    def resubscribe_trigger(self, session: Session, request: TriggerResubscribeRequest):
-        """
-        Update an existing trigger subscription with new configuration settings
-        """
-        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
-        if not trigger_provider_cls:
-            raise ValueError(f"Trigger provider {request.provider} not found")
-
-        # Reconstruct Subscription object from dict
-        subscription = Subscription(**request.subscription)
-
-        provider_instance = trigger_provider_cls()
-        new_subscription = provider_instance.resubscribe(subscription, request.credentials, request.settings)
-        return new_subscription
 
     def fetch_parameter_options(self, session: Session, data: DynamicParameterFetchParameterOptionsRequest):
         action_instance = self._get_dynamic_parameter_action(session, data)
