@@ -3,6 +3,7 @@ from enum import StrEnum
 from typing import Any, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from werkzeug import Response
 
 from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
@@ -10,7 +11,6 @@ from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.oauth import OAuthSchema
 from dify_plugin.entities.provider_config import CommonParameterType, ProviderConfig
 from dify_plugin.entities.tool import ParameterAutoGenerate, ParameterTemplate
-from werkzeug import Response
 
 
 class TriggerRuntime(BaseModel):
@@ -18,14 +18,17 @@ class TriggerRuntime(BaseModel):
     session_id: str | None
 
 
-class TriggerEventDispatch(BaseModel):
+class TriggerDispatch(BaseModel):
     """
-    The event dispatch result from trigger provider
+    The trigger dispatch result from trigger provider.
+
+    Supports dispatching single or multiple triggers from a single webhook call.
+    When multiple triggers are specified, each trigger will trigger its corresponding workflow.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    event: str = Field(..., description="The event type dispatched by the trigger provider")
+    triggers: list[str] = Field(..., description="List of trigger names that will be triggered.")
     response: Response = Field(
         ...,
         description="The HTTP Response object returned to third-party calls. For example, webhook calls, etc.",
@@ -35,13 +38,14 @@ class TriggerEventDispatch(BaseModel):
 @docs(
     description="The response of the trigger",
 )
-class TriggerEvent(BaseModel):
+class Event(BaseModel):
     """
     The response of the trigger
     """
 
-    variables: Mapping[str, Any] = Field(
-        ..., description="The variables of the trigger, must have the same schema as defined in the YAML"
+    properties: Mapping[str, Any] = Field(
+        ...,
+        description="The properties of the trigger, must have the same schema as defined `output_schema` in the YAML",
     )
 
 
@@ -224,11 +228,7 @@ class TriggerProviderConfiguration(BaseModel):
         default=None,
         description="The OAuth schema of the trigger provider if OAuth is supported",
     )
-    subscription_schema: SubscriptionSchema | None = Field(
-        default=None,
-        default_factory=SubscriptionSchema,
-        description="The subscription schema of the trigger provider",
-    )
+    subscription_schema: SubscriptionSchema = Field(..., description="The subscription schema of the trigger provider")
     triggers: list[TriggerConfiguration] = Field(default=[], description="The triggers of the trigger provider")
     extra: TriggerProviderConfigurationExtra = Field(..., description="The extra configuration of the trigger provider")
 
@@ -302,7 +302,7 @@ class Subscription(BaseModel):
     Contains all information needed to manage the subscription lifecycle.
     """
 
-    expire_at: int = Field(
+    expires_at: int = Field(
         ..., description="The timestamp when the subscription will expire, this for refresh the subscription"
     )
 

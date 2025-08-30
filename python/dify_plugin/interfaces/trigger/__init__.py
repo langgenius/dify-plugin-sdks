@@ -2,15 +2,15 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from typing import Any, final
 
-from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
 from werkzeug import Request
 
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities import ParameterOption
+from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
 from dify_plugin.entities.trigger import (
     Subscription,
-    TriggerEvent,
-    TriggerEventDispatch,
+    Event,
+    TriggerDispatch,
     TriggerRuntime,
     Unsubscription,
 )
@@ -66,7 +66,7 @@ class TriggerProvider:
     ) -> TriggerOAuthCredentials:
         raise NotImplementedError("This plugin should implement `_oauth_get_credentials` method to enable oauth")
 
-    def dispatch_event(self, subscription: Subscription, request: Request) -> TriggerEventDispatch:
+    def dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
         """
         Dispatch an incoming webhook event to the appropriate trigger handler.
 
@@ -77,7 +77,7 @@ class TriggerProvider:
         Args:
             subscription: The Subscription object containing:
                          - endpoint: The webhook endpoint URL
-                         - data: All subscription configuration including:
+                         - properties: All subscription configuration including:
                            * webhook_secret: Secret for signature validation
                            * events: List of subscribed event types
                            * repository: Target repository (for GitHub)
@@ -91,8 +91,8 @@ class TriggerProvider:
                     - Parse event payload from body
 
         Returns:
-            TriggerEventDispatch: Contains:
-                                - event: The event type/name to dispatch
+            TriggerDispatch: Contains:
+                                - triggers: List of trigger names to dispatch (each triggers its workflow)
                                 - response: HTTP response to return to the webhook caller
 
         Raises:
@@ -102,8 +102,8 @@ class TriggerProvider:
         Example:
             >>> # GitHub webhook dispatch
             >>> def _dispatch_event(self, subscription, request):
-            ...     # Validate signature using subscription data
-            ...     secret = subscription.data.get("webhook_secret")
+            ...     # Validate signature using subscription properties
+            ...     secret = subscription.properties.get("webhook_secret")
             ...     if not self._validate_signature(request, secret):
             ...         raise WebhookValidationError("Invalid signature")
             ...
@@ -112,13 +112,19 @@ class TriggerProvider:
             ...
             ...     # Return dispatch information
             ...     return TriggerEventDispatch(
-            ...         event=event_type,  # e.g., "push", "pull_request"
+            ...         triggers=[event_type],  # e.g., ["push"], ["pull_request"]
+            ...         response=Response("OK", status=200)
+            ...     )
+            ...
+            ...     # Or dispatch multiple events from one webhook
+            ...     return TriggerEventDispatch(
+            ...         triggers=["issues", "issues.opened"],  # Trigger multiple workflows
             ...         response=Response("OK", status=200)
             ...     )
         """
         return self._dispatch_event(subscription, request)
 
-    def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerEventDispatch:
+    def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
         """
         Internal method to implement event dispatch logic.
 
@@ -126,21 +132,21 @@ class TriggerProvider:
 
         Implementation checklist:
         1. Validate the webhook request:
-           - Check signature/HMAC using webhook_secret from subscription.data
+           - Check signature/HMAC using webhook_secret from subscription.properties
            - Verify request is from expected source
         2. Extract event information:
            - Parse event type from headers or body
            - Extract relevant payload data
-        3. Return TriggerEventDispatch with:
-           - event: String identifying the event type
+        3. Return TriggerDispatch with:
+           - triggers: List of trigger names to dispatch (can be single or multiple)
            - response: Appropriate HTTP response for the webhook
 
         Args:
-            subscription: The Subscription object with endpoint and data fields
+            subscription: The Subscription object with endpoint and properties fields
             request: Incoming webhook HTTP request
 
         Returns:
-            TriggerEventDispatch: Event routing information
+            TriggerDispatch: Trigger routing information
 
         Raises:
             WebhookValidationError: For security validation failures
@@ -148,7 +154,7 @@ class TriggerProvider:
         """
         raise NotImplementedError("This plugin should implement `_dispatch_event` method to enable event dispatch")
 
-    def subscribe(self, credentials: Mapping[str, Any], parameters: Mapping[str, Any]) -> Subscription:
+    def subscribe(self, endpoint: str, credentials: Mapping[str, Any], parameters: Mapping[str, Any]) -> Subscription:
         """
         Create a trigger subscription with the external service.
 
@@ -157,6 +163,8 @@ class TriggerProvider:
         - Pull-based (Polling): Configures polling parameters (no external registration)
 
         Args:
+            endpoint: The webhook endpoint URL allocated by Dify for receiving events
+
             credentials: Authentication credentials for the external service.
                         Structure depends on provider's credentials_schema.
                         Examples:
@@ -164,14 +172,14 @@ class TriggerProvider:
                         - {"api_key": "sk-..."} for API key auth
                         - {} for services that don't require auth
 
-            subscription_params: Parameters for creating the subscription.
-                               Structure depends on provider's subscription_schema.
+            parameters: Parameters for creating the subscription.
+                        Structure depends on provider's parameters_schema.
 
-                               Dify automatically injects:
-                               - "endpoint" (str): The webhook endpoint URL allocated by Dify for receiving events
-                                 Example: "https://dify.ai/webhooks/sub_abc123"
+                        Dify automatically injects:
+                        - "endpoint" (str): The webhook endpoint URL allocated by Dify for receiving events
+                          Example: "https://dify.ai/webhooks/sub_abc123"
 
-                               Additional parameters from subscription_schema may include:
+                        Additional parameters from parameters_schema may include:
                                - "webhook_secret" (str): Secret for webhook signature validation
                                - "events" (list[str]): Event types to subscribe to
                                - "repository" (str): Target repository for GitHub
@@ -179,9 +187,10 @@ class TriggerProvider:
 
         Returns:
             Subscription: Contains subscription details including:
-                         - expire_at: Expiration timestamp
+                         - expires_at: Expiration timestamp
                          - endpoint: The webhook endpoint URL
-                         - data: Provider-specific configuration and metadata
+                         - parameters: The parameters of the subscription
+                         - properties: Provider-specific configuration and metadata
 
         Raises:
             SubscriptionError: If subscription fails (e.g., invalid credentials, API errors)
@@ -191,36 +200,38 @@ class TriggerProvider:
             GitHub webhook subscription:
             >>> result = provider.subscribe(
             ...     credentials={"access_token": "ghp_abc123"},
-            ...     subscription_params={
-            ...         "endpoint": "https://dify.ai/webhooks/sub_123",  # Injected by Dify
-            ...         "webhook_secret": "whsec_abc...",  # From subscription_schema
-            ...         "repository": "owner/repo",  # From subscription_schema
-            ...         "events": ["push", "pull_request"]  # From subscription_schema
+            ...     parameters={
+            ...         "webhook_secret": "whsec_abc...",  # From properties_schema
+            ...         "repository": "owner/repo",  # From parameters_schema
+            ...         "events": ["push", "pull_request"]  # From parameters_schema
             ...     }
             ... )
             >>> print(result.endpoint)  # "https://dify.ai/webhooks/sub_123"
-            >>> print(result.data["external_id"])  # GitHub webhook ID
+            >>> print(result.properties["external_id"])  # GitHub webhook ID
         """
-        return self._subscribe(credentials, parameters)
+        return self._subscribe(endpoint, credentials, parameters)
 
-    def _subscribe(self, credentials: Mapping[str, Any], parameters: Mapping[str, Any]) -> Subscription:
+    def _subscribe(self, endpoint: str, credentials: Mapping[str, Any], parameters: Mapping[str, Any]) -> Subscription:
         """
         Internal method to implement subscription logic.
 
         Subclasses must override this method to handle subscription creation.
 
         Implementation checklist:
-        1. Extract endpoint from subscription_params
+        1. Extract endpoint from parameters
         2. Register webhook with external service using their API
-        3. Store all necessary information in Subscription.data
+        3. Store all necessary information in Subscription.properties
         4. Return Subscription with:
-           - expire_at: Set appropriate expiration time
-           - endpoint: The webhook endpoint from subscription_params
-           - data: All configuration and external IDs
+           - expires_at: Set appropriate expiration time
+           - endpoint: The webhook endpoint from parameters, injected by Dify
+           - parameters: The parameters of the subscription
+           - properties: All configuration and external IDs
 
         Args:
+            endpoint: The webhook endpoint URL allocated by Dify for receiving events
+
             credentials: Authentication credentials
-            subscription_params: Subscription parameters
+            parameters: Subscription parameters
 
         Returns:
             Subscription: Subscription details with metadata for future operations
@@ -237,7 +248,7 @@ class TriggerProvider:
 
         Args:
             subscription: The Subscription object returned from subscribe().
-                         Contains expire_at, endpoint, and data with all necessary information.
+                         Contains expires_at, endpoint, and properties with all necessary information.
 
             credentials: Authentication credentials for the external service.
                         Structure defined in provider's credentials_schema.
@@ -259,9 +270,9 @@ class TriggerProvider:
         Examples:
             Successful unsubscription:
             >>> subscription = Subscription(
-            ...     expire_at=1234567890,
+            ...     expires_at=1234567890,
             ...     endpoint="https://dify.ai/webhooks/sub_123",
-            ...     data={"external_id": "12345", "repository": "owner/repo"}
+            ...     properties={"external_id": "12345", "repository": "owner/repo"}
             ... )
             >>> result = provider.unsubscribe(
             ...     subscription=subscription,
@@ -288,14 +299,14 @@ class TriggerProvider:
         Subclasses must override this method to handle subscription removal.
 
         Implementation guidelines:
-        1. Extract necessary IDs from subscription.data (e.g., external_id)
+        1. Extract necessary IDs from subscription.properties (e.g., external_id)
         2. Use external service API to delete the webhook
         3. Handle common errors (not found, unauthorized, etc.)
         4. Always return Unsubscription with detailed status
         5. Never raise exceptions for operational failures - use Unsubscription.success=False
 
         Args:
-            subscription: The Subscription object with endpoint and data fields
+            subscription: The Subscription object with endpoint and properties fields
             credentials: Authentication credentials from credentials_schema
 
         Returns:
@@ -316,14 +327,14 @@ class TriggerProvider:
 
         This is a lightweight operation that simply extends the subscription's expiration time
         while keeping all settings and configuration unchanged. Use this when:
-        - A subscription is approaching expiration (check expire_at timestamp)
+        - A subscription is approaching expiration (check expires_at timestamp)
         - You want to keep the subscription active with the same settings
         - No configuration changes are needed
 
 
         Args:
             subscription: The current Subscription object to refresh.
-                         Contains expire_at and metadata with all configuration.
+                         Contains expires_at and properties with all configuration.
 
             credentials: Current authentication credentials for the external service.
                         Structure defined in provider's credentials_schema.
@@ -333,8 +344,8 @@ class TriggerProvider:
 
         Returns:
             Subscription: Refreshed subscription with:
-                         - expire_at: Extended expiration timestamp
-                         - metadata: Same metadata (configuration unchanged)
+                         - expires_at: Extended expiration timestamp
+                         - properties: Same properties (configuration unchanged)
 
         Raises:
             SubscriptionError: If refresh fails (e.g., invalid credentials, API errors)
@@ -343,9 +354,9 @@ class TriggerProvider:
         Examples:
             Refresh webhook subscription:
             >>> current_sub = Subscription(
-            ...     expire_at=1234567890,  # Expiring soon
+            ...     expires_at=1234567890,  # Expiring soon
             ...     endpoint="https://dify.ai/webhooks/sub_123",
-            ...     data={
+            ...     properties={
             ...         "external_id": "12345",
             ...         "events": ["push", "pull_request"],
             ...         "repository": "owner/repo"
@@ -355,20 +366,20 @@ class TriggerProvider:
             ...     subscription=current_sub,
             ...     credentials={"access_token": "ghp_abc123"}
             ... )
-            >>> print(result.expire_at)  # Extended timestamp
-            >>> print(result.data)  # Same configuration
+            >>> print(result.expires_at)  # Extended timestamp
+            >>> print(result.properties)  # Same configuration
 
             Refresh polling subscription:
             >>> current_sub = Subscription(
-            ...     expire_at=1234567890,
+            ...     expires_at=1234567890,
             ...     endpoint="https://dify.ai/webhooks/sub_456",
-            ...     data={"feed_url": "https://example.com/rss", "interval": 300}
+            ...     properties={"feed_url": "https://example.com/rss", "interval": 300}
             ... )
             >>> result = provider.refresh(
             ...     subscription=current_sub,
             ...     credentials={}
             ... )
-            >>> print(result.expire_at)  # Extended by default duration
+            >>> print(result.expires_at)  # Extended by default duration
         """
         return self._refresh(subscription, credentials)
 
@@ -385,7 +396,7 @@ class TriggerProvider:
            - Keep same external_id if possible
 
         2. For polling subscriptions:
-           - Simply extend the expire_at timestamp
+           - Simply extend the expires_at timestamp
            - No external API calls typically needed
 
         3. For lease-based subscriptions (e.g., Microsoft Graph):
@@ -393,7 +404,7 @@ class TriggerProvider:
            - Handle renewal limits (some services limit renewal count)
 
         Args:
-            subscription: Current subscription with metadata
+            subscription: Current subscription with properties
             credentials: Current authentication credentials from credentials_schema
 
         Returns:
@@ -434,7 +445,7 @@ class TriggerEvent(ABC):
     ############################################################
 
     @abstractmethod
-    def _trigger(self, request: Request, values: Mapping[str, Any], parameters: Mapping[str, Any]) -> TriggerEvent:
+    def _trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
         """
         Trigger the trigger with the given request.
 
@@ -457,11 +468,11 @@ class TriggerEvent(ABC):
     #                 For executor use only                    #
     ############################################################
 
-    def trigger(self, request: Request, values: Mapping[str, Any], parameters: Mapping[str, Any]) -> TriggerEvent:
+    def trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
         """
         Trigger the trigger with the given request.
         """
-        return self._trigger(request, values, parameters)
+        return self._trigger(request, parameters)
 
     def fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
         """

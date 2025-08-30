@@ -21,7 +21,6 @@ from dify_plugin.entities.trigger import TriggerConfiguration, TriggerProviderCo
 from dify_plugin.interfaces.agent import AgentStrategy
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model import ModelProvider
-from dify_plugin.interfaces.trigger import TriggerEvent, TriggerProvider
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from dify_plugin.interfaces.model.moderation_model import ModerationModel
@@ -30,6 +29,7 @@ from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
 from dify_plugin.interfaces.tool import Tool, ToolProvider
+from dify_plugin.interfaces.trigger import TriggerEvent, TriggerProvider
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
 T = TypeVar("T")

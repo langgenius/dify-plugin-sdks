@@ -9,10 +9,10 @@ from typing import Any
 import requests
 from werkzeug import Request, Response
 
-from dify_plugin.interfaces.trigger import TriggerProvider
-from dify_plugin.entities.trigger import TriggerEventDispatch, Subscription, Unsubscription
+from dify_plugin.entities.trigger import Subscription, TriggerDispatch, Unsubscription
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError, ToolProviderOAuthError
-from dify_plugin.errors.trigger import SubscriptionError, WebhookValidationError, TriggerDispatchError
+from dify_plugin.errors.trigger import SubscriptionError, TriggerDispatchError, WebhookValidationError
+from dify_plugin.interfaces.trigger import TriggerProvider
 
 
 class GithubProvider(TriggerProvider):
@@ -67,12 +67,12 @@ class GithubProvider(TriggerProvider):
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e)) from e
 
-    def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerEventDispatch:
+    def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
         """
         Dispatch GitHub webhook events - focusing on issue comment events
         """
         # Verify webhook signature if secret is provided
-        webhook_secret = subscription.configuration.get("webhook_secret")
+        webhook_secret = subscription.properties.get("webhook_secret")
         if webhook_secret:
             signature = request.headers.get("X-Hub-Signature-256")
             if not signature:
@@ -102,25 +102,30 @@ class GithubProvider(TriggerProvider):
         # Create trigger event dispatch with GitHub event type
         # Map GitHub events to our trigger events
         if event_type == "issue_comment":
-            return TriggerEventDispatch(event="issue_comment", response=response)
+            return TriggerDispatch(events=["issue_comment"], response=response)
         elif event_type == "issues":
-            return TriggerEventDispatch(event="issues", response=response)
+            # Issues event can trigger multiple workflows based on action
+            action = payload.get("action")
+            if action == "opened":
+                # Dispatch both generic issues event and specific opened event
+                return TriggerDispatch(events=["issues", "issues.opened"], response=response)
+            elif action == "closed":
+                return TriggerDispatch(events=["issues", "issues.closed"], response=response)
+            else:
+                return TriggerDispatch(events=["issues"], response=response)
         else:
             # For other events, pass them through with prefix
-            return TriggerEventDispatch(event=f"github.{event_type}", response=response)
+            return TriggerDispatch(events=[f"github.{event_type}"], response=response)
 
-    def _subscribe(self, credentials: Mapping[str, Any], subscription_params: Mapping[str, Any]) -> Subscription:
+    def _subscribe(self, endpoint: str, credentials: Mapping[str, Any], parameters: Mapping[str, Any]) -> Subscription:
         """
         Create a GitHub webhook subscription for issue comment events
         """
         # Extract parameters
-        endpoint = subscription_params.get("endpoint")
-        webhook_secret = subscription_params.get("webhook_secret")
-        repository = subscription_params.get("repository")  # format: "owner/repo"
-        events = subscription_params.get("events", ["issue_comment", "issues"])
+        webhook_secret = parameters.get("webhook_secret")
+        repository = parameters.get("repository")  # format: "owner/repo"
+        events = parameters.get("events", ["issue_comment", "issues"])
 
-        if not endpoint:
-            raise ValueError("endpoint is required for webhook subscription")
         if not repository:
             raise ValueError("repository is required (format: owner/repo)")
 
@@ -154,9 +159,9 @@ class GithubProvider(TriggerProvider):
                 webhook = response.json()
                 # Return subscription with webhook details
                 return Subscription(
-                    expire_at=int(time.time()) + 30 * 24 * 60 * 60,  # 30 days expiration
+                    expires_at=int(time.time()) + 30 * 24 * 60 * 60,  # 30 days expiration
                     endpoint=endpoint,
-                    configuration={
+                    properties={
                         "external_id": str(webhook["id"]),
                         "webhook_url": webhook["url"],
                         "repository": repository,
@@ -175,17 +180,17 @@ class GithubProvider(TriggerProvider):
         except requests.RequestException as e:
             raise SubscriptionError(f"Network error while creating webhook: {e}", error_code="NETWORK_ERROR")
 
-    def _unsubscribe(self, subscription: Subscription, credentials: Mapping[str, Any]) -> Unsubscription:
+    def _unsubscribe(self, endpoint: str, subscription: Subscription, credentials: Mapping[str, Any]) -> Unsubscription:
         """
         Remove a GitHub webhook subscription
         """
-        # Extract webhook details from data
-        external_id = subscription.configuration.get("external_id")
-        repository = subscription.configuration.get("repository")
+        # Extract webhook details from properties
+        external_id = subscription.properties.get("external_id")
+        repository = subscription.properties.get("repository")
 
         if not external_id or not repository:
             return Unsubscription(
-                success=False, message="Missing webhook ID or repository information", error_code="MISSING_DATA"
+                success=False, message="Missing webhook ID or repository information", error_code="MISSING_PROPERTIES"
             )
 
         # Parse repository
@@ -193,7 +198,7 @@ class GithubProvider(TriggerProvider):
             owner, repo = repository.split("/")
         except ValueError:
             return Unsubscription(
-                success=False, message="Invalid repository format in data", error_code="INVALID_REPOSITORY"
+                success=False, message="Invalid repository format in properties", error_code="INVALID_REPOSITORY"
             )
 
         # Delete webhook using GitHub API
@@ -227,7 +232,7 @@ class GithubProvider(TriggerProvider):
                 success=False, message=f"Network error while deleting webhook: {e}", error_code="NETWORK_ERROR"
             )
 
-    def _refresh(self, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
+    def _refresh(self, endpoint: str, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
         """
         Refresh a GitHub webhook subscription (extend expiration)
         GitHub webhooks don't expire, so we just extend our internal expiration
@@ -235,7 +240,7 @@ class GithubProvider(TriggerProvider):
         # Simply return the subscription with extended expiration
         # GitHub webhooks don't have built-in expiration
         return Subscription(
-            expire_at=int(time.time()) + 30 * 24 * 60 * 60,  # Extend by 30 days
-            endpoint=subscription.endpoint,  # Keep the same endpoint
-            configuration=subscription.configuration,  # Keep the same data
+            expires_at=int(time.time()) + 30 * 24 * 60 * 60,  # Extend by 30 days
+            endpoint=endpoint,  # Keep the same endpoint
+            properties=subscription.properties,  # Keep the same properties
         )

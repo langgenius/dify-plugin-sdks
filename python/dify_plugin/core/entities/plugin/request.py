@@ -300,10 +300,16 @@ class TriggerInvokeRequest(BaseModel):
     provider: str
     trigger: str
     credentials: dict
+    credential_type: CredentialType = CredentialType.API_KEY
     user_id: str
-    request: dict
-    values: dict
+    raw_http_request: str
     parameters: dict
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerInvokeResponse(BaseModel):
+    event: dict
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -322,9 +328,16 @@ class TriggerDispatchEventRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Trigger
     action: TriggerActions = TriggerActions.DispatchTriggerEvent
     provider: str
-    settings: dict
-    request: dict
+    subscription: dict
+    raw_http_request: str
     user_id: str
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerDispatchResponse(BaseModel):
+    triggers: list[str]
+    raw_http_response: str
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -334,8 +347,15 @@ class TriggerSubscribeRequest(BaseModel):
     action: TriggerActions = TriggerActions.SubscribeTrigger
     provider: str
     credentials: dict
+    endpoint: str
     parameters: dict
     user_id: str
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerSubscriptionResponse(BaseModel):
+    subscription: dict
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -351,6 +371,12 @@ class TriggerUnsubscribeRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
 
+class TriggerUnsubscribeResponse(BaseModel):
+    subscription: dict
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
 class TriggerRefreshRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Trigger
     action: TriggerActions = TriggerActions.RefreshTrigger
@@ -358,5 +384,11 @@ class TriggerRefreshRequest(BaseModel):
     subscription: dict  # Subscription object serialized as dict
     credentials: dict  # From credentials_schema
     user_id: str
+
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class TriggerRefreshResponse(BaseModel):
+    subscription: dict
 
     model_config = ConfigDict(protected_namespaces=())

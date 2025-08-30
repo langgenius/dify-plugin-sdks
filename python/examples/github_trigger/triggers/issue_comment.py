@@ -3,8 +3,8 @@ from typing import Any
 
 from werkzeug import Request
 
+from dify_plugin.entities.trigger import Event
 from dify_plugin.interfaces.trigger import TriggerEvent
-from dify_plugin.entities.trigger import TriggerEvent as TriggerEventResponse
 
 
 class IssueCommentTrigger(TriggerEvent):
@@ -15,10 +15,10 @@ class IssueCommentTrigger(TriggerEvent):
     from the webhook payload to provide as variables to the workflow.
     """
 
-    def _trigger(self, request: Request, values: Mapping[str, Any], parameters: Mapping[str, Any]) -> TriggerEventResponse:
+    def _trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
         """
         Handle GitHub issue comment event trigger
-        
+
         Parameters:
         - action_filter: Filter by action type (created, edited, deleted, or any)
         - issue_filter: Filter by specific issue number (optional)
@@ -30,19 +30,19 @@ class IssueCommentTrigger(TriggerEvent):
 
         # Extract action type
         action = payload.get("action", "")
-        
+
         # Apply action filter if specified
         action_filter = parameters.get("action_filter", "any")
         if action_filter != "any" and action != action_filter:
             # Skip this event if it doesn't match the filter
             return TriggerEventResponse(variables={})
-        
+
         # Extract issue comment information
         comment = payload.get("comment", {})
         issue = payload.get("issue", {})
         repository = payload.get("repository", {})
         sender = payload.get("sender", {})
-        
+
         # Apply issue number filter if specified
         issue_filter = parameters.get("issue_filter")
         if issue_filter is not None:
@@ -50,20 +50,20 @@ class IssueCommentTrigger(TriggerEvent):
             if issue_number != int(issue_filter):
                 # Skip this event if it doesn't match the issue filter
                 return TriggerEventResponse(variables={})
-        
+
         # Check if this is a pull request
         is_pull_request = "pull_request" in issue
-        
+
         # Extract labels
         labels = [
             {
                 "name": label.get("name", ""),
                 "color": label.get("color", ""),
-                "description": label.get("description", "")
+                "description": label.get("description", ""),
             }
             for label in issue.get("labels", [])
         ]
-        
+
         # Build variables for the workflow
         variables = {
             "action": action,
@@ -76,8 +76,8 @@ class IssueCommentTrigger(TriggerEvent):
                 "author": {
                     "login": comment.get("user", {}).get("login", ""),
                     "avatar_url": comment.get("user", {}).get("avatar_url", ""),
-                    "html_url": comment.get("user", {}).get("html_url", "")
-                }
+                    "html_url": comment.get("user", {}).get("html_url", ""),
+                },
             },
             "issue": {
                 "number": issue.get("number"),
@@ -94,10 +94,10 @@ class IssueCommentTrigger(TriggerEvent):
                     {
                         "login": assignee.get("login", ""),
                         "avatar_url": assignee.get("avatar_url", ""),
-                        "html_url": assignee.get("html_url", "")
+                        "html_url": assignee.get("html_url", ""),
                     }
                     for assignee in issue.get("assignees", [])
-                ]
+                ],
             },
             "repository": {
                 "name": repository.get("name", ""),
@@ -108,15 +108,15 @@ class IssueCommentTrigger(TriggerEvent):
                 "owner": {
                     "login": repository.get("owner", {}).get("login", ""),
                     "avatar_url": repository.get("owner", {}).get("avatar_url", ""),
-                    "html_url": repository.get("owner", {}).get("html_url", "")
-                }
+                    "html_url": repository.get("owner", {}).get("html_url", ""),
+                },
             },
             "sender": {
                 "login": sender.get("login", ""),
                 "avatar_url": sender.get("avatar_url", ""),
                 "html_url": sender.get("html_url", ""),
-                "type": sender.get("type", "")
-            }
+                "type": sender.get("type", ""),
+            },
         }
 
         return TriggerEventResponse(variables=variables)
