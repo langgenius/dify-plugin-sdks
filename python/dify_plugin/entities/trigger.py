@@ -308,11 +308,6 @@ class Subscription(BaseModel):
 
     endpoint: str = Field(..., description="The webhook endpoint URL allocated by Dify for receiving events")
 
-    parameters: Mapping[str, Any] | None = Field(
-        default=None,
-        description="""The parameters of the subscription, this is the creation parameters.
-        Only available when creating a new subscription by credentials(auto subscription), not manual subscription""",
-    )
     properties: Mapping[str, Any] = Field(
         ..., description="Subscription data containing all properties and provider-specific information"
     )
