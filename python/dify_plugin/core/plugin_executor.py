@@ -41,7 +41,7 @@ from dify_plugin.core.entities.plugin.request import (
 )
 from dify_plugin.core.plugin_registration import PluginRegistration
 from dify_plugin.core.runtime import Session
-from dify_plugin.core.utils.http_parser import convert_response_to_raw_data, parse_raw_request
+from dify_plugin.core.utils.http_parser import deserialize_request, serialize_response
 from dify_plugin.entities.agent import AgentRuntime
 from dify_plugin.entities.tool import ToolRuntime
 from dify_plugin.entities.trigger import Subscription, TriggerRuntime
@@ -295,7 +295,7 @@ class PluginExecutor:
 
     def invoke_endpoint(self, session: Session, data: EndpointInvokeRequest):
         bytes_data = binascii.unhexlify(data.raw_http_request)
-        request = parse_raw_request(bytes_data)
+        request = deserialize_request(bytes_data)
 
         try:
             # dispatch request
@@ -360,7 +360,7 @@ class PluginExecutor:
     def get_oauth_credentials(self, session: Session, data: OAuthGetCredentialsRequest):
         provider_instance = self._get_oauth_provider_instance(data.provider)
         bytes_data = binascii.unhexlify(data.raw_http_request)
-        request = parse_raw_request(bytes_data)
+        request = deserialize_request(bytes_data)
 
         credentials = provider_instance.oauth_get_credentials(data.redirect_uri, data.system_credentials, request)
 
@@ -424,7 +424,7 @@ class PluginExecutor:
             session_id=session.session_id,
         )
         trigger = trigger_cls(runtime=trigger_runtime, session=session)
-        event = trigger.trigger(parse_raw_request(binascii.unhexlify(request.raw_http_request)), request.parameters)
+        event = trigger.trigger(deserialize_request(binascii.unhexlify(request.raw_http_request)), request.parameters)
         return TriggerInvokeResponse(
             event=event.model_dump(),
         )
@@ -453,10 +453,10 @@ class PluginExecutor:
         bytes_data = binascii.unhexlify(request.raw_http_request)
         provider_instance = trigger_provider_cls()
         subscription = Subscription(**request.subscription)
-        dispatch_result = provider_instance.dispatch_event(subscription, parse_raw_request(bytes_data))
+        dispatch_result = provider_instance.dispatch_event(subscription, deserialize_request(bytes_data))
         return TriggerDispatchResponse(
             triggers=dispatch_result.triggers,
-            raw_http_response=binascii.hexlify(convert_response_to_raw_data(dispatch_result.response)).decode(),
+            raw_http_response=binascii.hexlify(serialize_response(dispatch_result.response)).decode(),
         )
 
     def subscribe_trigger(self, session: Session, request: TriggerSubscribeRequest) -> TriggerSubscriptionResponse:
