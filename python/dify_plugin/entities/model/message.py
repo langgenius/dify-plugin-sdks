@@ -14,6 +14,7 @@ class PromptMessageRole(Enum):
     USER = "user"
     ASSISTANT = "assistant"
     TOOL = "tool"
+    DEVELOPER = "developer"
 
     @classmethod
     def value_of(cls, value: str) -> "PromptMessageRole":
@@ -83,6 +84,7 @@ class MultiModalPromptMessageContent(PromptMessageContent):
     base64_data: str = Field(default="", description="the base64 data of multi-modal file")
     url: str = Field(default="", description="the url of multi-modal file")
     mime_type: str = Field(default=..., description="the mime type of multi-modal file")
+    filename: str = Field(default="", description="the filename of multi-modal file")
 
     @property
     def data(self):
@@ -239,6 +241,14 @@ class SystemPromptMessage(PromptMessage):
     """
 
     role: PromptMessageRole = PromptMessageRole.SYSTEM
+
+
+class DeveloperPromptMessage(PromptMessage):
+    """
+    Model class for developer prompt message.
+    """
+
+    role: PromptMessageRole = PromptMessageRole.DEVELOPER
 
 
 class ToolPromptMessage(PromptMessage):
