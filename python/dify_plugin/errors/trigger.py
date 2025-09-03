@@ -34,7 +34,7 @@ class SubscriptionError(TriggerError):
         self.external_response = external_response
 
 
-class WebhookValidationError(TriggerError):
+class TriggerValidationError(TriggerError):
     """
     Raised when webhook signature validation fails.
 

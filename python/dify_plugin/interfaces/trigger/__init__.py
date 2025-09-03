@@ -8,17 +8,20 @@ from dify_plugin.core.runtime import Session
 from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
 from dify_plugin.entities.trigger import (
-    Subscription,
     Event,
+    Subscription,
     TriggerDispatch,
     TriggerRuntime,
     Unsubscription,
 )
-from dify_plugin.errors.trigger import (
-    SubscriptionError,
-    TriggerDispatchError,
-    WebhookValidationError,
-)
+from dify_plugin.errors.trigger import SubscriptionError, TriggerDispatchError
+
+__all__ = [
+    "SubscriptionError",
+    "TriggerDispatchError",
+    "TriggerEvent",
+    "TriggerProvider",
+]
 
 
 class TriggerProvider:
@@ -96,7 +99,7 @@ class TriggerProvider:
                                 - response: HTTP response to return to the webhook caller
 
         Raises:
-            WebhookValidationError: If signature validation fails
+            TriggerValidationError: If signature validation fails
             TriggerDispatchError: If event cannot be parsed or routed
 
         Example:
@@ -105,7 +108,7 @@ class TriggerProvider:
             ...     # Validate signature using subscription properties
             ...     secret = subscription.properties.get("webhook_secret")
             ...     if not self._validate_signature(request, secret):
-            ...         raise WebhookValidationError("Invalid signature")
+            ...         raise TriggerValidationError("Invalid signature")
             ...
             ...     # Determine event type
             ...     event_type = request.headers.get("X-GitHub-Event")
@@ -149,7 +152,7 @@ class TriggerProvider:
             TriggerDispatch: Trigger routing information
 
         Raises:
-            WebhookValidationError: For security validation failures
+            TriggerValidationError: For security validation failures
             TriggerDispatchError: For parsing or routing errors
         """
         raise NotImplementedError("This plugin should implement `_dispatch_event` method to enable event dispatch")

@@ -6,13 +6,13 @@ import urllib.parse
 from collections.abc import Mapping
 from typing import Any
 
-from dify_plugin.entities import I18nObject, ParameterOption
 import requests
 from werkzeug import Request, Response
 
+from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.trigger import Subscription, TriggerDispatch, Unsubscription
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError, ToolProviderOAuthError
-from dify_plugin.errors.trigger import SubscriptionError, TriggerDispatchError, WebhookValidationError
+from dify_plugin.errors.trigger import SubscriptionError, TriggerDispatchError, TriggerValidationError
 from dify_plugin.interfaces.trigger import TriggerProvider
 
 
@@ -77,7 +77,7 @@ class GithubProvider(TriggerProvider):
         if webhook_secret:
             signature = request.headers.get("X-Hub-Signature-256")
             if not signature:
-                raise WebhookValidationError("Missing webhook signature")
+                raise TriggerValidationError("Missing webhook signature")
 
             # Verify the signature
             expected_signature = (
@@ -85,7 +85,7 @@ class GithubProvider(TriggerProvider):
             )
 
             if not hmac.compare_digest(signature, expected_signature):
-                raise WebhookValidationError("Invalid webhook signature")
+                raise TriggerValidationError("Invalid webhook signature")
 
         event_type = request.headers.get("X-GitHub-Event")
         if not event_type:
@@ -96,7 +96,7 @@ class GithubProvider(TriggerProvider):
             if not payload:
                 raise TriggerDispatchError("Empty request body")
         except Exception as e:
-            raise TriggerDispatchError(f"Failed to parse JSON payload: {e}")
+            raise TriggerDispatchError(f"Failed to parse JSON payload: {e}") from e
 
         response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
 
@@ -134,7 +134,7 @@ class GithubProvider(TriggerProvider):
         try:
             owner, repo = repository.split("/")
         except ValueError:
-            raise ValueError("repository must be in format 'owner/repo'")
+            raise ValueError("repository must be in format 'owner/repo'") from None
 
         # Create webhook using GitHub API
         url = f"https://api.github.com/repos/{owner}/{repo}/hooks"
@@ -179,7 +179,7 @@ class GithubProvider(TriggerProvider):
                     external_response=response.json(),
                 )
         except requests.RequestException as e:
-            raise SubscriptionError(f"Network error while creating webhook: {e}", error_code="NETWORK_ERROR")
+            raise SubscriptionError(f"Network error while creating webhook: {e}", error_code="NETWORK_ERROR") from e
 
     def _unsubscribe(self, endpoint: str, subscription: Subscription, credentials: Mapping[str, Any]) -> Unsubscription:
         """

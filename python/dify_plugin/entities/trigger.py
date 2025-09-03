@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from enum import StrEnum
+from enum import Enum, StrEnum
 from typing import Any, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -94,6 +94,10 @@ class TriggerParameter(BaseModel):
     description: I18nObject | None = None
 
 
+class TriggerLabelEnum(Enum):
+    WEBHOOKS = "webhooks"
+
+
 @docs(
     description="The identity of the trigger provider",
 )
@@ -108,7 +112,7 @@ class TriggerProviderIdentity(BaseModel):
     description: I18nObject = Field(..., description="The description of the trigger provider")
     icon: str | None = Field(default=None, description="The icon of the trigger provider")
     icon_dark: str | None = Field(default=None, description="The dark mode icon of the trigger provider")
-    tags: list[str] = Field(default_factory=list, description="The tags of the trigger provider")
+    tags: list[TriggerLabelEnum] = Field(default_factory=list, description="The tags of the trigger provider")
 
 
 @docs(

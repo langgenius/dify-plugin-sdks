@@ -1,4 +1,5 @@
 from werkzeug import Response
+
 from dify_plugin.core.utils.http_parser import (
     convert_request_to_raw_data,
     convert_response_to_raw_data,
@@ -166,12 +167,12 @@ def test_json_request_parsing():
         b"\r\n"
         b'{"name": "test", "value": 123, "active": true}'
     )
-    
+
     request = parse_raw_request(raw_request)
     assert request.method == "POST"
     assert request.path == "/api/data"
     assert request.content_type == "application/json"
-    
+
     # Verify JSON parsing works
     json_data = request.get_json()
     assert json_data == {"name": "test", "value": 123, "active": True}
@@ -180,22 +181,19 @@ def test_json_request_parsing():
 def test_json_request_conversion():
     # Test converting JSON request to raw and back
     from werkzeug.test import EnvironBuilder
-    
+
     json_data = {"user": "alice", "action": "update", "items": [1, 2, 3]}
     builder = EnvironBuilder(
-        method="PUT",
-        path="/api/users/123",
-        json=json_data,
-        headers={"Authorization": "Bearer token123"}
+        method="PUT", path="/api/users/123", json=json_data, headers={"Authorization": "Bearer token123"}
     )
     original_request = builder.get_request()
-    
+
     # Convert to raw
     raw_data = convert_request_to_raw_data(original_request)
-    
+
     # Parse back
     parsed_request = parse_raw_request(raw_data)
-    
+
     # Verify
     assert parsed_request.method == "PUT"
     assert parsed_request.path == "/api/users/123"
@@ -213,13 +211,14 @@ def test_json_response_parsing():
         b"\r\n"
         b'{"status": "success", "data": {"id": 1, "ok": true}}'
     )
-    
+
     response = parse_raw_response(raw_response)
     assert response.status_code == 200
     assert response.content_type == "application/json"
-    
+
     # Verify JSON parsing
     import json
+
     json_data = json.loads(response.get_data(as_text=True))
     assert json_data == {"status": "success", "data": {"id": 1, "ok": True}}
     assert response.headers.get("X-Request-Id") == "abc123"
@@ -234,11 +233,11 @@ def test_form_urlencoded_request():
         b"\r\n"
         b"name=John+Doe&email=john%40example.com"
     )
-    
+
     request = parse_raw_request(raw_request)
     assert request.method == "POST"
     assert request.content_type == "application/x-www-form-urlencoded"
-    
+
     # Verify form parsing
     assert request.form.get("name") == "John Doe"
     assert request.form.get("email") == "john@example.com"
@@ -247,17 +246,14 @@ def test_form_urlencoded_request():
 def test_query_string_handling():
     # Test request with query string
     raw_request = (
-        b"GET /search?q=test&page=2&limit=10 HTTP/1.1\r\n"
-        b"Host: example.com\r\n"
-        b"Accept: application/json\r\n"
-        b"\r\n"
+        b"GET /search?q=test&page=2&limit=10 HTTP/1.1\r\nHost: example.com\r\nAccept: application/json\r\n\r\n"
     )
-    
+
     request = parse_raw_request(raw_request)
     assert request.method == "GET"
     assert request.path == "/search"
     assert request.query_string == b"q=test&page=2&limit=10"
-    
+
     # Verify query parameters
     assert request.args.get("q") == "test"
     assert request.args.get("page") == "2"

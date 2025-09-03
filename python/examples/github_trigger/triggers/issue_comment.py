@@ -33,9 +33,9 @@ class IssueCommentTrigger(TriggerEvent):
 
         # Apply action filter if specified
         action_filter = parameters.get("action_filter", "any")
-        if action_filter != "any" and action != action_filter:
+        if action_filter not in ("any", action):
             # Skip this event if it doesn't match the filter
-            return TriggerEventResponse(variables={})
+            return Event(variables={})
 
         # Extract issue comment information
         comment = payload.get("comment", {})
@@ -49,7 +49,7 @@ class IssueCommentTrigger(TriggerEvent):
             issue_number = issue.get("number")
             if issue_number != int(issue_filter):
                 # Skip this event if it doesn't match the issue filter
-                return TriggerEventResponse(variables={})
+                return Event(variables={})
 
         # Check if this is a pull request
         is_pull_request = "pull_request" in issue
@@ -119,4 +119,4 @@ class IssueCommentTrigger(TriggerEvent):
             },
         }
 
-        return TriggerEventResponse(variables=variables)
+        return Event(variables=variables)

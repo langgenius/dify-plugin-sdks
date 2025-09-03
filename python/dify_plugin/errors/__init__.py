@@ -1,3 +1,3 @@
-from .trigger import SubscriptionError, TriggerDispatchError, TriggerError, WebhookValidationError
+from .trigger import SubscriptionError, TriggerDispatchError, TriggerError, TriggerValidationError
 
-__all__ = ["SubscriptionError", "TriggerDispatchError", "TriggerError", "WebhookValidationError"]
+__all__ = ["SubscriptionError", "TriggerDispatchError", "TriggerError", "TriggerValidationError"]
