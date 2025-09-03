@@ -1,15 +1,15 @@
 from werkzeug import Response
 
 from dify_plugin.core.utils.http_parser import (
-    convert_request_to_raw_data,
-    convert_response_to_raw_data,
-    parse_raw_request,
-    parse_raw_response,
+    deserialize_request,
+    deserialize_response,
+    serialize_request,
+    serialize_response,
 )
 
 
 def test_parse_raw_request():
-    request = parse_raw_request(
+    request = deserialize_request(
         b"GET / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2\r\nAccept: */*\r\n\r\n"
     )
     assert request.method == "GET"
@@ -21,7 +21,7 @@ def test_parse_raw_request():
 
 
 def test_parse_raw_request_with_body():
-    request = parse_raw_request(
+    request = deserialize_request(
         b"POST / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2"
         b"\r\nAccept: */*\r\nContent-Length: 13\r\n\r\n"
         b"Hello, World!"
@@ -32,7 +32,7 @@ def test_parse_raw_request_with_body():
 
 
 def test_parse_raw_request_with_body_and_headers():
-    request = parse_raw_request(
+    request = deserialize_request(
         b"POST / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2"
         b"\r\nAccept: */*\r\nContent-Length: 13\r\n\r\n"
         b"Hello, World!"
@@ -46,13 +46,13 @@ def test_parse_raw_request_with_body_and_headers():
 
 
 def test_convert_request_to_raw_data():
-    request = parse_raw_request(
+    request = deserialize_request(
         b"POST / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2"
         b"\r\nAccept: */*\r\nContent-Length: 13\r\n\r\n"
         b"Hello, World!"
     )
-    raw_data = convert_request_to_raw_data(request)
-    request = parse_raw_request(raw_data)
+    raw_data = serialize_request(request)
+    request = deserialize_request(raw_data)
     assert request.method == "POST"
     assert request.path == "/"
     assert request.data == b"Hello, World!"
@@ -70,7 +70,7 @@ def test_parse_raw_response():
         b"\r\n"
         b'{"status": "success", "data": "test"}'
     )
-    response = parse_raw_response(raw_response)
+    response = deserialize_response(raw_response)
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/json"
     assert response.headers["X-Custom-Header"] == "test-value"
@@ -80,7 +80,7 @@ def test_parse_raw_response():
 
 def test_parse_raw_response_no_body():
     raw_response = b"HTTP/1.1 204 No Content\r\nX-Custom-Header: test-value\r\n\r\n"
-    response = parse_raw_response(raw_response)
+    response = deserialize_response(raw_response)
     assert response.status_code == 204
     assert response.headers["X-Custom-Header"] == "test-value"
     assert response.get_data() == b""
@@ -88,7 +88,7 @@ def test_parse_raw_response_no_body():
 
 def test_parse_raw_response_with_error():
     raw_response = b"HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: 9\r\n\r\nNot Found"
-    response = parse_raw_response(raw_response)
+    response = deserialize_response(raw_response)
     assert response.status_code == 404
     assert response.headers["Content-Type"] == "text/plain"
     assert response.get_data() == b"Not Found"
@@ -106,10 +106,10 @@ def test_convert_response_to_raw_data():
     )
 
     # Convert to raw data
-    raw_data = convert_response_to_raw_data(original_response)
+    raw_data = serialize_response(original_response)
 
     # Parse back
-    parsed_response = parse_raw_response(raw_data)
+    parsed_response = deserialize_response(raw_data)
 
     # Verify
     assert parsed_response.status_code == original_response.status_code
@@ -125,10 +125,10 @@ def test_convert_response_to_raw_data_no_body():
     original_response.headers["X-Custom-Header"] = "test-value"
 
     # Convert to raw data
-    raw_data = convert_response_to_raw_data(original_response)
+    raw_data = serialize_response(original_response)
 
     # Parse back
-    parsed_response = parse_raw_response(raw_data)
+    parsed_response = deserialize_response(raw_data)
 
     # Verify
     assert parsed_response.status_code == 204
@@ -150,8 +150,8 @@ def test_response_round_trip():
     ]
 
     for original_response in test_cases:
-        raw_data = convert_response_to_raw_data(original_response)
-        parsed_response = parse_raw_response(raw_data)
+        raw_data = serialize_response(original_response)
+        parsed_response = deserialize_response(raw_data)
 
         assert parsed_response.status_code == original_response.status_code
         assert parsed_response.get_data() == original_response.get_data()
@@ -168,7 +168,7 @@ def test_json_request_parsing():
         b'{"name": "test", "value": 123, "active": true}'
     )
 
-    request = parse_raw_request(raw_request)
+    request = deserialize_request(raw_request)
     assert request.method == "POST"
     assert request.path == "/api/data"
     assert request.content_type == "application/json"
@@ -189,10 +189,10 @@ def test_json_request_conversion():
     original_request = builder.get_request()
 
     # Convert to raw
-    raw_data = convert_request_to_raw_data(original_request)
+    raw_data = serialize_request(original_request)
 
     # Parse back
-    parsed_request = parse_raw_request(raw_data)
+    parsed_request = deserialize_request(raw_data)
 
     # Verify
     assert parsed_request.method == "PUT"
@@ -212,7 +212,7 @@ def test_json_response_parsing():
         b'{"status": "success", "data": {"id": 1, "ok": true}}'
     )
 
-    response = parse_raw_response(raw_response)
+    response = deserialize_response(raw_response)
     assert response.status_code == 200
     assert response.content_type == "application/json"
 
@@ -234,7 +234,7 @@ def test_form_urlencoded_request():
         b"name=John+Doe&email=john%40example.com"
     )
 
-    request = parse_raw_request(raw_request)
+    request = deserialize_request(raw_request)
     assert request.method == "POST"
     assert request.content_type == "application/x-www-form-urlencoded"
 
@@ -249,7 +249,7 @@ def test_query_string_handling():
         b"GET /search?q=test&page=2&limit=10 HTTP/1.1\r\nHost: example.com\r\nAccept: application/json\r\n\r\n"
     )
 
-    request = parse_raw_request(raw_request)
+    request = deserialize_request(raw_request)
     assert request.method == "GET"
     assert request.path == "/search"
     assert request.query_string == b"q=test&page=2&limit=10"

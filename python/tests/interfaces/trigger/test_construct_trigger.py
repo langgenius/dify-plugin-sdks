@@ -7,7 +7,7 @@ from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 from dify_plugin.entities.trigger import Event, TriggerRuntime
-from dify_plugin.interfaces.trigger import Trigger
+from dify_plugin.interfaces.trigger import TriggerEvent
 
 
 def test_construct_trigger():
@@ -19,7 +19,7 @@ def test_construct_trigger():
     - And ensure a breaking change will be detected by CI.
     """
 
-    class TriggerImpl(Trigger):
+    class TriggerImpl(TriggerEvent):
         def _trigger(self, request: Request, parameters: Mapping) -> Event:
             return Event(properties={})
 
