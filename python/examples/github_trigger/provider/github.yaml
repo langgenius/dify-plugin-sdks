@@ -58,20 +58,22 @@ oauth_schema:
 subscription_schema:
   parameters_schema:
     - name: "repository"
-      type: "text-input"
-      required: true
       label:
-        zh_Hans: "仓库"
         en_US: "Repository"
+        zh_Hans: "仓库"
+        pt_BR: "Repositório"
+      type: "dynamic-select"
+      required: true
       placeholder:
-        zh_Hans: "owner/repo"
         en_US: "owner/repo"
+        zh_Hans: "owner/repo"
+        pt_BR: "owner/repo"
       help:
         en_US: "GitHub repository in format owner/repo (e.g., microsoft/vscode)"
-        pt_BR: "Repositório do GitHub no formato owner/repo (ex: microsoft/vscode)"
         zh_Hans: "GitHub 仓库，格式为 owner/repo（例如：microsoft/vscode）"
+        pt_BR: "Repositório do GitHub no formato owner/repo (ex: microsoft/vscode)"
     - name: "events"
-      type: "select"
+      type: "dynamic-select"
       required: true
       default: ["issue_comment", "issues"]
       options:
@@ -126,11 +128,7 @@ identity:
     en_US: GitHub Triggers
     pt_BR: GitHub Triggers
     zh_Hans: GitHub 触发器
-  name: github
-  tags:
-    - utilities
-    - webhooks
-    - triggers
+  name: github_trigger
 
 extra:
   python:

@@ -391,7 +391,13 @@ class PluginExecutor:
         :param data: data
         :return: dynamic parameter provider class
         """
-        # get trigger
+        # now we don't support tool and trigger at the same time
+        # if provider_action is not provided, get trigger provider
+        if not data.provider_action:
+            trigger_provider_cls = self.registration.get_trigger_provider_cls(data.provider)
+            if trigger_provider_cls:
+                return trigger_provider_cls()
+
         trigger_cls = self.registration.get_trigger_cls(data.provider, data.provider_action)
         if trigger_cls is not None:
             return trigger_cls(

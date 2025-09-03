@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any
 from urllib.parse import quote
 
+from dify_plugin.entities import I18nObject, ParameterOption
 import requests
 
 from dify_plugin import Tool
@@ -78,3 +79,17 @@ class GithubRepositoriesTool(Tool):
                 yield self.create_text_message(response.json().get("message"))
         except Exception as e:
             yield self.create_text_message(f"GitHub API Key and Api Version is invalid. {e}")
+
+    def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        return [
+            ParameterOption(
+                value="iamjoel",
+                label=I18nObject(en_US="Joel"),
+                icon="https://avatars.githubusercontent.com/u/2120155?s=40&v=4",
+            ),
+            ParameterOption(
+                value="yeuoly",
+                label=I18nObject(en_US="Yeuoly"),
+                icon="https://avatars.githubusercontent.com/u/45712896?s=60&v=4",
+            ),
+        ]

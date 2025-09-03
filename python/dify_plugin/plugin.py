@@ -216,7 +216,7 @@ class Plugin(IOServer, Router):
         for trigger_provider in self.registration.triggers_configuration:
             logger.info(f"Installed trigger provider: {trigger_provider.identity.name}")
             for trigger in trigger_provider.triggers:
-                logger.info(f"  - Trigger: {trigger.identity.name}")
+                logger.info(f"  - Installed Trigger: {trigger.identity.name}")
 
     def _register_request_routes(self):
         """

@@ -19,9 +19,9 @@ meta:
     entrypoint: main
     language: python
     version: "3.12"
-  version: 0.2.7
+  version: 0.0.1
   minimum_dify_version: 1.7.0
-name: github
+name: github_trigger
 plugins:
   triggers:
     - provider/github.yaml
@@ -36,4 +36,4 @@ resource:
 tags:
   - utilities
 type: plugin
-version: 0.2.7
+version: 0.0.1

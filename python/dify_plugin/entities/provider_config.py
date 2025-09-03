@@ -123,3 +123,4 @@ class ProviderConfig(BaseModel):
 class CredentialType(Enum):
     API_KEY = "api-key"
     OAUTH = "oauth2"
+    UNAUTHORIZED = "unauthorized"

@@ -286,6 +286,7 @@ class DynamicParameterFetchParameterOptionsRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.DynamicParameter
     action: DynamicParameterActions = DynamicParameterActions.FetchParameterOptions
     credentials: dict
+    credential_type: CredentialType = CredentialType.API_KEY
     provider: str
     provider_action: str
     user_id: str

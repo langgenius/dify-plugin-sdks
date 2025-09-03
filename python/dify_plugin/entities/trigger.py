@@ -86,7 +86,7 @@ class TriggerParameter(BaseModel):
     template: ParameterTemplate | None = Field(default=None, description="The template of the parameter")
     scope: str | None = None
     required: bool | None = False
-    default: Union[int, float, str] | None = None
+    default: Union[int, float, str, list] | None = None
     min: Union[float, int] | None = None
     max: Union[float, int] | None = None
     precision: int | None = None
@@ -107,6 +107,7 @@ class TriggerProviderIdentity(BaseModel):
     label: I18nObject = Field(..., description="The label of the trigger provider")
     description: I18nObject = Field(..., description="The description of the trigger provider")
     icon: str | None = Field(default=None, description="The icon of the trigger provider")
+    icon_dark: str | None = Field(default=None, description="The dark mode icon of the trigger provider")
     tags: list[str] = Field(default_factory=list, description="The tags of the trigger provider")
 
 
@@ -198,7 +199,7 @@ class SubscriptionSchema(BaseModel):
     The subscription schema of the trigger provider
     """
 
-    parameters_schema: list[ProviderConfig] | None = Field(
+    parameters_schema: list[TriggerParameter] | None = Field(
         default_factory=list,
         description="The parameters schema required to create a subscription",
     )
