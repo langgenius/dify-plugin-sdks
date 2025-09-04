@@ -1,5 +1,6 @@
 import sys
 from collections.abc import Generator
+from io import BytesIO
 from typing import Any
 
 from gevent.os import tp_read
@@ -23,24 +24,35 @@ class StdioRequestReader(RequestReader):
         return tp_read(sys.stdin.fileno(), 65536)
 
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
-        buffer = b""
+        buffer = BytesIO()
+
         while True:
             data = self._read_async()
             if not data:
                 continue
 
-            buffer += data
+            # Write new data to buffer
+            buffer.write(data)
 
-            # if no b"\n" is in data, skip to the next iteration
-            if data.find(b"\n") == -1:
+            # Check if we have any complete lines
+            if b"\n" not in data:
                 continue
 
-            # process line by line and keep the last line if it is not complete
-            lines = buffer.split(b"\n")
-            buffer = lines[-1]
+            # Get all buffered content
+            buffer.seek(0)
+            content = buffer.read()
 
-            lines = lines[:-1]
-            for line in lines:
+            # Split into lines
+            lines = content.split(b"\n")
+            remaining = lines[-1]  # Last part might be incomplete
+
+            # Reset buffer with remaining incomplete line
+            buffer = BytesIO()
+            if remaining:
+                buffer.write(remaining)
+
+            # Process complete lines
+            for line in lines[:-1]:
                 line = line.strip()
                 if not line:
                     continue
@@ -55,7 +67,6 @@ class StdioRequestReader(RequestReader):
                         endpoint_id=data.get("endpoint_id"),
                         event=PluginInStreamEvent.value_of(data["event"]),
                         data=data["data"],
-                        context=data.get("context"),
                         reader=self,
                         writer=StdioResponseWriter(),
                     )
