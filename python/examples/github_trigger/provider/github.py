@@ -95,11 +95,24 @@ class GithubProvider(TriggerProvider):
             raise TriggerDispatchError("Missing GitHub event type header")
 
         try:
-            payload = request.get_json()
+            # GitHub webhooks can send data as form-encoded or JSON
+            content_type = request.headers.get('Content-Type', '')
+            
+            if 'application/x-www-form-urlencoded' in content_type:
+                # For form-encoded data, the payload is in the 'payload' field
+                import json
+                form_data = request.form.get('payload')
+                if not form_data:
+                    raise TriggerDispatchError("Missing payload in form data")
+                payload = json.loads(form_data)
+            else:
+                # For JSON content type or when Content-Type is missing/other
+                payload = request.get_json(force=True)
+            
             if not payload:
                 raise TriggerDispatchError("Empty request body")
         except Exception as e:
-            raise TriggerDispatchError(f"Failed to parse JSON payload: {e}") from e
+            raise TriggerDispatchError(f"Failed to parse payload: {e}") from e
 
         response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
 
