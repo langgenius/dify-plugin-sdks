@@ -5,13 +5,14 @@ import time
 import urllib.parse
 from collections.abc import Mapping
 from typing import Any
+import uuid
 
 import requests
 from werkzeug import Request, Response
 
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.trigger import Subscription, TriggerDispatch, Unsubscription
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError, ToolProviderOAuthError
+from dify_plugin.errors.trigger import TriggerProviderCredentialValidationError, TriggerProviderOAuthError
 from dify_plugin.errors.trigger import SubscriptionError, TriggerDispatchError, TriggerValidationError
 from dify_plugin.interfaces.trigger import TriggerProvider
 
@@ -21,15 +22,17 @@ class GithubProvider(TriggerProvider):
     _TOKEN_URL = "https://github.com/login/oauth/access_token"
     _API_USER_URL = "https://api.github.com/user"
 
-    def _oauth_get_authorization_url(self, system_credentials: Mapping[str, Any]) -> str:
+    def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
         """
         Generate the authorization URL for the Github OAuth.
         """
         state = secrets.token_urlsafe(16)
         params = {
             "client_id": system_credentials["client_id"],
-            "scope": system_credentials.get("scope", "repo"),
+            "redirect_uri": redirect_uri,
+            "scope": system_credentials.get("scope", "read:user"),
             "state": state,
+            # Optionally: allow_signup, login, etc.
         }
         return f"{self._AUTH_URL}?{urllib.parse.urlencode(params)}"
 
@@ -39,7 +42,7 @@ class GithubProvider(TriggerProvider):
         """
         code = request.args.get("code")
         if not code:
-            raise ToolProviderOAuthError("No code provided")
+            raise TriggerProviderOAuthError("No code provided")
 
         data = {
             "client_id": system_credentials["client_id"],
@@ -51,22 +54,22 @@ class GithubProvider(TriggerProvider):
         response_json = response.json()
         access_token = response_json.get("access_token")
         if not access_token:
-            raise ToolProviderOAuthError(f"Error in GitHub OAuth: {response_json}")
+            raise TriggerProviderOAuthError(f"Error in GitHub OAuth: {response_json}")
         return {"access_tokens": access_token}
 
     def _validate_credentials(self, credentials: dict) -> None:
         try:
             if "access_tokens" not in credentials or not credentials.get("access_tokens"):
-                raise ToolProviderCredentialValidationError("GitHub API Access Token is required.")
+                raise TriggerProviderCredentialValidationError("GitHub API Access Token is required.")
             headers = {
                 "Authorization": f"Bearer {credentials['access_tokens']}",
                 "Accept": "application/vnd.github+json",
             }
             response = requests.get(self._API_USER_URL, headers=headers, timeout=10)
             if response.status_code != 200:
-                raise ToolProviderCredentialValidationError(response.json().get("message"))
+                raise TriggerProviderCredentialValidationError(response.json().get("message"))
         except Exception as e:
-            raise ToolProviderCredentialValidationError(str(e)) from e
+            raise TriggerProviderCredentialValidationError(str(e)) from e
 
     def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
         """
@@ -103,27 +106,28 @@ class GithubProvider(TriggerProvider):
         # Create trigger event dispatch with GitHub event type
         # Map GitHub events to our trigger events
         if event_type == "issue_comment":
-            return TriggerDispatch(events=["issue_comment"], response=response)
+            return TriggerDispatch(triggers=["issue_comment"], response=response)
         elif event_type == "issues":
             # Issues event can trigger multiple workflows based on action
             action = payload.get("action")
             if action == "opened":
                 # Dispatch both generic issues event and specific opened event
-                return TriggerDispatch(events=["issues", "issues.opened"], response=response)
+                return TriggerDispatch(triggers=["issues", "issues.opened"], response=response)
             elif action == "closed":
-                return TriggerDispatch(events=["issues", "issues.closed"], response=response)
+                return TriggerDispatch(triggers=["issues", "issues.closed"], response=response)
             else:
-                return TriggerDispatch(events=["issues"], response=response)
+                return TriggerDispatch(triggers=["issues"], response=response)
         else:
             # For other events, pass them through with prefix
-            return TriggerDispatch(events=[f"github.{event_type}"], response=response)
+            return TriggerDispatch(triggers=[f"github.{event_type}"], response=response)
 
     def _subscribe(self, endpoint: str, credentials: Mapping[str, Any], parameters: Mapping[str, Any]) -> Subscription:
         """
         Create a GitHub webhook subscription for issue comment events
         """
         # Extract parameters
-        webhook_secret = parameters.get("webhook_secret")
+        webhook_id = uuid.uuid4().hex
+        webhook_secret = webhook_id
         repository = parameters.get("repository")  # format: "owner/repo"
         events = parameters.get("events", ["issue_comment", "issues"])
 
@@ -164,7 +168,6 @@ class GithubProvider(TriggerProvider):
                     endpoint=endpoint,
                     properties={
                         "external_id": str(webhook["id"]),
-                        "webhook_url": webhook["url"],
                         "repository": repository,
                         "events": events,
                         "webhook_secret": webhook_secret,
@@ -172,11 +175,24 @@ class GithubProvider(TriggerProvider):
                     },
                 )
             else:
-                error_msg = response.json().get("message", "Unknown error")
+                response_data = response.json() if response.content else {}
+                error_msg = response_data.get("message", "Unknown error")
+                error_details = response_data.get("errors", [])
+
+                # Log detailed error information for debugging
+                print(f"GitHub webhook creation failed with status {response.status_code}")
+                print(f"Request URL: {url}")
+                print(f"Request data: {webhook_data}")
+                print(f"Response: {response_data}")
+
+                detailed_error = f"Failed to create GitHub webhook: {error_msg}"
+                if error_details:
+                    detailed_error += f" Details: {error_details}"
+
                 raise SubscriptionError(
-                    f"Failed to create GitHub webhook: {error_msg}",
+                    detailed_error,
                     error_code="WEBHOOK_CREATION_FAILED",
-                    external_response=response.json(),
+                    external_response=response_data,
                 )
         except requests.RequestException as e:
             raise SubscriptionError(f"Network error while creating webhook: {e}", error_code="NETWORK_ERROR") from e

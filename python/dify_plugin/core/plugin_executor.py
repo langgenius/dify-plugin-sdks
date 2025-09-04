@@ -447,6 +447,7 @@ class PluginExecutor:
 
         provider_instance = trigger_provider_cls()
         provider_instance.validate_credentials(request.credentials)
+        return {"result": True}
 
     def dispatch_trigger_event(self, session: Session, request: TriggerDispatchEventRequest) -> TriggerDispatchResponse:
         """

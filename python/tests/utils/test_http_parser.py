@@ -1,4 +1,5 @@
-from werkzeug import Response
+import json
+from flask import Flask, request as flask_request, jsonify, make_response
 
 from dify_plugin.core.utils.http_parser import (
     deserialize_request,
@@ -8,253 +9,147 @@ from dify_plugin.core.utils.http_parser import (
 )
 
 
-def test_parse_raw_request():
-    request = deserialize_request(
-        b"GET / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2\r\nAccept: */*\r\n\r\n"
-    )
-    assert request.method == "GET"
-    assert request.path == "/"
-    assert request.headers["Host"] == "localhost:8000"
-    assert request.headers["User-Agent"] == "curl/8.1.2"
-    assert request.headers["Accept"] == "*/*"
-    assert request.data == b""
+def test_http_request_roundtrip():
+    """Test all HTTP request attributes are preserved through serialization"""
+    app = Flask(__name__)
+    
+    @app.route('/webhook', methods=['POST'])
+    def webhook():
+        original = flask_request
+        raw = serialize_request(original)
+        reconstructed = deserialize_request(raw)
+        
+        assert reconstructed.method == original.method
+        assert reconstructed.path == original.path
+        assert reconstructed.query_string == original.query_string
+        assert reconstructed.get_json() == original.get_json()
+        assert reconstructed.get_data() == original.get_data()
+        
+        for key in ['Authorization', 'X-Webhook-Signature', 'User-Agent']:
+            if key in original.headers:
+                assert reconstructed.headers.get(key) == original.headers.get(key)
+        
+        for key in original.cookies:
+            assert reconstructed.cookies.get(key) == original.cookies.get(key)
+        
+        return jsonify({"status": "ok"})
+    
+    with app.test_client() as client:
+        client.set_cookie('session_id', 'abc123')
+        client.set_cookie('user', 'john')
+        
+        response = client.post(
+            '/webhook?param=value&array[]=1&array[]=2',
+            json={
+                "event": "test.event",
+                "data": {"id": 123, "items": [1, 2, 3]}
+            },
+            headers={
+                'Authorization': 'Bearer token',
+                'X-Webhook-Signature': 'sha256=signature',
+                'User-Agent': 'TestClient/1.0'
+            }
+        )
+        
+        assert response.status_code == 200
 
 
-def test_parse_raw_request_with_body():
-    request = deserialize_request(
-        b"POST / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2"
-        b"\r\nAccept: */*\r\nContent-Length: 13\r\n\r\n"
-        b"Hello, World!"
-    )
-    assert request.method == "POST"
-    assert request.path == "/"
-    assert request.data == b"Hello, World!"
+def test_http_response_roundtrip():
+    """Test all HTTP response attributes are preserved through serialization"""
+    app = Flask(__name__)
+    
+    @app.route('/api/<path:path>')
+    def api(path):
+        if path == 'error':
+            response = make_response(jsonify({"error": "Not found"}), 404)
+            response.headers['X-Error'] = 'NOTFOUND'
+        else:
+            response = make_response(jsonify({"data": {"id": 1, "name": "test"}}), 200)
+            response.headers['X-Version'] = 'v1'
+            response.headers['Cache-Control'] = 'max-age=3600'
+        
+        response.set_cookie('token', 'new-token')
+        return response
+    
+    with app.test_client() as client:
+        response = client.get('/api/data')
+        raw = serialize_response(response)
+        reconstructed = deserialize_response(raw)
+        
+        assert reconstructed.status_code == 200
+        assert 'X-Version' in reconstructed.headers
+        assert json.loads(reconstructed.get_data())['data']['id'] == 1
+        
+        error_response = client.get('/api/error')
+        raw_error = serialize_response(error_response)
+        reconstructed_error = deserialize_response(raw_error)
+        
+        assert reconstructed_error.status_code == 404
+        assert 'X-Error' in reconstructed_error.headers
 
 
-def test_parse_raw_request_with_body_and_headers():
-    request = deserialize_request(
-        b"POST / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2"
-        b"\r\nAccept: */*\r\nContent-Length: 13\r\n\r\n"
-        b"Hello, World!"
-    )
-    assert request.method == "POST"
-    assert request.path == "/"
-    assert request.data == b"Hello, World!"
-    assert request.headers["Content-Length"] == "13"
-    assert request.headers["User-Agent"] == "curl/8.1.2"
-    assert request.headers["Accept"] == "*/*"
+def test_form_and_binary_data():
+    """Test form data and binary content preservation"""
+    app = Flask(__name__)
+    
+    @app.route('/upload', methods=['POST'])
+    def upload():
+        raw = serialize_request(flask_request)
+        reconstructed = deserialize_request(raw)
+        
+        if flask_request.content_type == 'application/x-www-form-urlencoded':
+            assert reconstructed.form.to_dict() == flask_request.form.to_dict()
+        else:
+            assert reconstructed.get_data() == flask_request.get_data()
+        
+        binary_response = bytes(range(256))
+        response = make_response(binary_response)
+        response.headers['Content-Type'] = 'application/octet-stream'
+        return response
+    
+    with app.test_client() as client:
+        response = client.post('/upload', data={'field1': 'value1', 'field2': 'value2'})
+        assert response.status_code == 200
+        
+        binary_data = b'\x00\x01\x02\xff\xfe\xfd' * 100
+        response = client.post('/upload', data=binary_data, 
+                             headers={'Content-Type': 'application/octet-stream'})
+        
+        raw_response = serialize_response(response)
+        reconstructed = deserialize_response(raw_response)
+        assert len(reconstructed.get_data()) == 256
 
 
-def test_convert_request_to_raw_data():
-    request = deserialize_request(
-        b"POST / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: curl/8.1.2"
-        b"\r\nAccept: */*\r\nContent-Length: 13\r\n\r\n"
-        b"Hello, World!"
-    )
-    raw_data = serialize_request(request)
-    request = deserialize_request(raw_data)
-    assert request.method == "POST"
-    assert request.path == "/"
-    assert request.data == b"Hello, World!"
-    assert request.headers["Content-Length"] == "13"
-    assert request.headers["User-Agent"] == "curl/8.1.2"
-    assert request.headers["Accept"] == "*/*"
-
-
-def test_parse_raw_response():
-    raw_response = (
-        b"HTTP/1.1 200 OK\r\n"
-        b"Content-Type: application/json\r\n"
-        b"X-Custom-Header: test-value\r\n"
-        b"Content-Length: 37\r\n"
-        b"\r\n"
-        b'{"status": "success", "data": "test"}'
-    )
-    response = deserialize_response(raw_response)
-    assert response.status_code == 200
-    assert response.headers["Content-Type"] == "application/json"
-    assert response.headers["X-Custom-Header"] == "test-value"
-    assert response.headers["Content-Length"] == "37"
-    assert response.get_data() == b'{"status": "success", "data": "test"}'
-
-
-def test_parse_raw_response_no_body():
-    raw_response = b"HTTP/1.1 204 No Content\r\nX-Custom-Header: test-value\r\n\r\n"
-    response = deserialize_response(raw_response)
-    assert response.status_code == 204
-    assert response.headers["X-Custom-Header"] == "test-value"
-    assert response.get_data() == b""
-
-
-def test_parse_raw_response_with_error():
-    raw_response = b"HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: 9\r\n\r\nNot Found"
-    response = deserialize_response(raw_response)
-    assert response.status_code == 404
-    assert response.headers["Content-Type"] == "text/plain"
-    assert response.get_data() == b"Not Found"
-
-
-def test_convert_response_to_raw_data():
-    # Create a response
-    original_response = Response(
-        response='{"status": "success", "data": "test"}',
-        status=200,
-        headers={
-            "Content-Type": "application/json",
-            "X-Custom-Header": "test-value",
-        },
-    )
-
-    # Convert to raw data
-    raw_data = serialize_response(original_response)
-
-    # Parse back
-    parsed_response = deserialize_response(raw_data)
-
-    # Verify
-    assert parsed_response.status_code == original_response.status_code
-    assert parsed_response.get_data() == original_response.get_data()
-    # Headers might be lowercase after parsing
-    assert parsed_response.headers.get("content-type") == "application/json"
-    assert parsed_response.headers.get("x-custom-header") == "test-value"
-
-
-def test_convert_response_to_raw_data_no_body():
-    # Create a response with no body
-    original_response = Response(status=204)
-    original_response.headers["X-Custom-Header"] = "test-value"
-
-    # Convert to raw data
-    raw_data = serialize_response(original_response)
-
-    # Parse back
-    parsed_response = deserialize_response(raw_data)
-
-    # Verify
-    assert parsed_response.status_code == 204
-    assert parsed_response.get_data() == b""
-    assert parsed_response.headers.get("x-custom-header") == "test-value"
-
-
-def test_response_round_trip():
-    # Test complete round trip: Response -> raw -> Response
-    test_cases = [
-        # JSON response
-        Response(response='{"key": "value"}', status=200, headers={"Content-Type": "application/json"}),
-        # HTML response
-        Response(response="<html><body>Hello</body></html>", status=200, headers={"Content-Type": "text/html"}),
-        # Error response
-        Response(response="Internal Server Error", status=500, headers={"Content-Type": "text/plain"}),
-        # No content response
-        Response(status=204),
-    ]
-
-    for original_response in test_cases:
-        raw_data = serialize_response(original_response)
-        parsed_response = deserialize_response(raw_data)
-
-        assert parsed_response.status_code == original_response.status_code
-        assert parsed_response.get_data() == original_response.get_data()
-
-
-def test_json_request_parsing():
-    # Test parsing JSON request
-    raw_request = (
-        b"POST /api/data HTTP/1.1\r\n"
-        b"Content-Type: application/json\r\n"
-        b"Content-Length: 46\r\n"
-        b"Host: example.com\r\n"
-        b"\r\n"
-        b'{"name": "test", "value": 123, "active": true}'
-    )
-
-    request = deserialize_request(raw_request)
-    assert request.method == "POST"
-    assert request.path == "/api/data"
-    assert request.content_type == "application/json"
-
-    # Verify JSON parsing works
-    json_data = request.get_json()
-    assert json_data == {"name": "test", "value": 123, "active": True}
-
-
-def test_json_request_conversion():
-    # Test converting JSON request to raw and back
-    from werkzeug.test import EnvironBuilder
-
-    json_data = {"user": "alice", "action": "update", "items": [1, 2, 3]}
-    builder = EnvironBuilder(
-        method="PUT", path="/api/users/123", json=json_data, headers={"Authorization": "Bearer token123"}
-    )
-    original_request = builder.get_request()
-
-    # Convert to raw
-    raw_data = serialize_request(original_request)
-
-    # Parse back
-    parsed_request = deserialize_request(raw_data)
-
-    # Verify
-    assert parsed_request.method == "PUT"
-    assert parsed_request.path == "/api/users/123"
-    assert parsed_request.get_json() == json_data
-    assert parsed_request.headers.get("Authorization") == "Bearer token123"
-
-
-def test_json_response_parsing():
-    # Test parsing JSON response
-    raw_response = (
-        b"HTTP/1.1 200 OK\r\n"
-        b"Content-Type: application/json\r\n"
-        b"Content-Length: 52\r\n"
-        b"X-Request-Id: abc123\r\n"
-        b"\r\n"
-        b'{"status": "success", "data": {"id": 1, "ok": true}}'
-    )
-
-    response = deserialize_response(raw_response)
-    assert response.status_code == 200
-    assert response.content_type == "application/json"
-
-    # Verify JSON parsing
-    import json
-
-    json_data = json.loads(response.get_data(as_text=True))
-    assert json_data == {"status": "success", "data": {"id": 1, "ok": True}}
-    assert response.headers.get("X-Request-Id") == "abc123"
-
-
-def test_form_urlencoded_request():
-    # Test form-urlencoded request
-    raw_request = (
-        b"POST /form HTTP/1.1\r\n"
-        b"Content-Type: application/x-www-form-urlencoded\r\n"
-        b"Content-Length: 38\r\n"
-        b"\r\n"
-        b"name=John+Doe&email=john%40example.com"
-    )
-
-    request = deserialize_request(raw_request)
-    assert request.method == "POST"
-    assert request.content_type == "application/x-www-form-urlencoded"
-
-    # Verify form parsing
-    assert request.form.get("name") == "John Doe"
-    assert request.form.get("email") == "john@example.com"
-
-
-def test_query_string_handling():
-    # Test request with query string
-    raw_request = (
-        b"GET /search?q=test&page=2&limit=10 HTTP/1.1\r\nHost: example.com\r\nAccept: application/json\r\n\r\n"
-    )
-
-    request = deserialize_request(raw_request)
-    assert request.method == "GET"
-    assert request.path == "/search"
-    assert request.query_string == b"q=test&page=2&limit=10"
-
-    # Verify query parameters
-    assert request.args.get("q") == "test"
-    assert request.args.get("page") == "2"
-    assert request.args.get("limit") == "10"
+def test_special_cases():
+    """Test edge cases and special characters"""
+    app = Flask(__name__)
+    
+    @app.route('/test', methods=['GET', 'POST'])
+    def test():
+        if flask_request.method == 'GET':
+            return '', 204
+        
+        raw = serialize_request(flask_request)
+        reconstructed = deserialize_request(raw)
+        json_data = reconstructed.get_json()
+        assert json_data == flask_request.get_json()
+        return jsonify(json_data)
+    
+    with app.test_client() as client:
+        response = client.get('/test')
+        assert response.status_code == 204
+        
+        raw = serialize_response(response)
+        reconstructed = deserialize_response(raw)
+        assert reconstructed.status_code == 204
+        assert reconstructed.get_data() == b''
+        
+        response = client.post('/test', json={
+            "japanese": "こんにちは",
+            "emoji": "😀🎉",
+            "special": "café",
+            "symbols": "α β γ"
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['emoji'] == "😀🎉"

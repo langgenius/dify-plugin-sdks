@@ -51,23 +51,44 @@ class TriggerProvider:
             "This plugin should implement `_validate_credentials` method to enable credentials validation"
         )
 
-    def oauth_get_authorization_url(self, system_credentials: Mapping[str, Any]) -> str:
-        return self._oauth_get_authorization_url(system_credentials)
+    def oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+        """
+        Get the authorization url
 
-    def _oauth_get_authorization_url(self, system_credentials: Mapping[str, Any]) -> str:
-        raise NotImplementedError("This plugin should implement `_oauth_get_authorization_url` method to enable oauth")
+        :param redirect_uri: redirect uri provided by dify api
+        :param system_credentials: system credentials including client_id and client_secret which you oauth schema defined
+        :return: authorization url
+        """
+        return self._oauth_get_authorization_url(redirect_uri, system_credentials)
 
-    def oauth_get_credentials(self, system_credentials: Mapping[str, Any], request: Request) -> OAuthCredentials:
-        credentials = self._oauth_get_credentials(system_credentials, request)
+    def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+        raise NotImplementedError(
+            "The tool you are using does not support OAuth, please implement `_oauth_get_authorization_url` method"
+        )
+
+    def oauth_get_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
+    ) -> OAuthCredentials:
+        """
+        Get the credentials
+
+        :param redirect_uri: redirect uri provided by dify api
+        :param system_credentials: system credentials including client_id and client_secret which you oauth schema defined
+        :param request: raw http request
+        :return: credentials
+        """
+        credentials = self._oauth_get_credentials(redirect_uri, system_credentials, request)
         return OAuthCredentials(
             expires_at=credentials.expires_at,
             credentials=credentials.credentials,
         )
 
     def _oauth_get_credentials(
-        self, system_credentials: Mapping[str, Any], request: Request
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> TriggerOAuthCredentials:
-        raise NotImplementedError("This plugin should implement `_oauth_get_credentials` method to enable oauth")
+        raise NotImplementedError(
+            "The tool you are using does not support OAuth, please implement `_oauth_get_credentials` method"
+        )
 
     def dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
         """

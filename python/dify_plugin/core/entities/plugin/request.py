@@ -33,7 +33,7 @@ class AgentActions(StrEnum):
 
 class TriggerActions(StrEnum):
     InvokeTrigger = "invoke_trigger"
-    ValidateProviderCredentials = "validate_provider_credentials"
+    ValidateProviderCredentials = "validate_trigger_credentials"
     DispatchTriggerEvent = "dispatch_trigger_event"
     SubscribeTrigger = "subscribe_trigger"
     UnsubscribeTrigger = "unsubscribe_trigger"

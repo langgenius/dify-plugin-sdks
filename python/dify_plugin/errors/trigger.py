@@ -45,6 +45,14 @@ class TriggerValidationError(TriggerError):
     pass
 
 
+class TriggerProviderCredentialValidationError(TriggerError):
+    """
+    Raised when trigger provider credential validation fails.
+    """
+
+    pass
+
+
 class TriggerDispatchError(TriggerError):
     """
     Raised when event dispatching fails.
@@ -53,6 +61,14 @@ class TriggerDispatchError(TriggerError):
     - Event payload cannot be parsed
     - Event type cannot be determined
     - Required headers are missing
+    """
+
+    pass
+
+
+class TriggerProviderOAuthError(TriggerError):
+    """
+    Raised when trigger provider OAuth fails.
     """
 
     pass
