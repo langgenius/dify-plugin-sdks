@@ -27,12 +27,24 @@ from dify_plugin.core.entities.plugin.request import (
     ToolGetRuntimeParametersRequest,
     ToolInvokeRequest,
     ToolValidateCredentialsRequest,
+    TriggerDispatchEventRequest,
+    TriggerDispatchResponse,
+    TriggerInvokeRequest,
+    TriggerInvokeResponse,
+    TriggerRefreshRequest,
+    TriggerRefreshResponse,
+    TriggerSubscribeRequest,
+    TriggerSubscriptionResponse,
+    TriggerUnsubscribeRequest,
+    TriggerUnsubscribeResponse,
+    TriggerValidateProviderCredentialsRequest,
 )
 from dify_plugin.core.plugin_registration import PluginRegistration
 from dify_plugin.core.runtime import Session
-from dify_plugin.core.utils.http_parser import parse_raw_request
+from dify_plugin.core.utils.http_parser import deserialize_request, serialize_response
 from dify_plugin.entities.agent import AgentRuntime
 from dify_plugin.entities.tool import ToolRuntime
+from dify_plugin.entities.trigger import Subscription, TriggerRuntime
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
@@ -283,7 +295,7 @@ class PluginExecutor:
 
     def invoke_endpoint(self, session: Session, data: EndpointInvokeRequest):
         bytes_data = binascii.unhexlify(data.raw_http_request)
-        request = parse_raw_request(bytes_data)
+        request = deserialize_request(bytes_data)
 
         try:
             # dispatch request
@@ -348,7 +360,7 @@ class PluginExecutor:
     def get_oauth_credentials(self, session: Session, data: OAuthGetCredentialsRequest):
         provider_instance = self._get_oauth_provider_instance(data.provider)
         bytes_data = binascii.unhexlify(data.raw_http_request)
-        request = parse_raw_request(bytes_data)
+        request = deserialize_request(bytes_data)
 
         credentials = provider_instance.oauth_get_credentials(data.redirect_uri, data.system_credentials, request)
 
@@ -379,6 +391,22 @@ class PluginExecutor:
         :param data: data
         :return: dynamic parameter provider class
         """
+        # now we don't support tool and trigger at the same time
+        # if provider_action is not provided, get trigger provider
+        if not data.provider_action:
+            trigger_provider_cls = self.registration.get_trigger_provider_cls(data.provider)
+            if trigger_provider_cls:
+                return trigger_provider_cls()
+
+        trigger_cls = self.registration.get_trigger_cls(data.provider, data.provider_action)
+        if trigger_cls is not None:
+            return trigger_cls(
+                runtime=TriggerRuntime(
+                    credentials=data.credentials, user_id=data.user_id, session_id=session.session_id
+                ),
+                session=session,
+            )
+
         # get tool
         tool_cls = self.registration.get_tool_cls(data.provider, data.provider_action)
         if tool_cls is not None:
@@ -387,7 +415,99 @@ class PluginExecutor:
                 session=session,
             )
 
-        # TODO: trigger
+    def invoke_trigger(self, session: Session, request: TriggerInvokeRequest):
+        """
+        Invoke trigger
+        """
+        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
+        trigger_cls = self.registration.get_trigger_cls(request.provider, request.trigger)
+
+        if not trigger_provider_cls or not trigger_cls:
+            raise ValueError(f"Trigger provider {request.provider} or trigger {request.trigger} not found")
+
+        trigger_runtime = TriggerRuntime(
+            credentials=request.credentials,
+            session_id=session.session_id,
+        )
+        trigger = trigger_cls(runtime=trigger_runtime, session=session)
+        event = trigger.trigger(deserialize_request(binascii.unhexlify(request.raw_http_request)), request.parameters)
+        return TriggerInvokeResponse(
+            event=event.model_dump(),
+        )
+
+    def validate_trigger_provider_credentials(
+        self, session: Session, request: TriggerValidateProviderCredentialsRequest
+    ):
+        """
+        Validate trigger provider credentials
+        """
+        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
+        if not trigger_provider_cls:
+            raise ValueError(f"Trigger provider {request.provider} not found")
+
+        provider_instance = trigger_provider_cls()
+        provider_instance.validate_credentials(request.credentials)
+        return {"result": True}
+
+    def dispatch_trigger_event(self, session: Session, request: TriggerDispatchEventRequest) -> TriggerDispatchResponse:
+        """
+        Dispatch trigger event
+        """
+        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
+        if not trigger_provider_cls:
+            raise ValueError(f"Trigger provider {request.provider} not found")
+
+        bytes_data = binascii.unhexlify(request.raw_http_request)
+        provider_instance = trigger_provider_cls()
+        subscription = Subscription(**request.subscription)
+        dispatch_result = provider_instance.dispatch_event(subscription, deserialize_request(bytes_data))
+        return TriggerDispatchResponse(
+            triggers=dispatch_result.triggers,
+            raw_http_response=binascii.hexlify(serialize_response(dispatch_result.response)).decode(),
+        )
+
+    def subscribe_trigger(self, session: Session, request: TriggerSubscribeRequest) -> TriggerSubscriptionResponse:
+        """
+        Subscribe to a trigger with the external service
+        """
+        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
+        if not trigger_provider_cls:
+            raise ValueError(f"Trigger provider {request.provider} not found")
+
+        provider_instance = trigger_provider_cls()
+        subscription = provider_instance.subscribe(request.endpoint, request.credentials, request.parameters)
+        return TriggerSubscriptionResponse(subscription=subscription.model_dump())
+
+    def unsubscribe_trigger(self, session: Session, request: TriggerUnsubscribeRequest) -> TriggerUnsubscribeResponse:
+        """
+        Unsubscribe from a trigger subscription
+        """
+        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
+        if not trigger_provider_cls:
+            raise ValueError(f"Trigger provider {request.provider} not found")
+
+        # Reconstruct Subscription object from dict
+        subscription = Subscription(**request.subscription)
+
+        provider_instance = trigger_provider_cls()
+        unsubscription = provider_instance.unsubscribe(subscription, request.credentials)
+        return TriggerUnsubscribeResponse(subscription=unsubscription.model_dump())
+
+    def refresh_trigger(self, session: Session, request: TriggerRefreshRequest) -> TriggerRefreshResponse:
+        """
+        Refresh/extend an existing trigger subscription without changing configuration
+        """
+        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
+        if not trigger_provider_cls:
+            raise ValueError(f"Trigger provider {request.provider} not found")
+
+        # Reconstruct Subscription object from dict
+        subscription = Subscription(**request.subscription)
+
+        provider_instance = trigger_provider_cls()
+        return TriggerRefreshResponse(
+            subscription=provider_instance.refresh(subscription, request.credentials).model_dump()
+        )
 
     def fetch_parameter_options(self, session: Session, data: DynamicParameterFetchParameterOptionsRequest):
         action_instance = self._get_dynamic_parameter_action(session, data)
