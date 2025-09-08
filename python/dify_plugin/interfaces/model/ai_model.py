@@ -1,7 +1,9 @@
+from contextlib import contextmanager
 import decimal
 import socket
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
+import time
 from typing import final
 
 import gevent.socket
@@ -18,6 +20,7 @@ from dify_plugin.entities.model import (
     PriceType,
 )
 from dify_plugin.errors.model import InvokeAuthorizationError, InvokeError
+from dify_plugin.interfaces.exec.ai_model import TimingContextRaceConditionError
 
 if socket.socket is gevent.socket.socket:
     import gevent.threadpool
@@ -28,11 +31,13 @@ if socket.socket is gevent.socket.socket:
 class AIModel(ABC):
     """
     Base class for all models.
+
+    WARNING: AIModel is not thread-safe, DO NOT use it in multi-threaded environment.
     """
 
     model_type: ModelType
     model_schemas: list[AIModelEntity]
-    started_at: float = 0
+    started_at: float
 
     # pydantic configs
     model_config = ConfigDict(protected_namespaces=())
@@ -45,9 +50,29 @@ class AIModel(ABC):
         NOTE:
         - This method has been marked as final, DO NOT OVERRIDE IT.
         """
+        # NOTE: started_at is not a class variable, it bound to specific instance
+        # FIXES for the issue: https://github.com/dify-ai/dify-plugin-sdk/issues/190
+        self.started_at = 0
         self.model_schemas = [
             model_schema for model_schema in model_schemas if model_schema.model_type == self.model_type
         ]
+
+    @contextmanager
+    def timing_context(self):
+        """
+        Context manager for timing requests
+        """
+        if self.started_at:
+            raise TimingContextRaceConditionError(
+                "Timing context has been started, DO NOT start it in multi-threaded environment."
+            )
+
+        # initialize started_at
+        # NOTE: started_at is not a class variable, it bound to specific instance
+        # FIXES for the issue: https://github.com/dify-ai/dify-plugin-sdk/issues/190
+        self.started_at = time.perf_counter()
+        yield
+        self.started_at = 0
 
     @abstractmethod
     def validate_credentials(self, model: str, credentials: Mapping) -> None:

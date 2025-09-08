@@ -1,4 +1,3 @@
-import time
 from abc import abstractmethod
 
 from dify_plugin.entities.model import ModelType
@@ -68,9 +67,9 @@ class RerankModel(AIModel):
         :param user: unique user id
         :return: rerank result
         """
-        self.started_at = time.perf_counter()
 
-        try:
-            return self._invoke(model, credentials, query, docs, score_threshold, top_n, user)
-        except Exception as e:
-            raise self._transform_invoke_error(e) from e
+        with self.timing_context():
+            try:
+                return self._invoke(model, credentials, query, docs, score_threshold, top_n, user)
+            except Exception as e:
+                raise self._transform_invoke_error(e) from e

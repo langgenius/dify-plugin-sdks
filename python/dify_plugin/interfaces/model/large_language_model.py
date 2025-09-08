@@ -1,10 +1,8 @@
 import logging
 import re
-import threading
 import time
 from abc import abstractmethod
 from collections.abc import Generator, Mapping
-from contextlib import contextmanager, suppress
 from typing import Union
 
 from pydantic import ConfigDict
@@ -45,21 +43,6 @@ class LargeLanguageModel(AIModel):
 
     # pydantic configs
     model_config = ConfigDict(protected_namespaces=())
-
-    # thread-local storage for timing context
-    _local = threading.local()
-
-    @contextmanager
-    def _timing_context(self):
-        """Context manager for timing requests using thread-local storage"""
-        started_at = time.perf_counter()
-        self._local.started_at = started_at
-        try:
-            yield started_at
-        finally:
-            # Clean up thread-local storage
-            with suppress(AttributeError):
-                del self._local.started_at
 
     ############################################################
     #        Methods that can be implemented by plugin         #
@@ -178,9 +161,8 @@ class LargeLanguageModel(AIModel):
         )
 
         # Calculate latency from thread-local storage
-        started_at = getattr(self._local, "started_at", None)
         current_time = time.perf_counter()
-        latency = current_time - started_at if started_at is not None else 0.0
+        latency = current_time - self.started_at
 
         # transform usage
         usage = LLMUsage(
@@ -601,7 +583,7 @@ if you are not sure about the structure.
 
         model_parameters = self._validate_and_filter_model_parameters(model, model_parameters, credentials)
 
-        with self._timing_context():
+        with self.timing_context():
             try:
                 if "response_format" in model_parameters and model_parameters["response_format"] in {"JSON", "XML"}:
                     result = self._code_block_mode_wrapper(
@@ -631,4 +613,5 @@ if you are not sure about the structure.
             if isinstance(result, LLMResult):
                 yield result.to_llm_result_chunk()
             else:
+                # NOTE: `yield from` cannot been replaced by `return` because of `timing_context`
                 yield from result
