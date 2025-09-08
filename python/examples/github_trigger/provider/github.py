@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from typing import Any
 import uuid
 
+from dify_plugin.entities.oauth import TriggerOAuthCredentials
 import requests
 from werkzeug import Request, Response
 
@@ -30,32 +31,37 @@ class GithubProvider(TriggerProvider):
         params = {
             "client_id": system_credentials["client_id"],
             "redirect_uri": redirect_uri,
-            "scope": system_credentials.get("scope", "read:user"),
+            # must contain webhook scope
+            "scope": system_credentials.get("scope", "read:user admin:repo_hook"),
             "state": state,
-            # Optionally: allow_signup, login, etc.
         }
         return f"{self._AUTH_URL}?{urllib.parse.urlencode(params)}"
 
-    def _oauth_get_credentials(self, system_credentials: Mapping[str, Any], request: Request) -> Mapping[str, Any]:
+    def _oauth_get_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
+    ) -> TriggerOAuthCredentials:
         """
         Exchange code for access_token.
         """
         code = request.args.get("code")
         if not code:
             raise TriggerProviderOAuthError("No code provided")
+        # Optionally: validate state here
 
         data = {
             "client_id": system_credentials["client_id"],
             "client_secret": system_credentials["client_secret"],
             "code": code,
+            "redirect_uri": redirect_uri,
         }
         headers = {"Accept": "application/json"}
         response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
         response_json = response.json()
-        access_token = response_json.get("access_token")
-        if not access_token:
+        access_tokens = response_json.get("access_token")
+        if not access_tokens:
             raise TriggerProviderOAuthError(f"Error in GitHub OAuth: {response_json}")
-        return {"access_tokens": access_token}
+
+        return TriggerOAuthCredentials(credentials={"access_tokens": access_tokens}, expires_at=-1)
 
     def _validate_credentials(self, credentials: dict) -> None:
         try:
@@ -96,19 +102,20 @@ class GithubProvider(TriggerProvider):
 
         try:
             # GitHub webhooks can send data as form-encoded or JSON
-            content_type = request.headers.get('Content-Type', '')
-            
-            if 'application/x-www-form-urlencoded' in content_type:
+            content_type = request.headers.get("Content-Type", "")
+
+            if "application/x-www-form-urlencoded" in content_type:
                 # For form-encoded data, the payload is in the 'payload' field
                 import json
-                form_data = request.form.get('payload')
+
+                form_data = request.form.get("payload")
                 if not form_data:
                     raise TriggerDispatchError("Missing payload in form data")
                 payload = json.loads(form_data)
             else:
                 # For JSON content type or when Content-Type is missing/other
                 payload = request.get_json(force=True)
-            
+
             if not payload:
                 raise TriggerDispatchError("Empty request body")
         except Exception as e:

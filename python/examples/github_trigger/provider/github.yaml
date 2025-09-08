@@ -75,7 +75,7 @@ subscription_schema:
     - name: "events"
       type: "dynamic-select"
       required: true
-      default: ["issue_comment", "issues"]
+      default: "issue_comment"
       options:
         - value: "issue_comment"
           label:
