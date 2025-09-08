@@ -73,9 +73,10 @@ subscription_schema:
         zh_Hans: "GitHub 仓库，格式为 owner/repo（例如：microsoft/vscode）"
         pt_BR: "Repositório do GitHub no formato owner/repo (ex: microsoft/vscode)"
     - name: "events"
-      type: "dynamic-select"
+      type: "select"
       required: true
-      default: "issue_comment"
+      default: ["issue_comment", "issues"]
+      multiple: true
       options:
         - value: "issue_comment"
           label:

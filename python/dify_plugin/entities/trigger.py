@@ -86,6 +86,10 @@ class TriggerParameter(BaseModel):
     template: ParameterTemplate | None = Field(default=None, description="The template of the parameter")
     scope: str | None = None
     required: bool | None = False
+    multiple: bool | None = Field(
+        default=False,
+        description="Whether the parameter is multiple select, only valid for select or dynamic-select type",
+    )
     default: Union[int, float, str, list] | None = None
     min: Union[float, int] | None = None
     max: Union[float, int] | None = None

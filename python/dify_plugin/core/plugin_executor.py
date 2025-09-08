@@ -393,10 +393,15 @@ class PluginExecutor:
         """
         # now we don't support tool and trigger at the same time
         # if provider_action is not provided, get trigger provider
-        if not data.provider_action:
+        if data.provider_action is None or data.provider_action == "provider":
             trigger_provider_cls = self.registration.get_trigger_provider_cls(data.provider)
             if trigger_provider_cls:
-                return trigger_provider_cls()
+                return trigger_provider_cls(
+                    runtime=TriggerRuntime(
+                        credentials=data.credentials, user_id=data.user_id, session_id=session.session_id
+                    ),
+                    session=session,
+                )
 
         trigger_cls = self.registration.get_trigger_cls(data.provider, data.provider_action)
         if trigger_cls is not None:

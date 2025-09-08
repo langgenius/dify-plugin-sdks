@@ -17,6 +17,35 @@ description:
     pt_BR: Este gatilho é ativado quando um comentário é criado, editado ou deletado em uma issue ou pull request do GitHub, fornecendo informações sobre o comentário, issue e usuário.
 
 parameters:
+  - name: "events"
+    type: "select"
+    required: true
+    default: ["issue_comment", "issues"]
+    multiple: true
+    options:
+      - value: "issue_comment"
+        label:
+          en_US: "Issue Comments"
+          zh_Hans: "Issue 评论"
+      - value: "issues"
+        label:
+          en_US: "Issues"
+          zh_Hans: "Issues"
+      - value: "pull_request"
+        label:
+          en_US: "Pull Requests"
+          zh_Hans: "Pull Requests"
+      - value: "push"
+        label:
+          en_US: "Push"
+          zh_Hans: "推送"
+    label:
+      zh_Hans: "监听事件"
+      en_US: "Events to Listen"
+    help:
+      en_US: "Select which GitHub events to subscribe to"
+      pt_BR: "Selecione quais eventos do GitHub inscrever-se"
+      zh_Hans: "选择要订阅的 GitHub 事件"
   - name: action_filter
     label:
       en_US: Action Filter

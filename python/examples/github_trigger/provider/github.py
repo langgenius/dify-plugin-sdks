@@ -8,6 +8,7 @@ from typing import Any
 import uuid
 
 from dify_plugin.entities.oauth import TriggerOAuthCredentials
+from examples.github_trigger.utils.dynamic_options import fetch_repositories
 import requests
 from werkzeug import Request, Response
 
@@ -283,6 +284,9 @@ class GithubProvider(TriggerProvider):
         )
 
     def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        if parameter == "repository":
+            return fetch_repositories(self.runtime.credentials.get("access_tokens"))
+
         return [
             ParameterOption(
                 value="iamjoel",

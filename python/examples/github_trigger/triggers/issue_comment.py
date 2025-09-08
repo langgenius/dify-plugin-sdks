@@ -1,6 +1,8 @@
 from collections.abc import Mapping
 from typing import Any
 
+from dify_plugin.entities import ParameterOption
+from examples.github_trigger.utils.dynamic_options import fetch_repositories
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Event
@@ -120,3 +122,9 @@ class IssueCommentTrigger(TriggerEvent):
         }
 
         return Event(variables=variables)
+
+    def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        if parameter == "repository":
+            return fetch_repositories(self.runtime.credentials.get("access_tokens"))
+
+        return []

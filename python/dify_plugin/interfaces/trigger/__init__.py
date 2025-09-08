@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Any, final
+from typing import Any, Optional, final
 
+from dify_plugin.entities.provider_config import CredentialType
 from werkzeug import Request
 
 from dify_plugin.core.runtime import Session
@@ -42,6 +43,28 @@ class TriggerProvider:
     - RSS polling provider: Polls RSS feeds and dispatches new item events
     - Slack webhook provider: Handles Slack event subscriptions
     """
+
+    # Optional context objects. They may be None in environments like schema generation
+    # or static validation where execution context isn't initialized.
+    runtime: Optional[TriggerRuntime]
+    session: Optional[Session]
+
+    @final
+    def __init__(
+        self,
+        runtime: Optional[TriggerRuntime] = None,
+        session: Optional[Session] = None,
+    ):
+        """
+        Initialize the trigger
+
+        NOTE:
+        - This method has been marked as final, DO NOT OVERRIDE IT.
+        - Both `runtime` and `session` are optional; they may be None in contexts
+          where execution is not happening (e.g., documentation generation).
+        """
+        self.runtime = runtime
+        self.session = session
 
     def validate_credentials(self, credentials: dict):
         return self._validate_credentials(credentials)
@@ -440,29 +463,54 @@ class TriggerProvider:
         """
         raise NotImplementedError("This plugin should implement `_refresh` method to enable subscription refresh")
 
+    def fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        """
+        Fetch the parameter options of the trigger.
+        """
+        return self._fetch_parameter_options(parameter)
+
+    def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        """
+        Fetch the parameter options of the trigger.
+        """
+        raise NotImplementedError(
+            "This plugin should implement `_fetch_parameter_options` method to enable dynamic select parameter"
+        )
+
 
 class TriggerEvent(ABC):
     """
     The trigger event interface
     """
 
-    runtime: TriggerRuntime
-    session: Session
+    # Optional context objects. They may be None in environments like schema generation
+    # or static validation where execution context isn't initialized.
+    runtime: Optional[TriggerRuntime]
+    session: Optional[Session]
 
     @final
     def __init__(
         self,
-        runtime: TriggerRuntime,
-        session: Session,
+        runtime: Optional[TriggerRuntime] = None,
+        session: Optional[Session] = None,
     ):
         """
         Initialize the trigger
 
         NOTE:
         - This method has been marked as final, DO NOT OVERRIDE IT.
+        - Both `runtime` and `session` are optional; they may be None in contexts
+          where execution is not happening (e.g., documentation generation).
         """
         self.runtime = runtime
         self.session = session
+
+    # Convenience helpers to make None-handling obvious to users
+    def has_runtime(self) -> bool:
+        return self.runtime is not None
+
+    def has_session(self) -> bool:
+        return self.session is not None
 
     ############################################################
     #        Methods that can be implemented by plugin         #
