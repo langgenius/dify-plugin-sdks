@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from typing import Any, Optional, final
 
-from dify_plugin.entities.provider_config import CredentialType
 from werkzeug import Request
 
 from dify_plugin.core.runtime import Session
@@ -79,7 +78,7 @@ class TriggerProvider:
         Get the authorization url
 
         :param redirect_uri: redirect uri provided by dify api
-        :param system_credentials: system credentials including client_id and client_secret which you oauth schema defined
+        :param system_credentials: system credentials including client_id and client_secret which oauth schema defined
         :return: authorization url
         """
         return self._oauth_get_authorization_url(redirect_uri, system_credentials)
@@ -96,7 +95,7 @@ class TriggerProvider:
         Get the credentials
 
         :param redirect_uri: redirect uri provided by dify api
-        :param system_credentials: system credentials including client_id and client_secret which you oauth schema defined
+        :param system_credentials: system credentials including client_id and client_secret which oauth schema defined
         :param request: raw http request
         :return: credentials
         """

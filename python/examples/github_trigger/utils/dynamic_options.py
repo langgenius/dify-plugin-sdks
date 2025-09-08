@@ -1,5 +1,6 @@
-from dify_plugin.entities import I18nObject, ParameterOption
 import requests
+
+from dify_plugin.entities import I18nObject, ParameterOption
 
 
 def fetch_repositories(access_token: str) -> list[ParameterOption]:
