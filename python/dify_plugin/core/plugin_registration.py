@@ -10,6 +10,7 @@ from werkzeug.routing import Map, Rule
 
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.entities.plugin.setup import PluginAsset, PluginConfiguration
+from dify_plugin.core.model_factory import ModelFactory
 from dify_plugin.core.utils.class_loader import load_multi_subclasses_from_source, load_single_subclass_from_source
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
 from dify_plugin.entities.agent import AgentStrategyConfiguration, AgentStrategyProviderConfiguration
@@ -59,7 +60,7 @@ class PluginRegistration:
         tuple[
             ModelProviderConfiguration,
             ModelProvider,
-            dict[ModelType, AIModel],
+            ModelFactory,
         ],
     ]
     endpoints_configuration: list[EndpointProviderConfiguration]
@@ -215,7 +216,7 @@ class PluginRegistration:
             )
 
             # load models class
-            models = {}
+            models: dict[ModelType, type[AIModel]] = {}
             for model_source in provider.extra.python.model_sources:
                 model_module_source = os.path.splitext(model_source)[0]
                 model_module_source = model_module_source.replace("/", ".")
@@ -235,13 +236,14 @@ class PluginRegistration:
                         Speech2TextModel,
                         ModerationModel,
                     ):
-                        models[model_cls.model_type] = model_cls(provider.models)  # type: ignore
+                        models[model_cls.model_type] = model_cls
 
+            model_factory = ModelFactory(provider, models)
             provider_instance = cls(provider, models)  # type: ignore
             self.models_mapping[provider.provider] = (
                 provider,
                 provider_instance,
-                models,
+                model_factory,
             )
 
     def _resolve_endpoints(self):
@@ -344,9 +346,8 @@ class PluginRegistration:
         """
         for provider_registration in self.models_mapping:
             if provider_registration == provider:
-                registration = self.models_mapping[provider_registration][2].get(model_type)
-                if registration:
-                    return registration
+                model_factory = self.models_mapping[provider_registration][2]
+                return model_factory.get_instance(model_type)
 
     def get_supported_oauth_provider_cls(self, provider: str) -> type[OAuthProviderProtocol] | None:
         """
