@@ -1,9 +1,9 @@
-from contextlib import contextmanager
 import decimal
 import socket
+import time
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-import time
+from contextlib import contextmanager
 from typing import final
 
 import gevent.socket

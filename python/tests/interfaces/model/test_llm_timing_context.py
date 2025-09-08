@@ -1,8 +1,7 @@
-from collections.abc import Generator
+import time
+from collections.abc import Generator, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
-import time
-from typing import Mapping
 
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta, LLMUsage
@@ -106,7 +105,8 @@ def test_llm_timing_context():
         model_parameters={"test": "test"},
     ):
         assert result.delta.usage is not None
-        assert result.delta.usage.latency > 0 and result.delta.usage.latency < 1.5
+        assert result.delta.usage.latency > 0
+        assert result.delta.usage.latency < 1.5
 
 
 def test_multithreaded_llm_timing_context():
@@ -125,7 +125,8 @@ def test_multithreaded_llm_timing_context():
             model_parameters={"test": "test"},
         ):
             assert result.delta.usage is not None
-            assert result.delta.usage.latency > 0 and result.delta.usage.latency < 1.5
+            assert result.delta.usage.latency > 0
+            assert result.delta.usage.latency < 1.5
 
     with ThreadPoolExecutor(max_workers=10) as executor:
         list(executor.map(task, range(10)))

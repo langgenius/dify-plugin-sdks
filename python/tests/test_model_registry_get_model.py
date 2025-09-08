@@ -1,6 +1,6 @@
-from collections.abc import Generator
-from typing import Mapping
+from collections.abc import Generator, Mapping
 from unittest.mock import MagicMock
+
 from dify_plugin.core.model_factory import ModelFactory
 from dify_plugin.core.plugin_registration import PluginRegistration
 from dify_plugin.entities import I18nObject

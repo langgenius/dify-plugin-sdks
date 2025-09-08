@@ -1,12 +1,12 @@
-from concurrent.futures import ThreadPoolExecutor
 import time
-from typing import Mapping
+from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
+from dify_plugin.errors.model import InvokeError
 from dify_plugin.interfaces.exec.ai_model import TimingContextRaceConditionError
 from dify_plugin.interfaces.model.ai_model import AIModel
-from dify_plugin.errors.model import InvokeError
 
 
 class MockAIModel(AIModel):
@@ -40,7 +40,7 @@ class MockAIModel(AIModel):
 def test_ai_model_timing_context_with_race_condition():
     model = MockAIModel(model_schemas=[])
 
-    CONCURRENCY = 2
+    concurrency = 2
 
     def task(_):
         """
@@ -48,9 +48,8 @@ def test_ai_model_timing_context_with_race_condition():
         """
         model.invoke()
 
-    with pytest.raises(TimingContextRaceConditionError):
-        with ThreadPoolExecutor(CONCURRENCY) as pool:
-            list(pool.map(task, range(CONCURRENCY)))
+    with pytest.raises(TimingContextRaceConditionError), ThreadPoolExecutor(concurrency) as pool:
+        list(pool.map(task, range(concurrency)))
 
 
 def test_ai_model_timing_context_multiple_sequential_uses():
@@ -60,15 +59,17 @@ def test_ai_model_timing_context_multiple_sequential_uses():
     model = MockAIModel(model_schemas=[])
 
     time_cost = model.invoke()
-    assert time_cost > 0 and time_cost < 1.5
+    assert time_cost > 0
+    assert time_cost < 1.5
     time_cost = model.invoke()
-    assert time_cost > 0 and time_cost < 1.5
+    assert time_cost > 0
+    assert time_cost < 1.5
 
     assert model.started_at == 0
 
 
 def test_ai_model_timing_context_check_latency():
-    CONCURRENCY = 10
+    concurrency = 10
 
     def task(_):
         """
@@ -76,7 +77,8 @@ def test_ai_model_timing_context_check_latency():
         """
         model = MockAIModel(model_schemas=[])
         time_cost = model.invoke()
-        assert time_cost > 0 and time_cost < 1.5
+        assert time_cost > 0
+        assert time_cost < 1.5
 
-    with ThreadPoolExecutor(CONCURRENCY) as pool:
-        list(pool.map(task, range(CONCURRENCY)))
+    with ThreadPoolExecutor(concurrency) as pool:
+        list(pool.map(task, range(concurrency)))
