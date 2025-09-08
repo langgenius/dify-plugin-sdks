@@ -1,7 +1,9 @@
 import datetime
 from enum import Enum
+from typing import Optional
 
-from pydantic import BaseModel, Field
+from packaging.version import InvalidVersion, Version
+from pydantic import BaseModel, Field, field_validator
 
 from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.entities import I18nObject
@@ -152,10 +154,20 @@ class PluginConfiguration(BaseModel):
             description="The minimum version of Dify, designed for forward compatibility."
             "When installing a newer plugin to an older Dify, many new features may not be available,"
             "but showing the minimum Dify version helps users understand how to upgrade.",
-            pattern=r"^\d{1,4}(\.\d{1,4}){1,3}(-\w{1,16})?$",
         )
 
-    version: str = Field(..., pattern=r"^\d{1,4}(\.\d{1,4}){1,3}(-\w{1,16})?$")
+        @field_validator("minimum_dify_version")
+        @classmethod
+        def validate_minimum_dify_version(cls, v: Optional[str]) -> Optional[str]:
+            if v is None:
+                return v
+            try:
+                Version(v)
+                return v
+            except InvalidVersion as e:
+                raise ValueError(f"Invalid version format: {v}") from e
+
+    version: str = Field(...)
     type: PluginType
     author: str | None = Field(..., pattern=r"^[a-zA-Z0-9_-]{1,64}$")
     name: str = Field(..., pattern=r"^[a-z0-9_-]{1,128}$")
@@ -168,6 +180,15 @@ class PluginConfiguration(BaseModel):
     resource: PluginResourceRequirements
     plugins: Plugins
     meta: Meta
+
+    @field_validator("version")
+    @classmethod
+    def validate_version(cls, v: str) -> str:
+        try:
+            Version(v)
+            return v
+        except InvalidVersion as e:
+            raise ValueError(f"Invalid version format: {v}") from e
 
 
 @docs(
