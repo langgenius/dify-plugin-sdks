@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from typing import Any
 
 import requests
+from utils.dynamic_options import fetch_repositories
 from werkzeug import Request, Response
 
 from dify_plugin.entities import I18nObject, ParameterOption
@@ -21,7 +22,6 @@ from dify_plugin.errors.trigger import (
     TriggerValidationError,
 )
 from dify_plugin.interfaces.trigger import TriggerProvider
-from examples.github_trigger.utils.dynamic_options import fetch_repositories
 
 
 class GithubProvider(TriggerProvider):

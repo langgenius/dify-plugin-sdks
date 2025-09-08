@@ -1,12 +1,12 @@
 from collections.abc import Mapping
 from typing import Any
 
+from utils.dynamic_options import fetch_repositories
 from werkzeug import Request
 
 from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.trigger import Event
 from dify_plugin.interfaces.trigger import TriggerEvent
-from examples.github_trigger.utils.dynamic_options import fetch_repositories
 
 
 class IssueCommentTrigger(TriggerEvent):
