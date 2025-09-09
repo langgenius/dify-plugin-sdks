@@ -1,4 +1,3 @@
-import time
 from abc import abstractmethod
 
 from pydantic import ConfigDict
@@ -48,9 +47,8 @@ class ModerationModel(AIModel):
         :param user: unique user id
         :return: false if text is safe, true otherwise
         """
-        self.started_at = time.perf_counter()
-
-        try:
-            return self._invoke(model, credentials, text, user)
-        except Exception as e:
-            raise self._transform_invoke_error(e) from e
+        with self.timing_context():
+            try:
+                return self._invoke(model, credentials, text, user)
+            except Exception as e:
+                raise self._transform_invoke_error(e) from e

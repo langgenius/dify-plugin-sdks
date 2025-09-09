@@ -160,6 +160,10 @@ class LargeLanguageModel(AIModel):
             tokens=completion_tokens,
         )
 
+        # Calculate latency from thread-local storage
+        current_time = time.perf_counter()
+        latency = current_time - self.started_at
+
         # transform usage
         usage = LLMUsage(
             prompt_tokens=prompt_tokens,
@@ -173,7 +177,7 @@ class LargeLanguageModel(AIModel):
             total_tokens=prompt_tokens + completion_tokens,
             total_price=prompt_price_info.total_amount + completion_price_info.total_amount,
             currency=prompt_price_info.currency,
-            latency=time.perf_counter() - self.started_at,
+            latency=latency,
         )
 
         return usage
@@ -579,35 +583,35 @@ if you are not sure about the structure.
 
         model_parameters = self._validate_and_filter_model_parameters(model, model_parameters, credentials)
 
-        self.started_at = time.perf_counter()
+        with self.timing_context():
+            try:
+                if "response_format" in model_parameters and model_parameters["response_format"] in {"JSON", "XML"}:
+                    result = self._code_block_mode_wrapper(
+                        model=model,
+                        credentials=credentials,
+                        prompt_messages=prompt_messages,
+                        model_parameters=model_parameters,
+                        tools=tools,
+                        stop=stop,
+                        stream=stream,
+                        user=user,
+                    )
+                else:
+                    result = self._invoke(
+                        model,
+                        credentials,
+                        prompt_messages,
+                        model_parameters,
+                        tools,
+                        stop,
+                        stream,
+                        user,
+                    )
+            except Exception as e:
+                raise self._transform_invoke_error(e) from e
 
-        try:
-            if "response_format" in model_parameters and model_parameters["response_format"] in {"JSON", "XML"}:
-                result = self._code_block_mode_wrapper(
-                    model=model,
-                    credentials=credentials,
-                    prompt_messages=prompt_messages,
-                    model_parameters=model_parameters,
-                    tools=tools,
-                    stop=stop,
-                    stream=stream,
-                    user=user,
-                )
+            if isinstance(result, LLMResult):
+                yield result.to_llm_result_chunk()
             else:
-                result = self._invoke(
-                    model,
-                    credentials,
-                    prompt_messages,
-                    model_parameters,
-                    tools,
-                    stop,
-                    stream,
-                    user,
-                )
-        except Exception as e:
-            raise self._transform_invoke_error(e) from e
-
-        if isinstance(result, LLMResult):
-            yield result.to_llm_result_chunk()
-        else:
-            yield from result
+                # NOTE: `yield from` cannot been replaced by `return` because of `timing_context`
+                yield from result
