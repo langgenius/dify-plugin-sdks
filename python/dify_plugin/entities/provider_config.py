@@ -114,6 +114,7 @@ class ProviderConfig(BaseModel):
     required: bool = False
     default: Union[int, float, str, bool, list] | None = None
     options: list[ConfigOption] | None = None
+    multiple: bool | None = False
     label: I18nObject
     help: I18nObject | None = None
     url: str | None = None
