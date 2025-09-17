@@ -1,0 +1,78 @@
+identity:
+  name: star_deleted
+  author: langgenius
+  label:
+    en_US: Star Deleted
+    zh_Hans: Star 删除
+    pt_BR: Star Deletado
+
+description:
+  human:
+    en_US: Triggers when a star is removed from a repository
+    zh_Hans: 当从仓库移除 star 时触发
+    pt_BR: Dispara quando uma star é removida de um repositório
+  llm:
+    en_US: This trigger activates when a user removes a star from a GitHub repository, providing information about the repository and user who removed the star.
+    zh_Hans: 当用户从 GitHub 仓库移除 star 时，此触发器会被激活，提供有关仓库和移除 star 的用户的信息。
+    pt_BR: Este gatilho é ativado quando um usuário remove uma star de um repositório do GitHub, fornecendo informações sobre o repositório e usuário que removeu a star.
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    starred_at:
+      type: string
+      description: When the repository was originally starred (null for deleted events)
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        stargazers_count:
+          type: number
+          description: Number of stars
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who removed the star
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/star_deleted.py

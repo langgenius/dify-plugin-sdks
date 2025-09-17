@@ -310,7 +310,7 @@ class TriggerInvokeRequest(BaseModel):
 
 
 class TriggerInvokeResponse(BaseModel):
-    event: dict
+    event: Mapping[str, Any]
 
     model_config = ConfigDict(protected_namespaces=())
 

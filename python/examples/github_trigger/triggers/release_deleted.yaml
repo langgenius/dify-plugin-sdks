@@ -1,0 +1,149 @@
+identity:
+  name: release_deleted
+  author: langgenius
+  label:
+    en_US: Release Deleted
+    zh_Hans: Release 删除
+    pt_BR: Release Deletado
+
+description:
+  human:
+    en_US: Triggers when a release is deleted
+    zh_Hans: 当 release 删除时触发
+    pt_BR: Dispara quando um release é deletado
+  llm:
+    en_US: This trigger activates when a release is deleted on a GitHub repository, providing information about the release, repository, and user who deleted it.
+    zh_Hans: 当在 GitHub 仓库中 release 删除时，此触发器会被激活，提供有关 release、仓库和deleted它的用户的信息。
+    pt_BR: Este gatilho é ativado quando um release é deleted em um repositório do GitHub, fornecendo informações sobre o release, repositório e usuário que o deleted.
+
+parameters:
+  - name: tag_filter
+    label:
+      en_US: Tag Name Filter
+      zh_Hans: 标签名称过滤器
+      pt_BR: Filtro de Nome da Tag
+    type: string
+    required: false
+    description:
+      en_US: Filter by specific tag name (optional)
+      zh_Hans: 按特定标签名称过滤（可选）
+      pt_BR: Filtrar por nome específico da tag (opcional)
+
+output_schema:
+  type: object
+  properties:
+    release:
+      type: object
+      properties:
+        id:
+          type: number
+          description: The release ID
+        name:
+          type: string
+          description: The release name
+        tag_name:
+          type: string
+          description: The tag name associated with the release
+        target_commitish:
+          type: string
+          description: The target commitish for the release
+        body:
+          type: string
+          description: The release description/notes
+        draft:
+          type: boolean
+          description: Whether the release is a draft
+        prerelease:
+          type: boolean
+          description: Whether the release is a prerelease
+        html_url:
+          type: string
+          description: The URL to view the release on GitHub
+        created_at:
+          type: string
+          description: When the release was created
+        published_at:
+          type: string
+          description: When the release was published
+        assets:
+          type: array
+          description: Release assets
+          items:
+            type: object
+            properties:
+              id:
+                type: number
+                description: Asset ID
+              name:
+                type: string
+                description: Asset name
+              size:
+                type: number
+                description: Asset size in bytes
+              download_count:
+                type: number
+                description: Number of downloads
+              browser_download_url:
+                type: string
+                description: Direct download URL
+        author:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The username of the release author
+            avatar_url:
+              type: string
+              description: The avatar URL of the release author
+            html_url:
+              type: string
+              description: The profile URL of the release author
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who deleted the release
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/release_deleted.py

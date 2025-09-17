@@ -1,0 +1,152 @@
+identity:
+  name: pull_request_synchronize
+  author: langgenius
+  label:
+    en_US: Pull Request Synchronized
+    zh_Hans: Pull Request 同步
+    pt_BR: Pull Request Sincronizado
+
+description:
+  human:
+    en_US: Triggers when a pull request is synchronized (new commits pushed)
+    zh_Hans: 当 pull request 同步时触发（推送新提交）
+    pt_BR: Dispara quando um pull request é sincronizado (novos commits enviados)
+  llm:
+    en_US: This trigger activates when a pull request is synchronized on a GitHub repository, typically when new commits are pushed to the head branch, providing information about the updated pull request and the commit changes.
+    zh_Hans: 当在 GitHub 仓库中同步 pull request 时，此触发器会被激活，通常是当新提交推送到 head 分支时，提供有关更新的 pull request 和提交更改的信息。
+    pt_BR: Este gatilho é ativado quando um pull request é sincronizado em um repositório do GitHub, tipicamente quando novos commits são enviados para o branch head, fornecendo informações sobre o pull request atualizado e as mudanças de commit.
+
+parameters:
+  - name: pr_filter
+    label:
+      en_US: Pull Request Number Filter
+      zh_Hans: Pull Request 编号过滤器
+      pt_BR: Filtro de Número do Pull Request
+    type: number
+    required: false
+    description:
+      en_US: Filter by specific pull request number (optional)
+      zh_Hans: 按特定 pull request 编号过滤（可选）
+      pt_BR: Filtrar por número específico do pull request (opcional)
+
+output_schema:
+  type: object
+  properties:
+    pull_request:
+      type: object
+      properties:
+        number:
+          type: number
+          description: The pull request number
+        title:
+          type: string
+          description: The pull request title
+        body:
+          type: string
+          description: The pull request description
+        state:
+          type: string
+          description: The pull request state
+        html_url:
+          type: string
+          description: The URL to view the pull request on GitHub
+        updated_at:
+          type: string
+          description: When the pull request was last updated
+        draft:
+          type: boolean
+          description: Whether the pull request is a draft
+        merged:
+          type: boolean
+          description: Whether the pull request is merged
+        author:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The username of the pull request author
+            avatar_url:
+              type: string
+              description: The avatar URL of the pull request author
+            html_url:
+              type: string
+              description: The profile URL of the pull request author
+        head:
+          type: object
+          properties:
+            ref:
+              type: string
+              description: The head branch name
+            sha:
+              type: string
+              description: The head commit SHA
+            repo_name:
+              type: string
+              description: The head repository full name
+        base:
+          type: object
+          properties:
+            ref:
+              type: string
+              description: The base branch name
+            sha:
+              type: string
+              description: The base commit SHA
+            repo_name:
+              type: string
+              description: The base repository full name
+    before:
+      type: string
+      description: The SHA of the commit before the synchronization
+    after:
+      type: string
+      description: The SHA of the commit after the synchronization
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who triggered the synchronization
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/pull_request_synchronize.py

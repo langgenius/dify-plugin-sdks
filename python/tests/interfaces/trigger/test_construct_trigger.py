@@ -21,7 +21,7 @@ def test_construct_trigger():
 
     class TriggerImpl(TriggerEvent):
         def _trigger(self, request: Request, parameters: Mapping) -> Event:
-            return Event(properties={})
+            return Event(variables={})
 
     session = Session(
         session_id="test",

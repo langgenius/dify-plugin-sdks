@@ -1,0 +1,167 @@
+identity:
+  name: issue_comment_deleted
+  author: langgenius
+  label:
+    en_US: Issue Comment Deleted
+    zh_Hans: Issue 评论删除
+    pt_BR: Comentário de Issue Deletado
+
+description:
+  human:
+    en_US: Triggers when a comment is deleted on an issue or pull request
+    zh_Hans: 当 issue 或 pull request 上的评论被删除时触发
+    pt_BR: Dispara quando um comentário é deletado em uma issue ou pull request
+  llm:
+    en_US: This trigger activates when a comment is deleted on a GitHub issue or pull request, providing information about the deleted comment, issue, and user.
+    zh_Hans: 当 GitHub issue 或 pull request 上的评论被删除时，此触发器会被激活，提供有关删除的评论、issue 和用户的信息。
+    pt_BR: Este gatilho é ativado quando um comentário é deletado em uma issue ou pull request do GitHub, fornecendo informações sobre o comentário deletado, issue e usuário.
+
+parameters:
+  - name: issue_filter
+    label:
+      en_US: Issue Number Filter
+      zh_Hans: Issue 编号过滤器
+      pt_BR: Filtro de Número da Issue
+    type: number
+    required: false
+    description:
+      en_US: Filter by specific issue number (optional)
+      zh_Hans: 按特定 issue 编号过滤（可选）
+      pt_BR: Filtrar por número específico da issue (opcional)
+
+output_schema:
+  type: object
+  properties:
+    comment:
+      type: object
+      properties:
+        id:
+          type: number
+          description: The ID of the deleted comment
+        body:
+          type: string
+          description: The content of the deleted comment
+        html_url:
+          type: string
+          description: The URL where the comment was located
+        created_at:
+          type: string
+          description: When the comment was created
+        author:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The username of the comment author
+            avatar_url:
+              type: string
+              description: The avatar URL of the comment author
+            html_url:
+              type: string
+              description: The profile URL of the comment author
+    issue:
+      type: object
+      properties:
+        number:
+          type: number
+          description: The issue number
+        title:
+          type: string
+          description: The issue title
+        state:
+          type: string
+          description: The issue state (open, closed)
+        html_url:
+          type: string
+          description: The URL to view the issue on GitHub
+        body:
+          type: string
+          description: The issue description
+        labels:
+          type: array
+          description: Labels attached to the issue
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Label name
+              color:
+                type: string
+                description: Label color
+              description:
+                type: string
+                description: Label description
+        is_pull_request:
+          type: boolean
+          description: Whether this is a pull request
+        created_at:
+          type: string
+          description: When the issue was created
+        updated_at:
+          type: string
+          description: When the issue was last updated
+        assignees:
+          type: array
+          description: Users assigned to the issue
+          items:
+            type: object
+            properties:
+              login:
+                type: string
+                description: Assignee username
+              avatar_url:
+                type: string
+                description: Assignee avatar URL
+              html_url:
+                type: string
+                description: Assignee profile URL
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who deleted the comment
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/issue_comment_deleted.py

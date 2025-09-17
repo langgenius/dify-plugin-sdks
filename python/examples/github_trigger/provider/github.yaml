@@ -75,32 +75,152 @@ subscription_schema:
     - name: "events"
       type: "select"
       required: true
-      default: ["issue_comment", "issues"]
+      default: ["*"]
       multiple: true
       options:
-        - value: "issue_comment"
+        - value: "*"
           label:
-            en_US: "Issue Comments"
-            zh_Hans: "Issue 评论"
+            en_US: "All Events"
+            zh_Hans: "全部事件"
+            pt_BR: "Todos os Eventos"
         - value: "issues"
           label:
             en_US: "Issues"
             zh_Hans: "Issues"
+            pt_BR: "Issues"
+        - value: "issue_comment"
+          label:
+            en_US: "Issue Comments"
+            zh_Hans: "Issue 评论"
+            pt_BR: "Comentários de Issue"
         - value: "pull_request"
           label:
             en_US: "Pull Requests"
             zh_Hans: "Pull Requests"
+            pt_BR: "Pull Requests"
+        - value: "pull_request_review"
+          label:
+            en_US: "Pull Request Reviews"
+            zh_Hans: "PR 审查"
+            pt_BR: "Revisões de PR"
+        - value: "pull_request_review_comment"
+          label:
+            en_US: "Pull Request Review Comments"
+            zh_Hans: "PR 审查评论"
+            pt_BR: "Comentários de Revisão de PR"
         - value: "push"
           label:
             en_US: "Push"
             zh_Hans: "推送"
+            pt_BR: "Push"
+        - value: "create"
+          label:
+            en_US: "Create (Branch/Tag)"
+            zh_Hans: "创建（分支/标签）"
+            pt_BR: "Criar (Branch/Tag)"
+        - value: "delete"
+          label:
+            en_US: "Delete (Branch/Tag)"
+            zh_Hans: "删除（分支/标签）"
+            pt_BR: "Deletar (Branch/Tag)"
+        - value: "fork"
+          label:
+            en_US: "Fork"
+            zh_Hans: "Fork"
+            pt_BR: "Fork"
+        - value: "star"
+          label:
+            en_US: "Star"
+            zh_Hans: "Star"
+            pt_BR: "Star"
+        - value: "watch"
+          label:
+            en_US: "Watch"
+            zh_Hans: "Watch"
+            pt_BR: "Watch"
+        - value: "release"
+          label:
+            en_US: "Releases"
+            zh_Hans: "发布"
+            pt_BR: "Lançamentos"
+        - value: "repository"
+          label:
+            en_US: "Repository"
+            zh_Hans: "仓库"
+            pt_BR: "Repositório"
+        - value: "deployment"
+          label:
+            en_US: "Deployments"
+            zh_Hans: "部署"
+            pt_BR: "Implantações"
+        - value: "deployment_status"
+          label:
+            en_US: "Deployment Status"
+            zh_Hans: "部署状态"
+            pt_BR: "Status de Implantação"
+        - value: "workflow_run"
+          label:
+            en_US: "Workflow Runs"
+            zh_Hans: "工作流运行"
+            pt_BR: "Execuções de Workflow"
+        - value: "workflow_dispatch"
+          label:
+            en_US: "Workflow Dispatch"
+            zh_Hans: "工作流触发"
+            pt_BR: "Disparo de Workflow"
+        - value: "discussion"
+          label:
+            en_US: "Discussions"
+            zh_Hans: "讨论"
+            pt_BR: "Discussões"
+        - value: "discussion_comment"
+          label:
+            en_US: "Discussion Comments"
+            zh_Hans: "讨论评论"
+            pt_BR: "Comentários de Discussão"
+        - value: "commit_comment"
+          label:
+            en_US: "Commit Comments"
+            zh_Hans: "提交评论"
+            pt_BR: "Comentários de Commit"
+        - value: "member"
+          label:
+            en_US: "Members"
+            zh_Hans: "成员"
+            pt_BR: "Membros"
+        - value: "milestone"
+          label:
+            en_US: "Milestones"
+            zh_Hans: "里程碑"
+            pt_BR: "Marcos"
+        - value: "label"
+          label:
+            en_US: "Labels"
+            zh_Hans: "标签"
+            pt_BR: "Etiquetas"
+        - value: "package"
+          label:
+            en_US: "Packages"
+            zh_Hans: "包"
+            pt_BR: "Pacotes"
+        - value: "gollum"
+          label:
+            en_US: "Wiki Pages"
+            zh_Hans: "Wiki 页面"
+            pt_BR: "Páginas Wiki"
+        - value: "ping"
+          label:
+            en_US: "Ping"
+            zh_Hans: "Ping"
+            pt_BR: "Ping"
       label:
         zh_Hans: "监听事件"
         en_US: "Events to Listen"
+        pt_BR: "Eventos para Escutar"
       help:
-        en_US: "Select which GitHub events to subscribe to"
-        pt_BR: "Selecione quais eventos do GitHub inscrever-se"
-        zh_Hans: "选择要订阅的 GitHub 事件"
+        en_US: "Select which GitHub events to subscribe to (select 'All Events' for all)"
+        pt_BR: "Selecione quais eventos do GitHub inscrever-se (selecione 'Todos os Eventos' para todos)"
+        zh_Hans: '选择要订阅的 GitHub 事件（选择"全部事件"以订阅所有）'
   properties_schema:
     - name: "webhook_secret"
       type: "secret-input"
@@ -114,7 +234,130 @@ subscription_schema:
         zh_Hans: "可选的用于验证 GitHub webhook 请求的 webhook 密钥"
 
 triggers:
-  - triggers/issue_comment.yaml
+  # Issue Comment Events
+  - triggers/issue_comment_created.yaml
+  - triggers/issue_comment_edited.yaml
+  - triggers/issue_comment_deleted.yaml
+
+  # Issue Events
+  - triggers/issue_opened.yaml
+  - triggers/issue_closed.yaml
+  - triggers/issue_reopened.yaml
+  - triggers/issue_edited.yaml
+  - triggers/issue_assigned.yaml
+  - triggers/issue_unassigned.yaml
+  - triggers/issue_labeled.yaml
+  - triggers/issue_unlabeled.yaml
+
+  # Pull Request Events
+  - triggers/pull_request_opened.yaml
+  - triggers/pull_request_closed.yaml
+  - triggers/pull_request_reopened.yaml
+  - triggers/pull_request_edited.yaml
+  - triggers/pull_request_synchronize.yaml
+  - triggers/pull_request_converted_to_draft.yaml
+  - triggers/pull_request_ready_for_review.yaml
+  - triggers/pull_request_locked.yaml
+  - triggers/pull_request_unlocked.yaml
+  - triggers/pull_request_assigned.yaml
+  - triggers/pull_request_unassigned.yaml
+  - triggers/pull_request_labeled.yaml
+  - triggers/pull_request_unlabeled.yaml
+  - triggers/pull_request_review_requested.yaml
+  - triggers/pull_request_review_request_removed.yaml
+  - triggers/pull_request_auto_merge_enabled.yaml
+  - triggers/pull_request_auto_merge_disabled.yaml
+
+  # Pull Request Review Events
+  - triggers/pull_request_review_submitted.yaml
+  - triggers/pull_request_review_edited.yaml
+  - triggers/pull_request_review_dismissed.yaml
+
+  # Pull Request Review Comment Events
+  - triggers/pull_request_review_comment_created.yaml
+  - triggers/pull_request_review_comment_edited.yaml
+  - triggers/pull_request_review_comment_deleted.yaml
+
+  # Code Events
+  - triggers/push.yaml
+  - triggers/create.yaml
+  - triggers/delete.yaml
+  - triggers/commit_comment.yaml
+
+  # Release Events
+  - triggers/release_published.yaml
+  - triggers/release_unpublished.yaml
+  - triggers/release_created.yaml
+  - triggers/release_edited.yaml
+  - triggers/release_deleted.yaml
+  - triggers/release_prereleased.yaml
+  - triggers/release_released.yaml
+
+  # Repository Events
+  - triggers/repository_created.yaml
+  - triggers/repository_deleted.yaml
+  - triggers/repository_archived.yaml
+  - triggers/repository_unarchived.yaml
+  - triggers/repository_edited.yaml
+  - triggers/repository_renamed.yaml
+  - triggers/repository_transferred.yaml
+  - triggers/repository_publicized.yaml
+  - triggers/repository_privatized.yaml
+  - triggers/fork.yaml
+  - triggers/star_created.yaml
+  - triggers/star_deleted.yaml
+  - triggers/watch.yaml
+
+  # Collaboration Events
+  - triggers/member_added.yaml
+  - triggers/member_removed.yaml
+  - triggers/member_edited.yaml
+
+  # Workflow Events
+  - triggers/workflow_dispatch.yaml
+  - triggers/workflow_run_requested.yaml
+  - triggers/workflow_run_in_progress.yaml
+  - triggers/workflow_run_completed.yaml
+
+  # Deployment Events
+  - triggers/deployment_created.yaml
+  - triggers/deployment_status_created.yaml
+
+  # Discussion Events
+  - triggers/discussion_created.yaml
+  - triggers/discussion_edited.yaml
+  - triggers/discussion_deleted.yaml
+  - triggers/discussion_transferred.yaml
+  - triggers/discussion_pinned.yaml
+  - triggers/discussion_unpinned.yaml
+  - triggers/discussion_labeled.yaml
+  - triggers/discussion_unlabeled.yaml
+  - triggers/discussion_locked.yaml
+  - triggers/discussion_unlocked.yaml
+  - triggers/discussion_category_changed.yaml
+  - triggers/discussion_answered.yaml
+  - triggers/discussion_unanswered.yaml
+  - triggers/discussion_comment_created.yaml
+  - triggers/discussion_comment_edited.yaml
+  - triggers/discussion_comment_deleted.yaml
+
+  # Wiki Events
+  - triggers/wiki_page_updated.yaml
+
+  # Milestone & Label Events
+  - triggers/milestone_created.yaml
+  - triggers/milestone_closed.yaml
+  - triggers/milestone_opened.yaml
+  - triggers/milestone_edited.yaml
+  - triggers/milestone_deleted.yaml
+  - triggers/label_created.yaml
+  - triggers/label_edited.yaml
+  - triggers/label_deleted.yaml
+
+  # Other Events
+  - triggers/package_published.yaml
+  - triggers/package_updated.yaml
+  - triggers/ping.yaml
 
 identity:
   author: langgenius

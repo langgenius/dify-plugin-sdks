@@ -1,0 +1,106 @@
+identity:
+  name: delete
+  author: langgenius
+  label:
+    en_US: Branch/Tag Deleted
+    zh_Hans: 分支/标签删除
+    pt_BR: Branch/Tag Deletado
+
+description:
+  human:
+    en_US: Triggers when a branch or tag is deleted
+    zh_Hans: 当分支或标签被删除时触发
+    pt_BR: Dispara quando um branch ou tag é deletado
+  llm:
+    en_US: This trigger activates when a branch or tag is deleted on a GitHub repository, providing information about the deleted reference, repository, and user who deleted it.
+    zh_Hans: 当在 GitHub 仓库中删除分支或标签时，此触发器会被激活，提供有关被删除的引用、仓库和删除它的用户的信息。
+    pt_BR: Este gatilho é ativado quando um branch ou tag é deletado em um repositório do GitHub, fornecendo informações sobre a referência deletada, repositório e usuário que a deletou.
+
+parameters:
+  - name: ref_type_filter
+    label:
+      en_US: Reference Type Filter
+      zh_Hans: 引用类型过滤器
+      pt_BR: Filtro de Tipo de Referência
+    type: select
+    required: false
+    options:
+      - value: branch
+        label:
+          en_US: Branch only
+          zh_Hans: 仅分支
+          pt_BR: Apenas branch
+      - value: tag
+        label:
+          en_US: Tag only
+          zh_Hans: 仅标签
+          pt_BR: Apenas tag
+    description:
+      en_US: Filter by reference type (optional)
+      zh_Hans: 按引用类型过滤（可选）
+      pt_BR: Filtrar por tipo de referência (opcional)
+
+output_schema:
+  type: object
+  properties:
+    ref:
+      type: string
+      description: The deleted reference name (without refs/heads/ or refs/tags/ prefix)
+    ref_type:
+      type: string
+      description: The type of reference (branch or tag)
+    pusher_type:
+      type: string
+      description: The type of pusher (user or deploy key)
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        default_branch:
+          type: string
+          description: The default branch name
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who deleted the reference
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/delete.py

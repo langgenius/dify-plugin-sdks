@@ -1,0 +1,200 @@
+identity:
+  name: push
+  author: langgenius
+  label:
+    en_US: Push
+    zh_Hans: 推送
+    pt_BR: Push
+
+description:
+  human:
+    en_US: Triggers when commits are pushed to a repository
+    zh_Hans: 当提交推送到仓库时触发
+    pt_BR: Dispara quando commits são enviados para um repositório
+  llm:
+    en_US: This trigger activates when commits are pushed to a GitHub repository, providing detailed information about the commits, the branch they were pushed to, and the repository.
+    zh_Hans: 当提交推送到 GitHub 仓库时，此触发器会被激活，提供有关提交、推送到的分支和仓库的详细信息。
+    pt_BR: Este gatilho é ativado quando commits são enviados para um repositório do GitHub, fornecendo informações detalhadas sobre os commits, o branch para o qual foram enviados e o repositório.
+
+parameters:
+  - name: branch_filter
+    label:
+      en_US: Branch Name Filter
+      zh_Hans: 分支名称过滤器
+      pt_BR: Filtro de Nome do Branch
+    type: string
+    required: false
+    description:
+      en_US: Filter by specific branch name (optional)
+      zh_Hans: 按特定分支名称过滤（可选）
+      pt_BR: Filtrar por nome específico do branch (opcional)
+
+output_schema:
+  type: object
+  properties:
+    push:
+      type: object
+      properties:
+        ref:
+          type: string
+          description: The full git ref that was pushed
+        branch:
+          type: string
+          description: The branch name that was pushed to
+        before:
+          type: string
+          description: The SHA of the most recent commit before the push
+        after:
+          type: string
+          description: The SHA of the most recent commit after the push
+        created:
+          type: boolean
+          description: Whether this push created the branch
+        deleted:
+          type: boolean
+          description: Whether this push deleted the branch
+        forced:
+          type: boolean
+          description: Whether this was a force push
+        commits:
+          type: array
+          description: Array of commits that were pushed
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: The commit SHA
+              message:
+                type: string
+                description: The commit message
+              timestamp:
+                type: string
+                description: When the commit was made
+              url:
+                type: string
+                description: URL to view the commit
+              author:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: Author name
+                  email:
+                    type: string
+                    description: Author email
+                  username:
+                    type: string
+                    description: Author GitHub username
+              committer:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: Committer name
+                  email:
+                    type: string
+                    description: Committer email
+                  username:
+                    type: string
+                    description: Committer GitHub username
+              added:
+                type: array
+                description: Files added in this commit
+                items:
+                  type: string
+              removed:
+                type: array
+                description: Files removed in this commit
+                items:
+                  type: string
+              modified:
+                type: array
+                description: Files modified in this commit
+                items:
+                  type: string
+        head_commit:
+          type: object
+          properties:
+            id:
+              type: string
+              description: The head commit SHA
+            message:
+              type: string
+              description: The head commit message
+            timestamp:
+              type: string
+              description: When the head commit was made
+            url:
+              type: string
+              description: URL to view the head commit
+            author:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Author name
+                email:
+                  type: string
+                  description: Author email
+                username:
+                  type: string
+                  description: Author GitHub username
+        compare:
+          type: string
+          description: URL to compare the changes
+        size:
+          type: number
+          description: Number of commits in the push
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        default_branch:
+          type: string
+          description: The default branch of the repository
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who pushed the commits
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/push.py

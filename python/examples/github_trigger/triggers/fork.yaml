@@ -1,0 +1,132 @@
+identity:
+  name: fork
+  author: langgenius
+  label:
+    en_US: Fork
+    zh_Hans: 分叉
+    pt_BR: Fork
+
+description:
+  human:
+    en_US: Triggers when a repository is forked
+    zh_Hans: 当仓库被分叉时触发
+    pt_BR: Dispara quando um repositório é bifurcado
+  llm:
+    en_US: This trigger activates when a GitHub repository is forked, providing information about the new fork and the original repository.
+    zh_Hans: 当 GitHub 仓库被分叉时，此触发器会被激活，提供有关新分叉和原始仓库的信息。
+    pt_BR: Este gatilho é ativado quando um repositório do GitHub é bifurcado, fornecendo informações sobre o novo fork e o repositório original.
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    fork:
+      type: object
+      properties:
+        id:
+          type: number
+          description: The fork repository ID
+        name:
+          type: string
+          description: The fork repository name
+        full_name:
+          type: string
+          description: The full fork repository name (owner/repo)
+        html_url:
+          type: string
+          description: The fork repository URL
+        description:
+          type: string
+          description: The fork repository description
+        private:
+          type: boolean
+          description: Whether the fork is private
+        created_at:
+          type: string
+          description: When the fork was created
+        updated_at:
+          type: string
+          description: When the fork was last updated
+        clone_url:
+          type: string
+          description: The HTTPS clone URL of the fork
+        ssh_url:
+          type: string
+          description: The SSH clone URL of the fork
+        default_branch:
+          type: string
+          description: The default branch of the fork
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Fork owner username
+            avatar_url:
+              type: string
+              description: Fork owner avatar URL
+            html_url:
+              type: string
+              description: Fork owner profile URL
+            type:
+              type: string
+              description: The type of the fork owner (User, Organization)
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The original repository name
+        full_name:
+          type: string
+          description: The full original repository name (owner/repo)
+        html_url:
+          type: string
+          description: The original repository URL
+        description:
+          type: string
+          description: The original repository description
+        private:
+          type: boolean
+          description: Whether the original repository is private
+        forks_count:
+          type: number
+          description: Number of forks of the original repository
+        stargazers_count:
+          type: number
+          description: Number of stars on the original repository
+        watchers_count:
+          type: number
+          description: Number of watchers of the original repository
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Original repository owner username
+            avatar_url:
+              type: string
+              description: Original repository owner avatar URL
+            html_url:
+              type: string
+              description: Original repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who created the fork
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/fork.py

@@ -1,0 +1,188 @@
+identity:
+  name: pull_request_closed
+  author: langgenius
+  label:
+    en_US: Pull Request Closed
+    zh_Hans: Pull Request 关闭
+    pt_BR: Pull Request Fechado
+
+description:
+  human:
+    en_US: Triggers when a pull request is closed (merged or unmerged)
+    zh_Hans: 当 pull request 关闭时触发（合并或未合并）
+    pt_BR: Dispara quando um pull request é fechado (mesclado ou não mesclado)
+  llm:
+    en_US: This trigger activates when a pull request is closed on a GitHub repository, whether it was merged or closed without merging, providing information about the pull request, repository, and user who closed it.
+    zh_Hans: 当在 GitHub 仓库中关闭 pull request 时，此触发器会被激活，无论是合并还是未合并关闭，提供有关 pull request、仓库和关闭它的用户的信息。
+    pt_BR: Este gatilho é ativado quando um pull request é fechado em um repositório do GitHub, seja mesclado ou fechado sem mesclar, fornecendo informações sobre o pull request, repositório e usuário que o fechou.
+
+parameters:
+  - name: pr_filter
+    label:
+      en_US: Pull Request Number Filter
+      zh_Hans: Pull Request 编号过滤器
+      pt_BR: Filtro de Número do Pull Request
+    type: number
+    required: false
+    description:
+      en_US: Filter by specific pull request number (optional)
+      zh_Hans: 按特定 pull request 编号过滤（可选）
+      pt_BR: Filtrar por número específico do pull request (opcional)
+
+output_schema:
+  type: object
+  properties:
+    pull_request:
+      type: object
+      properties:
+        number:
+          type: number
+          description: The pull request number
+        title:
+          type: string
+          description: The pull request title
+        body:
+          type: string
+          description: The pull request description
+        state:
+          type: string
+          description: The pull request state (always "closed" for closed events)
+        html_url:
+          type: string
+          description: The URL to view the pull request on GitHub
+        created_at:
+          type: string
+          description: When the pull request was created
+        updated_at:
+          type: string
+          description: When the pull request was last updated
+        closed_at:
+          type: string
+          description: When the pull request was closed
+        merged_at:
+          type: string
+          description: When the pull request was merged (null if not merged)
+        draft:
+          type: boolean
+          description: Whether the pull request is a draft
+        merged:
+          type: boolean
+          description: Whether the pull request was merged
+        mergeable:
+          type: boolean
+          description: Whether the pull request is mergeable
+        labels:
+          type: array
+          description: Labels attached to the pull request
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Label name
+              color:
+                type: string
+                description: Label color
+              description:
+                type: string
+                description: Label description
+        assignees:
+          type: array
+          description: Users assigned to the pull request
+          items:
+            type: object
+            properties:
+              login:
+                type: string
+                description: Assignee username
+              avatar_url:
+                type: string
+                description: Assignee avatar URL
+              html_url:
+                type: string
+                description: Assignee profile URL
+        author:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The username of the pull request author
+            avatar_url:
+              type: string
+              description: The avatar URL of the pull request author
+            html_url:
+              type: string
+              description: The profile URL of the pull request author
+        head:
+          type: object
+          properties:
+            ref:
+              type: string
+              description: The head branch name
+            sha:
+              type: string
+              description: The head commit SHA
+            repo_name:
+              type: string
+              description: The head repository full name
+        base:
+          type: object
+          properties:
+            ref:
+              type: string
+              description: The base branch name
+            sha:
+              type: string
+              description: The base commit SHA
+            repo_name:
+              type: string
+              description: The base repository full name
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who closed the pull request
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/pull_request_closed.py

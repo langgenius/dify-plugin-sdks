@@ -1,0 +1,146 @@
+identity:
+  name: issue_opened
+  author: langgenius
+  label:
+    en_US: Issue Opened
+    zh_Hans: Issue 打开
+    pt_BR: Issue Aberta
+
+description:
+  human:
+    en_US: Triggers when a new issue is opened
+    zh_Hans: 当新 issue 打开时触发
+    pt_BR: Dispara quando uma nova issue é aberta
+  llm:
+    en_US: This trigger activates when a new issue is opened on a GitHub repository, providing information about the issue, repository, and user who opened it.
+    zh_Hans: 当在 GitHub 仓库中打开新 issue 时，此触发器会被激活，提供有关 issue、仓库和打开它的用户的信息。
+    pt_BR: Este gatilho é ativado quando uma nova issue é aberta em um repositório do GitHub, fornecendo informações sobre a issue, repositório e usuário que a abriu.
+
+parameters:
+  - name: issue_filter
+    label:
+      en_US: Issue Number Filter
+      zh_Hans: Issue 编号过滤器
+      pt_BR: Filtro de Número da Issue
+    type: number
+    required: false
+    description:
+      en_US: Filter by specific issue number (optional)
+      zh_Hans: 按特定 issue 编号过滤（可选）
+      pt_BR: Filtrar por número específico da issue (opcional)
+
+output_schema:
+  type: object
+  properties:
+    issue:
+      type: object
+      properties:
+        number:
+          type: number
+          description: The issue number
+        title:
+          type: string
+          description: The issue title
+        body:
+          type: string
+          description: The issue description
+        state:
+          type: string
+          description: The issue state (always "open" for opened events)
+        html_url:
+          type: string
+          description: The URL to view the issue on GitHub
+        created_at:
+          type: string
+          description: When the issue was created
+        labels:
+          type: array
+          description: Labels attached to the issue
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Label name
+              color:
+                type: string
+                description: Label color
+              description:
+                type: string
+                description: Label description
+        assignees:
+          type: array
+          description: Users assigned to the issue
+          items:
+            type: object
+            properties:
+              login:
+                type: string
+                description: Assignee username
+              avatar_url:
+                type: string
+                description: Assignee avatar URL
+              html_url:
+                type: string
+                description: Assignee profile URL
+        author:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The username of the issue author
+            avatar_url:
+              type: string
+              description: The avatar URL of the issue author
+            html_url:
+              type: string
+              description: The profile URL of the issue author
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who opened the issue
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/issue_opened.py

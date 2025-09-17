@@ -1,0 +1,143 @@
+identity:
+  name: pull_request_review_submitted
+  author: langgenius
+  label:
+    en_US: Pull Request Review Submitted
+    zh_Hans: Pull Request Review 提交
+    pt_BR: Revisão de Pull Request Submetida
+
+description:
+  human:
+    en_US: Triggers when a pull request review is submitted
+    zh_Hans: 当 pull request 审查提交时触发
+    pt_BR: Dispara quando uma revisão de pull request é submetida
+  llm:
+    en_US: This trigger activates when a pull request review is submitted on a GitHub repository, providing information about the review, pull request, repository, and user who submitted it.
+    zh_Hans: 当在 GitHub 仓库中 pull request 审查提交时，此触发器会被激活，提供有关审查、pull request、仓库和submitted它的用户的信息。
+    pt_BR: Este gatilho é ativado quando uma revisão de pull request é submitted em um repositório do GitHub, fornecendo informações sobre a revisão, pull request, repositório e usuário que a submitted.
+
+parameters:
+  - name: pr_filter
+    label:
+      en_US: PR Number Filter
+      zh_Hans: PR 编号过滤器
+      pt_BR: Filtro de Número do PR
+    type: number
+    required: false
+    description:
+      en_US: Filter by specific PR number (optional)
+      zh_Hans: 按特定 PR 编号过滤（可选）
+      pt_BR: Filtrar por número específico do PR (opcional)
+
+output_schema:
+  type: object
+  properties:
+    review:
+      type: object
+      properties:
+        id:
+          type: number
+          description: The review ID
+        body:
+          type: string
+          description: The review body/comment
+        state:
+          type: string
+          description: The review state (approved, changes_requested, commented)
+        html_url:
+          type: string
+          description: The URL to view the review on GitHub
+        submitted_at:
+          type: string
+          description: When the review was submitted
+        author:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The username of the review author
+            avatar_url:
+              type: string
+              description: The avatar URL of the review author
+            html_url:
+              type: string
+              description: The profile URL of the review author
+    pull_request:
+      type: object
+      properties:
+        number:
+          type: number
+          description: The pull request number
+        title:
+          type: string
+          description: The pull request title
+        body:
+          type: string
+          description: The pull request description
+        state:
+          type: string
+          description: The pull request state
+        html_url:
+          type: string
+          description: The URL to view the pull request on GitHub
+        author:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The username of the pull request author
+            avatar_url:
+              type: string
+              description: The avatar URL of the pull request author
+            html_url:
+              type: string
+              description: The profile URL of the pull request author
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who submitted the review
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/pull_request_review_submitted.py

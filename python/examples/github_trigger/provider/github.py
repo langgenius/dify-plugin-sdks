@@ -11,7 +11,7 @@ import requests
 from utils.dynamic_options import fetch_repositories
 from werkzeug import Request, Response
 
-from dify_plugin.entities import I18nObject, ParameterOption
+from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.oauth import TriggerOAuthCredentials
 from dify_plugin.entities.trigger import Subscription, TriggerDispatch, Unsubscription
 from dify_plugin.errors.trigger import (
@@ -85,7 +85,7 @@ class GithubProvider(TriggerProvider):
 
     def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
         """
-        Dispatch GitHub webhook events - focusing on issue comment events
+        Dispatch GitHub webhook events to appropriate triggers
         """
         # Verify webhook signature if secret is provided
         webhook_secret = subscription.properties.get("webhook_secret")
@@ -127,25 +127,259 @@ class GithubProvider(TriggerProvider):
         except Exception as e:
             raise TriggerDispatchError(f"Failed to parse payload: {e}") from e
 
+        # Get the action from payload if present
+        action = payload.get("action", "")
+
         response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
 
-        # Create trigger event dispatch with GitHub event type
-        # Map GitHub events to our trigger events
+        # Create list of triggers to dispatch
+        triggers = []
+
+        # Map GitHub events to trigger names based on event type and action
         if event_type == "issue_comment":
-            return TriggerDispatch(triggers=["issue_comment"], response=response)
+            if action == "created":
+                triggers.append("issue_comment_created")
+            elif action == "edited":
+                triggers.append("issue_comment_edited")
+            elif action == "deleted":
+                triggers.append("issue_comment_deleted")
+
         elif event_type == "issues":
-            # Issues event can trigger multiple workflows based on action
-            action = payload.get("action")
             if action == "opened":
-                # Dispatch both generic issues event and specific opened event
-                return TriggerDispatch(triggers=["issues", "issues.opened"], response=response)
+                triggers.append("issue_opened")
             elif action == "closed":
-                return TriggerDispatch(triggers=["issues", "issues.closed"], response=response)
-            else:
-                return TriggerDispatch(triggers=["issues"], response=response)
+                triggers.append("issue_closed")
+            elif action == "reopened":
+                triggers.append("issue_reopened")
+            elif action == "edited":
+                triggers.append("issue_edited")
+            elif action == "assigned":
+                triggers.append("issue_assigned")
+            elif action == "unassigned":
+                triggers.append("issue_unassigned")
+            elif action == "labeled":
+                triggers.append("issue_labeled")
+            elif action == "unlabeled":
+                triggers.append("issue_unlabeled")
+
+        elif event_type == "pull_request":
+            if action == "opened":
+                triggers.append("pull_request_opened")
+            elif action == "closed":
+                triggers.append("pull_request_closed")
+            elif action == "reopened":
+                triggers.append("pull_request_reopened")
+            elif action == "edited":
+                triggers.append("pull_request_edited")
+            elif action == "synchronize":
+                triggers.append("pull_request_synchronize")
+            elif action == "converted_to_draft":
+                triggers.append("pull_request_converted_to_draft")
+            elif action == "ready_for_review":
+                triggers.append("pull_request_ready_for_review")
+            elif action == "locked":
+                triggers.append("pull_request_locked")
+            elif action == "unlocked":
+                triggers.append("pull_request_unlocked")
+            elif action == "assigned":
+                triggers.append("pull_request_assigned")
+            elif action == "unassigned":
+                triggers.append("pull_request_unassigned")
+            elif action == "labeled":
+                triggers.append("pull_request_labeled")
+            elif action == "unlabeled":
+                triggers.append("pull_request_unlabeled")
+            elif action == "review_requested":
+                triggers.append("pull_request_review_requested")
+            elif action == "review_request_removed":
+                triggers.append("pull_request_review_request_removed")
+            elif action == "auto_merge_enabled":
+                triggers.append("pull_request_auto_merge_enabled")
+            elif action == "auto_merge_disabled":
+                triggers.append("pull_request_auto_merge_disabled")
+
+        elif event_type == "pull_request_review":
+            if action == "submitted":
+                triggers.append("pull_request_review_submitted")
+            elif action == "edited":
+                triggers.append("pull_request_review_edited")
+            elif action == "dismissed":
+                triggers.append("pull_request_review_dismissed")
+
+        elif event_type == "pull_request_review_comment":
+            if action == "created":
+                triggers.append("pull_request_review_comment_created")
+            elif action == "edited":
+                triggers.append("pull_request_review_comment_edited")
+            elif action == "deleted":
+                triggers.append("pull_request_review_comment_deleted")
+
+        elif event_type == "push":
+            triggers.append("push")
+
+        elif event_type == "create":
+            triggers.append("create")
+
+        elif event_type == "delete":
+            triggers.append("delete")
+
+        elif event_type == "commit_comment":
+            triggers.append("commit_comment")
+
+        elif event_type == "release":
+            if action == "published":
+                triggers.append("release_published")
+            elif action == "unpublished":
+                triggers.append("release_unpublished")
+            elif action == "created":
+                triggers.append("release_created")
+            elif action == "edited":
+                triggers.append("release_edited")
+            elif action == "deleted":
+                triggers.append("release_deleted")
+            elif action == "prereleased":
+                triggers.append("release_prereleased")
+            elif action == "released":
+                triggers.append("release_released")
+
+        elif event_type == "repository":
+            if action == "created":
+                triggers.append("repository_created")
+            elif action == "deleted":
+                triggers.append("repository_deleted")
+            elif action == "archived":
+                triggers.append("repository_archived")
+            elif action == "unarchived":
+                triggers.append("repository_unarchived")
+            elif action == "edited":
+                triggers.append("repository_edited")
+            elif action == "renamed":
+                triggers.append("repository_renamed")
+            elif action == "transferred":
+                triggers.append("repository_transferred")
+            elif action == "publicized":
+                triggers.append("repository_publicized")
+            elif action == "privatized":
+                triggers.append("repository_privatized")
+
+        elif event_type == "fork":
+            triggers.append("fork")
+
+        elif event_type == "star":
+            if action == "created":
+                triggers.append("star_created")
+            elif action == "deleted":
+                triggers.append("star_deleted")
+
+        elif event_type == "watch":
+            triggers.append("watch")
+
+        elif event_type == "member":
+            if action == "added":
+                triggers.append("member_added")
+            elif action == "removed":
+                triggers.append("member_removed")
+            elif action == "edited":
+                triggers.append("member_edited")
+
+        elif event_type == "workflow_run":
+            if action == "requested":
+                triggers.append("workflow_run_requested")
+            elif action == "completed":
+                triggers.append("workflow_run_completed")
+            elif action == "in_progress":
+                triggers.append("workflow_run_in_progress")
+
+        elif event_type == "workflow_dispatch":
+            triggers.append("workflow_dispatch")
+
+        elif event_type == "deployment":
+            triggers.append("deployment_created")
+
+        elif event_type == "deployment_status":
+            triggers.append("deployment_status_created")
+
+        elif event_type == "discussion":
+            if action == "created":
+                triggers.append("discussion_created")
+            elif action == "edited":
+                triggers.append("discussion_edited")
+            elif action == "deleted":
+                triggers.append("discussion_deleted")
+            elif action == "transferred":
+                triggers.append("discussion_transferred")
+            elif action == "pinned":
+                triggers.append("discussion_pinned")
+            elif action == "unpinned":
+                triggers.append("discussion_unpinned")
+            elif action == "labeled":
+                triggers.append("discussion_labeled")
+            elif action == "unlabeled":
+                triggers.append("discussion_unlabeled")
+            elif action == "locked":
+                triggers.append("discussion_locked")
+            elif action == "unlocked":
+                triggers.append("discussion_unlocked")
+            elif action == "category_changed":
+                triggers.append("discussion_category_changed")
+            elif action == "answered":
+                triggers.append("discussion_answered")
+            elif action == "unanswered":
+                triggers.append("discussion_unanswered")
+
+        elif event_type == "discussion_comment":
+            if action == "created":
+                triggers.append("discussion_comment_created")
+            elif action == "edited":
+                triggers.append("discussion_comment_edited")
+            elif action == "deleted":
+                triggers.append("discussion_comment_deleted")
+
+        elif event_type == "milestone":
+            if action == "created":
+                triggers.append("milestone_created")
+            elif action == "closed":
+                triggers.append("milestone_closed")
+            elif action == "opened":
+                triggers.append("milestone_opened")
+            elif action == "edited":
+                triggers.append("milestone_edited")
+            elif action == "deleted":
+                triggers.append("milestone_deleted")
+
+        elif event_type == "label":
+            if action == "created":
+                triggers.append("label_created")
+            elif action == "edited":
+                triggers.append("label_edited")
+            elif action == "deleted":
+                triggers.append("label_deleted")
+
+        elif event_type == "gollum":
+            triggers.append("wiki_page_updated")
+
+        elif event_type == "ping":
+            triggers.append("ping")
+
+        elif event_type == "package":
+            if action == "published":
+                triggers.append("package_published")
+            elif action == "updated":
+                triggers.append("package_updated")
+
         else:
-            # For other events, pass them through with prefix
-            return TriggerDispatch(triggers=[f"github.{event_type}"], response=response)
+            # For unhandled events, create a generic trigger name
+            if action:
+                triggers.append(f"{event_type}_{action}")
+            else:
+                triggers.append(event_type)
+
+        # Return the trigger dispatch
+        if triggers:
+            return TriggerDispatch(triggers=triggers, response=response)
+        else:
+            # No matching triggers, return empty
+            return TriggerDispatch(triggers=[], response=response)
 
     def _subscribe(self, endpoint: str, credentials: Mapping[str, Any], parameters: Mapping[str, Any]) -> Subscription:
         """
@@ -292,15 +526,4 @@ class GithubProvider(TriggerProvider):
         if parameter == "repository":
             return fetch_repositories(self.runtime.credentials.get("access_tokens"))
 
-        return [
-            ParameterOption(
-                value="iamjoel",
-                label=I18nObject(en_US="Joel"),
-                icon="https://avatars.githubusercontent.com/u/2120155?s=40&v=4",
-            ),
-            ParameterOption(
-                value="yeuoly",
-                label=I18nObject(en_US="Yeuoly"),
-                icon="https://avatars.githubusercontent.com/u/45712896?s=60&v=4",
-            ),
-        ]
+        return []

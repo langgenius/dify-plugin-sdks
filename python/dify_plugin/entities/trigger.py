@@ -43,9 +43,9 @@ class Event(BaseModel):
     The response of the trigger
     """
 
-    properties: Mapping[str, Any] = Field(
+    variables: Mapping[str, Any] = Field(
         ...,
-        description="The properties of the trigger, must have the same schema as defined `output_schema` in the YAML",
+        description="The output variables of the event, must have the same schema as defined `output_schema` in the YAML",
     )
 
 

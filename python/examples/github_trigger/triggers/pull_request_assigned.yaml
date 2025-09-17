@@ -1,0 +1,113 @@
+identity:
+  name: pull_request_assigned
+  author: langgenius
+  label:
+    en_US: Pull Request Assigned
+    zh_Hans: Pull Request 分配
+    pt_BR: Pull Request Atribuído
+
+description:
+  human:
+    en_US: Triggers when a pull request is assigned
+    zh_Hans: 当 pull request 分配时触发
+    pt_BR: atribuído
+  llm:
+    en_US: This trigger activates when a pull request assigned on a GitHub repository, providing information about the pull request, repository, and user who assigned it.
+    zh_Hans: 当在 GitHub 仓库中 pull request 分配时，此触发器会被激活，提供有关 pull request、仓库和assigned它的用户的信息。
+    pt_BR: Este gatilho é ativado quando um pull request assigned em um repositório do GitHub, fornecendo informações sobre o pull request, repositório e usuário que o assigned.
+
+parameters:
+  - name: pr_filter
+    label:
+      en_US: PR Number Filter
+      zh_Hans: PR 编号过滤器
+      pt_BR: Filtro de Número do PR
+    type: number
+    required: false
+    description:
+      en_US: Filter by specific PR number (optional)
+      zh_Hans: 按特定 PR 编号过滤（可选）
+      pt_BR: Filtrar por número específico do PR (opcional)
+
+output_schema:
+  type: object
+  properties:
+    pull_request:
+      type: object
+      properties:
+        number:
+          type: number
+          description: The pull request number
+        title:
+          type: string
+          description: The pull request title
+        body:
+          type: string
+          description: The pull request description
+        state:
+          type: string
+          description: The pull request state
+        html_url:
+          type: string
+          description: The URL to view the pull request on GitHub
+        author:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The username of the pull request author
+            avatar_url:
+              type: string
+              description: The avatar URL of the pull request author
+            html_url:
+              type: string
+              description: The profile URL of the pull request author
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who assigned the pull request
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/pull_request_assigned.py
