@@ -55,9 +55,13 @@ class OAICompatRerankModel(RerankModel):
 
         url = server_url
         headers = {
-            "Authorization": f"Bearer {credentials.get('api_key')}",
             "Content-Type": "application/json",
         }
+        
+        # 只有当api_key不为空时才添加Authorization头
+        api_key = credentials.get('api_key')
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
 
         # TODO: Do we need truncate docs to avoid llama.cpp return error?
 
