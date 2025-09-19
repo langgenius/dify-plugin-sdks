@@ -1,0 +1,190 @@
+identity:
+  name: label
+  author: langgenius
+  label:
+    en_US: Label
+    zh_Hans: 标签
+    pt_BR: Etiqueta
+
+description:
+  human:
+    en_US: Triggers on label events (created, deleted, edited)
+    zh_Hans: 在标签事件时触发（创建、删除、编辑）
+    pt_BR: Dispara em eventos de etiqueta (criada, excluída, editada)
+  llm:
+    en_US: This trigger activates on various GitHub label events, providing comprehensive information about the label, repository, and involved users.
+    zh_Hans: 此触发器在各种 GitHub 标签事件时激活，提供有关标签、仓库和相关用户的综合信息。
+    pt_BR: Este gatilho é ativado em vários eventos de etiqueta do GitHub, fornecendo informações abrangentes sobre a etiqueta, repositório e usuários envolvidos.
+
+parameters:
+  - name: action_filter
+    label:
+      en_US: Action Filter
+      zh_Hans: 操作过滤
+      pt_BR: Filtro de Ação
+    type: select
+    required: false
+    options:
+      - value: created
+        label:
+          en_US: Created
+          zh_Hans: 创建
+          pt_BR: Criada
+      - value: deleted
+        label:
+          en_US: Deleted
+          zh_Hans: 删除
+          pt_BR: Excluída
+      - value: edited
+        label:
+          en_US: Edited
+          zh_Hans: 编辑
+          pt_BR: Editada
+    multiple: true
+    help:
+      en_US: "Select which label actions to trigger on (leave empty for all)"
+      zh_Hans: "选择触发的标签操作（留空表示所有）"
+      pt_BR: "Selecione quais ações de etiqueta devem disparar (deixe vazio para todas)"
+
+  - name: label_name_filter
+    label:
+      en_US: Label Name Filter
+      zh_Hans: 标签名称过滤
+      pt_BR: Filtro de Nome da Etiqueta
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., bug, feature, priority-* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：bug, feature, priority-*（逗号分隔，支持通配符）"
+      pt_BR: "ex: bug, feature, priority-* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for labels with these names"
+      zh_Hans: "仅对具有这些名称的标签触发"
+      pt_BR: "Disparar apenas para etiquetas com esses nomes"
+
+  - name: label_color_filter
+    label:
+      en_US: Label Color Filter
+      zh_Hans: 标签颜色过滤
+      pt_BR: Filtro de Cor da Etiqueta
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., ff0000, 00ff00, 0000ff (comma-separated hex colors without #)"
+      zh_Hans: "例如：ff0000, 00ff00, 0000ff（逗号分隔的十六进制颜色，不含#）"
+      pt_BR: "ex: ff0000, 00ff00, 0000ff (cores hex separadas por vírgula sem #)"
+    help:
+      en_US: "Only trigger for labels with these colors"
+      zh_Hans: "仅对具有这些颜色的标签触发"
+      pt_BR: "Disparar apenas para etiquetas com essas cores"
+
+  - name: exclude_default_labels
+    label:
+      en_US: Exclude Default Labels
+      zh_Hans: 排除默认标签
+      pt_BR: Excluir Etiquetas Padrão
+    type: boolean
+    required: false
+    help:
+      en_US: "Ignore default GitHub labels (bug, enhancement, etc.)"
+      zh_Hans: "忽略默认的 GitHub 标签（bug、enhancement 等）"
+      pt_BR: "Ignorar etiquetas padrão do GitHub (bug, enhancement, etc.)"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that was performed on the label
+    label:
+      type: object
+      properties:
+        id:
+          type: number
+          description: The label ID
+        name:
+          type: string
+          description: The label name
+        description:
+          type: string
+          description: The label description
+        color:
+          type: string
+          description: The label color (hex code without #)
+        default:
+          type: boolean
+          description: Whether this is a default GitHub label
+        url:
+          type: string
+          description: The API URL for this label
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who triggered the event
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+    changes:
+      type: object
+      description: Changes made (only for edited action)
+      properties:
+        name:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous name
+        description:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous description
+        color:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous color
+
+extra:
+  python:
+    source: triggers/label.py

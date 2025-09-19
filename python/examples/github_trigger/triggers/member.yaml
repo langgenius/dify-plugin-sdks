@@ -1,0 +1,217 @@
+identity:
+  name: member
+  author: langgenius
+  label:
+    en_US: Member
+    zh_Hans: 成员
+    pt_BR: Membro
+
+description:
+  human:
+    en_US: Triggers on member events (added, removed, edited)
+    zh_Hans: 在成员事件时触发（添加、移除、编辑）
+    pt_BR: Dispara em eventos de membro (adicionado, removido, editado)
+  llm:
+    en_US: This trigger activates on various GitHub organization member events, providing comprehensive information about the member, organization, and involved users.
+    zh_Hans: 此触发器在各种 GitHub 组织成员事件时激活，提供有关成员、组织和相关用户的综合信息。
+    pt_BR: Este gatilho é ativado em vários eventos de membro de organização do GitHub, fornecendo informações abrangentes sobre o membro, organização e usuários envolvidos.
+
+parameters:
+  - name: action_filter
+    label:
+      en_US: Action Filter
+      zh_Hans: 操作过滤
+      pt_BR: Filtro de Ação
+    type: select
+    required: false
+    options:
+      - value: added
+        label:
+          en_US: Added
+          zh_Hans: 添加
+          pt_BR: Adicionado
+      - value: removed
+        label:
+          en_US: Removed
+          zh_Hans: 移除
+          pt_BR: Removido
+      - value: edited
+        label:
+          en_US: Edited
+          zh_Hans: 编辑
+          pt_BR: Editado
+    multiple: true
+    help:
+      en_US: "Select which member actions to trigger on (leave empty for all)"
+      zh_Hans: "选择触发的成员操作（留空表示所有）"
+      pt_BR: "Selecione quais ações de membro devem disparar (deixe vazio para todas)"
+
+  - name: member_role_filter
+    label:
+      en_US: Member Role Filter
+      zh_Hans: 成员角色过滤
+      pt_BR: Filtro de Papel do Membro
+    type: select
+    required: false
+    options:
+      - value: admin
+        label:
+          en_US: Admin
+          zh_Hans: 管理员
+          pt_BR: Administrador
+      - value: member
+        label:
+          en_US: Member
+          zh_Hans: 成员
+          pt_BR: Membro
+      - value: owner
+        label:
+          en_US: Owner
+          zh_Hans: 所有者
+          pt_BR: Proprietário
+    help:
+      en_US: "Only trigger for members with this role"
+      zh_Hans: "仅对具有此角色的成员触发"
+      pt_BR: "Disparar apenas para membros com esse papel"
+
+  - name: member_username_filter
+    label:
+      en_US: Member Username Filter
+      zh_Hans: 成员用户名过滤
+      pt_BR: Filtro de Nome de Usuário do Membro
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., user1, user2, admin-* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：user1, user2, admin-*（逗号分隔，支持通配符）"
+      pt_BR: "ex: user1, user2, admin-* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for members with these usernames"
+      zh_Hans: "仅对具有这些用户名的成员触发"
+      pt_BR: "Disparar apenas para membros com esses nomes de usuário"
+
+  - name: exclude_bots
+    label:
+      en_US: Exclude Bots
+      zh_Hans: 排除机器人
+      pt_BR: Excluir Bots
+    type: boolean
+    required: false
+    help:
+      en_US: "Don't trigger for bot members"
+      zh_Hans: "不对机器人成员触发"
+      pt_BR: "Não disparar para membros bot"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that was performed on the member
+    member:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The member's username
+        id:
+          type: number
+          description: The member's ID
+        avatar_url:
+          type: string
+          description: The member's avatar URL
+        html_url:
+          type: string
+          description: The member's profile URL
+        type:
+          type: string
+          description: The member type (User, Bot, etc.)
+        site_admin:
+          type: boolean
+          description: Whether the member is a site admin
+    organization:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The organization name
+        id:
+          type: number
+          description: The organization ID
+        avatar_url:
+          type: string
+          description: The organization avatar URL
+        html_url:
+          type: string
+          description: The organization profile URL
+        description:
+          type: string
+          description: The organization description
+        name:
+          type: string
+          description: The organization display name
+        company:
+          type: string
+          description: The organization company name
+        blog:
+          type: string
+          description: The organization blog URL
+        location:
+          type: string
+          description: The organization location
+        email:
+          type: string
+          description: The organization email
+        public_repos:
+          type: number
+          description: Number of public repositories
+        public_gists:
+          type: number
+          description: Number of public gists
+        followers:
+          type: number
+          description: Number of followers
+        following:
+          type: number
+          description: Number of following
+        created_at:
+          type: string
+          description: When the organization was created
+        updated_at:
+          type: string
+          description: When the organization was last updated
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who triggered the event
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+    changes:
+      type: object
+      description: Changes made (only for edited action)
+      properties:
+        role:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous role
+        permission:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous permission level
+
+extra:
+  python:
+    source: triggers/member.py

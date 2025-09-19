@@ -1,0 +1,311 @@
+identity:
+  name: repository
+  author: langgenius
+  label:
+    en_US: Repository
+    zh_Hans: 仓库
+    pt_BR: Repositório
+
+description:
+  human:
+    en_US: Triggers on repository events (created, deleted, archived, renamed, etc.)
+    zh_Hans: 在仓库事件时触发（创建、删除、归档、重命名等）
+    pt_BR: Dispara em eventos de repositório (criado, excluído, arquivado, renomeado, etc.)
+  llm:
+    en_US: This trigger activates on various GitHub repository events, providing information about repository changes and metadata.
+    zh_Hans: 此触发器在各种 GitHub 仓库事件时激活，提供有关仓库更改和元数据的信息。
+    pt_BR: Este gatilho é ativado em vários eventos de repositório do GitHub, fornecendo informações sobre mudanças e metadados do repositório.
+
+parameters:
+  - name: action_filter
+    label:
+      en_US: Action Filter
+      zh_Hans: 操作过滤
+      pt_BR: Filtro de Ação
+    type: select
+    required: false
+    options:
+      - value: created
+        label:
+          en_US: Created
+          zh_Hans: 创建
+          pt_BR: Criado
+      - value: deleted
+        label:
+          en_US: Deleted
+          zh_Hans: 删除
+          pt_BR: Excluído
+      - value: archived
+        label:
+          en_US: Archived
+          zh_Hans: 归档
+          pt_BR: Arquivado
+      - value: unarchived
+        label:
+          en_US: Unarchived
+          zh_Hans: 取消归档
+          pt_BR: Desarquivado
+      - value: edited
+        label:
+          en_US: Edited
+          zh_Hans: 编辑
+          pt_BR: Editado
+      - value: renamed
+        label:
+          en_US: Renamed
+          zh_Hans: 重命名
+          pt_BR: Renomeado
+      - value: transferred
+        label:
+          en_US: Transferred
+          zh_Hans: 转移
+          pt_BR: Transferido
+      - value: publicized
+        label:
+          en_US: Made Public
+          zh_Hans: 设为公开
+          pt_BR: Tornado Público
+      - value: privatized
+        label:
+          en_US: Made Private
+          zh_Hans: 设为私有
+          pt_BR: Tornado Privado
+    multiple: true
+    help:
+      en_US: "Select which repository actions to trigger on (leave empty for all)"
+      zh_Hans: "选择触发的仓库操作（留空表示所有）"
+      pt_BR: "Selecione quais ações de repositório devem disparar (deixe vazio para todas)"
+
+  - name: visibility_filter
+    label:
+      en_US: Visibility Filter
+      zh_Hans: 可见性过滤
+      pt_BR: Filtro de Visibilidade
+    type: select
+    required: false
+    options:
+      - value: all
+        label:
+          en_US: All
+          zh_Hans: 所有
+          pt_BR: Todos
+      - value: public
+        label:
+          en_US: Public Only
+          zh_Hans: 仅公开
+          pt_BR: Apenas Público
+      - value: private
+        label:
+          en_US: Private Only
+          zh_Hans: 仅私有
+          pt_BR: Apenas Privado
+    default: all
+    help:
+      en_US: "Filter by repository visibility"
+      zh_Hans: "按仓库可见性过滤"
+      pt_BR: "Filtrar por visibilidade do repositório"
+
+  - name: owner_filter
+    label:
+      en_US: Owner Filter
+      zh_Hans: 所有者过滤
+      pt_BR: Filtro de Proprietário
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., org1, user1 (comma-separated)"
+      zh_Hans: "例如：org1, user1（逗号分隔）"
+      pt_BR: "ex: org1, user1 (separados por vírgula)"
+    help:
+      en_US: "Only trigger for repositories owned by these users/orgs"
+      zh_Hans: "仅对这些用户/组织拥有的仓库触发"
+      pt_BR: "Disparar apenas para repositórios desses usuários/organizações"
+
+  - name: name_pattern
+    label:
+      en_US: Name Pattern
+      zh_Hans: 名称模式
+      pt_BR: Padrão de Nome
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., project-*, test-* (supports wildcards)"
+      zh_Hans: "例如：project-*, test-*（支持通配符）"
+      pt_BR: "ex: project-*, test-* (suporta wildcards)"
+    help:
+      en_US: "Only trigger if repository name matches this pattern"
+      zh_Hans: "仅当仓库名称匹配此模式时触发"
+      pt_BR: "Disparar apenas se o nome do repositório corresponder a este padrão"
+
+  - name: topics_filter
+    label:
+      en_US: Topics Filter
+      zh_Hans: 主题过滤
+      pt_BR: Filtro de Tópicos
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., javascript, react, nodejs (comma-separated)"
+      zh_Hans: "例如：javascript, react, nodejs（逗号分隔）"
+      pt_BR: "ex: javascript, react, nodejs (separados por vírgula)"
+    help:
+      en_US: "Only trigger if repository has these topics"
+      zh_Hans: "仅当仓库有这些主题时触发"
+      pt_BR: "Disparar apenas se o repositório tiver esses tópicos"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that was performed on the repository
+    repository:
+      type: object
+      properties:
+        id:
+          type: number
+          description: The repository ID
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        fork:
+          type: boolean
+          description: Whether the repository is a fork
+        created_at:
+          type: string
+          description: When the repository was created
+        updated_at:
+          type: string
+          description: When the repository was last updated
+        pushed_at:
+          type: string
+          description: When the repository was last pushed to
+        homepage:
+          type: string
+          description: The repository homepage URL
+        size:
+          type: number
+          description: The repository size in KB
+        stargazers_count:
+          type: number
+          description: Number of stars
+        watchers_count:
+          type: number
+          description: Number of watchers
+        forks_count:
+          type: number
+          description: Number of forks
+        language:
+          type: string
+          description: Primary programming language
+        topics:
+          type: array
+          description: Repository topics
+          items:
+            type: string
+        has_issues:
+          type: boolean
+          description: Whether issues are enabled
+        has_projects:
+          type: boolean
+          description: Whether projects are enabled
+        has_wiki:
+          type: boolean
+          description: Whether wiki is enabled
+        has_pages:
+          type: boolean
+          description: Whether GitHub Pages is enabled
+        has_downloads:
+          type: boolean
+          description: Whether downloads are enabled
+        has_discussions:
+          type: boolean
+          description: Whether discussions are enabled
+        archived:
+          type: boolean
+          description: Whether the repository is archived
+        disabled:
+          type: boolean
+          description: Whether the repository is disabled
+        visibility:
+          type: string
+          description: Repository visibility (public, private, internal)
+        default_branch:
+          type: string
+          description: The default branch name
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+            type:
+              type: string
+              description: Owner type (User or Organization)
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who triggered the event
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+    changes:
+      type: object
+      description: Changes made (for edited/renamed actions)
+      properties:
+        name:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous repository name
+        description:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous repository description
+        homepage:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous homepage URL
+        topics:
+          type: object
+          properties:
+            from:
+              type: array
+              description: Previous topics
+              items:
+                type: string
+
+extra:
+  python:
+    source: triggers/repository.py

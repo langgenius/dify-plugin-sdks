@@ -1,0 +1,339 @@
+identity:
+  name: discussion
+  author: langgenius
+  label:
+    en_US: Discussion
+    zh_Hans: 讨论
+    pt_BR: Discussão
+
+description:
+  human:
+    en_US: Triggers on discussion events (created, deleted, edited, answered, etc.)
+    zh_Hans: 在讨论事件时触发（创建、删除、编辑、回答等）
+    pt_BR: Dispara em eventos de discussão (criado, deletado, editado, respondido, etc.)
+  llm:
+    en_US: This trigger activates on various GitHub discussion events, providing comprehensive information about the discussion, repository, and involved users.
+    zh_Hans: 此触发器在各种 GitHub 讨论事件时激活，提供有关讨论、仓库和相关用户的综合信息。
+    pt_BR: Este gatilho é ativado em vários eventos de discussão do GitHub, fornecendo informações abrangentes sobre a discussão, repositório e usuários envolvidos.
+
+parameters:
+  - name: action_filter
+    label:
+      en_US: Action Filter
+      zh_Hans: 操作过滤
+      pt_BR: Filtro de Ação
+    type: select
+    required: false
+    options:
+      - value: created
+        label:
+          en_US: Created
+          zh_Hans: 创建
+          pt_BR: Criado
+      - value: deleted
+        label:
+          en_US: Deleted
+          zh_Hans: 删除
+          pt_BR: Deletado
+      - value: edited
+        label:
+          en_US: Edited
+          zh_Hans: 编辑
+          pt_BR: Editado
+      - value: answered
+        label:
+          en_US: Answered
+          zh_Hans: 已回答
+          pt_BR: Respondido
+      - value: unanswered
+        label:
+          en_US: Unanswered
+          zh_Hans: 未回答
+          pt_BR: Não Respondido
+      - value: category_changed
+        label:
+          en_US: Category Changed
+          zh_Hans: 分类更改
+          pt_BR: Categoria Alterada
+      - value: labeled
+        label:
+          en_US: Labeled
+          zh_Hans: 添加标签
+          pt_BR: Etiquetado
+      - value: unlabeled
+        label:
+          en_US: Unlabeled
+          zh_Hans: 移除标签
+          pt_BR: Desetiquetado
+      - value: locked
+        label:
+          en_US: Locked
+          zh_Hans: 锁定
+          pt_BR: Bloqueado
+      - value: unlocked
+        label:
+          en_US: Unlocked
+          zh_Hans: 解锁
+          pt_BR: Desbloqueado
+      - value: pinned
+        label:
+          en_US: Pinned
+          zh_Hans: 置顶
+          pt_BR: Fixado
+      - value: unpinned
+        label:
+          en_US: Unpinned
+          zh_Hans: 取消置顶
+          pt_BR: Desfixado
+      - value: transferred
+        label:
+          en_US: Transferred
+          zh_Hans: 转移
+          pt_BR: Transferido
+    multiple: true
+    help:
+      en_US: "Select which discussion actions to trigger on (leave empty for all)"
+      zh_Hans: "选择触发的讨论操作（留空表示所有）"
+      pt_BR: "Selecione quais ações de discussão devem disparar (deixe vazio para todas)"
+
+  - name: categories
+    label:
+      en_US: Categories Filter
+      zh_Hans: 分类过滤
+      pt_BR: Filtro de Categorias
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., General, Q&A, Ideas (comma-separated)"
+      zh_Hans: "例如：General, Q&A, Ideas（逗号分隔）"
+      pt_BR: "ex: General, Q&A, Ideas (separados por vírgula)"
+    help:
+      en_US: "Only trigger for discussions in these categories"
+      zh_Hans: "仅对这些分类中的讨论触发"
+      pt_BR: "Disparar apenas para discussões nestas categorias"
+
+  - name: labels
+    label:
+      en_US: Required Labels
+      zh_Hans: 必需标签
+      pt_BR: Etiquetas Obrigatórias
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., bug, question, enhancement (comma-separated)"
+      zh_Hans: "例如：bug, question, enhancement（逗号分隔）"
+      pt_BR: "ex: bug, question, enhancement (separados por vírgula)"
+    help:
+      en_US: "Only trigger if discussion has these labels"
+      zh_Hans: "仅当讨论有这些标签时触发"
+      pt_BR: "Disparar apenas se a discussão tiver estas etiquetas"
+
+  - name: exclude_authors
+    label:
+      en_US: Exclude Authors
+      zh_Hans: 排除作者
+      pt_BR: Excluir Autores
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., dependabot[bot], renovate[bot] (comma-separated)"
+      zh_Hans: "例如：dependabot[bot], renovate[bot]（逗号分隔）"
+      pt_BR: "ex: dependabot[bot], renovate[bot] (separados por vírgula)"
+    help:
+      en_US: "Don't trigger for discussions from these authors"
+      zh_Hans: "不对这些作者的讨论触发"
+      pt_BR: "Não disparar para discussões destes autores"
+
+  - name: title_pattern
+    label:
+      en_US: Title Pattern Filter
+      zh_Hans: 标题模式过滤
+      pt_BR: Filtro de Padrão de Título
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., *bug*, *feature*, FAQ* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：*bug*, *feature*, FAQ*（逗号分隔，支持通配符）"
+      pt_BR: "ex: *bug*, *feature*, FAQ* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for discussions matching these title patterns"
+      zh_Hans: "仅对匹配这些标题模式的讨论触发"
+      pt_BR: "Disparar apenas para discussões que correspondam a estes padrões de título"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that was performed on the discussion
+    discussion:
+      type: object
+      properties:
+        id:
+          type: number
+          description: The discussion ID
+        number:
+          type: number
+          description: The discussion number
+        title:
+          type: string
+          description: The discussion title
+        body:
+          type: string
+          description: The discussion body/content
+        state:
+          type: string
+          description: The state of the discussion (open, locked, etc.)
+        html_url:
+          type: string
+          description: The URL to view the discussion on GitHub
+        category:
+          type: object
+          properties:
+            id:
+              type: number
+              description: Category ID
+            name:
+              type: string
+              description: Category name
+            emoji:
+              type: string
+              description: Category emoji
+            description:
+              type: string
+              description: Category description
+            slug:
+              type: string
+              description: Category slug
+        user:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The discussion author's username
+            avatar_url:
+              type: string
+              description: The discussion author's avatar URL
+            html_url:
+              type: string
+              description: The discussion author's profile URL
+        labels:
+          type: array
+          description: Labels attached to the discussion
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Label name
+              color:
+                type: string
+                description: Label color
+              description:
+                type: string
+                description: Label description
+        locked:
+          type: boolean
+          description: Whether the discussion is locked
+        created_at:
+          type: string
+          description: When the discussion was created
+        updated_at:
+          type: string
+          description: When the discussion was last updated
+        comments:
+          type: number
+          description: Number of comments on the discussion
+        answer_html_url:
+          type: string
+          description: URL to the answer (if answered)
+        answer_chosen_at:
+          type: string
+          description: When the answer was chosen (if answered)
+        answer_chosen_by:
+          type: object
+          description: User who chose the answer (if answered)
+          properties:
+            login:
+              type: string
+              description: Username who chose the answer
+            avatar_url:
+              type: string
+              description: Avatar URL of who chose the answer
+            html_url:
+              type: string
+              description: Profile URL of who chose the answer
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+        default_branch:
+          type: string
+          description: The default branch of the repository
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who triggered the event
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+    changes:
+      type: object
+      description: Changes made (only for edited/category_changed actions)
+      properties:
+        title:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous title
+        body:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous body
+        category:
+          type: object
+          properties:
+            from:
+              type: object
+              description: Previous category
+
+extra:
+  python:
+    source: triggers/discussion.py

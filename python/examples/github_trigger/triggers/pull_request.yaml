@@ -1,0 +1,494 @@
+identity:
+  name: pull_request
+  author: langgenius
+  label:
+    en_US: Pull Request
+    zh_Hans: 拉取请求
+    pt_BR: Pull Request
+
+description:
+  human:
+    en_US: Triggers on pull request events (opened, closed, merged, edited, etc.)
+    zh_Hans: 在拉取请求事件时触发（打开、关闭、合并、编辑等）
+    pt_BR: Dispara em eventos de pull request (aberto, fechado, mesclado, editado, etc.)
+  llm:
+    en_US: This trigger activates on various GitHub pull request events, providing comprehensive information about the PR, repository, and involved users.
+    zh_Hans: 此触发器在各种 GitHub 拉取请求事件时激活，提供有关 PR、仓库和相关用户的综合信息。
+    pt_BR: Este gatilho é ativado em vários eventos de pull request do GitHub, fornecendo informações abrangentes sobre o PR, repositório e usuários envolvidos.
+
+parameters:
+  - name: action_filter
+    label:
+      en_US: Action Filter
+      zh_Hans: 操作过滤
+      pt_BR: Filtro de Ação
+    type: select
+    required: false
+    options:
+      - value: opened
+        label:
+          en_US: Opened
+          zh_Hans: 打开
+          pt_BR: Aberto
+      - value: closed
+        label:
+          en_US: Closed
+          zh_Hans: 关闭
+          pt_BR: Fechado
+      - value: reopened
+        label:
+          en_US: Reopened
+          zh_Hans: 重新打开
+          pt_BR: Reaberto
+      - value: edited
+        label:
+          en_US: Edited
+          zh_Hans: 编辑
+          pt_BR: Editado
+      - value: assigned
+        label:
+          en_US: Assigned
+          zh_Hans: 分配
+          pt_BR: Atribuído
+      - value: unassigned
+        label:
+          en_US: Unassigned
+          zh_Hans: 取消分配
+          pt_BR: Desatribuído
+      - value: labeled
+        label:
+          en_US: Labeled
+          zh_Hans: 添加标签
+          pt_BR: Etiquetado
+      - value: unlabeled
+        label:
+          en_US: Unlabeled
+          zh_Hans: 移除标签
+          pt_BR: Desetiquetado
+      - value: locked
+        label:
+          en_US: Locked
+          zh_Hans: 锁定
+          pt_BR: Bloqueado
+      - value: unlocked
+        label:
+          en_US: Unlocked
+          zh_Hans: 解锁
+          pt_BR: Desbloqueado
+      - value: synchronize
+        label:
+          en_US: Synchronized
+          zh_Hans: 同步
+          pt_BR: Sincronizado
+      - value: converted_to_draft
+        label:
+          en_US: Converted to Draft
+          zh_Hans: 转换为草稿
+          pt_BR: Convertido para Rascunho
+      - value: ready_for_review
+        label:
+          en_US: Ready for Review
+          zh_Hans: 准备审查
+          pt_BR: Pronto para Revisão
+      - value: auto_merge_enabled
+        label:
+          en_US: Auto Merge Enabled
+          zh_Hans: 启用自动合并
+          pt_BR: Merge Automático Habilitado
+      - value: auto_merge_disabled
+        label:
+          en_US: Auto Merge Disabled
+          zh_Hans: 禁用自动合并
+          pt_BR: Merge Automático Desabilitado
+      - value: review_requested
+        label:
+          en_US: Review Requested
+          zh_Hans: 请求审查
+          pt_BR: Revisão Solicitada
+      - value: review_request_removed
+        label:
+          en_US: Review Request Removed
+          zh_Hans: 移除审查请求
+          pt_BR: Solicitação de Revisão Removida
+    multiple: true
+    help:
+      en_US: "Select which PR actions to trigger on (leave empty for all)"
+      zh_Hans: "选择触发的 PR 操作（留空表示所有）"
+      pt_BR: "Selecione quais ações de PR devem disparar (deixe vazio para todas)"
+
+  - name: target_branches
+    label:
+      en_US: Target Branches
+      zh_Hans: 目标分支
+      pt_BR: Branches de Destino
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., main, develop, release/* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：main, develop, release/*（逗号分隔，支持通配符）"
+      pt_BR: "ex: main, develop, release/* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for PRs targeting these branches"
+      zh_Hans: "仅对目标为这些分支的 PR 触发"
+      pt_BR: "Disparar apenas para PRs direcionados a estes branches"
+
+  - name: source_branches
+    label:
+      en_US: Source Branches
+      zh_Hans: 源分支
+      pt_BR: Branches de Origem
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., feature/*, hotfix/* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：feature/*, hotfix/*（逗号分隔，支持通配符）"
+      pt_BR: "ex: feature/*, hotfix/* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for PRs from these branches"
+      zh_Hans: "仅对来自这些分支的 PR 触发"
+      pt_BR: "Disparar apenas para PRs destes branches"
+
+  - name: labels
+    label:
+      en_US: Required Labels
+      zh_Hans: 必需标签
+      pt_BR: Etiquetas Obrigatórias
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., bug, enhancement, urgent (comma-separated)"
+      zh_Hans: "例如：bug, enhancement, urgent（逗号分隔）"
+      pt_BR: "ex: bug, enhancement, urgent (separados por vírgula)"
+    help:
+      en_US: "Only trigger if PR has these labels"
+      zh_Hans: "仅当 PR 有这些标签时触发"
+      pt_BR: "Disparar apenas se o PR tiver estas etiquetas"
+
+  - name: skip_draft
+    label:
+      en_US: Skip Draft PRs
+      zh_Hans: 跳过草稿 PR
+      pt_BR: Ignorar PRs em Rascunho
+    type: boolean
+    required: false
+    default: true
+    help:
+      en_US: "Don't trigger for draft pull requests"
+      zh_Hans: "不对草稿拉取请求触发"
+      pt_BR: "Não disparar para pull requests em rascunho"
+
+  - name: exclude_authors
+    label:
+      en_US: Exclude Authors
+      zh_Hans: 排除作者
+      pt_BR: Excluir Autores
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., dependabot[bot], renovate[bot] (comma-separated)"
+      zh_Hans: "例如：dependabot[bot], renovate[bot]（逗号分隔）"
+      pt_BR: "ex: dependabot[bot], renovate[bot] (separados por vírgula)"
+    help:
+      en_US: "Don't trigger for PRs from these authors"
+      zh_Hans: "不对这些作者的 PR 触发"
+      pt_BR: "Não disparar para PRs destes autores"
+
+  - name: file_count_limit
+    label:
+      en_US: File Count Limit
+      zh_Hans: 文件数量限制
+      pt_BR: Limite de Arquivos
+    type: number
+    required: false
+    placeholder:
+      en_US: "e.g., 100 (maximum files changed)"
+      zh_Hans: "例如：100（最大更改文件数）"
+      pt_BR: "ex: 100 (máximo de arquivos alterados)"
+    help:
+      en_US: "Don't trigger if PR changes more than this many files"
+      zh_Hans: "如果 PR 更改的文件数超过此限制则不触发"
+      pt_BR: "Não disparar se o PR alterar mais que este número de arquivos"
+
+  - name: min_additions
+    label:
+      en_US: Minimum Additions
+      zh_Hans: 最少新增行数
+      pt_BR: Adições Mínimas
+    type: number
+    required: false
+    placeholder:
+      en_US: "e.g., 10 (minimum lines added)"
+      zh_Hans: "例如：10（最少新增行数）"
+      pt_BR: "ex: 10 (mínimo de linhas adicionadas)"
+    help:
+      en_US: "Only trigger if PR has at least this many additions"
+      zh_Hans: "仅当 PR 至少有这么多新增行时触发"
+      pt_BR: "Disparar apenas se o PR tiver pelo menos esta quantidade de adições"
+
+  - name: max_additions
+    label:
+      en_US: Maximum Additions
+      zh_Hans: 最多新增行数
+      pt_BR: Adições Máximas
+    type: number
+    required: false
+    placeholder:
+      en_US: "e.g., 1000 (maximum lines added)"
+      zh_Hans: "例如：1000（最多新增行数）"
+      pt_BR: "ex: 1000 (máximo de linhas adicionadas)"
+    help:
+      en_US: "Don't trigger if PR has more than this many additions"
+      zh_Hans: "如果 PR 新增行数超过此限制则不触发"
+      pt_BR: "Não disparar se o PR tiver mais que esta quantidade de adições"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that was performed on the pull request
+    pull_request:
+      type: object
+      properties:
+        number:
+          type: number
+          description: The pull request number
+        title:
+          type: string
+          description: The pull request title
+        body:
+          type: string
+          description: The pull request description
+        state:
+          type: string
+          description: The state of the pull request (open, closed)
+        merged:
+          type: boolean
+          description: Whether the pull request has been merged
+        draft:
+          type: boolean
+          description: Whether the pull request is a draft
+        html_url:
+          type: string
+          description: The URL to view the pull request on GitHub
+        diff_url:
+          type: string
+          description: The URL to the pull request diff
+        patch_url:
+          type: string
+          description: The URL to the pull request patch
+        created_at:
+          type: string
+          description: When the pull request was created
+        updated_at:
+          type: string
+          description: When the pull request was last updated
+        closed_at:
+          type: string
+          description: When the pull request was closed (if applicable)
+        merged_at:
+          type: string
+          description: When the pull request was merged (if applicable)
+        head:
+          type: object
+          properties:
+            ref:
+              type: string
+              description: The source branch name
+            sha:
+              type: string
+              description: The source branch SHA
+            repo:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The source repository name
+                full_name:
+                  type: string
+                  description: The source repository full name
+        base:
+          type: object
+          properties:
+            ref:
+              type: string
+              description: The target branch name
+            sha:
+              type: string
+              description: The target branch SHA
+            repo:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The target repository name
+                full_name:
+                  type: string
+                  description: The target repository full name
+        user:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The PR author's username
+            avatar_url:
+              type: string
+              description: The PR author's avatar URL
+            html_url:
+              type: string
+              description: The PR author's profile URL
+        labels:
+          type: array
+          description: Labels attached to the pull request
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Label name
+              color:
+                type: string
+                description: Label color
+              description:
+                type: string
+                description: Label description
+        assignees:
+          type: array
+          description: Users assigned to the pull request
+          items:
+            type: object
+            properties:
+              login:
+                type: string
+                description: Assignee username
+              avatar_url:
+                type: string
+                description: Assignee avatar URL
+              html_url:
+                type: string
+                description: Assignee profile URL
+        requested_reviewers:
+          type: array
+          description: Users requested to review
+          items:
+            type: object
+            properties:
+              login:
+                type: string
+                description: Reviewer username
+              avatar_url:
+                type: string
+                description: Reviewer avatar URL
+              html_url:
+                type: string
+                description: Reviewer profile URL
+        requested_teams:
+          type: array
+          description: Teams requested to review
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Team name
+              slug:
+                type: string
+                description: Team slug
+        milestone:
+          type: object
+          properties:
+            title:
+              type: string
+              description: Milestone title
+            description:
+              type: string
+              description: Milestone description
+            due_on:
+              type: string
+              description: Milestone due date
+        additions:
+          type: number
+          description: Number of lines added
+        deletions:
+          type: number
+          description: Number of lines deleted
+        changed_files:
+          type: number
+          description: Number of files changed
+        commits:
+          type: number
+          description: Number of commits
+        review_comments:
+          type: number
+          description: Number of review comments
+        comments:
+          type: number
+          description: Number of comments
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+        default_branch:
+          type: string
+          description: The default branch of the repository
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who triggered the event
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+    changes:
+      type: object
+      description: Changes made (only for edited action)
+      properties:
+        title:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous title
+        body:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous body
+
+extra:
+  python:
+    source: triggers/pull_request.py

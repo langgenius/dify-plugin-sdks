@@ -1,0 +1,425 @@
+identity:
+  name: workflow_run
+  author: langgenius
+  label:
+    en_US: Workflow Run
+    zh_Hans: 工作流运行
+    pt_BR: Execução de Workflow
+
+description:
+  human:
+    en_US: Triggers on workflow run events (completed, in_progress, requested)
+    zh_Hans: 在工作流运行事件时触发（完成、进行中、请求）
+    pt_BR: Dispara em eventos de execução de workflow (concluído, em progresso, solicitado)
+  llm:
+    en_US: This trigger activates on various GitHub Actions workflow run events, providing comprehensive information about the workflow run, including status, conclusion, and associated metadata.
+    zh_Hans: 此触发器在各种 GitHub Actions 工作流运行事件时激活，提供有关工作流运行的综合信息，包括状态、结论和相关元数据。
+    pt_BR: Este gatilho é ativado em vários eventos de execução de workflow do GitHub Actions, fornecendo informações abrangentes sobre a execução do workflow, incluindo status, conclusão e metadados associados.
+
+parameters:
+  - name: action_filter
+    label:
+      en_US: Action Filter
+      zh_Hans: 操作过滤
+      pt_BR: Filtro de Ação
+    type: select
+    required: false
+    options:
+      - value: completed
+        label:
+          en_US: Completed
+          zh_Hans: 完成
+          pt_BR: Concluído
+      - value: in_progress
+        label:
+          en_US: In Progress
+          zh_Hans: 进行中
+          pt_BR: Em Progresso
+      - value: requested
+        label:
+          en_US: Requested
+          zh_Hans: 请求
+          pt_BR: Solicitado
+    multiple: true
+    help:
+      en_US: "Select which workflow run actions to trigger on (leave empty for all)"
+      zh_Hans: "选择触发的工作流运行操作（留空表示所有）"
+      pt_BR: "Selecione quais ações de execução de workflow devem disparar (deixe vazio para todas)"
+
+  - name: workflow_names
+    label:
+      en_US: Workflow Names Filter
+      zh_Hans: 工作流名称过滤
+      pt_BR: Filtro de Nomes de Workflow
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., CI, Deploy*, Release (comma-separated, supports wildcards)"
+      zh_Hans: "例如：CI, Deploy*, Release（逗号分隔，支持通配符）"
+      pt_BR: "ex: CI, Deploy*, Release (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for specific workflow names"
+      zh_Hans: "仅对特定工作流名称触发"
+      pt_BR: "Disparar apenas para nomes de workflow específicos"
+
+  - name: conclusion_filter
+    label:
+      en_US: Conclusion Filter
+      zh_Hans: 结论过滤
+      pt_BR: Filtro de Conclusão
+    type: select
+    required: false
+    options:
+      - value: success
+        label:
+          en_US: Success
+          zh_Hans: 成功
+          pt_BR: Sucesso
+      - value: failure
+        label:
+          en_US: Failure
+          zh_Hans: 失败
+          pt_BR: Falha
+      - value: cancelled
+        label:
+          en_US: Cancelled
+          zh_Hans: 已取消
+          pt_BR: Cancelado
+      - value: skipped
+        label:
+          en_US: Skipped
+          zh_Hans: 已跳过
+          pt_BR: Ignorado
+      - value: timed_out
+        label:
+          en_US: Timed Out
+          zh_Hans: 超时
+          pt_BR: Tempo Esgotado
+    help:
+      en_US: "Only trigger for specific workflow conclusions (applies to completed runs)"
+      zh_Hans: "仅对特定工作流结论触发（适用于已完成的运行）"
+      pt_BR: "Disparar apenas para conclusões de workflow específicas (aplica-se a execuções concluídas)"
+
+  - name: status_filter
+    label:
+      en_US: Status Filter
+      zh_Hans: 状态过滤
+      pt_BR: Filtro de Status
+    type: select
+    required: false
+    options:
+      - value: queued
+        label:
+          en_US: Queued
+          zh_Hans: 排队
+          pt_BR: Na Fila
+      - value: in_progress
+        label:
+          en_US: In Progress
+          zh_Hans: 进行中
+          pt_BR: Em Progresso
+      - value: completed
+        label:
+          en_US: Completed
+          zh_Hans: 完成
+          pt_BR: Concluído
+    help:
+      en_US: "Only trigger for specific workflow run status"
+      zh_Hans: "仅对特定工作流运行状态触发"
+      pt_BR: "Disparar apenas para status de execução de workflow específicos"
+
+  - name: branch_filter
+    label:
+      en_US: Branch Filter
+      zh_Hans: 分支过滤
+      pt_BR: Filtro de Branch
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., main, develop, release/* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：main, develop, release/*（逗号分隔，支持通配符）"
+      pt_BR: "ex: main, develop, release/* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for workflows on these branches"
+      zh_Hans: "仅对这些分支上的工作流触发"
+      pt_BR: "Disparar apenas para workflows nestas branches"
+
+  - name: duration_threshold
+    label:
+      en_US: Duration Threshold (seconds)
+      zh_Hans: 运行时间阈值（秒）
+      pt_BR: Limite de Duração (segundos)
+    type: number
+    required: false
+    placeholder:
+      en_US: "e.g., 300 (alert if workflow takes longer than 5 minutes)"
+      zh_Hans: "例如：300（如果工作流超过5分钟则警告）"
+      pt_BR: "ex: 300 (alertar se o workflow demorar mais de 5 minutos)"
+    help:
+      en_US: "Only trigger if workflow duration exceeds this threshold (for completed runs)"
+      zh_Hans: "仅当工作流运行时间超过此阈值时触发（适用于已完成的运行）"
+      pt_BR: "Disparar apenas se a duração do workflow exceder este limite (para execuções concluídas)"
+
+  - name: exclude_actors
+    label:
+      en_US: Exclude Actors
+      zh_Hans: 排除执行者
+      pt_BR: Excluir Atores
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., dependabot[bot], renovate[bot] (comma-separated)"
+      zh_Hans: "例如：dependabot[bot], renovate[bot]（逗号分隔）"
+      pt_BR: "ex: dependabot[bot], renovate[bot] (separados por vírgula)"
+    help:
+      en_US: "Ignore workflows triggered by these actors"
+      zh_Hans: "忽略这些执行者触发的工作流"
+      pt_BR: "Ignorar workflows disparados por esses atores"
+
+  - name: event_types
+    label:
+      en_US: Event Types Filter
+      zh_Hans: 事件类型过滤
+      pt_BR: Filtro de Tipos de Evento
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., push, pull_request, schedule (comma-separated)"
+      zh_Hans: "例如：push, pull_request, schedule（逗号分隔）"
+      pt_BR: "ex: push, pull_request, schedule (separados por vírgula)"
+    help:
+      en_US: "Only trigger for specific event types"
+      zh_Hans: "仅对特定事件类型触发"
+      pt_BR: "Disparar apenas para tipos de evento específicos"
+
+  - name: failure_only
+    label:
+      en_US: Failures Only
+      zh_Hans: 仅失败
+      pt_BR: Apenas Falhas
+    type: boolean
+    required: false
+    default: false
+    help:
+      en_US: "Only trigger for failed, cancelled, or timed-out workflows (applies to completed runs)"
+      zh_Hans: "仅对失败、取消或超时的工作流触发（适用于已完成的运行）"
+      pt_BR: "Disparar apenas para workflows que falharam, foram cancelados ou expiraram (aplica-se a execuções concluídas)"
+
+  - name: exclude_scheduled
+    label:
+      en_US: Exclude Scheduled Runs
+      zh_Hans: 排除定时运行
+      pt_BR: Excluir Execuções Programadas
+    type: boolean
+    required: false
+    default: false
+    help:
+      en_US: "Don't trigger for scheduled workflow runs"
+      zh_Hans: "不对定时工作流运行触发"
+      pt_BR: "Não disparar para execuções de workflow programadas"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that was performed on the workflow run
+    workflow_run:
+      type: object
+      properties:
+        id:
+          type: number
+          description: The workflow run ID
+        name:
+          type: string
+          description: The name of the workflow run
+        display_title:
+          type: string
+          description: The display title of the workflow run
+        run_number:
+          type: number
+          description: The run number
+        run_attempt:
+          type: number
+          description: The run attempt number
+        status:
+          type: string
+          description: The status of the workflow run
+        conclusion:
+          type: string
+          description: The conclusion of the workflow run
+        workflow_id:
+          type: number
+          description: The ID of the workflow
+        url:
+          type: string
+          description: The API URL of the workflow run
+        html_url:
+          type: string
+          description: The URL to view the workflow run on GitHub
+        created_at:
+          type: string
+          description: When the workflow run was created
+        updated_at:
+          type: string
+          description: When the workflow run was last updated
+        run_started_at:
+          type: string
+          description: When the workflow run started
+        jobs_url:
+          type: string
+          description: The URL to view jobs for this workflow run
+        logs_url:
+          type: string
+          description: The URL to download logs for this workflow run
+        check_suite_url:
+          type: string
+          description: The URL of the associated check suite
+        artifacts_url:
+          type: string
+          description: The URL to view artifacts for this workflow run
+        cancel_url:
+          type: string
+          description: The URL to cancel this workflow run
+        rerun_url:
+          type: string
+          description: The URL to rerun this workflow run
+        head_branch:
+          type: string
+          description: The head branch name
+        head_sha:
+          type: string
+          description: The head commit SHA
+        event:
+          type: string
+          description: The event that triggered this workflow run
+        actor:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The username of the actor
+            avatar_url:
+              type: string
+              description: The avatar URL of the actor
+            html_url:
+              type: string
+              description: The profile URL of the actor
+        triggering_actor:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The username of the triggering actor
+            avatar_url:
+              type: string
+              description: The avatar URL of the triggering actor
+            html_url:
+              type: string
+              description: The profile URL of the triggering actor
+        pull_requests:
+          type: array
+          description: Pull requests associated with this workflow run
+          items:
+            type: object
+            properties:
+              number:
+                type: number
+                description: Pull request number
+              head:
+                type: object
+                properties:
+                  ref:
+                    type: string
+                    description: Head branch name
+                  sha:
+                    type: string
+                    description: Head commit SHA
+              base:
+                type: object
+                properties:
+                  ref:
+                    type: string
+                    description: Base branch name
+                  sha:
+                    type: string
+                    description: Base commit SHA
+    workflow:
+      type: object
+      properties:
+        id:
+          type: number
+          description: The workflow ID
+        name:
+          type: string
+          description: The workflow name
+        path:
+          type: string
+          description: The path to the workflow file
+        state:
+          type: string
+          description: The state of the workflow
+        created_at:
+          type: string
+          description: When the workflow was created
+        updated_at:
+          type: string
+          description: When the workflow was last updated
+        url:
+          type: string
+          description: The API URL of the workflow
+        html_url:
+          type: string
+          description: The URL to view the workflow on GitHub
+        badge_url:
+          type: string
+          description: The URL of the workflow badge
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who triggered the event
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/workflow_run.py

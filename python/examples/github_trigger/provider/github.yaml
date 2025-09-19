@@ -234,129 +234,34 @@ subscription_schema:
         zh_Hans: "可选的用于验证 GitHub webhook 请求的 webhook 密钥"
 
 triggers:
-  # Issue Comment Events
-  - triggers/issue_comment_created.yaml
-  - triggers/issue_comment_edited.yaml
-  - triggers/issue_comment_deleted.yaml
+  # Core Events (Consolidated)
+  - triggers/issue.yaml                          # Handles: opened, closed, reopened, edited, assigned, unassigned, labeled, unlabeled, etc.
+  - triggers/issue_comment.yaml                  # Handles: created, edited, deleted
+  - triggers/pull_request.yaml                   # Handles: opened, closed, merged, reopened, edited, synchronize, etc.
+  - triggers/pull_request_review.yaml            # Handles: submitted, edited, dismissed
+  - triggers/pull_request_review_comment.yaml    # Handles: created, edited, deleted
+  - triggers/repository.yaml                     # Handles: created, deleted, archived, renamed, transferred, etc.
+  - triggers/release.yaml                        # Handles: created, published, edited, deleted, prereleased, etc.
+  - triggers/discussion.yaml                     # Handles: created, edited, deleted, answered, pinned, labeled, etc.
+  - triggers/discussion_comment.yaml             # Handles: created, edited, deleted
+  - triggers/milestone.yaml                      # Handles: created, closed, opened, edited, deleted
+  - triggers/label.yaml                          # Handles: created, edited, deleted
+  - triggers/member.yaml                         # Handles: added, removed, edited
+  - triggers/workflow_run.yaml                   # Handles: requested, in_progress, completed
+  - triggers/star.yaml                           # Handles: created, deleted
+  - triggers/package.yaml                        # Handles: published, updated
 
-  # Issue Events
-  - triggers/issue_opened.yaml
-  - triggers/issue_closed.yaml
-  - triggers/issue_reopened.yaml
-  - triggers/issue_edited.yaml
-  - triggers/issue_assigned.yaml
-  - triggers/issue_unassigned.yaml
-  - triggers/issue_labeled.yaml
-  - triggers/issue_unlabeled.yaml
-
-  # Pull Request Events
-  - triggers/pull_request_opened.yaml
-  - triggers/pull_request_closed.yaml
-  - triggers/pull_request_reopened.yaml
-  - triggers/pull_request_edited.yaml
-  - triggers/pull_request_synchronize.yaml
-  - triggers/pull_request_converted_to_draft.yaml
-  - triggers/pull_request_ready_for_review.yaml
-  - triggers/pull_request_locked.yaml
-  - triggers/pull_request_unlocked.yaml
-  - triggers/pull_request_assigned.yaml
-  - triggers/pull_request_unassigned.yaml
-  - triggers/pull_request_labeled.yaml
-  - triggers/pull_request_unlabeled.yaml
-  - triggers/pull_request_review_requested.yaml
-  - triggers/pull_request_review_request_removed.yaml
-  - triggers/pull_request_auto_merge_enabled.yaml
-  - triggers/pull_request_auto_merge_disabled.yaml
-
-  # Pull Request Review Events
-  - triggers/pull_request_review_submitted.yaml
-  - triggers/pull_request_review_edited.yaml
-  - triggers/pull_request_review_dismissed.yaml
-
-  # Pull Request Review Comment Events
-  - triggers/pull_request_review_comment_created.yaml
-  - triggers/pull_request_review_comment_edited.yaml
-  - triggers/pull_request_review_comment_deleted.yaml
-
-  # Code Events
+  # Individual Events (Not yet consolidated)
   - triggers/push.yaml
   - triggers/create.yaml
   - triggers/delete.yaml
   - triggers/commit_comment.yaml
-
-  # Release Events
-  - triggers/release_published.yaml
-  - triggers/release_unpublished.yaml
-  - triggers/release_created.yaml
-  - triggers/release_edited.yaml
-  - triggers/release_deleted.yaml
-  - triggers/release_prereleased.yaml
-  - triggers/release_released.yaml
-
-  # Repository Events
-  - triggers/repository_created.yaml
-  - triggers/repository_deleted.yaml
-  - triggers/repository_archived.yaml
-  - triggers/repository_unarchived.yaml
-  - triggers/repository_edited.yaml
-  - triggers/repository_renamed.yaml
-  - triggers/repository_transferred.yaml
-  - triggers/repository_publicized.yaml
-  - triggers/repository_privatized.yaml
   - triggers/fork.yaml
-  - triggers/star_created.yaml
-  - triggers/star_deleted.yaml
   - triggers/watch.yaml
-
-  # Collaboration Events
-  - triggers/member_added.yaml
-  - triggers/member_removed.yaml
-  - triggers/member_edited.yaml
-
-  # Workflow Events
   - triggers/workflow_dispatch.yaml
-  - triggers/workflow_run_requested.yaml
-  - triggers/workflow_run_in_progress.yaml
-  - triggers/workflow_run_completed.yaml
-
-  # Deployment Events
   - triggers/deployment_created.yaml
   - triggers/deployment_status_created.yaml
-
-  # Discussion Events
-  - triggers/discussion_created.yaml
-  - triggers/discussion_edited.yaml
-  - triggers/discussion_deleted.yaml
-  - triggers/discussion_transferred.yaml
-  - triggers/discussion_pinned.yaml
-  - triggers/discussion_unpinned.yaml
-  - triggers/discussion_labeled.yaml
-  - triggers/discussion_unlabeled.yaml
-  - triggers/discussion_locked.yaml
-  - triggers/discussion_unlocked.yaml
-  - triggers/discussion_category_changed.yaml
-  - triggers/discussion_answered.yaml
-  - triggers/discussion_unanswered.yaml
-  - triggers/discussion_comment_created.yaml
-  - triggers/discussion_comment_edited.yaml
-  - triggers/discussion_comment_deleted.yaml
-
-  # Wiki Events
   - triggers/wiki_page_updated.yaml
-
-  # Milestone & Label Events
-  - triggers/milestone_created.yaml
-  - triggers/milestone_closed.yaml
-  - triggers/milestone_opened.yaml
-  - triggers/milestone_edited.yaml
-  - triggers/milestone_deleted.yaml
-  - triggers/label_created.yaml
-  - triggers/label_edited.yaml
-  - triggers/label_deleted.yaml
-
-  # Other Events
-  - triggers/package_published.yaml
-  - triggers/package_updated.yaml
   - triggers/ping.yaml
 
 identity:

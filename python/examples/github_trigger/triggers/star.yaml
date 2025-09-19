@@ -1,0 +1,172 @@
+identity:
+  name: star
+  author: langgenius
+  label:
+    en_US: Star
+    zh_Hans: 星标
+    pt_BR: Estrela
+
+description:
+  human:
+    en_US: Triggers on star events (created, deleted)
+    zh_Hans: 在星标事件时触发（创建、删除）
+    pt_BR: Dispara em eventos de estrela (criada, excluída)
+  llm:
+    en_US: This trigger activates on GitHub repository star events, providing information about the star action, repository, and user.
+    zh_Hans: 此触发器在 GitHub 仓库星标事件时激活，提供有关星标操作、仓库和用户的信息。
+    pt_BR: Este gatilho é ativado em eventos de estrela de repositório do GitHub, fornecendo informações sobre a ação de estrela, repositório e usuário.
+
+parameters:
+  - name: action_filter
+    label:
+      en_US: Action Filter
+      zh_Hans: 操作过滤
+      pt_BR: Filtro de Ação
+    type: select
+    required: false
+    options:
+      - value: created
+        label:
+          en_US: Created
+          zh_Hans: 创建
+          pt_BR: Criada
+      - value: deleted
+        label:
+          en_US: Deleted
+          zh_Hans: 删除
+          pt_BR: Excluída
+    multiple: true
+    help:
+      en_US: "Select which star actions to trigger on (leave empty for all)"
+      zh_Hans: "选择触发的星标操作（留空表示所有）"
+      pt_BR: "Selecione quais ações de estrela devem disparar (deixe vazio para todas)"
+
+  - name: exclude_bots
+    label:
+      en_US: Exclude Bots
+      zh_Hans: 排除机器人
+      pt_BR: Excluir Bots
+    type: boolean
+    required: false
+    help:
+      en_US: "Don't trigger for bot users"
+      zh_Hans: "不对机器人用户触发"
+      pt_BR: "Não disparar para usuários bot"
+
+  - name: user_filter
+    label:
+      en_US: User Filter
+      zh_Hans: 用户过滤
+      pt_BR: Filtro de Usuário
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., user1, user2, org-* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：user1, user2, org-*（逗号分隔，支持通配符）"
+      pt_BR: "ex: user1, user2, org-* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for stars from these users"
+      zh_Hans: "仅对来自这些用户的星标触发"
+      pt_BR: "Disparar apenas para estrelas desses usuários"
+
+  - name: exclude_users
+    label:
+      en_US: Exclude Users
+      zh_Hans: 排除用户
+      pt_BR: Excluir Usuários
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., spam-user, bot-* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：spam-user, bot-*（逗号分隔，支持通配符）"
+      pt_BR: "ex: spam-user, bot-* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Don't trigger for stars from these users"
+      zh_Hans: "不对来自这些用户的星标触发"
+      pt_BR: "Não disparar para estrelas desses usuários"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that was performed on the star
+    starred_at:
+      type: string
+      description: When the repository was starred
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        fork:
+          type: boolean
+          description: Whether the repository is a fork
+        created_at:
+          type: string
+          description: When the repository was created
+        updated_at:
+          type: string
+          description: When the repository was last updated
+        pushed_at:
+          type: string
+          description: When the repository was last pushed to
+        stargazers_count:
+          type: number
+          description: Number of stars the repository has
+        watchers_count:
+          type: number
+          description: Number of watchers the repository has
+        forks_count:
+          type: number
+          description: Number of forks the repository has
+        language:
+          type: string
+          description: Primary language of the repository
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who starred/unstarred the repository
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+        site_admin:
+          type: boolean
+          description: Whether the sender is a site admin
+
+extra:
+  python:
+    source: triggers/star.py
