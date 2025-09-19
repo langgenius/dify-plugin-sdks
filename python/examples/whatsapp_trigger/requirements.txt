@@ -1,0 +1,10 @@
+# WhatsApp Business Trigger Plugin Dependencies
+
+# HTTP requests for API calls
+requests>=2.31.0
+
+# Web framework utilities (already provided by Dify)
+werkzeug>=3.0.0
+
+# Dify Plugin SDK (provided by the platform)
+# dify-plugin>=0.4.0

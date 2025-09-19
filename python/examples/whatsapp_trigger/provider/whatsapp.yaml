@@ -1,0 +1,248 @@
+credentials_schema:
+  system_access_token:
+    help:
+      en_US: Get your System User Access Token from Meta Business Suite
+      zh_Hans: 从 Meta Business Suite 获取您的系统用户访问令牌
+      pt_BR: Obtenha seu Token de Acesso de Usuário do Sistema no Meta Business Suite
+    label:
+      en_US: System Access Token
+      zh_Hans: 系统访问令牌
+      pt_BR: Token de Acesso do Sistema
+    placeholder:
+      en_US: Please input your System Access Token
+      zh_Hans: 请输入您的系统访问令牌
+      pt_BR: Insira seu Token de Acesso do Sistema
+    required: true
+    type: secret-input
+    url: https://business.facebook.com/settings/system-users
+  app_secret:
+    help:
+      en_US: App Secret for webhook signature validation (found in App Dashboard)
+      zh_Hans: 用于 webhook 签名验证的应用密钥（在应用仪表板中查找）
+      pt_BR: App Secret para validação de assinatura do webhook (encontrado no Dashboard do App)
+    label:
+      en_US: App Secret
+      zh_Hans: 应用密钥
+      pt_BR: App Secret
+    placeholder:
+      en_US: Please input your App Secret
+      zh_Hans: 请输入您的应用密钥
+      pt_BR: Insira seu App Secret
+    required: true
+    type: secret-input
+
+subscription_schema:
+  parameters_schema:
+    - name: "phone_number_id"
+      label:
+        en_US: "WhatsApp Business Phone Number"
+        zh_Hans: "WhatsApp 商业电话号码"
+        pt_BR: "Número de Telefone WhatsApp Business"
+      type: "dynamic-select"
+      required: true
+      placeholder:
+        en_US: "Select your WhatsApp Business phone number"
+        zh_Hans: "选择您的 WhatsApp 商业电话号码"
+        pt_BR: "Selecione seu número de telefone WhatsApp Business"
+      help:
+        en_US: "The WhatsApp Business phone number to receive messages for"
+        zh_Hans: "用于接收消息的 WhatsApp 商业电话号码"
+        pt_BR: "O número de telefone WhatsApp Business para receber mensagens"
+
+    - name: "events"
+      type: "select"
+      required: true
+      default: ["messages"]
+      multiple: true
+      options:
+        - value: "messages"
+          label:
+            en_US: "All Messages"
+            zh_Hans: "所有消息"
+            pt_BR: "Todas as Mensagens"
+        - value: "message_text"
+          label:
+            en_US: "Text Messages"
+            zh_Hans: "文本消息"
+            pt_BR: "Mensagens de Texto"
+        - value: "message_image"
+          label:
+            en_US: "Image Messages"
+            zh_Hans: "图片消息"
+            pt_BR: "Mensagens de Imagem"
+        - value: "message_video"
+          label:
+            en_US: "Video Messages"
+            zh_Hans: "视频消息"
+            pt_BR: "Mensagens de Vídeo"
+        - value: "message_audio"
+          label:
+            en_US: "Audio Messages"
+            zh_Hans: "音频消息"
+            pt_BR: "Mensagens de Áudio"
+        - value: "message_document"
+          label:
+            en_US: "Document Messages"
+            zh_Hans: "文档消息"
+            pt_BR: "Mensagens de Documento"
+        - value: "message_location"
+          label:
+            en_US: "Location Messages"
+            zh_Hans: "位置消息"
+            pt_BR: "Mensagens de Localização"
+        - value: "message_contacts"
+          label:
+            en_US: "Contact Messages"
+            zh_Hans: "联系人消息"
+            pt_BR: "Mensagens de Contato"
+        - value: "message_sticker"
+          label:
+            en_US: "Sticker Messages"
+            zh_Hans: "贴纸消息"
+            pt_BR: "Mensagens de Sticker"
+        - value: "message_reaction"
+          label:
+            en_US: "Message Reactions"
+            zh_Hans: "消息表情回应"
+            pt_BR: "Reações de Mensagem"
+        - value: "interactive_button"
+          label:
+            en_US: "Button Replies"
+            zh_Hans: "按钮回复"
+            pt_BR: "Respostas de Botão"
+        - value: "interactive_list"
+          label:
+            en_US: "List Replies"
+            zh_Hans: "列表回复"
+            pt_BR: "Respostas de Lista"
+        - value: "message_status"
+          label:
+            en_US: "Message Status Updates"
+            zh_Hans: "消息状态更新"
+            pt_BR: "Atualizações de Status de Mensagem"
+        - value: "order_received"
+          label:
+            en_US: "Order Received"
+            zh_Hans: "收到订单"
+            pt_BR: "Pedido Recebido"
+        - value: "product_inquiry"
+          label:
+            en_US: "Product Inquiry"
+            zh_Hans: "产品询问"
+            pt_BR: "Consulta de Produto"
+      label:
+        en_US: "Events to Listen"
+        zh_Hans: "监听事件"
+        pt_BR: "Eventos para Escutar"
+      help:
+        en_US: "Select which WhatsApp events to subscribe to"
+        zh_Hans: "选择要订阅的 WhatsApp 事件"
+        pt_BR: "Selecione quais eventos do WhatsApp inscrever-se"
+
+    - name: "message_types"
+      type: "select"
+      required: false
+      multiple: true
+      options:
+        - value: "text"
+          label:
+            en_US: "Text"
+            zh_Hans: "文本"
+            pt_BR: "Texto"
+        - value: "image"
+          label:
+            en_US: "Image"
+            zh_Hans: "图片"
+            pt_BR: "Imagem"
+        - value: "video"
+          label:
+            en_US: "Video"
+            zh_Hans: "视频"
+            pt_BR: "Vídeo"
+        - value: "audio"
+          label:
+            en_US: "Audio"
+            zh_Hans: "音频"
+            pt_BR: "Áudio"
+        - value: "document"
+          label:
+            en_US: "Document"
+            zh_Hans: "文档"
+            pt_BR: "Documento"
+        - value: "location"
+          label:
+            en_US: "Location"
+            zh_Hans: "位置"
+            pt_BR: "Localização"
+      label:
+        en_US: "Message Type Filter"
+        zh_Hans: "消息类型过滤"
+        pt_BR: "Filtro de Tipo de Mensagem"
+      help:
+        en_US: "Only trigger for specific message types (leave empty for all)"
+        zh_Hans: "仅对特定消息类型触发（留空表示所有）"
+        pt_BR: "Disparar apenas para tipos de mensagem específicos (deixe vazio para todos)"
+
+  properties_schema:
+    - name: "webhook_verify_token"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Webhook Verify Token"
+        zh_Hans: "Webhook 验证令牌"
+        pt_BR: "Token de Verificação do Webhook"
+      help:
+        en_US: "A custom token for webhook verification (you'll set this in Meta webhook config)"
+        zh_Hans: "用于 webhook 验证的自定义令牌（您将在 Meta webhook 配置中设置）"
+        pt_BR: "Um token personalizado para verificação do webhook (você definirá isso na configuração do webhook Meta)"
+      placeholder:
+        en_US: "e.g., my-secure-verify-token-2024"
+        zh_Hans: "例如：my-secure-verify-token-2024"
+        pt_BR: "ex: my-secure-verify-token-2024"
+
+triggers:
+  # Message Events
+  - triggers/message_text.yaml
+  - triggers/message_image.yaml
+  # - triggers/message_video.yaml
+  # - triggers/message_audio.yaml
+  # - triggers/message_document.yaml
+  # - triggers/message_location.yaml
+  # - triggers/message_contacts.yaml
+  # - triggers/message_sticker.yaml
+  # - triggers/message_reaction.yaml
+
+  # Interactive Events
+  # - triggers/interactive_button_reply.yaml
+  # - triggers/interactive_list_reply.yaml
+
+  # Status Events
+  # - triggers/message_sent.yaml
+  - triggers/message_delivered.yaml
+  # - triggers/message_read.yaml
+  # - triggers/message_failed.yaml
+
+  # Business Events
+  # - triggers/order_received.yaml
+  # - triggers/product_inquiry.yaml
+
+  # User Events
+  # - triggers/user_initiated_conversation.yaml
+  # - triggers/user_phone_number_changed.yaml
+
+identity:
+  author: dify-community
+  description:
+    en_US: WhatsApp Business Platform integration with webhook trigger support for automated messaging workflows.
+    zh_Hans: WhatsApp Business Platform 集成，支持 webhook 触发器，用于自动化消息工作流。
+    pt_BR: Integração com WhatsApp Business Platform com suporte a gatilhos webhook para fluxos de trabalho de mensagens automatizadas.
+  icon: icon.svg
+  label:
+    en_US: WhatsApp Business Triggers
+    zh_Hans: WhatsApp 商业触发器
+    pt_BR: Gatilhos WhatsApp Business
+  name: whatsapp_trigger
+
+extra:
+  python:
+    source: provider/whatsapp.py
