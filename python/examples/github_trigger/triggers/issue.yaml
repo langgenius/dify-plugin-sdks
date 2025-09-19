@@ -1,0 +1,432 @@
+identity:
+  name: issue
+  author: langgenius
+  label:
+    en_US: Issue
+    zh_Hans: 议题
+    pt_BR: Issue
+
+description:
+  human:
+    en_US: Triggers on issue events (opened, closed, reopened, edited, assigned, labeled, etc.)
+    zh_Hans: 在议题事件时触发（打开、关闭、重新打开、编辑、分配、标记等）
+    pt_BR: Dispara em eventos de issue (aberta, fechada, reaberta, editada, atribuída, etiquetada, etc.)
+  llm:
+    en_US: This trigger activates on various GitHub issue events, providing comprehensive information about the issue, repository, and involved users.
+    zh_Hans: 此触发器在各种 GitHub 议题事件时激活，提供有关议题、仓库和相关用户的综合信息。
+    pt_BR: Este gatilho é ativado em vários eventos de issue do GitHub, fornecendo informações abrangentes sobre a issue, repositório e usuários envolvidos.
+
+parameters:
+  - name: action_filter
+    label:
+      en_US: Action Filter
+      zh_Hans: 操作过滤
+      pt_BR: Filtro de Ação
+    type: select
+    required: false
+    options:
+      - value: opened
+        label:
+          en_US: Opened
+          zh_Hans: 打开
+          pt_BR: Aberta
+      - value: closed
+        label:
+          en_US: Closed
+          zh_Hans: 关闭
+          pt_BR: Fechada
+      - value: reopened
+        label:
+          en_US: Reopened
+          zh_Hans: 重新打开
+          pt_BR: Reaberta
+      - value: edited
+        label:
+          en_US: Edited
+          zh_Hans: 编辑
+          pt_BR: Editada
+      - value: assigned
+        label:
+          en_US: Assigned
+          zh_Hans: 分配
+          pt_BR: Atribuída
+      - value: unassigned
+        label:
+          en_US: Unassigned
+          zh_Hans: 取消分配
+          pt_BR: Desatribuída
+      - value: labeled
+        label:
+          en_US: Labeled
+          zh_Hans: 添加标签
+          pt_BR: Etiquetada
+      - value: unlabeled
+        label:
+          en_US: Unlabeled
+          zh_Hans: 移除标签
+          pt_BR: Desetiquetada
+      - value: milestoned
+        label:
+          en_US: Milestoned
+          zh_Hans: 添加里程碑
+          pt_BR: Marco Adicionado
+      - value: demilestoned
+        label:
+          en_US: Demilestoned
+          zh_Hans: 移除里程碑
+          pt_BR: Marco Removido
+      - value: pinned
+        label:
+          en_US: Pinned
+          zh_Hans: 置顶
+          pt_BR: Fixada
+      - value: unpinned
+        label:
+          en_US: Unpinned
+          zh_Hans: 取消置顶
+          pt_BR: Desafixada
+      - value: locked
+        label:
+          en_US: Locked
+          zh_Hans: 锁定
+          pt_BR: Bloqueada
+      - value: unlocked
+        label:
+          en_US: Unlocked
+          zh_Hans: 解锁
+          pt_BR: Desbloqueada
+      - value: transferred
+        label:
+          en_US: Transferred
+          zh_Hans: 转移
+          pt_BR: Transferida
+    multiple: true
+    help:
+      en_US: "Select which issue actions to trigger on (leave empty for all)"
+      zh_Hans: "选择触发的议题操作（留空表示所有）"
+      pt_BR: "Selecione quais ações de issue devem disparar (deixe vazio para todas)"
+
+  - name: labels_filter
+    label:
+      en_US: Required Labels
+      zh_Hans: 必需标签
+      pt_BR: Etiquetas Obrigatórias
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., bug, enhancement, urgent (comma-separated)"
+      zh_Hans: "例如：bug, enhancement, urgent（逗号分隔）"
+      pt_BR: "ex: bug, enhancement, urgent (separados por vírgula)"
+    help:
+      en_US: "Only trigger if issue has these labels"
+      zh_Hans: "仅当议题有这些标签时触发"
+      pt_BR: "Disparar apenas se a issue tiver estas etiquetas"
+
+  - name: exclude_labels
+    label:
+      en_US: Exclude Labels
+      zh_Hans: 排除标签
+      pt_BR: Excluir Etiquetas
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., wontfix, duplicate (comma-separated)"
+      zh_Hans: "例如：wontfix, duplicate（逗号分隔）"
+      pt_BR: "ex: wontfix, duplicate (separados por vírgula)"
+    help:
+      en_US: "Don't trigger if issue has these labels"
+      zh_Hans: "如果议题有这些标签则不触发"
+      pt_BR: "Não disparar se a issue tiver estas etiquetas"
+
+  - name: assignee_filter
+    label:
+      en_US: Assignee Filter
+      zh_Hans: 受理人过滤
+      pt_BR: Filtro de Responsável
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., username1, username2 (comma-separated)"
+      zh_Hans: "例如：username1, username2（逗号分隔）"
+      pt_BR: "ex: username1, username2 (separados por vírgula)"
+    help:
+      en_US: "Only trigger if assigned to these users"
+      zh_Hans: "仅当分配给这些用户时触发"
+      pt_BR: "Disparar apenas se atribuída a esses usuários"
+
+  - name: author_filter
+    label:
+      en_US: Author Filter
+      zh_Hans: 作者过滤
+      pt_BR: Filtro de Autor
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., user1, user2 (comma-separated)"
+      zh_Hans: "例如：user1, user2（逗号分隔）"
+      pt_BR: "ex: user1, user2 (separados por vírgula)"
+    help:
+      en_US: "Only trigger for issues from these authors"
+      zh_Hans: "仅对这些作者的议题触发"
+      pt_BR: "Disparar apenas para issues desses autores"
+
+  - name: exclude_authors
+    label:
+      en_US: Exclude Authors
+      zh_Hans: 排除作者
+      pt_BR: Excluir Autores
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., bot1, bot2 (comma-separated)"
+      zh_Hans: "例如：bot1, bot2（逗号分隔）"
+      pt_BR: "ex: bot1, bot2 (separados por vírgula)"
+    help:
+      en_US: "Don't trigger for issues from these authors"
+      zh_Hans: "不对这些作者的议题触发"
+      pt_BR: "Não disparar para issues desses autores"
+
+  - name: milestone_filter
+    label:
+      en_US: Milestone Filter
+      zh_Hans: 里程碑过滤
+      pt_BR: Filtro de Marco
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., v1.0, v2.0 (comma-separated)"
+      zh_Hans: "例如：v1.0, v2.0（逗号分隔）"
+      pt_BR: "ex: v1.0, v2.0 (separados por vírgula)"
+    help:
+      en_US: "Only trigger for issues with these milestones"
+      zh_Hans: "仅对具有这些里程碑的议题触发"
+      pt_BR: "Disparar apenas para issues com esses marcos"
+
+  - name: title_pattern
+    label:
+      en_US: Title Pattern
+      zh_Hans: 标题模式
+      pt_BR: Padrão de Título
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., [BUG]*, [FEATURE]* (supports wildcards)"
+      zh_Hans: "例如：[BUG]*, [FEATURE]*（支持通配符）"
+      pt_BR: "ex: [BUG]*, [FEATURE]* (suporta wildcards)"
+    help:
+      en_US: "Only trigger if title matches this pattern"
+      zh_Hans: "仅当标题匹配此模式时触发"
+      pt_BR: "Disparar apenas se o título corresponder a este padrão"
+
+  - name: body_contains
+    label:
+      en_US: Body Contains
+      zh_Hans: 正文包含
+      pt_BR: Corpo Contém
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., regression, critical (comma-separated keywords)"
+      zh_Hans: "例如：regression, critical（逗号分隔的关键词）"
+      pt_BR: "ex: regression, critical (palavras-chave separadas por vírgula)"
+    help:
+      en_US: "Only trigger if body contains these keywords"
+      zh_Hans: "仅当正文包含这些关键词时触发"
+      pt_BR: "Disparar apenas se o corpo contiver essas palavras-chave"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that was performed on the issue
+    issue:
+      type: object
+      properties:
+        number:
+          type: number
+          description: The issue number
+        title:
+          type: string
+          description: The issue title
+        body:
+          type: string
+          description: The issue description
+        state:
+          type: string
+          description: The state of the issue (open, closed)
+        locked:
+          type: boolean
+          description: Whether the issue is locked
+        html_url:
+          type: string
+          description: The URL to view the issue on GitHub
+        created_at:
+          type: string
+          description: When the issue was created
+        updated_at:
+          type: string
+          description: When the issue was last updated
+        closed_at:
+          type: string
+          description: When the issue was closed (if applicable)
+        user:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The issue author's username
+            avatar_url:
+              type: string
+              description: The issue author's avatar URL
+            html_url:
+              type: string
+              description: The issue author's profile URL
+        labels:
+          type: array
+          description: Labels attached to the issue
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Label name
+              color:
+                type: string
+                description: Label color
+              description:
+                type: string
+                description: Label description
+        assignees:
+          type: array
+          description: Users assigned to the issue
+          items:
+            type: object
+            properties:
+              login:
+                type: string
+                description: Assignee username
+              avatar_url:
+                type: string
+                description: Assignee avatar URL
+              html_url:
+                type: string
+                description: Assignee profile URL
+        assignee:
+          type: object
+          description: Primary assignee (deprecated, use assignees)
+          properties:
+            login:
+              type: string
+              description: Assignee username
+            avatar_url:
+              type: string
+              description: Assignee avatar URL
+            html_url:
+              type: string
+              description: Assignee profile URL
+        milestone:
+          type: object
+          properties:
+            title:
+              type: string
+              description: Milestone title
+            description:
+              type: string
+              description: Milestone description
+            due_on:
+              type: string
+              description: Milestone due date
+            state:
+              type: string
+              description: Milestone state (open, closed)
+        comments:
+          type: number
+          description: Number of comments on the issue
+        reactions:
+          type: object
+          properties:
+            total_count:
+              type: number
+              description: Total number of reactions
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+        default_branch:
+          type: string
+          description: The default branch of the repository
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who triggered the event
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+    changes:
+      type: object
+      description: Changes made (only for edited action)
+      properties:
+        title:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous title
+        body:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous body
+    label:
+      type: object
+      description: Label information (for labeled/unlabeled actions)
+      properties:
+        name:
+          type: string
+          description: Label name
+        color:
+          type: string
+          description: Label color
+        description:
+          type: string
+          description: Label description
+
+extra:
+  python:
+    source: triggers/issue.py

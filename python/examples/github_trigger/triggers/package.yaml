@@ -1,0 +1,323 @@
+identity:
+  name: package
+  author: langgenius
+  label:
+    en_US: Package
+    zh_Hans: 包
+    pt_BR: Pacote
+
+description:
+  human:
+    en_US: Triggers on package events (published, updated)
+    zh_Hans: 在包事件时触发（发布、更新）
+    pt_BR: Dispara em eventos de pacote (publicado, atualizado)
+  llm:
+    en_US: This trigger activates on GitHub package events, providing information about the package, repository, and user who performed the action.
+    zh_Hans: 此触发器在 GitHub 包事件时激活，提供有关包、仓库和执行操作的用户的信息。
+    pt_BR: Este gatilho é ativado em eventos de pacote do GitHub, fornecendo informações sobre o pacote, repositório e usuário que realizou a ação.
+
+parameters:
+  - name: action_filter
+    label:
+      en_US: Action Filter
+      zh_Hans: 操作过滤
+      pt_BR: Filtro de Ação
+    type: select
+    required: false
+    options:
+      - value: published
+        label:
+          en_US: Published
+          zh_Hans: 发布
+          pt_BR: Publicado
+      - value: updated
+        label:
+          en_US: Updated
+          zh_Hans: 更新
+          pt_BR: Atualizado
+    multiple: true
+    help:
+      en_US: "Select which package actions to trigger on (leave empty for all)"
+      zh_Hans: "选择触发的包操作（留空表示所有）"
+      pt_BR: "Selecione quais ações de pacote devem disparar (deixe vazio para todas)"
+
+  - name: package_type_filter
+    label:
+      en_US: Package Type Filter
+      zh_Hans: 包类型过滤
+      pt_BR: Filtro de Tipo de Pacote
+    type: select
+    required: false
+    options:
+      - value: npm
+        label:
+          en_US: NPM
+          zh_Hans: NPM
+          pt_BR: NPM
+      - value: maven
+        label:
+          en_US: Maven
+          zh_Hans: Maven
+          pt_BR: Maven
+      - value: rubygems
+        label:
+          en_US: RubyGems
+          zh_Hans: RubyGems
+          pt_BR: RubyGems
+      - value: docker
+        label:
+          en_US: Docker
+          zh_Hans: Docker
+          pt_BR: Docker
+      - value: nuget
+        label:
+          en_US: NuGet
+          zh_Hans: NuGet
+          pt_BR: NuGet
+      - value: container
+        label:
+          en_US: Container
+          zh_Hans: 容器
+          pt_BR: Container
+    help:
+      en_US: "Only trigger for specific package types"
+      zh_Hans: "仅对特定包类型触发"
+      pt_BR: "Disparar apenas para tipos de pacote específicos"
+
+  - name: package_name_filter
+    label:
+      en_US: Package Name Filter
+      zh_Hans: 包名称过滤
+      pt_BR: Filtro de Nome do Pacote
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., my-package, @org/*, utils-* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：my-package, @org/*, utils-*（逗号分隔，支持通配符）"
+      pt_BR: "ex: my-package, @org/*, utils-* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for packages with these names"
+      zh_Hans: "仅对具有这些名称的包触发"
+      pt_BR: "Disparar apenas para pacotes com esses nomes"
+
+  - name: version_pattern
+    label:
+      en_US: Version Pattern Filter
+      zh_Hans: 版本模式过滤
+      pt_BR: Filtro de Padrão de Versão
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., v1.*, *-beta, 2.*.* (supports wildcards)"
+      zh_Hans: "例如：v1.*, *-beta, 2.*.*（支持通配符）"
+      pt_BR: "ex: v1.*, *-beta, 2.*.* (suporta wildcards)"
+    help:
+      en_US: "Only trigger for versions matching this pattern"
+      zh_Hans: "仅对匹配此模式的版本触发"
+      pt_BR: "Disparar apenas para versões que correspondam a este padrão"
+
+  - name: exclude_prereleases
+    label:
+      en_US: Exclude Pre-releases
+      zh_Hans: 排除预发布
+      pt_BR: Excluir Pré-lançamentos
+    type: boolean
+    required: false
+    help:
+      en_US: "Don't trigger for pre-release versions"
+      zh_Hans: "不对预发布版本触发"
+      pt_BR: "Não disparar para versões de pré-lançamento"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that was performed on the package
+    package:
+      type: object
+      properties:
+        id:
+          type: number
+          description: The package ID
+        name:
+          type: string
+          description: The package name
+        package_type:
+          type: string
+          description: The type of package (npm, maven, docker, etc.)
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Package owner username
+            id:
+              type: number
+              description: Package owner ID
+            avatar_url:
+              type: string
+              description: Package owner avatar URL
+            html_url:
+              type: string
+              description: Package owner profile URL
+        version:
+          type: object
+          properties:
+            id:
+              type: number
+              description: The version ID
+            version:
+              type: string
+              description: The version string
+            summary:
+              type: string
+              description: The version summary
+            description:
+              type: string
+              description: The version description
+            body:
+              type: string
+              description: The version body/changelog
+            body_html:
+              type: string
+              description: The version body as HTML
+            release:
+              type: object
+              properties:
+                url:
+                  type: string
+                  description: The release API URL
+                html_url:
+                  type: string
+                  description: The release HTML URL
+                id:
+                  type: number
+                  description: The release ID
+                tag_name:
+                  type: string
+                  description: The release tag name
+                target_commitish:
+                  type: string
+                  description: The release target commit
+                name:
+                  type: string
+                  description: The release name
+                draft:
+                  type: boolean
+                  description: Whether the release is a draft
+                prerelease:
+                  type: boolean
+                  description: Whether the release is a prerelease
+                created_at:
+                  type: string
+                  description: When the release was created
+                published_at:
+                  type: string
+                  description: When the release was published
+            package_files:
+              type: array
+              description: Files associated with this package version
+              items:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                    description: Download URL for the file
+                  id:
+                    type: number
+                    description: File ID
+                  name:
+                    type: string
+                    description: File name
+                  sha256:
+                    type: string
+                    description: File SHA256 hash
+                  sha1:
+                    type: string
+                    description: File SHA1 hash
+                  md5:
+                    type: string
+                    description: File MD5 hash
+                  content_type:
+                    type: string
+                    description: File content type
+                  state:
+                    type: string
+                    description: File state
+                  size:
+                    type: number
+                    description: File size in bytes
+                  created_at:
+                    type: string
+                    description: When the file was created
+                  updated_at:
+                    type: string
+                    description: When the file was last updated
+            author:
+              type: object
+              properties:
+                login:
+                  type: string
+                  description: Version author username
+                id:
+                  type: number
+                  description: Version author ID
+                avatar_url:
+                  type: string
+                  description: Version author avatar URL
+                html_url:
+                  type: string
+                  description: Version author profile URL
+            installation_command:
+              type: string
+              description: Command to install this package version
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who triggered the event
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+
+extra:
+  python:
+    source: triggers/package.py

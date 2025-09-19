@@ -1,0 +1,317 @@
+identity:
+  name: release
+  author: langgenius
+  label:
+    en_US: Release
+    zh_Hans: 发布版本
+    pt_BR: Release
+
+description:
+  human:
+    en_US: Triggers on release events (created, published, deleted, edited, etc.)
+    zh_Hans: 在发布版本事件时触发（创建、发布、删除、编辑等）
+    pt_BR: Dispara em eventos de release (criado, publicado, deletado, editado, etc.)
+  llm:
+    en_US: This trigger activates on various GitHub release events, providing comprehensive information about the release, repository, and involved users.
+    zh_Hans: 此触发器在各种 GitHub 发布版本事件时激活，提供有关发布版本、仓库和相关用户的综合信息。
+    pt_BR: Este gatilho é ativado em vários eventos de release do GitHub, fornecendo informações abrangentes sobre o release, repositório e usuários envolvidos.
+
+parameters:
+  - name: action_filter
+    label:
+      en_US: Action Filter
+      zh_Hans: 操作过滤
+      pt_BR: Filtro de Ação
+    type: select
+    required: false
+    options:
+      - value: created
+        label:
+          en_US: Created
+          zh_Hans: 创建
+          pt_BR: Criado
+      - value: published
+        label:
+          en_US: Published
+          zh_Hans: 发布
+          pt_BR: Publicado
+      - value: unpublished
+        label:
+          en_US: Unpublished
+          zh_Hans: 取消发布
+          pt_BR: Despublicado
+      - value: deleted
+        label:
+          en_US: Deleted
+          zh_Hans: 删除
+          pt_BR: Deletado
+      - value: edited
+        label:
+          en_US: Edited
+          zh_Hans: 编辑
+          pt_BR: Editado
+      - value: prereleased
+        label:
+          en_US: Pre-released
+          zh_Hans: 预发布
+          pt_BR: Pré-lançado
+      - value: released
+        label:
+          en_US: Released
+          zh_Hans: 正式发布
+          pt_BR: Lançado
+    multiple: true
+    help:
+      en_US: "Select which release actions to trigger on (leave empty for all)"
+      zh_Hans: "选择触发的发布操作（留空表示所有）"
+      pt_BR: "Selecione quais ações de release devem disparar (deixe vazio para todas)"
+
+  - name: prerelease_filter
+    label:
+      en_US: Prerelease Filter
+      zh_Hans: 预发布过滤
+      pt_BR: Filtro de Pré-release
+    type: select
+    required: false
+    options:
+      - value: exclude
+        label:
+          en_US: Exclude Prereleases
+          zh_Hans: 排除预发布
+          pt_BR: Excluir Pré-releases
+      - value: only
+        label:
+          en_US: Only Prereleases
+          zh_Hans: 仅预发布
+          pt_BR: Apenas Pré-releases
+    help:
+      en_US: "Filter prereleases"
+      zh_Hans: "过滤预发布版本"
+      pt_BR: "Filtrar pré-releases"
+
+  - name: draft_filter
+    label:
+      en_US: Draft Filter
+      zh_Hans: 草稿过滤
+      pt_BR: Filtro de Rascunho
+    type: select
+    required: false
+    options:
+      - value: exclude
+        label:
+          en_US: Exclude Drafts
+          zh_Hans: 排除草稿
+          pt_BR: Excluir Rascunhos
+      - value: only
+        label:
+          en_US: Only Drafts
+          zh_Hans: 仅草稿
+          pt_BR: Apenas Rascunhos
+    help:
+      en_US: "Filter draft releases"
+      zh_Hans: "过滤草稿发布"
+      pt_BR: "Filtrar releases em rascunho"
+
+  - name: tag_pattern
+    label:
+      en_US: Tag Pattern Filter
+      zh_Hans: 标签模式过滤
+      pt_BR: Filtro de Padrão de Tag
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., v*.*.*, release-*, 2024.* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：v*.*.*, release-*, 2024.*（逗号分隔，支持通配符）"
+      pt_BR: "ex: v*.*.*, release-*, 2024.* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for releases matching these tag patterns"
+      zh_Hans: "仅对匹配这些标签模式的发布触发"
+      pt_BR: "Disparar apenas para releases que correspondam a estes padrões de tag"
+
+  - name: required_assets
+    label:
+      en_US: Required Assets
+      zh_Hans: 必需资产
+      pt_BR: Assets Obrigatórios
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., *.dmg, *.exe, checksums.txt (comma-separated, supports wildcards)"
+      zh_Hans: "例如：*.dmg, *.exe, checksums.txt（逗号分隔，支持通配符）"
+      pt_BR: "ex: *.dmg, *.exe, checksums.txt (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger if release contains these assets"
+      zh_Hans: "仅当发布包含这些资产时触发"
+      pt_BR: "Disparar apenas se o release contiver estes assets"
+
+  - name: exclude_authors
+    label:
+      en_US: Exclude Authors
+      zh_Hans: 排除作者
+      pt_BR: Excluir Autores
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., dependabot[bot], renovate[bot] (comma-separated)"
+      zh_Hans: "例如：dependabot[bot], renovate[bot]（逗号分隔）"
+      pt_BR: "ex: dependabot[bot], renovate[bot] (separados por vírgula)"
+    help:
+      en_US: "Don't trigger for releases from these authors"
+      zh_Hans: "不对这些作者的发布触发"
+      pt_BR: "Não disparar para releases destes autores"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that was performed on the release
+    release:
+      type: object
+      properties:
+        id:
+          type: number
+          description: The release ID
+        tag_name:
+          type: string
+          description: The name of the tag for this release
+        target_commitish:
+          type: string
+          description: The commitish value that determines where the Git tag is created from
+        name:
+          type: string
+          description: The name of the release
+        body:
+          type: string
+          description: The description/body of the release
+        draft:
+          type: boolean
+          description: Whether the release is a draft
+        prerelease:
+          type: boolean
+          description: Whether the release is a prerelease
+        created_at:
+          type: string
+          description: When the release was created
+        published_at:
+          type: string
+          description: When the release was published
+        html_url:
+          type: string
+          description: The URL to view the release on GitHub
+        tarball_url:
+          type: string
+          description: URL to download the source code as a tarball
+        zipball_url:
+          type: string
+          description: URL to download the source code as a zip file
+        assets:
+          type: array
+          description: Release assets (binaries, etc.)
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Asset filename
+              label:
+                type: string
+                description: Asset label
+              content_type:
+                type: string
+                description: Asset content type
+              size:
+                type: number
+                description: Asset size in bytes
+              download_count:
+                type: number
+                description: Number of times this asset has been downloaded
+              browser_download_url:
+                type: string
+                description: URL to download the asset
+              created_at:
+                type: string
+                description: When the asset was created
+              updated_at:
+                type: string
+                description: When the asset was last updated
+        author:
+          type: object
+          properties:
+            login:
+              type: string
+              description: The username of the release author
+            avatar_url:
+              type: string
+              description: The avatar URL of the release author
+            html_url:
+              type: string
+              description: The profile URL of the release author
+    repository:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The repository name
+        full_name:
+          type: string
+          description: The full repository name (owner/repo)
+        html_url:
+          type: string
+          description: The repository URL
+        description:
+          type: string
+          description: The repository description
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Repository owner username
+            avatar_url:
+              type: string
+              description: Repository owner avatar URL
+            html_url:
+              type: string
+              description: Repository owner profile URL
+        default_branch:
+          type: string
+          description: The default branch of the repository
+    sender:
+      type: object
+      properties:
+        login:
+          type: string
+          description: The username who triggered the event
+        avatar_url:
+          type: string
+          description: The avatar URL of the sender
+        html_url:
+          type: string
+          description: The profile URL of the sender
+        type:
+          type: string
+          description: The type of the sender (User, Bot, etc.)
+    changes:
+      type: object
+      description: Changes made (only for edited action)
+      properties:
+        name:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous release name
+        body:
+          type: object
+          properties:
+            from:
+              type: string
+              description: Previous release body
+
+extra:
+  python:
+    source: triggers/release.py

@@ -1,0 +1,175 @@
+identity:
+  name: message_image
+  author: dify-community
+  label:
+    en_US: Image Message Received
+    zh_Hans: 收到图片消息
+    pt_BR: Mensagem de Imagem Recebida
+
+description:
+  human:
+    en_US: Triggers when an image message is received on WhatsApp
+    zh_Hans: 当在 WhatsApp 上收到图片消息时触发
+    pt_BR: Dispara quando uma mensagem de imagem é recebida no WhatsApp
+  llm:
+    en_US: This trigger activates when an image message is received on WhatsApp Business, providing the image URL, caption, sender information, and conversation context.
+    zh_Hans: 当在 WhatsApp Business 上收到图片消息时，此触发器会被激活，提供图片 URL、说明文字、发送者信息和对话上下文。
+    pt_BR: Este gatilho é ativado quando uma mensagem de imagem é recebida no WhatsApp Business, fornecendo a URL da imagem, legenda, informações do remetente e contexto da conversa.
+
+parameters:
+  - name: has_caption
+    label:
+      en_US: Caption Required
+      zh_Hans: 需要说明文字
+      pt_BR: Legenda Necessária
+    type: select
+    required: false
+    options:
+      - value: "yes"
+        label:
+          en_US: "Yes"
+          zh_Hans: "是"
+          pt_BR: "Sim"
+      - value: "no"
+        label:
+          en_US: "No"
+          zh_Hans: "否"
+          pt_BR: "Não"
+      - value: "any"
+        label:
+          en_US: "Any"
+          zh_Hans: "任意"
+          pt_BR: "Qualquer"
+    default: "any"
+    help:
+      en_US: "Filter images based on whether they have captions"
+      zh_Hans: "根据是否有说明文字过滤图片"
+      pt_BR: "Filtrar imagens com base na presença de legendas"
+
+  - name: caption_keywords
+    label:
+      en_US: Caption Keywords
+      zh_Hans: 说明文字关键词
+      pt_BR: Palavras-chave da Legenda
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., product, screenshot, photo (comma-separated)"
+      zh_Hans: "例如：产品, 截图, 照片（逗号分隔）"
+      pt_BR: "ex: produto, captura, foto (separados por vírgula)"
+    help:
+      en_US: "Only trigger if caption contains any of these keywords"
+      zh_Hans: "仅当说明文字包含这些关键词之一时触发"
+      pt_BR: "Disparar apenas se a legenda contiver alguma destas palavras-chave"
+
+  - name: sender_filter
+    label:
+      en_US: Sender Filter
+      zh_Hans: 发送者过滤
+      pt_BR: Filtro de Remetente
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., +1234567890, +0987654321 (comma-separated)"
+      zh_Hans: "例如：+1234567890, +0987654321（逗号分隔）"
+      pt_BR: "ex: +1234567890, +0987654321 (separados por vírgula)"
+    help:
+      en_US: "Only trigger for images from these phone numbers"
+      zh_Hans: "仅对来自这些电话号码的图片触发"
+      pt_BR: "Disparar apenas para imagens destes números de telefone"
+
+  - name: max_file_size
+    label:
+      en_US: Maximum File Size (MB)
+      zh_Hans: 最大文件大小 (MB)
+      pt_BR: Tamanho Máximo do Arquivo (MB)
+    type: number
+    required: false
+    placeholder:
+      en_US: "e.g., 10"
+      zh_Hans: "例如：10"
+      pt_BR: "ex: 10"
+    help:
+      en_US: "Only trigger for images smaller than this size in MB"
+      zh_Hans: "仅对小于此大小的图片触发（MB）"
+      pt_BR: "Disparar apenas para imagens menores que este tamanho em MB"
+
+output_schema:
+  type: object
+  properties:
+    message:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique message ID
+        type:
+          type: string
+          description: Message type (always "image" for this trigger)
+        image:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Media object ID
+            mime_type:
+              type: string
+              description: MIME type of the image (e.g., image/jpeg)
+            sha256:
+              type: string
+              description: SHA256 hash of the image
+            caption:
+              type: string
+              description: Caption text for the image (if provided)
+            url:
+              type: string
+              description: URL to download the image (requires authentication)
+        timestamp:
+          type: string
+          description: Message timestamp
+        context:
+          type: object
+          properties:
+            from:
+              type: string
+              description: ID of the message being replied to
+            id:
+              type: string
+              description: Context message ID
+    sender:
+      type: object
+      properties:
+        wa_id:
+          type: string
+          description: WhatsApp ID (phone number) of the sender
+        name:
+          type: string
+          description: Profile name of the sender
+    business:
+      type: object
+      properties:
+        phone_number_id:
+          type: string
+          description: WhatsApp Business phone number ID
+        display_phone_number:
+          type: string
+          description: Display phone number of the business
+    metadata:
+      type: object
+      properties:
+        received_at:
+          type: string
+          description: When the message was received by the webhook
+        file_size:
+          type: number
+          description: File size in bytes (if available)
+        is_forwarded:
+          type: boolean
+          description: Whether the image was forwarded
+        is_reply:
+          type: boolean
+          description: Whether this is a reply to another message
+
+extra:
+  python:
+    source: triggers/message_image.py
