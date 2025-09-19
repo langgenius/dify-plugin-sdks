@@ -17,17 +17,66 @@ description:
     pt_BR: Este gatilho é ativado quando um pull request é fechado em um repositório do GitHub, seja mesclado ou fechado sem mesclar, fornecendo informações sobre o pull request, repositório e usuário que o fechou.
 
 parameters:
-  - name: pr_filter
+  - name: merged_only
     label:
-      en_US: Pull Request Number Filter
-      zh_Hans: Pull Request 编号过滤器
-      pt_BR: Filtro de Número do Pull Request
+      en_US: Merged Only
+      zh_Hans: 仅已合并
+      pt_BR: Apenas Mesclados
+    type: boolean
+    required: false
+    default: false
+    help:
+      en_US: "Only trigger for merged pull requests"
+      zh_Hans: "仅对已合并的 Pull Request 触发"
+      pt_BR: "Disparar apenas para pull requests mesclados"
+
+  - name: target_branches
+    label:
+      en_US: Target Branch Filter
+      zh_Hans: 目标分支过滤
+      pt_BR: Filtro de Branch de Destino
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., main, release/*, production (comma-separated, supports wildcards)"
+      zh_Hans: "例如：main, release/*, production（逗号分隔，支持通配符）"
+      pt_BR: "ex: main, release/*, production (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for PRs closed into these branches"
+      zh_Hans: "仅对合并到这些分支的 PR 触发"
+      pt_BR: "Disparar apenas para PRs fechados nestas branches"
+
+  - name: labels
+    label:
+      en_US: Label Filter
+      zh_Hans: 标签过滤
+      pt_BR: Filtro de Etiquetas
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., ready-to-deploy, hotfix, feature (comma-separated)"
+      zh_Hans: "例如：ready-to-deploy, hotfix, feature（逗号分隔）"
+      pt_BR: "ex: ready-to-deploy, hotfix, feature (separados por vírgula)"
+    help:
+      en_US: "Only trigger for PRs with these labels"
+      zh_Hans: "仅对带有这些标签的 PR 触发"
+      pt_BR: "Disparar apenas para PRs com estas etiquetas"
+
+  - name: min_approvals
+    label:
+      en_US: Minimum Approvals
+      zh_Hans: 最少批准数
+      pt_BR: Aprovações Mínimas
     type: number
     required: false
-    description:
-      en_US: Filter by specific pull request number (optional)
-      zh_Hans: 按特定 pull request 编号过滤（可选）
-      pt_BR: Filtrar por número específico do pull request (opcional)
+    placeholder:
+      en_US: "e.g., 2 (leave empty for no requirement)"
+      zh_Hans: "例如：2（留空表示不限制）"
+      pt_BR: "ex: 2 (deixe vazio para sem requisito)"
+    help:
+      en_US: "Only trigger if PR had at least this many approvals"
+      zh_Hans: "仅当 PR 有至少这么多批准时触发"
+      pt_BR: "Disparar apenas se o PR teve pelo menos este número de aprovações"
 
 output_schema:
   type: object

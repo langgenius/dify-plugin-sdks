@@ -4,6 +4,7 @@ from typing import Any
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Event
+from dify_plugin.errors.trigger import TriggerIgnoreEventError
 from dify_plugin.interfaces.trigger import TriggerEvent
 
 
@@ -31,7 +32,7 @@ class IssueCommentEditedTrigger(TriggerEvent):
         action = payload.get("action", "")
         if action != "edited":
             # This trigger only handles edited events
-            return Event(variables={})
+            raise TriggerIgnoreEventError(f"Action \'{action}\' is not \'edited\'")
         
         # Extract issue comment information
         comment = payload.get("comment", {})
@@ -46,7 +47,7 @@ class IssueCommentEditedTrigger(TriggerEvent):
             issue_number = issue.get("number")
             if issue_number != int(issue_filter):
                 # Skip this event if it doesn't match the issue filter
-                return Event(variables={})
+                raise TriggerIgnoreEventError("Event does not match filter criteria")
         
         # Check if this is a pull request
         is_pull_request = "pull_request" in issue

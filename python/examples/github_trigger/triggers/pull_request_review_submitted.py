@@ -4,6 +4,7 @@ from typing import Any
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Event
+from dify_plugin.errors.trigger import TriggerIgnoreEventError
 from dify_plugin.interfaces.trigger import TriggerEvent
 
 
@@ -17,10 +18,12 @@ class PullRequestReviewSubmittedTrigger(TriggerEvent):
 
     def _trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
         """
-        Handle GitHub pull request review submitted event trigger
+        Handle GitHub pull request review submitted event trigger with practical filtering
 
         Parameters:
-        - pr_filter: Filter by specific PR number (optional)
+        - review_state: Filter by review state (approved, changes_requested, commented)
+        - author_type: Filter by author type (human_only, bot_only)
+        - required_reviewers: Only from specific reviewers (comma-separated)
         """
         # Get the event payload
         payload = request.get_json()
@@ -31,7 +34,7 @@ class PullRequestReviewSubmittedTrigger(TriggerEvent):
         action = payload.get("action", "")
         if action != "submitted":
             # This trigger only handles submitted events
-            return Event(variables={})
+            raise TriggerIgnoreEventError(f"Action '{action}' is not 'submitted'")
 
         # Extract review, pull request, and repository information
         review = payload.get("review", {})
@@ -39,13 +42,50 @@ class PullRequestReviewSubmittedTrigger(TriggerEvent):
         repository = payload.get("repository", {})
         sender = payload.get("sender", {})
 
-        # Apply PR number filter if specified
-        pr_filter = parameters.get("pr_filter")
-        if pr_filter is not None:
-            pr_number = pull_request.get("number")
-            if pr_number != int(pr_filter):
-                # Skip this event if it doesn't match the PR filter
-                return Event(variables={})
+        # Review state filtering
+        review_state_filter = parameters.get("review_state")
+        if review_state_filter:
+            review_state = review.get("state", "").lower()
+            if review_state != review_state_filter.lower():
+                raise TriggerIgnoreEventError(
+                    f"Review state '{review_state}' doesn't match required state '{review_state_filter}'"
+                )
+
+        # Author type filtering
+        author_type_filter = parameters.get("author_type")
+        if author_type_filter:
+            reviewer_login = review.get("user", {}).get("login", "")
+            reviewer_type = review.get("user", {}).get("type", "")
+            is_bot = "[bot]" in reviewer_login or reviewer_type == "Bot"
+
+            if author_type_filter == "human_only" and is_bot:
+                raise TriggerIgnoreEventError(f"Ignoring review from bot: {reviewer_login}")
+            elif author_type_filter == "bot_only" and not is_bot:
+                raise TriggerIgnoreEventError(f"Ignoring review from human user: {reviewer_login}")
+
+        # Required reviewers filtering
+        required_reviewers = parameters.get("required_reviewers", "")
+        if required_reviewers:
+            allowed_reviewers = [r.strip() for r in required_reviewers.split(",") if r.strip()]
+            if allowed_reviewers:
+                reviewer_login = review.get("user", {}).get("login", "")
+                # Check if reviewer is in the allowed list (support @team mentions)
+                reviewer_matched = False
+                for allowed in allowed_reviewers:
+                    if allowed.startswith("@"):
+                        # Team mention - would need additional API call to verify team membership
+                        # For now, just check if the reviewer is mentioned
+                        if reviewer_login == allowed[1:]:
+                            reviewer_matched = True
+                            break
+                    elif reviewer_login == allowed:
+                        reviewer_matched = True
+                        break
+
+                if not reviewer_matched:
+                    raise TriggerIgnoreEventError(
+                        f"Review from '{reviewer_login}' is not from required reviewers: {', '.join(allowed_reviewers)}"
+                    )
 
         # Build variables for the workflow
         variables = {

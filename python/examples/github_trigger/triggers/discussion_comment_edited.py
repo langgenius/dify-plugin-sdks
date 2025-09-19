@@ -4,6 +4,7 @@ from typing import Any
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Event
+from dify_plugin.errors.trigger import TriggerIgnoreEventError
 from dify_plugin.interfaces.trigger import TriggerEvent
 
 
@@ -24,30 +25,16 @@ class DiscussionCommentEditedTrigger(TriggerEvent):
         if not payload:
             raise ValueError("No payload received")
 
-        # Extract basic information
-        repository = payload.get("repository", {})
-        sender = payload.get("sender", {})
+        # Verify the action
+        action = payload.get("action", "")
+        if action != "edited":
+            raise TriggerIgnoreEventError(f"Action '{action}' is not 'edited'")
 
-        # Build basic variables for the workflow
-        variables = {
-            "repository": {
-                "name": repository.get("name", ""),
-                "full_name": repository.get("full_name", ""),
-                "html_url": repository.get("html_url", ""),
-                "description": repository.get("description", ""),
-                "private": repository.get("private", False),
-                "owner": {
-                    "login": repository.get("owner", {}).get("login", ""),
-                    "avatar_url": repository.get("owner", {}).get("avatar_url", ""),
-                    "html_url": repository.get("owner", {}).get("html_url", ""),
-                },
-            },
-            "sender": {
-                "login": sender.get("login", ""),
-                "avatar_url": sender.get("avatar_url", ""),
-                "html_url": sender.get("html_url", ""),
-                "type": sender.get("type", ""),
-            },
-        }
-
-        return Event(variables=variables)
+        # Return the relevant payload fields directly
+        return Event(variables={
+            "comment": payload.get("comment"),
+            "discussion": payload.get("discussion"),
+            "changes": payload.get("changes"),
+            "repository": payload.get("repository"),
+            "sender": payload.get("sender"),
+        })

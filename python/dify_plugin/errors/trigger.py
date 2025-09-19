@@ -72,3 +72,11 @@ class TriggerProviderOAuthError(TriggerError):
     """
 
     pass
+
+
+class TriggerIgnoreEventError(TriggerError):
+    """
+    Raised when an event should be ignored.
+    """
+
+    pass

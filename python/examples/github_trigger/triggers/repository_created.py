@@ -4,6 +4,7 @@ from typing import Any
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Event
+from dify_plugin.errors.trigger import TriggerIgnoreEventError
 from dify_plugin.interfaces.trigger import TriggerEvent
 
 
@@ -24,50 +25,8 @@ class RepositoryCreatedTrigger(TriggerEvent):
         if not payload:
             raise ValueError("No payload received")
 
-        # Verify this is a created action
-        action = payload.get("action", "")
-        if action != "created":
-            # This trigger only handles created events
-            return Event(variables={})
-
-        # Extract repository information
-        repository = payload.get("repository", {})
-        sender = payload.get("sender", {})
-
-        # Build variables for the workflow
-        variables = {
-            "repository": {
-                "id": repository.get("id"),
-                "name": repository.get("name", ""),
-                "full_name": repository.get("full_name", ""),
-                "html_url": repository.get("html_url", ""),
-                "description": repository.get("description", ""),
-                "private": repository.get("private", False),
-                "archived": repository.get("archived", False),
-                "disabled": repository.get("disabled", False),
-                "default_branch": repository.get("default_branch", ""),
-                "topics": repository.get("topics", []),
-                "language": repository.get("language", ""),
-                "size": repository.get("size", 0),
-                "stargazers_count": repository.get("stargazers_count", 0),
-                "watchers_count": repository.get("watchers_count", 0),
-                "forks_count": repository.get("forks_count", 0),
-                "open_issues_count": repository.get("open_issues_count", 0),
-                "created_at": repository.get("created_at", ""),
-                "updated_at": repository.get("updated_at", ""),
-                "pushed_at": repository.get("pushed_at", ""),
-                "owner": {
-                    "login": repository.get("owner", {}).get("login", ""),
-                    "avatar_url": repository.get("owner", {}).get("avatar_url", ""),
-                    "html_url": repository.get("owner", {}).get("html_url", ""),
-                },
-            },
-            "sender": {
-                "login": sender.get("login", ""),
-                "avatar_url": sender.get("avatar_url", ""),
-                "html_url": sender.get("html_url", ""),
-                "type": sender.get("type", ""),
-            },
-        }
-
-        return Event(variables=variables)
+        # Return the relevant payload fields directly
+        return Event(variables={
+            "repository": payload.get("repository"),
+            "sender": payload.get("sender"),
+        })

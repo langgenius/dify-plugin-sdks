@@ -17,17 +17,66 @@ description:
     pt_BR: Este gatilho é ativado quando uma issue é fechada em um repositório do GitHub, fornecendo informações sobre a issue, repositório e usuário que a fechou.
 
 parameters:
-  - name: issue_filter
+  - name: labels
     label:
-      en_US: Issue Number Filter
-      zh_Hans: Issue 编号过滤器
-      pt_BR: Filtro de Número da Issue
+      en_US: Label Filter
+      zh_Hans: 标签过滤
+      pt_BR: Filtro de Etiquetas
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., bug, fixed, wontfix (comma-separated)"
+      zh_Hans: "例如：bug, fixed, wontfix（逗号分隔）"
+      pt_BR: "ex: bug, fixed, wontfix (separados por vírgula)"
+    help:
+      en_US: "Only trigger for issues with these labels"
+      zh_Hans: "仅对带有这些标签的 Issue 触发"
+      pt_BR: "Disparar apenas para issues com estas etiquetas"
+
+  - name: closed_by
+    label:
+      en_US: Closed By Filter
+      zh_Hans: 关闭者过滤
+      pt_BR: Filtro de Quem Fechou
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., john-doe, @team-leads (comma-separated)"
+      zh_Hans: "例如：john-doe, @team-leads（逗号分隔）"
+      pt_BR: "ex: john-doe, @team-leads (separados por vírgula)"
+    help:
+      en_US: "Only trigger if closed by specific users"
+      zh_Hans: "仅当由特定用户关闭时触发"
+      pt_BR: "Disparar apenas se fechado por usuários específicos"
+
+  - name: resolution_time_max
+    label:
+      en_US: Max Resolution Time (hours)
+      zh_Hans: 最大解决时间（小时）
+      pt_BR: Tempo Máximo de Resolução (horas)
     type: number
     required: false
-    description:
-      en_US: Filter by specific issue number (optional)
-      zh_Hans: 按特定 issue 编号过滤（可选）
-      pt_BR: Filtrar por número específico da issue (opcional)
+    placeholder:
+      en_US: "e.g., 24 (issues resolved within 24 hours)"
+      zh_Hans: "例如：24（24小时内解决的问题）"
+      pt_BR: "ex: 24 (issues resolvidas em 24 horas)"
+    help:
+      en_US: "Only trigger for issues resolved within this time"
+      zh_Hans: "仅对在此时间内解决的问题触发"
+      pt_BR: "Disparar apenas para issues resolvidas dentro deste tempo"
+
+  - name: exclude_not_planned
+    label:
+      en_US: Exclude 'Not Planned'
+      zh_Hans: 排除'不计划修复'
+      pt_BR: Excluir 'Não Planejado'
+    type: boolean
+    required: false
+    default: false
+    help:
+      en_US: "Skip issues closed as 'not planned'"
+      zh_Hans: "跳过标记为'不计划修复'的问题"
+      pt_BR: "Pular issues fechadas como 'não planejado'"
 
 output_schema:
   type: object

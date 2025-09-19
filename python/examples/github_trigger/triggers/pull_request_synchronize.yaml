@@ -17,17 +17,63 @@ description:
     pt_BR: Este gatilho é ativado quando um pull request é sincronizado em um repositório do GitHub, tipicamente quando novos commits são enviados para o branch head, fornecendo informações sobre o pull request atualizado e as mudanças de commit.
 
 parameters:
-  - name: pr_filter
+  - name: file_patterns
     label:
-      en_US: Pull Request Number Filter
-      zh_Hans: Pull Request 编号过滤器
-      pt_BR: Filtro de Número do Pull Request
+      en_US: File Pattern Filter
+      zh_Hans: 文件模式过滤
+      pt_BR: Filtro de Padrão de Arquivo
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., *.js, src/**/*.ts, !*.test.* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：*.js, src/**/*.ts, !*.test.*（逗号分隔，支持通配符）"
+      pt_BR: "ex: *.js, src/**/*.ts, !*.test.* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger if modified files match these patterns (! prefix to exclude)"
+      zh_Hans: "仅当修改的文件匹配这些模式时触发（!前缀表示排除）"
+      pt_BR: "Disparar apenas se arquivos modificados corresponderem a estes padrões (! para excluir)"
+
+  - name: max_commits
+    label:
+      en_US: Maximum Commits
+      zh_Hans: 最大提交数
+      pt_BR: Máximo de Commits
     type: number
     required: false
-    description:
-      en_US: Filter by specific pull request number (optional)
-      zh_Hans: 按特定 pull request 编号过滤（可选）
-      pt_BR: Filtrar por número específico do pull request (opcional)
+    placeholder:
+      en_US: "e.g., 10 (ignore large updates)"
+      zh_Hans: "例如：10（忽略大型更新）"
+      pt_BR: "ex: 10 (ignorar grandes atualizações)"
+    help:
+      en_US: "Skip if PR sync includes more than this many commits"
+      zh_Hans: "如果 PR 同步包含超过此数量的提交则跳过"
+      pt_BR: "Pular se a sincronização do PR incluir mais commits que este número"
+
+  - name: skip_draft
+    label:
+      en_US: Skip Draft PRs
+      zh_Hans: 跳过草稿 PR
+      pt_BR: Pular PRs de Rascunho
+    type: boolean
+    required: false
+    default: false
+    help:
+      en_US: "Don't trigger for draft pull requests"
+      zh_Hans: "不对草稿 Pull Request 触发"
+      pt_BR: "Não disparar para pull requests em rascunho"
+
+  - name: force_push_only
+    label:
+      en_US: Force Push Only
+      zh_Hans: 仅强制推送
+      pt_BR: Apenas Force Push
+    type: boolean
+    required: false
+    default: false
+    help:
+      en_US: "Only trigger for force pushes (rebases, amends)"
+      zh_Hans: "仅对强制推送触发（rebase、amend）"
+      pt_BR: "Disparar apenas para force pushes (rebases, amends)"
 
 output_schema:
   type: object

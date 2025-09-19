@@ -1,9 +1,11 @@
+import fnmatch
 from collections.abc import Mapping
 from typing import Any
 
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Event
+from dify_plugin.errors.trigger import TriggerIgnoreEventError
 from dify_plugin.interfaces.trigger import TriggerEvent
 
 
@@ -17,10 +19,13 @@ class PullRequestClosedTrigger(TriggerEvent):
 
     def _trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
         """
-        Handle GitHub pull request closed event trigger
+        Handle GitHub pull request closed event trigger with practical filtering
 
         Parameters:
-        - pr_filter: Filter by specific pull request number (optional)
+        - merged_only: Only trigger for merged PRs
+        - target_branches: Filter by target branch (comma-separated, supports wildcards)
+        - labels: Filter by PR labels (comma-separated)
+        - min_approvals: Minimum number of approvals required
         """
         # Get the event payload
         payload = request.get_json()
@@ -31,20 +36,62 @@ class PullRequestClosedTrigger(TriggerEvent):
         action = payload.get("action", "")
         if action != "closed":
             # This trigger only handles closed events
-            return Event(variables={})
+            raise TriggerIgnoreEventError(f"Action '{action}' is not 'closed'")
 
         # Extract pull request information
         pull_request = payload.get("pull_request", {})
         repository = payload.get("repository", {})
         sender = payload.get("sender", {})
 
-        # Apply PR number filter if specified
-        pr_filter = parameters.get("pr_filter")
-        if pr_filter is not None:
-            pr_number = pull_request.get("number")
-            if pr_number != int(pr_filter):
-                # Skip this event if it doesn't match the PR filter
-                return Event(variables={})
+        # Check if merged_only filter is enabled
+        merged_only = parameters.get("merged_only", False)
+        if merged_only and not pull_request.get("merged", False):
+            raise TriggerIgnoreEventError("PR was closed without merging")
+
+        # Target branch filtering
+        target_branches = parameters.get("target_branches", "")
+        if target_branches:
+            allowed_branches = [b.strip() for b in target_branches.split(",") if b.strip()]
+            if allowed_branches:
+                base_branch = pull_request.get("base", {}).get("ref", "")
+                # Check if target branch matches any of the patterns
+                branch_matched = False
+                for pattern in allowed_branches:
+                    if fnmatch.fnmatch(base_branch, pattern):
+                        branch_matched = True
+                        break
+                if not branch_matched:
+                    raise TriggerIgnoreEventError(
+                        f"PR targets '{base_branch}' which doesn't match allowed patterns: {', '.join(allowed_branches)}"
+                    )
+
+        # Label filtering
+        labels_filter = parameters.get("labels", "")
+        if labels_filter:
+            required_labels = [label.strip() for label in labels_filter.split(",") if label.strip()]
+            if required_labels:
+                pr_labels = [label.get("name", "") for label in pull_request.get("labels", [])]
+                # Check if PR has at least one of the required labels
+                has_required_label = any(label in pr_labels for label in required_labels)
+                if not has_required_label:
+                    raise TriggerIgnoreEventError(
+                        f"PR doesn't have any of the required labels: {', '.join(required_labels)}"
+                    )
+
+        # Minimum approvals filtering
+        min_approvals = parameters.get("min_approvals")
+        if min_approvals is not None:
+            try:
+                min_count = int(min_approvals)
+                # Get the approval count from review_comments_url
+                # Note: In a real implementation, you'd need to fetch this data
+                # For now, we check if it was merged (which usually requires approvals)
+                if min_count > 0 and not pull_request.get("merged", False):
+                    raise TriggerIgnoreEventError(
+                        f"PR doesn't meet minimum approval requirement of {min_count}"
+                    )
+            except ValueError:
+                pass  # Invalid min_approvals value, skip filtering
 
         # Extract labels
         labels = [

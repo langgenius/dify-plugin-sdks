@@ -17,17 +17,69 @@ description:
     pt_BR: Este gatilho é ativado quando commits são enviados para um repositório do GitHub, fornecendo informações detalhadas sobre os commits, o branch para o qual foram enviados e o repositório.
 
 parameters:
-  - name: branch_filter
+  - name: branches
     label:
-      en_US: Branch Name Filter
-      zh_Hans: 分支名称过滤器
-      pt_BR: Filtro de Nome do Branch
+      en_US: Branch Filter
+      zh_Hans: 分支过滤
+      pt_BR: Filtro de Branch
     type: string
     required: false
-    description:
-      en_US: Filter by specific branch name (optional)
-      zh_Hans: 按特定分支名称过滤（可选）
-      pt_BR: Filtrar por nome específico do branch (opcional)
+    placeholder:
+      en_US: "e.g., main, develop, release/* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：main, develop, release/*（逗号分隔，支持通配符）"
+      pt_BR: "ex: main, develop, release/* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for commits to these branches. Leave empty for all branches."
+      zh_Hans: "仅对这些分支的提交触发。留空则监听所有分支。"
+      pt_BR: "Disparar apenas para commits nestes branches. Deixe vazio para todos."
+
+  - name: paths
+    label:
+      en_US: Path Filter
+      zh_Hans: 路径过滤
+      pt_BR: Filtro de Caminho
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., src/**, *.js, docs/*.md (comma-separated glob patterns)"
+      zh_Hans: "例如：src/**, *.js, docs/*.md（逗号分隔的 glob 模式）"
+      pt_BR: "ex: src/**, *.js, docs/*.md (padrões glob separados por vírgula)"
+    help:
+      en_US: "Only trigger when files matching these patterns are changed"
+      zh_Hans: "仅当匹配这些模式的文件发生变化时触发"
+      pt_BR: "Disparar apenas quando arquivos correspondentes forem alterados"
+
+  - name: ignore_patterns
+    label:
+      en_US: Ignore Commit Messages
+      zh_Hans: 忽略提交消息
+      pt_BR: Ignorar Mensagens de Commit
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., [skip ci], WIP, [no-trigger] (comma-separated)"
+      zh_Hans: "例如：[skip ci], WIP, [no-trigger]（逗号分隔）"
+      pt_BR: "ex: [skip ci], WIP, [no-trigger] (separados por vírgula)"
+    help:
+      en_US: "Ignore commits with messages containing these patterns"
+      zh_Hans: "忽略包含这些模式的提交消息"
+      pt_BR: "Ignorar commits com mensagens contendo estes padrões"
+
+  - name: exclude_authors
+    label:
+      en_US: Exclude Authors
+      zh_Hans: 排除作者
+      pt_BR: Excluir Autores
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., dependabot[bot], renovate[bot] (comma-separated)"
+      zh_Hans: "例如：dependabot[bot], renovate[bot]（逗号分隔）"
+      pt_BR: "ex: dependabot[bot], renovate[bot] (separados por vírgula)"
+    help:
+      en_US: "Ignore commits from these authors"
+      zh_Hans: "忽略这些作者的提交"
+      pt_BR: "Ignorar commits destes autores"
 
 output_schema:
   type: object

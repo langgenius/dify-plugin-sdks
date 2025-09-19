@@ -17,17 +17,90 @@ description:
     pt_BR: Este gatilho é ativado quando um novo comentário é criado em uma issue ou pull request do GitHub, fornecendo informações sobre o comentário, issue e usuário.
 
 parameters:
-  - name: issue_filter
+  - name: command_triggers
     label:
-      en_US: Issue Number Filter
-      zh_Hans: Issue 编号过滤器
-      pt_BR: Filtro de Número da Issue
-    type: number
+      en_US: Command Triggers
+      zh_Hans: 命令触发器
+      pt_BR: Gatilhos de Comando
+    type: string
     required: false
-    description:
-      en_US: Filter by specific issue number (optional)
-      zh_Hans: 按特定 issue 编号过滤（可选）
-      pt_BR: Filtrar por número específico da issue (opcional)
+    placeholder:
+      en_US: "e.g., /deploy, /test, /help (comma-separated)"
+      zh_Hans: "例如：/deploy, /test, /help（逗号分隔）"
+      pt_BR: "ex: /deploy, /test, /help (separados por vírgula)"
+    help:
+      en_US: "Only trigger if comment starts with these commands"
+      zh_Hans: "仅当评论以这些命令开头时触发"
+      pt_BR: "Disparar apenas se o comentário começar com estes comandos"
+
+  - name: exclude_bots
+    label:
+      en_US: Exclude Bot Comments
+      zh_Hans: 排除机器人评论
+      pt_BR: Excluir Comentários de Bot
+    type: boolean
+    required: false
+    default: true
+    help:
+      en_US: "Ignore comments from bot accounts"
+      zh_Hans: "忽略来自机器人账户的评论"
+      pt_BR: "Ignorar comentários de contas bot"
+
+  - name: issue_state
+    label:
+      en_US: Issue State Filter
+      zh_Hans: Issue 状态过滤
+      pt_BR: Filtro de Estado da Issue
+    type: select
+    required: false
+    options:
+      - value: open
+        label:
+          en_US: Open Issues Only
+          zh_Hans: 仅开放的 Issue
+          pt_BR: Apenas Issues Abertas
+      - value: closed
+        label:
+          en_US: Closed Issues Only
+          zh_Hans: 仅关闭的 Issue
+          pt_BR: Apenas Issues Fechadas
+    help:
+      en_US: "Only trigger for issues in this state"
+      zh_Hans: "仅对此状态的 Issue 触发"
+      pt_BR: "Disparar apenas para issues neste estado"
+
+  - name: author_association
+    label:
+      en_US: Author Association
+      zh_Hans: 作者关联
+      pt_BR: Associação do Autor
+    type: select
+    required: false
+    options:
+      - value: OWNER
+        label:
+          en_US: Owner
+          zh_Hans: 所有者
+          pt_BR: Proprietário
+      - value: MEMBER
+        label:
+          en_US: Member
+          zh_Hans: 成员
+          pt_BR: Membro
+      - value: COLLABORATOR
+        label:
+          en_US: Collaborator
+          zh_Hans: 协作者
+          pt_BR: Colaborador
+      - value: CONTRIBUTOR
+        label:
+          en_US: Contributor
+          zh_Hans: 贡献者
+          pt_BR: Contribuidor
+    help:
+      en_US: "Only trigger for comments from users with this association"
+      zh_Hans: "仅对具有此关联的用户的评论触发"
+      pt_BR: "Disparar apenas para comentários de usuários com esta associação"
 
 output_schema:
   type: object

@@ -1,9 +1,11 @@
+import fnmatch
 from collections.abc import Mapping
 from typing import Any
 
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Event
+from dify_plugin.errors.trigger import TriggerIgnoreEventError
 from dify_plugin.interfaces.trigger import TriggerEvent
 
 
@@ -17,10 +19,12 @@ class ReleasePublishedTrigger(TriggerEvent):
 
     def _trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
         """
-        Handle GitHub release published event trigger
+        Handle GitHub release published event trigger with practical filtering
 
         Parameters:
-        - tag_filter: Filter by specific release tag (optional)
+        - prerelease_filter: Filter prereleases (exclude/only)
+        - tag_pattern: Filter by tag patterns with wildcards
+        - required_assets: Require specific assets to be present
         """
         # Get the event payload
         payload = request.get_json()
@@ -31,20 +35,63 @@ class ReleasePublishedTrigger(TriggerEvent):
         action = payload.get("action", "")
         if action != "published":
             # This trigger only handles published events
-            return Event(variables={})
+            raise TriggerIgnoreEventError(f"Action '{action}' is not 'published'")
 
         # Extract release information
         release = payload.get("release", {})
         repository = payload.get("repository", {})
         sender = payload.get("sender", {})
 
-        # Apply tag filter if specified
-        tag_filter = parameters.get("tag_filter")
-        if tag_filter is not None:
-            tag_name = release.get("tag_name", "")
-            if tag_name != tag_filter:
-                # Skip this event if it doesn't match the tag filter
-                return Event(variables={})
+        # Prerelease filtering
+        prerelease_filter = parameters.get("prerelease_filter")
+        if prerelease_filter:
+            is_prerelease = release.get("prerelease", False)
+            if prerelease_filter == "exclude" and is_prerelease:
+                raise TriggerIgnoreEventError("Ignoring prerelease")
+            elif prerelease_filter == "only" and not is_prerelease:
+                raise TriggerIgnoreEventError("Only prereleases are allowed")
+
+        # Tag pattern filtering with wildcards
+        tag_pattern_filter = parameters.get("tag_pattern", "")
+        if tag_pattern_filter:
+            allowed_patterns = [p.strip() for p in tag_pattern_filter.split(",") if p.strip()]
+            if allowed_patterns:
+                tag_name = release.get("tag_name", "")
+                # Check if tag matches any of the patterns
+                tag_matched = False
+                for pattern in allowed_patterns:
+                    if fnmatch.fnmatch(tag_name, pattern):
+                        tag_matched = True
+                        break
+                if not tag_matched:
+                    raise TriggerIgnoreEventError(
+                        f"Tag '{tag_name}' doesn't match allowed patterns: {', '.join(allowed_patterns)}"
+                    )
+
+        # Required assets filtering
+        required_assets_filter = parameters.get("required_assets", "")
+        if required_assets_filter:
+            required_patterns = [a.strip() for a in required_assets_filter.split(",") if a.strip()]
+            if required_patterns:
+                release_assets = release.get("assets", [])
+                asset_names = [asset.get("name", "") for asset in release_assets]
+
+                # Check if all required assets are present
+                missing_assets = []
+                for pattern in required_patterns:
+                    # Check if any asset matches this pattern
+                    pattern_matched = False
+                    for asset_name in asset_names:
+                        if fnmatch.fnmatch(asset_name, pattern):
+                            pattern_matched = True
+                            break
+                    if not pattern_matched:
+                        missing_assets.append(pattern)
+
+                if missing_assets:
+                    raise TriggerIgnoreEventError(
+                        f"Release missing required assets: {', '.join(missing_assets)}"
+                    )
 
         # Extract assets information
         assets = []

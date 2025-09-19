@@ -4,6 +4,7 @@ from typing import Any
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Event
+from dify_plugin.errors.trigger import TriggerIgnoreEventError
 from dify_plugin.interfaces.trigger import TriggerEvent
 
 
@@ -31,7 +32,7 @@ class PullRequestReviewRequestRemovedTrigger(TriggerEvent):
         action = payload.get("action", "")
         if action != "review_request_removed":
             # This trigger only handles review_request_removed events
-            return Event(variables={})
+            raise TriggerIgnoreEventError(f"Action \'{action}\' is not \'review_request_removed\'")
 
         # Extract pull request information
         pull_request = payload.get("pull_request", {})
@@ -44,7 +45,7 @@ class PullRequestReviewRequestRemovedTrigger(TriggerEvent):
             pr_number = pull_request.get("number")
             if pr_number != int(pr_filter):
                 # Skip this event if it doesn't match the PR filter
-                return Event(variables={})
+                raise TriggerIgnoreEventError("Event does not match filter criteria")
 
         # Build variables for the workflow
         variables = {

@@ -17,17 +17,72 @@ description:
     pt_BR: Este gatilho é ativado quando uma revisão de pull request é submitted em um repositório do GitHub, fornecendo informações sobre a revisão, pull request, repositório e usuário que a submitted.
 
 parameters:
-  - name: pr_filter
+  - name: review_state
     label:
-      en_US: PR Number Filter
-      zh_Hans: PR 编号过滤器
-      pt_BR: Filtro de Número do PR
-    type: number
+      en_US: Review State Filter
+      zh_Hans: 审查状态过滤
+      pt_BR: Filtro de Estado de Revisão
+    type: select
     required: false
-    description:
-      en_US: Filter by specific PR number (optional)
-      zh_Hans: 按特定 PR 编号过滤（可选）
-      pt_BR: Filtrar por número específico do PR (opcional)
+    options:
+      - value: approved
+        label:
+          en_US: Approved
+          zh_Hans: 已批准
+          pt_BR: Aprovado
+      - value: changes_requested
+        label:
+          en_US: Changes Requested
+          zh_Hans: 请求更改
+          pt_BR: Alterações Solicitadas
+      - value: commented
+        label:
+          en_US: Commented
+          zh_Hans: 已评论
+          pt_BR: Comentado
+    help:
+      en_US: "Only trigger for specific review states"
+      zh_Hans: "仅对特定审查状态触发"
+      pt_BR: "Disparar apenas para estados de revisão específicos"
+
+  - name: author_type
+    label:
+      en_US: Author Type Filter
+      zh_Hans: 作者类型过滤
+      pt_BR: Filtro de Tipo de Autor
+    type: select
+    required: false
+    options:
+      - value: human_only
+        label:
+          en_US: Human Only (exclude bots)
+          zh_Hans: 仅人类（排除机器人）
+          pt_BR: Apenas Humanos (excluir bots)
+      - value: bot_only
+        label:
+          en_US: Bot Only
+          zh_Hans: 仅机器人
+          pt_BR: Apenas Bots
+    help:
+      en_US: "Filter reviews by author type"
+      zh_Hans: "按作者类型过滤审查"
+      pt_BR: "Filtrar revisões por tipo de autor"
+
+  - name: required_reviewers
+    label:
+      en_US: Required Reviewers
+      zh_Hans: 必需审查者
+      pt_BR: Revisores Obrigatórios
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., john-doe, jane-smith, @team-leads (comma-separated)"
+      zh_Hans: "例如：john-doe, jane-smith, @team-leads（逗号分隔）"
+      pt_BR: "ex: john-doe, jane-smith, @team-leads (separados por vírgula)"
+    help:
+      en_US: "Only trigger if review is from one of these users/teams"
+      zh_Hans: "仅当审查来自这些用户/团队之一时触发"
+      pt_BR: "Disparar apenas se a revisão for de um destes usuários/equipes"
 
 output_schema:
   type: object

@@ -1,9 +1,11 @@
+import fnmatch
 from collections.abc import Mapping
 from typing import Any
 
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Event
+from dify_plugin.errors.trigger import TriggerIgnoreEventError
 from dify_plugin.interfaces.trigger import TriggerEvent
 
 
@@ -17,28 +19,89 @@ class PushTrigger(TriggerEvent):
 
     def _trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
         """
-        Handle GitHub push event trigger
+        Handle GitHub push event trigger with advanced filtering
 
         Parameters:
-        - branch_filter: Filter by specific branch name (optional)
+        - branches: Filter by branch names (comma-separated, supports wildcards)
+        - paths: Filter by file paths (comma-separated glob patterns)
+        - ignore_patterns: Ignore commits with these patterns in messages
+        - exclude_authors: Exclude commits from these authors
         """
         # Get the event payload
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
 
-        # Extract push information
-        repository = payload.get("repository", {})
-        sender = payload.get("sender", {})
+        # Extract basic information
         ref = payload.get("ref", "")
         branch_name = ref.replace("refs/heads/", "") if ref.startswith("refs/heads/") else ref
 
-        # Apply branch filter if specified
-        branch_filter = parameters.get("branch_filter")
-        if branch_filter is not None:
-            if branch_name != branch_filter:
-                # Skip this event if it doesn't match the branch filter
-                return Event(variables={})
+        # Branch filtering
+        branches_filter = parameters.get("branches", "")
+        if branches_filter:
+            allowed_branches = [b.strip() for b in branches_filter.split(",") if b.strip()]
+            if allowed_branches:
+                # Check if current branch matches any of the patterns
+                branch_matched = False
+                for pattern in allowed_branches:
+                    if fnmatch.fnmatch(branch_name, pattern):
+                        branch_matched = True
+                        break
+                if not branch_matched:
+                    raise TriggerIgnoreEventError(
+                        f"Branch '{branch_name}' doesn't match any allowed patterns: {', '.join(allowed_branches)}"
+                    )
+
+        # Author filtering
+        exclude_authors = parameters.get("exclude_authors", "")
+        if exclude_authors:
+            excluded = [a.strip() for a in exclude_authors.split(",") if a.strip()]
+            pusher = payload.get("pusher", {}).get("name", "")
+            if pusher in excluded:
+                raise TriggerIgnoreEventError(f"Push from excluded author: {pusher}")
+
+        # Commit message filtering
+        ignore_patterns = parameters.get("ignore_patterns", "")
+        if ignore_patterns:
+            patterns = [p.strip() for p in ignore_patterns.split(",") if p.strip()]
+            head_commit = payload.get("head_commit", {})
+            commit_message = head_commit.get("message", "")
+            for pattern in patterns:
+                if pattern.lower() in commit_message.lower():
+                    raise TriggerIgnoreEventError(
+                        f"Commit message contains ignored pattern: '{pattern}'"
+                    )
+
+        # Path filtering
+        paths_filter = parameters.get("paths", "")
+        if paths_filter:
+            patterns = [p.strip() for p in paths_filter.split(",") if p.strip()]
+            if patterns:
+                # Collect all changed files
+                all_files = set()
+                for commit in payload.get("commits", []):
+                    all_files.update(commit.get("added", []))
+                    all_files.update(commit.get("modified", []))
+                    all_files.update(commit.get("removed", []))
+
+                # Check if any file matches the patterns
+                file_matched = False
+                for file_path in all_files:
+                    for pattern in patterns:
+                        if fnmatch.fnmatch(file_path, pattern):
+                            file_matched = True
+                            break
+                    if file_matched:
+                        break
+
+                if not file_matched and all_files:  # Only filter if there are files to check
+                    raise TriggerIgnoreEventError(
+                        f"No files match the path patterns: {', '.join(patterns)}"
+                    )
+
+        # Extract repository and sender information
+        repository = payload.get("repository", {})
+        sender = payload.get("sender", {})
 
         # Extract commits information
         commits = []

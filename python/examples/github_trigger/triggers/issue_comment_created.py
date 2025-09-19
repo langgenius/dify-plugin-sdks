@@ -4,7 +4,10 @@ from typing import Any
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Event
+from dify_plugin.errors.trigger import TriggerIgnoreEventError
 from dify_plugin.interfaces.trigger import TriggerEvent
+
+from .filters import is_bot_user, parse_comma_list
 
 
 class IssueCommentCreatedTrigger(TriggerEvent):
@@ -17,10 +20,13 @@ class IssueCommentCreatedTrigger(TriggerEvent):
 
     def _trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
         """
-        Handle GitHub issue comment created event trigger
-        
+        Handle GitHub issue comment created event trigger with practical filtering
+
         Parameters:
-        - issue_filter: Filter by specific issue number (optional)
+        - command_triggers: Only trigger for specific commands (e.g., /deploy)
+        - exclude_bots: Exclude comments from bot accounts
+        - issue_state: Filter by issue state (open/closed)
+        - author_association: Filter by author's association with the repo
         """
         # Get the event payload
         payload = request.get_json()
@@ -31,7 +37,7 @@ class IssueCommentCreatedTrigger(TriggerEvent):
         action = payload.get("action", "")
         if action != "created":
             # This trigger only handles created events
-            return Event(variables={})
+            raise TriggerIgnoreEventError(f"Action \'{action}\' is not \'created\'")
         
         # Extract issue comment information
         comment = payload.get("comment", {})
@@ -39,13 +45,45 @@ class IssueCommentCreatedTrigger(TriggerEvent):
         repository = payload.get("repository", {})
         sender = payload.get("sender", {})
         
-        # Apply issue number filter if specified
-        issue_filter = parameters.get("issue_filter")
-        if issue_filter is not None:
-            issue_number = issue.get("number")
-            if issue_number != int(issue_filter):
-                # Skip this event if it doesn't match the issue filter
-                return Event(variables={})
+        # Exclude bot comments if configured
+        exclude_bots = parameters.get("exclude_bots", True)
+        if exclude_bots and is_bot_user(sender):
+            raise TriggerIgnoreEventError(f"Ignoring comment from bot: {sender.get('login', '')}")
+
+        # Command trigger filtering
+        command_triggers = parameters.get("command_triggers", "")
+        if command_triggers:
+            commands = parse_comma_list(command_triggers)
+            if commands:
+                comment_body = comment.get("body", "").strip()
+                # Check if comment starts with any of the commands
+                command_found = False
+                for cmd in commands:
+                    if comment_body.startswith(cmd):
+                        command_found = True
+                        break
+                if not command_found:
+                    raise TriggerIgnoreEventError(
+                        f"Comment doesn't start with any command: {', '.join(commands)}"
+                    )
+
+        # Issue state filtering
+        issue_state_filter = parameters.get("issue_state")
+        if issue_state_filter:
+            issue_state = issue.get("state", "")
+            if issue_state != issue_state_filter:
+                raise TriggerIgnoreEventError(
+                    f"Issue is {issue_state}, not {issue_state_filter}"
+                )
+
+        # Author association filtering
+        author_association_filter = parameters.get("author_association")
+        if author_association_filter:
+            author_association = comment.get("author_association", "")
+            if author_association != author_association_filter:
+                raise TriggerIgnoreEventError(
+                    f"Comment author association is {author_association}, not {author_association_filter}"
+                )
         
         # Check if this is a pull request
         is_pull_request = "pull_request" in issue

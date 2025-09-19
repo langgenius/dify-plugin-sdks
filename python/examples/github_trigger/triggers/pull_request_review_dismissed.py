@@ -4,6 +4,7 @@ from typing import Any
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Event
+from dify_plugin.errors.trigger import TriggerIgnoreEventError
 from dify_plugin.interfaces.trigger import TriggerEvent
 
 
@@ -31,7 +32,7 @@ class PullRequestReviewDismissedTrigger(TriggerEvent):
         action = payload.get("action", "")
         if action != "dismissed":
             # This trigger only handles dismissed events
-            return Event(variables={})
+            raise TriggerIgnoreEventError(f"Action \'{action}\' is not \'dismissed\'")
 
         # Extract review, pull request, and repository information
         review = payload.get("review", {})
@@ -45,7 +46,7 @@ class PullRequestReviewDismissedTrigger(TriggerEvent):
             pr_number = pull_request.get("number")
             if pr_number != int(pr_filter):
                 # Skip this event if it doesn't match the PR filter
-                return Event(variables={})
+                raise TriggerIgnoreEventError("Event does not match filter criteria")
 
         # Build variables for the workflow
         variables = {

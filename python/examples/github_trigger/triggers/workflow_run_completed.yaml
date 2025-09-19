@@ -17,28 +17,91 @@ description:
     pt_BR: Este gatilho é ativado quando uma execução de workflow do GitHub Actions é concluída, fornecendo informações detalhadas sobre a execução do workflow incluindo status, conclusão e metadados associados.
 
 parameters:
-  - name: workflow_filter
+  - name: workflow_names
     label:
-      en_US: Workflow Name Filter
-      zh_Hans: 工作流名称过滤器
-      pt_BR: Filtro de Nome do Workflow
+      en_US: Workflow Names Filter
+      zh_Hans: 工作流名称过滤
+      pt_BR: Filtro de Nomes de Workflow
     type: string
     required: false
-    description:
-      en_US: Filter by specific workflow name (optional)
-      zh_Hans: 按特定工作流名称过滤（可选）
-      pt_BR: Filtrar por nome específico do workflow (opcional)
+    placeholder:
+      en_US: "e.g., CI, Deploy*, Release (comma-separated, supports wildcards)"
+      zh_Hans: "例如：CI, Deploy*, Release（逗号分隔，支持通配符）"
+      pt_BR: "ex: CI, Deploy*, Release (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for specific workflow names"
+      zh_Hans: "仅对特定工作流名称触发"
+      pt_BR: "Disparar apenas para nomes de workflow específicos"
+
   - name: conclusion_filter
     label:
       en_US: Conclusion Filter
-      zh_Hans: 结论过滤器
+      zh_Hans: 结论过滤
       pt_BR: Filtro de Conclusão
+    type: select
+    required: false
+    options:
+      - value: success
+        label:
+          en_US: Success
+          zh_Hans: 成功
+          pt_BR: Sucesso
+      - value: failure
+        label:
+          en_US: Failure
+          zh_Hans: 失败
+          pt_BR: Falha
+      - value: cancelled
+        label:
+          en_US: Cancelled
+          zh_Hans: 已取消
+          pt_BR: Cancelado
+      - value: skipped
+        label:
+          en_US: Skipped
+          zh_Hans: 已跳过
+          pt_BR: Ignorado
+      - value: timed_out
+        label:
+          en_US: Timed Out
+          zh_Hans: 超时
+          pt_BR: Tempo Esgotado
+    help:
+      en_US: "Only trigger for specific workflow conclusions"
+      zh_Hans: "仅对特定工作流结论触发"
+      pt_BR: "Disparar apenas para conclusões de workflow específicas"
+
+  - name: branch_filter
+    label:
+      en_US: Branch Filter
+      zh_Hans: 分支过滤
+      pt_BR: Filtro de Branch
     type: string
     required: false
-    description:
-      en_US: Filter by workflow conclusion (success, failure, cancelled, etc.) (optional)
-      zh_Hans: 按工作流结论过滤（成功、失败、取消等）（可选）
-      pt_BR: Filtrar por conclusão do workflow (sucesso, falha, cancelado, etc.) (opcional)
+    placeholder:
+      en_US: "e.g., main, develop, release/* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：main, develop, release/*（逗号分隔，支持通配符）"
+      pt_BR: "ex: main, develop, release/* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for workflows on these branches"
+      zh_Hans: "仅对这些分支上的工作流触发"
+      pt_BR: "Disparar apenas para workflows nestas branches"
+
+  - name: duration_threshold
+    label:
+      en_US: Duration Threshold (seconds)
+      zh_Hans: 运行时间阈值（秒）
+      pt_BR: Limite de Duração (segundos)
+    type: number
+    required: false
+    placeholder:
+      en_US: "e.g., 300 (alert if workflow takes longer than 5 minutes)"
+      zh_Hans: "例如：300（如果工作流超过5分钟则警告）"
+      pt_BR: "ex: 300 (alertar se o workflow demorar mais de 5 minutos)"
+    help:
+      en_US: "Only trigger if workflow duration exceeds this threshold"
+      zh_Hans: "仅当工作流运行时间超过此阈值时触发"
+      pt_BR: "Disparar apenas se a duração do workflow exceder este limite"
 
 output_schema:
   type: object

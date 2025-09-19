@@ -1,9 +1,12 @@
+import fnmatch
 from collections.abc import Mapping
+from datetime import datetime
 from typing import Any
 
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Event
+from dify_plugin.errors.trigger import TriggerIgnoreEventError
 from dify_plugin.interfaces.trigger import TriggerEvent
 
 
@@ -17,11 +20,13 @@ class WorkflowRunCompletedTrigger(TriggerEvent):
 
     def _trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
         """
-        Handle GitHub workflow run completed event trigger
+        Handle GitHub workflow run completed event trigger with practical filtering
 
         Parameters:
-        - workflow_filter: Filter by specific workflow name (optional)
-        - conclusion_filter: Filter by workflow conclusion (success, failure, cancelled, etc.) (optional)
+        - workflow_names: Filter by workflow names (comma-separated, supports wildcards)
+        - conclusion_filter: Filter by workflow conclusion
+        - branch_filter: Filter by branch names
+        - duration_threshold: Alert on long-running workflows
         """
         # Get the event payload
         payload = request.get_json()
@@ -32,7 +37,7 @@ class WorkflowRunCompletedTrigger(TriggerEvent):
         action = payload.get("action", "")
         if action != "completed":
             # This trigger only handles completed events
-            return Event(variables={})
+            raise TriggerIgnoreEventError(f"Action '{action}' is not 'completed'")
 
         # Extract workflow run information
         workflow_run = payload.get("workflow_run", {})
@@ -40,21 +45,71 @@ class WorkflowRunCompletedTrigger(TriggerEvent):
         repository = payload.get("repository", {})
         sender = payload.get("sender", {})
 
-        # Apply workflow filter if specified
-        workflow_filter = parameters.get("workflow_filter")
-        if workflow_filter is not None:
-            workflow_name = workflow.get("name", "")
-            if workflow_name != workflow_filter:
-                # Skip this event if it doesn't match the workflow filter
-                return Event(variables={})
+        # Workflow name filtering with wildcard support
+        workflow_names_filter = parameters.get("workflow_names", "")
+        if workflow_names_filter:
+            allowed_names = [n.strip() for n in workflow_names_filter.split(",") if n.strip()]
+            if allowed_names:
+                workflow_name = workflow.get("name", "")
+                # Check if workflow name matches any of the patterns
+                name_matched = False
+                for pattern in allowed_names:
+                    if fnmatch.fnmatch(workflow_name, pattern):
+                        name_matched = True
+                        break
+                if not name_matched:
+                    raise TriggerIgnoreEventError(
+                        f"Workflow '{workflow_name}' doesn't match allowed patterns: {', '.join(allowed_names)}"
+                    )
 
         # Apply conclusion filter if specified
         conclusion_filter = parameters.get("conclusion_filter")
-        if conclusion_filter is not None:
+        if conclusion_filter:
             conclusion = workflow_run.get("conclusion", "")
             if conclusion != conclusion_filter:
-                # Skip this event if it doesn't match the conclusion filter
-                return Event(variables={})
+                raise TriggerIgnoreEventError(
+                    f"Workflow concluded with '{conclusion}', not '{conclusion_filter}'"
+                )
+
+        # Branch filtering
+        branch_filter = parameters.get("branch_filter", "")
+        if branch_filter:
+            allowed_branches = [b.strip() for b in branch_filter.split(",") if b.strip()]
+            if allowed_branches:
+                head_branch = workflow_run.get("head_branch", "")
+                # Check if branch matches any of the patterns
+                branch_matched = False
+                for pattern in allowed_branches:
+                    if fnmatch.fnmatch(head_branch, pattern):
+                        branch_matched = True
+                        break
+                if not branch_matched:
+                    raise TriggerIgnoreEventError(
+                        f"Workflow on branch '{head_branch}' doesn't match allowed patterns: {', '.join(allowed_branches)}"
+                    )
+
+        # Duration threshold filtering
+        duration_threshold = parameters.get("duration_threshold")
+        if duration_threshold is not None:
+            try:
+                threshold_seconds = int(duration_threshold)
+                # Calculate workflow duration
+                started_at = workflow_run.get("run_started_at", "")
+                updated_at = workflow_run.get("updated_at", "")
+                if started_at and updated_at:
+                    try:
+                        start_time = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+                        end_time = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+                        duration_seconds = (end_time - start_time).total_seconds()
+
+                        if duration_seconds <= threshold_seconds:
+                            raise TriggerIgnoreEventError(
+                                f"Workflow completed in {duration_seconds:.0f}s, under threshold of {threshold_seconds}s"
+                            )
+                    except (ValueError, TypeError):
+                        pass  # Unable to parse dates, skip filtering
+            except ValueError:
+                pass  # Invalid threshold value, skip filtering
 
         # Extract pull requests information
         pull_requests = []

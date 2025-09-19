@@ -17,17 +17,82 @@ description:
     pt_BR: Este gatilho é ativado quando um novo pull request é aberto em um repositório do GitHub, fornecendo informações sobre o pull request, repositório e usuário que o abriu.
 
 parameters:
-  - name: pr_filter
+  - name: target_branches
     label:
-      en_US: Pull Request Number Filter
-      zh_Hans: Pull Request 编号过滤器
-      pt_BR: Filtro de Número do Pull Request
+      en_US: Target Branch Filter
+      zh_Hans: 目标分支过滤
+      pt_BR: Filtro de Branch de Destino
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., main, master, release/* (comma-separated, supports wildcards)"
+      zh_Hans: "例如：main, master, release/*（逗号分隔，支持通配符）"
+      pt_BR: "ex: main, master, release/* (separados por vírgula, suporta wildcards)"
+    help:
+      en_US: "Only trigger for PRs targeting these branches"
+      zh_Hans: "仅对合并到这些分支的 PR 触发"
+      pt_BR: "Disparar apenas para PRs direcionados a estes branches"
+
+  - name: labels
+    label:
+      en_US: Label Filter
+      zh_Hans: 标签过滤
+      pt_BR: Filtro de Etiquetas
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., ready-for-review, needs-review (comma-separated)"
+      zh_Hans: "例如：ready-for-review, needs-review（逗号分隔）"
+      pt_BR: "ex: ready-for-review, needs-review (separados por vírgula)"
+    help:
+      en_US: "Only trigger for PRs with these labels"
+      zh_Hans: "仅对带有这些标签的 PR 触发"
+      pt_BR: "Disparar apenas para PRs com estas etiquetas"
+
+  - name: skip_draft
+    label:
+      en_US: Skip Draft PRs
+      zh_Hans: 跳过草稿 PR
+      pt_BR: Pular PRs de Rascunho
+    type: boolean
+    required: false
+    default: true
+    help:
+      en_US: "Ignore draft pull requests"
+      zh_Hans: "忽略草稿状态的 Pull Request"
+      pt_BR: "Ignorar pull requests em rascunho"
+
+  - name: exclude_authors
+    label:
+      en_US: Exclude Authors
+      zh_Hans: 排除作者
+      pt_BR: Excluir Autores
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., dependabot[bot], renovate[bot] (comma-separated)"
+      zh_Hans: "例如：dependabot[bot], renovate[bot]（逗号分隔）"
+      pt_BR: "ex: dependabot[bot], renovate[bot] (separados por vírgula)"
+    help:
+      en_US: "Ignore PRs from these authors"
+      zh_Hans: "忽略这些作者创建的 PR"
+      pt_BR: "Ignorar PRs destes autores"
+
+  - name: file_count_limit
+    label:
+      en_US: Max File Changes
+      zh_Hans: 最大文件变更数
+      pt_BR: Máximo de Arquivos Alterados
     type: number
     required: false
-    description:
-      en_US: Filter by specific pull request number (optional)
-      zh_Hans: 按特定 pull request 编号过滤（可选）
-      pt_BR: Filtrar por número específico do pull request (opcional)
+    placeholder:
+      en_US: "e.g., 50 (leave empty for no limit)"
+      zh_Hans: "例如：50（留空表示不限制）"
+      pt_BR: "ex: 50 (deixe vazio para sem limite)"
+    help:
+      en_US: "Ignore PRs with more than this many files changed"
+      zh_Hans: "忽略变更文件数超过此值的 PR"
+      pt_BR: "Ignorar PRs com mais arquivos alterados que este valor"
 
 output_schema:
   type: object

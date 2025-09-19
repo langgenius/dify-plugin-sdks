@@ -17,17 +17,69 @@ description:
     pt_BR: Este gatilho é ativado quando uma nova issue é aberta em um repositório do GitHub, fornecendo informações sobre a issue, repositório e usuário que a abriu.
 
 parameters:
-  - name: issue_filter
+  - name: labels
     label:
-      en_US: Issue Number Filter
-      zh_Hans: Issue 编号过滤器
-      pt_BR: Filtro de Número da Issue
-    type: number
+      en_US: Label Filter
+      zh_Hans: 标签过滤
+      pt_BR: Filtro de Etiquetas
+    type: string
     required: false
-    description:
-      en_US: Filter by specific issue number (optional)
-      zh_Hans: 按特定 issue 编号过滤（可选）
-      pt_BR: Filtrar por número específico da issue (opcional)
+    placeholder:
+      en_US: "e.g., bug, urgent, customer-reported (comma-separated)"
+      zh_Hans: "例如：bug, urgent, 客户反馈（逗号分隔）"
+      pt_BR: "ex: bug, urgent, relatado-cliente (separados por vírgula)"
+    help:
+      en_US: "Only trigger for issues with these labels"
+      zh_Hans: "仅对带有这些标签的 Issue 触发"
+      pt_BR: "Disparar apenas para issues com estas etiquetas"
+
+  - name: exclude_authors
+    label:
+      en_US: Exclude Authors
+      zh_Hans: 排除作者
+      pt_BR: Excluir Autores
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., bot-user, test-account (comma-separated)"
+      zh_Hans: "例如：bot-user, test-account（逗号分隔）"
+      pt_BR: "ex: bot-user, test-account (separados por vírgula)"
+    help:
+      en_US: "Ignore issues from these authors"
+      zh_Hans: "忽略这些作者创建的 Issue"
+      pt_BR: "Ignorar issues destes autores"
+
+  - name: title_keywords
+    label:
+      en_US: Title Keywords
+      zh_Hans: 标题关键词
+      pt_BR: Palavras-chave do Título
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., production, critical, outage (comma-separated)"
+      zh_Hans: "例如：生产环境, 紧急, 故障（逗号分隔）"
+      pt_BR: "ex: produção, crítico, interrupção (separados por vírgula)"
+    help:
+      en_US: "Only trigger if title contains any of these keywords (case-insensitive)"
+      zh_Hans: "仅当标题包含这些关键词之一时触发（不区分大小写）"
+      pt_BR: "Disparar apenas se o título contiver alguma destas palavras-chave"
+
+  - name: body_keywords
+    label:
+      en_US: Body Keywords
+      zh_Hans: 内容关键词
+      pt_BR: Palavras-chave do Corpo
+    type: string
+    required: false
+    placeholder:
+      en_US: "e.g., error, exception, crash (comma-separated)"
+      zh_Hans: "例如：错误, 异常, 崩溃（逗号分隔）"
+      pt_BR: "ex: erro, exceção, crash (separados por vírgula)"
+    help:
+      en_US: "Only trigger if body contains any of these keywords (case-insensitive)"
+      zh_Hans: "仅当内容包含这些关键词之一时触发（不区分大小写）"
+      pt_BR: "Disparar apenas se o corpo contiver alguma destas palavras-chave"
 
 output_schema:
   type: object
