@@ -246,7 +246,8 @@ class BackwardsInvocation(Generic[T], ABC):
 
         for chunk in generator:
             """
-            accept response from input stream and wait, exit when consecutive empty responses exceed configured timeout value
+            accept response from input stream and wait,
+            exit when consecutive empty responses exceed configured timeout value
             """
             if chunk is None:
                 empty_response_count += 1
