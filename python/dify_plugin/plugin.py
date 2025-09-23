@@ -358,6 +358,7 @@ class Plugin(IOServer, Router):
             app_id=app_id,
             endpoint_id=endpoint_id,
             context=context,
+            max_invocation_timeout=self.config.MAX_INVOCATION_TIMEOUT,
         )
         response = self.dispatch(session, data)
         if response:

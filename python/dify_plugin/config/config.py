@@ -12,6 +12,7 @@ class InstallMethod(Enum):
 
 class DifyPluginEnv(BaseSettings):
     MAX_REQUEST_TIMEOUT: int = Field(default=300, description="Maximum request timeout in seconds")
+    MAX_INVOCATION_TIMEOUT: int = Field(default=250, description="Maximum invocation timeout in seconds (for backwards invocation)")
     MAX_WORKER: int = Field(
         default=1000,
         description="Maximum worker count, gevent will be used for async IO"
