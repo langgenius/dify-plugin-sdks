@@ -54,9 +54,15 @@ class OAICompatRerankModel(RerankModel):
             raise CredentialsValidateFailedError("model_name is required")
 
         url = server_url
+        }        
+>>>>>>> 1e71b45b07ed1deb3fc7ff9ffae68367c12079f7
+=======
         headers = {
             "Content-Type": "application/json",
         }
+=======
+        }        
+>>>>>>> 1e71b45b07ed1deb3fc7ff9ffae68367c12079f7
         # Only add Authorization header when api_key is not empty
         api_key = credentials.get('api_key')
         if api_key:
