@@ -45,7 +45,7 @@ class Event(BaseModel):
 
     variables: Mapping[str, Any] = Field(
         ...,
-        description="The output variables of the event, must have the same schema as defined `output_schema` in the YAML",
+        description="The output variables of the event, same with the schema defined in `output_schema` in the YAML",
     )
 
 

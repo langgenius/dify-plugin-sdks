@@ -6,12 +6,11 @@ such as available phone numbers for the account.
 """
 
 import requests
-from typing import List
 
 from dify_plugin.entities import ParameterOption
 
 
-def fetch_phone_numbers(access_token: str) -> List[ParameterOption]:
+def fetch_phone_numbers(access_token: str) -> list[ParameterOption]:
     """
     Fetch available WhatsApp Business phone numbers for the account
 
@@ -28,10 +27,7 @@ def fetch_phone_numbers(access_token: str) -> List[ParameterOption]:
         # WhatsApp Business API endpoint to fetch phone numbers
         # This would typically fetch from the WhatsApp Business Management API
         url = "https://graph.facebook.com/v19.0/me/phone_numbers"
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
 
         response = requests.get(url, headers=headers, timeout=10)
 
@@ -49,16 +45,10 @@ def fetch_phone_numbers(access_token: str) -> List[ParameterOption]:
             verified_name = phone.get("verified_name", "")
 
             # Create a readable label
-            if verified_name:
-                label = f"{display_number} ({verified_name})"
-            else:
-                label = display_number
+            label = f"{display_number} ({verified_name})" if verified_name else display_number
 
             if phone_id and display_number:
-                options.append(ParameterOption(
-                    label=label,
-                    value=phone_id
-                ))
+                options.append(ParameterOption(label=label, value=phone_id))
 
         return options
 
@@ -66,18 +56,12 @@ def fetch_phone_numbers(access_token: str) -> List[ParameterOption]:
         print(f"Error fetching phone numbers: {e}")
         # Return some example options for demo purposes
         return [
-            ParameterOption(
-                label="+1 (555) 123-4567 (Demo Business)",
-                value="123456789012345"
-            ),
-            ParameterOption(
-                label="+1 (555) 987-6543 (Support Line)",
-                value="987654321098765"
-            )
+            ParameterOption(label="+1 (555) 123-4567 (Demo Business)", value="123456789012345"),
+            ParameterOption(label="+1 (555) 987-6543 (Support Line)", value="987654321098765"),
         ]
 
 
-def fetch_message_templates(access_token: str, phone_number_id: str) -> List[ParameterOption]:
+def fetch_message_templates(access_token: str, phone_number_id: str) -> list[ParameterOption]:
     """
     Fetch available message templates for a WhatsApp Business phone number
 
@@ -94,10 +78,7 @@ def fetch_message_templates(access_token: str, phone_number_id: str) -> List[Par
     try:
         # WhatsApp Business API endpoint to fetch message templates
         url = f"https://graph.facebook.com/v19.0/{phone_number_id}/message_templates"
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
 
         response = requests.get(url, headers=headers, timeout=10)
 
@@ -117,10 +98,7 @@ def fetch_message_templates(access_token: str, phone_number_id: str) -> List[Par
             # Only include approved templates
             if template_status == "APPROVED" and template_name:
                 label = f"{template_name} ({template_category})"
-                options.append(ParameterOption(
-                    label=label,
-                    value=template_name
-                ))
+                options.append(ParameterOption(label=label, value=template_name))
 
         return options
 
@@ -129,7 +107,7 @@ def fetch_message_templates(access_token: str, phone_number_id: str) -> List[Par
         return []
 
 
-def fetch_labels(access_token: str, phone_number_id: str) -> List[ParameterOption]:
+def fetch_labels(access_token: str, phone_number_id: str) -> list[ParameterOption]:
     """
     Fetch available labels for organizing conversations
 
@@ -146,10 +124,7 @@ def fetch_labels(access_token: str, phone_number_id: str) -> List[ParameterOptio
     try:
         # WhatsApp Business API endpoint to fetch labels
         url = f"https://graph.facebook.com/v19.0/{phone_number_id}/labels"
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
 
         response = requests.get(url, headers=headers, timeout=10)
 
@@ -166,10 +141,7 @@ def fetch_labels(access_token: str, phone_number_id: str) -> List[ParameterOptio
             label_id = label.get("id", "")
 
             if label_name and label_id:
-                options.append(ParameterOption(
-                    label=label_name,
-                    value=label_id
-                ))
+                options.append(ParameterOption(label=label_name, value=label_id))
 
         return options
 

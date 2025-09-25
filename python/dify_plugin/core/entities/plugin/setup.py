@@ -1,6 +1,5 @@
 import datetime
 from enum import Enum
-from typing import Optional
 
 from packaging.version import InvalidVersion, Version
 from pydantic import BaseModel, Field, field_validator
@@ -158,7 +157,7 @@ class PluginConfiguration(BaseModel):
 
         @field_validator("minimum_dify_version")
         @classmethod
-        def validate_minimum_dify_version(cls, v: Optional[str]) -> Optional[str]:
+        def validate_minimum_dify_version(cls, v: str | None) -> str | None:
             if v is None:
                 return v
             try:

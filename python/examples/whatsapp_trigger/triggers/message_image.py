@@ -84,13 +84,13 @@ class MessageImageTrigger(TriggerEvent):
                 caption_lower = caption.lower()
                 has_keyword = any(keyword in caption_lower for keyword in keywords)
                 if not has_keyword:
-                    raise TriggerIgnoreEventError(
-                        f"Caption doesn't contain required keywords: {', '.join(keywords)}"
-                    )
+                    raise TriggerIgnoreEventError(f"Caption doesn't contain required keywords: {', '.join(keywords)}")
 
         # File size filter (would need additional API call to get actual size)
         # This is a placeholder - actual implementation would need to fetch media details
-        max_file_size = parameters.get("max_file_size")
+
+        # max_file_size = parameters.get("max_file_size")
+
         # Note: File size checking would require downloading the media or making an API call
 
         # Extract metadata
@@ -112,13 +112,15 @@ class MessageImageTrigger(TriggerEvent):
                     "mime_type": image_data.get("mime_type", ""),
                     "sha256": image_data.get("sha256", ""),
                     "caption": caption,
-                    "url": ""  # URL needs to be fetched separately via API
+                    "url": "",  # URL needs to be fetched separately via API
                 },
                 "timestamp": message.get("timestamp", ""),
                 "context": {
                     "from": context.get("from", "") if context else "",
                     "id": context.get("id", "") if context else "",
-                } if context else None
+                }
+                if context
+                else None,
             },
             "sender": {
                 "wa_id": sender_id,
@@ -132,8 +134,8 @@ class MessageImageTrigger(TriggerEvent):
                 "received_at": value.get("timestamp", ""),
                 "file_size": 0,  # Would need API call to get actual size
                 "is_forwarded": message.get("forwarded", False) or message.get("frequently_forwarded", False),
-                "is_reply": is_reply
-            }
+                "is_reply": is_reply,
+            },
         }
 
         return Event(variables=variables)

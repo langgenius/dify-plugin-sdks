@@ -2,14 +2,12 @@ author: langgenius
 created_at: "2024-09-20T08:03:44.658609186Z"
 description:
   en_US: GitHub is an online software source code hosting service.
-  pt_BR:
-    GitHub é uma plataforma online para serviços de hospedagem de código fonte
-    de software.
+  ja_JP: GitHub は、オンラインのソフトウェアソースコードホスティングサービスです。
   zh_Hans: GitHub是一个在线软件源代码托管服务平台。
 icon: icon.svg
 label:
   en_US: GitHub
-  pt_BR: GitHub
+  ja_JP: GitHub
   zh_Hans: GitHub
 meta:
   arch:
@@ -36,4 +34,4 @@ resource:
 tags:
   - utilities
 type: plugin
-version: 0.0.9
+version: 100.1.1

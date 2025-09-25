@@ -1,11 +1,7 @@
-import hashlib
-import hmac
-import json
 import time
 import uuid
 from collections.abc import Mapping
 from typing import Any
-from urllib.parse import urlencode
 
 import requests
 from utils.dynamic_options import fetch_phone_numbers
@@ -15,7 +11,6 @@ from werkzeug import Request, Response
 from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.trigger import Subscription, TriggerDispatch, Unsubscription
 from dify_plugin.errors.trigger import (
-    SubscriptionError,
     TriggerDispatchError,
     TriggerProviderCredentialValidationError,
     TriggerValidationError,
@@ -47,7 +42,7 @@ class WhatsAppProvider(TriggerProvider):
             # Test the token by fetching user info
             headers = {
                 "Authorization": f"Bearer {credentials['system_access_token']}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
             response = requests.get(f"{self._GRAPH_API_URL}/me", headers=headers, timeout=10)
 
@@ -82,7 +77,9 @@ class WhatsAppProvider(TriggerProvider):
         # Extract WhatsApp event data
         entry = payload.get("entry", [])
         if not entry:
-            return TriggerDispatch(triggers=[], response=Response('{"status": "ok"}', status=200, mimetype="application/json"))
+            return TriggerDispatch(
+                triggers=[], response=Response('{"status": "ok"}', status=200, mimetype="application/json")
+            )
 
         triggers = []
 
@@ -220,10 +217,7 @@ class WhatsAppProvider(TriggerProvider):
         Note: WhatsApp webhooks are managed at the app level in Meta Business,
         so this mainly marks the subscription as inactive internally.
         """
-        return Unsubscription(
-            success=True,
-            message="WhatsApp webhook subscription removed successfully"
-        )
+        return Unsubscription(success=True, message="WhatsApp webhook subscription removed successfully")
 
     def _refresh(self, endpoint: str, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
         """

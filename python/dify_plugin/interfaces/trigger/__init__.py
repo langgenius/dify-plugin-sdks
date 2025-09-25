@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Any, Optional, final
+from typing import Any, final
 
 from werkzeug import Request
 
@@ -45,14 +45,14 @@ class TriggerProvider:
 
     # Optional context objects. They may be None in environments like schema generation
     # or static validation where execution context isn't initialized.
-    runtime: Optional[TriggerRuntime]
-    session: Optional[Session]
+    runtime: TriggerRuntime | None
+    session: Session | None
 
     @final
     def __init__(
         self,
-        runtime: Optional[TriggerRuntime] = None,
-        session: Optional[Session] = None,
+        runtime: TriggerRuntime | None = None,
+        session: Session | None = None,
     ):
         """
         Initialize the trigger
@@ -484,14 +484,14 @@ class TriggerEvent(ABC):
 
     # Optional context objects. They may be None in environments like schema generation
     # or static validation where execution context isn't initialized.
-    runtime: Optional[TriggerRuntime]
-    session: Optional[Session]
+    runtime: TriggerRuntime | None
+    session: Session | None
 
     @final
     def __init__(
         self,
-        runtime: Optional[TriggerRuntime] = None,
-        session: Optional[Session] = None,
+        runtime: TriggerRuntime | None = None,
+        session: Session | None = None,
     ):
         """
         Initialize the trigger

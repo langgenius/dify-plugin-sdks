@@ -8,6 +8,7 @@ to ensure the authenticity of incoming webhook requests.
 import hashlib
 import hmac
 import time
+
 from werkzeug import Request
 
 
@@ -38,21 +39,14 @@ def validate_signature(request: Request, app_secret: str, max_age_seconds: int =
     raw_body = request.get_data()
 
     # Calculate expected signature
-    expected_signature = hmac.new(
-        app_secret.encode("utf-8"),
-        raw_body,
-        hashlib.sha256
-    ).hexdigest()
-
-    # Compare signatures using constant-time comparison
-    if not hmac.compare_digest(received_signature, expected_signature):
-        return False
+    expected_signature = hmac.new(app_secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
 
     # Optional: Check timestamp to prevent replay attacks
     # WhatsApp doesn't include timestamp in standard webhooks,
     # but you can add this if implementing custom timestamp handling
 
-    return True
+    # Compare signatures using constant-time comparison
+    return hmac.compare_digest(received_signature, expected_signature)
 
 
 def validate_verify_token(request: Request, verify_token: str) -> bool:
@@ -89,11 +83,7 @@ def calculate_signature(payload: bytes, app_secret: str) -> str:
     Returns:
         str: The calculated signature in format "sha256=<signature>"
     """
-    signature = hmac.new(
-        app_secret.encode("utf-8"),
-        payload,
-        hashlib.sha256
-    ).hexdigest()
+    signature = hmac.new(app_secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
 
     return f"sha256={signature}"
 

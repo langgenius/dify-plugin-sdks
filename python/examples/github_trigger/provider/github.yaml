@@ -2,15 +2,15 @@ credentials_schema:
   access_tokens:
     help:
       en_US: Get your Access Tokens from GitHub
-      pt_BR: Obtenha sua chave da API do Google no Google
+      ja_JP: GitHub からアクセストークンを取得してください
       zh_Hans: 从 GitHub 获取您的 Access Tokens
     label:
       en_US: Access Tokens
-      pt_BR: Tokens de acesso
+      ja_JP: アクセストークン
       zh_Hans: Access Tokens
     placeholder:
       en_US: Please input your GitHub Access Tokens
-      pt_BR: Insira seus Tokens de Acesso do GitHub
+      ja_JP: GitHub のアクセストークンを入力してください
       zh_Hans: 请输入你的 GitHub Access Tokens
     required: true
     type: secret-input
@@ -25,14 +25,15 @@ oauth_schema:
       placeholder:
         en_US: "Please input your Client ID"
         zh_Hans: "请输入你的 Client ID"
-        pt_BR: "Insira seu Client ID"
+        ja_JP: "クライアントIDを入力してください"
       help:
         en_US: "Client ID is used to authenticate requests to the GitHub API."
         zh_Hans: "Client ID 用于认证请求到 GitHub API。"
-        pt_BR: "Client ID é usado para autenticar solicitações à API do GitHub."
+        ja_JP: "クライアントIDはGitHub APIへのリクエスト認証に使用されます。"
       label:
         zh_Hans: "Client ID"
         en_US: "Client ID"
+        ja_JP: "クライアントID"
     - name: "client_secret"
       type: "secret-input"
       required: true
@@ -40,20 +41,22 @@ oauth_schema:
       placeholder:
         en_US: "Please input your Client Secret"
         zh_Hans: "请输入你的 Client Secret"
-        pt_BR: "Insira seu Client Secret"
+        ja_JP: "クライアントシークレットを入力してください"
       help:
         en_US: "Client Secret is used to authenticate requests to the GitHub API."
         zh_Hans: "Client Secret 用于认证请求到 GitHub API。"
-        pt_BR: "Client Secret é usado para autenticar solicitações à API do GitHub."
+        ja_JP: "クライアントシークレットはGitHub APIへのリクエスト認証に使用されます。"
       label:
         zh_Hans: "Client Secret"
         en_US: "Client Secret"
+        ja_JP: "クライアントシークレット"
   credentials_schema:
     - name: "access_tokens"
       type: "secret-input"
       label:
         zh_Hans: "Access Token"
         en_US: "Access Token"
+        ja_JP: "アクセストークン"
 
 subscription_schema:
   parameters_schema:
@@ -61,17 +64,17 @@ subscription_schema:
       label:
         en_US: "Repository"
         zh_Hans: "仓库"
-        pt_BR: "Repositório"
+        ja_JP: "リポジトリ"
       type: "dynamic-select"
       required: true
       placeholder:
         en_US: "owner/repo"
         zh_Hans: "owner/repo"
-        pt_BR: "owner/repo"
+        ja_JP: "owner/repo"
       help:
         en_US: "GitHub repository in format owner/repo (e.g., microsoft/vscode)"
         zh_Hans: "GitHub 仓库，格式为 owner/repo（例如：microsoft/vscode）"
-        pt_BR: "Repositório do GitHub no formato owner/repo (ex: microsoft/vscode)"
+        ja_JP: "GitHubリポジトリは owner/repo 形式で入力してください（例: microsoft/vscode）"
     - name: "events"
       type: "select"
       required: true
@@ -82,144 +85,144 @@ subscription_schema:
           label:
             en_US: "All Events"
             zh_Hans: "全部事件"
-            pt_BR: "Todos os Eventos"
+            ja_JP: "すべてのイベント"
         - value: "issues"
           label:
             en_US: "Issues"
             zh_Hans: "Issues"
-            pt_BR: "Issues"
+            ja_JP: "イシュー"
         - value: "issue_comment"
           label:
             en_US: "Issue Comments"
             zh_Hans: "Issue 评论"
-            pt_BR: "Comentários de Issue"
+            ja_JP: "イシューコメント"
         - value: "pull_request"
           label:
             en_US: "Pull Requests"
             zh_Hans: "Pull Requests"
-            pt_BR: "Pull Requests"
+            ja_JP: "プルリクエスト"
         - value: "pull_request_review"
           label:
             en_US: "Pull Request Reviews"
             zh_Hans: "PR 审查"
-            pt_BR: "Revisões de PR"
+            ja_JP: "プルリクエストレビュー"
         - value: "pull_request_review_comment"
           label:
             en_US: "Pull Request Review Comments"
             zh_Hans: "PR 审查评论"
-            pt_BR: "Comentários de Revisão de PR"
+            ja_JP: "プルリクエストレビュコメント"
         - value: "push"
           label:
             en_US: "Push"
             zh_Hans: "推送"
-            pt_BR: "Push"
+            ja_JP: "プッシュ"
         - value: "create"
           label:
             en_US: "Create (Branch/Tag)"
             zh_Hans: "创建（分支/标签）"
-            pt_BR: "Criar (Branch/Tag)"
+            ja_JP: "作成（ブランチ/タグ）"
         - value: "delete"
           label:
             en_US: "Delete (Branch/Tag)"
             zh_Hans: "删除（分支/标签）"
-            pt_BR: "Deletar (Branch/Tag)"
+            ja_JP: "削除（ブランチ/タグ）"
         - value: "fork"
           label:
             en_US: "Fork"
             zh_Hans: "Fork"
-            pt_BR: "Fork"
+            ja_JP: "フォーク"
         - value: "star"
           label:
             en_US: "Star"
             zh_Hans: "Star"
-            pt_BR: "Star"
+            ja_JP: "スター"
         - value: "watch"
           label:
             en_US: "Watch"
             zh_Hans: "Watch"
-            pt_BR: "Watch"
+            ja_JP: "ウォッチ"
         - value: "release"
           label:
             en_US: "Releases"
             zh_Hans: "发布"
-            pt_BR: "Lançamentos"
+            ja_JP: "リリース"
         - value: "repository"
           label:
             en_US: "Repository"
             zh_Hans: "仓库"
-            pt_BR: "Repositório"
+            ja_JP: "リポジトリ"
         - value: "deployment"
           label:
             en_US: "Deployments"
             zh_Hans: "部署"
-            pt_BR: "Implantações"
+            ja_JP: "デプロイ"
         - value: "deployment_status"
           label:
             en_US: "Deployment Status"
             zh_Hans: "部署状态"
-            pt_BR: "Status de Implantação"
+            ja_JP: "デプロイステータス"
         - value: "workflow_run"
           label:
             en_US: "Workflow Runs"
             zh_Hans: "工作流运行"
-            pt_BR: "Execuções de Workflow"
+            ja_JP: "ワークフロー実行"
         - value: "workflow_dispatch"
           label:
             en_US: "Workflow Dispatch"
             zh_Hans: "工作流触发"
-            pt_BR: "Disparo de Workflow"
+            ja_JP: "ワークフローのディスパッチ"
         - value: "discussion"
           label:
             en_US: "Discussions"
             zh_Hans: "讨论"
-            pt_BR: "Discussões"
+            ja_JP: "ディスカッション"
         - value: "discussion_comment"
           label:
             en_US: "Discussion Comments"
             zh_Hans: "讨论评论"
-            pt_BR: "Comentários de Discussão"
+            ja_JP: "ディスカッションコメント"
         - value: "commit_comment"
           label:
             en_US: "Commit Comments"
             zh_Hans: "提交评论"
-            pt_BR: "Comentários de Commit"
+            ja_JP: "コミットコメント"
         - value: "member"
           label:
             en_US: "Members"
             zh_Hans: "成员"
-            pt_BR: "Membros"
+            ja_JP: "メンバー"
         - value: "milestone"
           label:
             en_US: "Milestones"
             zh_Hans: "里程碑"
-            pt_BR: "Marcos"
+            ja_JP: "マイルストーン"
         - value: "label"
           label:
             en_US: "Labels"
             zh_Hans: "标签"
-            pt_BR: "Etiquetas"
+            ja_JP: "ラベル"
         - value: "package"
           label:
             en_US: "Packages"
             zh_Hans: "包"
-            pt_BR: "Pacotes"
+            ja_JP: "パッケージ"
         - value: "gollum"
           label:
             en_US: "Wiki Pages"
             zh_Hans: "Wiki 页面"
-            pt_BR: "Páginas Wiki"
+            ja_JP: "Wikiページ"
         - value: "ping"
           label:
             en_US: "Ping"
             zh_Hans: "Ping"
-            pt_BR: "Ping"
+            ja_JP: "Ping"
       label:
         zh_Hans: "监听事件"
         en_US: "Events to Listen"
-        pt_BR: "Eventos para Escutar"
+        ja_JP: "監視するイベント"
       help:
         en_US: "Select which GitHub events to subscribe to (select 'All Events' for all)"
-        pt_BR: "Selecione quais eventos do GitHub inscrever-se (selecione 'Todos os Eventos' para todos)"
+        ja_JP: "購読するGitHubイベントを選択してください（すべての場合は「すべてのイベント」を選択）"
         zh_Hans: '选择要订阅的 GitHub 事件（选择"全部事件"以订阅所有）'
   properties_schema:
     - name: "webhook_secret"
@@ -228,55 +231,27 @@ subscription_schema:
       label:
         zh_Hans: "Webhook Secret"
         en_US: "Webhook Secret"
+        ja_JP: "Webhookシークレット"
       help:
         en_US: "Optional webhook secret for validating GitHub webhook requests"
-        pt_BR: "Segredo opcional do webhook para validar solicitações do webhook do GitHub"
+        ja_JP: "GitHub Webhookリクエストの検証用のオプションのWebhookシークレット"
         zh_Hans: "可选的用于验证 GitHub webhook 请求的 webhook 密钥"
 
 triggers:
   # Core Events (Consolidated)
-  - triggers/issue.yaml                          # Handles: opened, closed, reopened, edited, assigned, unassigned, labeled, unlabeled, etc.
-  - triggers/issue_comment.yaml                  # Handles: created, edited, deleted
-  - triggers/pull_request.yaml                   # Handles: opened, closed, merged, reopened, edited, synchronize, etc.
-  - triggers/pull_request_review.yaml            # Handles: submitted, edited, dismissed
-  - triggers/pull_request_review_comment.yaml    # Handles: created, edited, deleted
-  - triggers/repository.yaml                     # Handles: created, deleted, archived, renamed, transferred, etc.
-  - triggers/release.yaml                        # Handles: created, published, edited, deleted, prereleased, etc.
-  - triggers/discussion.yaml                     # Handles: created, edited, deleted, answered, pinned, labeled, etc.
-  - triggers/discussion_comment.yaml             # Handles: created, edited, deleted
-  - triggers/milestone.yaml                      # Handles: created, closed, opened, edited, deleted
-  - triggers/label.yaml                          # Handles: created, edited, deleted
-  - triggers/member.yaml                         # Handles: added, removed, edited
-  - triggers/workflow_run.yaml                   # Handles: requested, in_progress, completed
-  - triggers/star.yaml                           # Handles: created, deleted
-  - triggers/package.yaml                        # Handles: published, updated
-
-  # Individual Events (Not yet consolidated)
-  - triggers/push.yaml
-  - triggers/create.yaml
-  - triggers/delete.yaml
-  - triggers/commit_comment.yaml
-  - triggers/fork.yaml
-  - triggers/watch.yaml
-  - triggers/workflow_dispatch.yaml
-  - triggers/deployment_created.yaml
-  - triggers/deployment_status_created.yaml
-  - triggers/wiki_page_updated.yaml
-  - triggers/ping.yaml
+  - triggers/issues.yaml # Handles: opened, closed, reopened, edited, assigned, unassigned, labeled, unlabeled, etc.
 
 identity:
   author: langgenius
   description:
     en_US: GitHub is an online software source code hosting service with webhook trigger support.
-    pt_BR:
-      GitHub é uma plataforma online para serviços de hospedagem de código fonte
-      de software com suporte a triggers de webhook.
+    ja_JP: GitHub は、オンラインのソフトウェアソースコードホスティングサービスで、webhook トリガーのサポートがあります。
     zh_Hans: GitHub 是一个在线软件源代码托管服务平台，支持 webhook 触发器。
   icon: icon.svg
   label:
     en_US: GitHub Triggers
-    pt_BR: GitHub Triggers
     zh_Hans: GitHub 触发器
+    ja_JP: GitHub トリガー
   name: github_trigger
 
 extra:

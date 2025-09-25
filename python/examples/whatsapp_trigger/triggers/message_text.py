@@ -85,16 +85,12 @@ class MessageTextTrigger(TriggerEvent):
                 text_lower = text_body.lower()
                 has_keyword = any(keyword in text_lower for keyword in keywords)
                 if not has_keyword:
-                    raise TriggerIgnoreEventError(
-                        f"Message doesn't contain required keywords: {', '.join(keywords)}"
-                    )
+                    raise TriggerIgnoreEventError(f"Message doesn't contain required keywords: {', '.join(keywords)}")
 
         # Minimum length filter
         min_length = parameters.get("min_length", 0)
         if min_length and len(text_body) < min_length:
-            raise TriggerIgnoreEventError(
-                f"Message too short: {len(text_body)} < {min_length}"
-            )
+            raise TriggerIgnoreEventError(f"Message too short: {len(text_body)} < {min_length}")
 
         # Conversation context filter
         conversation_context = parameters.get("conversation_context", "all")
@@ -121,42 +117,46 @@ class MessageTextTrigger(TriggerEvent):
             "message": {
                 "id": message.get("id", ""),
                 "type": "text",
-                "text": {
-                    "body": text_body
-                },
+                "text": {"body": text_body},
                 "timestamp": message.get("timestamp", ""),
                 "context": {
                     "from": context.get("from", "") if context else "",
                     "id": context.get("id", "") if context else "",
                     "referred_product": {
                         "catalog_id": context.get("referred_product", {}).get("catalog_id", "") if context else "",
-                        "product_retailer_id": context.get("referred_product", {}).get("product_retailer_id", "") if context else "",
-                    } if context and context.get("referred_product") else None
-                } if context else None
+                        "product_retailer_id": context.get("referred_product", {}).get("product_retailer_id", "")
+                        if context
+                        else "",
+                    }
+                    if context and context.get("referred_product")
+                    else None,
+                }
+                if context
+                else None,
             },
             "sender": {
                 "wa_id": sender_id,
                 "name": sender_info.get("profile", {}).get("name", ""),
-                "profile_picture_url": ""  # Not provided in standard webhook
+                "profile_picture_url": "",  # Not provided in standard webhook
             },
             "business": {
                 "phone_number_id": metadata.get("phone_number_id", ""),
                 "display_phone_number": metadata.get("display_phone_number", ""),
-                "business_name": ""  # Would need additional API call to get
+                "business_name": "",  # Would need additional API call to get
             },
             "conversation": {
                 "id": message.get("id", ""),  # Using message ID as conversation ID
                 "origin": {
                     "type": "customer_initiated"  # Default assumption
                 },
-                "expiry_timestamp": ""  # Would need additional context
+                "expiry_timestamp": "",  # Would need additional context
             },
             "metadata": {
                 "received_at": value.get("timestamp", ""),
                 "language": "",  # Would need language detection
                 "is_forwarded": message.get("forwarded", False) or message.get("frequently_forwarded", False),
-                "is_reply": is_reply
-            }
+                "is_reply": is_reply,
+            },
         }
 
         return Event(variables=variables)
