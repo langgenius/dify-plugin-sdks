@@ -13,6 +13,7 @@ from dify_plugin.core.entities.plugin.setup import PluginAsset, PluginConfigurat
 from dify_plugin.core.entities.providers import DatasourceProviderMapping
 from dify_plugin.core.model_factory import ModelFactory
 from dify_plugin.core.runtime import Session
+from dify_plugin.core.trigger_factory import TriggerFactory
 from dify_plugin.core.utils.class_loader import load_multi_subclasses_from_source, load_single_subclass_from_source
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
 from dify_plugin.entities.agent import AgentStrategyConfiguration, AgentStrategyProviderConfiguration
@@ -67,19 +68,8 @@ class PluginRegistration:
         ],
     ]
 
-    trigger_factory: (
-        None  # TBD: Codex, refactor triggers_mapping to use trigger_factory instead, remove triggers_mapping
-    )
-
     triggers_configuration: list[TriggerProviderConfiguration]
-    triggers_mapping: dict[
-        str,
-        tuple[
-            TriggerProviderConfiguration,
-            type[TriggerProvider],
-            dict[str, tuple[TriggerConfiguration, type[TriggerEvent]]],
-        ],
-    ]
+    trigger_factory: TriggerFactory
 
     models_configuration: list[ModelProviderConfiguration]
     models_mapping: dict[
@@ -116,7 +106,7 @@ class PluginRegistration:
         self.datasource_configuration = []
         self.datasource_mapping = {}
         self.triggers_configuration = []
-        self.triggers_mapping = {}
+        self.trigger_factory = TriggerFactory()
 
         # load plugin configuration
         self._load_plugin_configuration()
@@ -282,14 +272,38 @@ class PluginRegistration:
             module_source = os.path.splitext(source)[0]
             # replace / with .
             module_source = module_source.replace("/", ".")
-            cls = load_single_subclass_from_source(
+            provider_cls = load_single_subclass_from_source(
                 module_name=module_source,
                 script_path=os.path.join(os.getcwd(), source),
                 parent_type=TriggerProvider,
             )
 
+            subscription_constructor_cls_candidates = load_multi_subclasses_from_source(
+                module_name=module_source,
+                script_path=os.path.join(os.getcwd(), source),
+                parent_type=TriggerSubscriptionConstructor,
+            )
+
+            if len(subscription_constructor_cls_candidates) > 1:
+                raise ValueError(
+                    f"Multiple TriggerSubscriptionConstructor subclasses found in {source}."
+                    " Only a single implementation is supported."
+                )
+
+            subscription_constructor_cls = (
+                subscription_constructor_cls_candidates[0]
+                if subscription_constructor_cls_candidates
+                else None
+            )
+
+            if provider.subscription_constructor and subscription_constructor_cls is None:
+                raise ValueError(
+                    "Trigger subscription constructor configuration declared but no implementation "
+                    f"found in {source}."
+                )
+
             # load triggers class
-            triggers = {}
+            trigger_registrations: list[tuple[str, TriggerConfiguration, type[TriggerEvent]]] = []
             for trigger in provider.triggers:
                 trigger_source = trigger.extra.python.source
                 trigger_module_source = os.path.splitext(trigger_source)[0]
@@ -299,9 +313,21 @@ class PluginRegistration:
                     script_path=os.path.join(os.getcwd(), trigger_source),
                     parent_type=TriggerEvent,
                 )
-                triggers[trigger.identity.name] = (trigger, trigger_cls)
+                trigger_registrations.append((trigger.identity.name, trigger, trigger_cls))
 
-            self.triggers_mapping[provider.identity.name] = (provider, cls, triggers)
+            registration = self.trigger_factory.register_trigger_provider(
+                configuration=provider,
+                provider_cls=provider_cls,
+                subscription_constructor_cls=subscription_constructor_cls,
+                triggers={},
+            )
+
+            for name, trigger_config, trigger_cls in trigger_registrations:
+                registration.register_trigger(
+                    name=name,
+                    configuration=trigger_config,
+                    trigger_cls=trigger_cls,
+                )
 
     def _is_strict_subclass(self, cls: type[T], *parent_cls: type[T]) -> bool:
         """
@@ -466,36 +492,22 @@ class PluginRegistration:
                 model_factory = self.models_mapping[provider_registration][2]
                 return model_factory.get_instance(model_type)
 
-    def get_trigger_provider(self, provider: str, session: Session) -> TriggerProvider:
-        # TBD: Codex, refactor triggers_mapping to use trigger_factory instead, remove triggers_mapping
-        # Please use `trigger_factory` to create trigger provider instance
-        """
-        get the trigger provider class by provider name
-        :param provider: provider name
-        :return: trigger provider class
-        """
+    def get_trigger_provider(self, provider_name: str, session: Session) -> TriggerProvider:
+        """Get the trigger provider instance by provider name."""
+
+        return self.trigger_factory.get_trigger_provider(provider_name, session)
 
     def get_trigger_subscription_constructor(
-        self, provider: str, runtime: TriggerSubscriptionConstructorRuntime, session: Session
+        self, provider_name: str, runtime: TriggerSubscriptionConstructorRuntime, session: Session
     ) -> TriggerSubscriptionConstructor:
-        # TBD: Codex, Also this
-        """
-        get the trigger subscription constructor class by provider name
-        :param provider: provider name
-        :return: trigger subscription constructor class
-        """
-        # TBD: Codex, need to implement this
+        """Get the trigger subscription constructor instance by provider name."""
 
-    def get_trigger_event_handler(self, provider: str, event: str, session: Session) -> TriggerEvent:
-        # TBD: Codex, Also this, return instance instead of class
-        """
-        get the trigger class by provider
-        :param provider: provider name
-        :param event: event name
-        :param session: session
-        :return: trigger class
-        """
-        # TBD: Also this
+        return self.trigger_factory.get_subscription_constructor(provider_name, runtime, session)
+
+    def get_trigger_event_handler(self, provider_name: str, event: str, session: Session) -> TriggerEvent:
+        """Get the trigger event handler instance by provider and event name."""
+
+        return self.trigger_factory.get_trigger_event_handler(provider_name, event, session)
 
     def get_supported_oauth_provider_cls(self, provider: str) -> type[OAuthProviderProtocol] | None:
         """
@@ -503,10 +515,19 @@ class PluginRegistration:
         :param provider: provider name
         :return: supported oauth providers
         """
-        # TBD: Codex, refactor triggers_mapping to use trigger_factory instead, remove triggers_mapping
-        for provider_registration in self.triggers_mapping:
-            if provider_registration == provider and self.triggers_mapping[provider_registration][0].oauth_schema:
-                return self.triggers_mapping[provider_registration][1]
+        try:
+            configuration = self.trigger_factory.get_configuration(provider)
+        except ValueError:
+            configuration = None
+
+        if configuration:
+            if configuration.subscription_constructor and configuration.subscription_constructor.oauth_schema:
+                constructor_cls = self.trigger_factory.get_subscription_constructor_cls(provider)
+                if constructor_cls:
+                    return constructor_cls
+
+            if configuration.oauth_schema:
+                return self.trigger_factory.get_provider_cls(provider)
 
         for provider_registration in self.tools_mapping:
             if provider_registration == provider and self.tools_mapping[provider_registration][0].oauth_schema:
