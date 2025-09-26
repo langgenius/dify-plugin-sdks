@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import hashlib
 import hmac
+import json
 import secrets
 import time
 import urllib.parse
@@ -21,18 +24,88 @@ from dify_plugin.errors.trigger import (
     TriggerValidationError,
     UnsubscribeError,
 )
-from dify_plugin.interfaces.trigger import TriggerProvider
+from dify_plugin.interfaces.trigger import TriggerProvider, TriggerSubscriptionConstructor
 
 
 class GithubProvider(TriggerProvider):
-    _AUTH_URL = "https://github.com/login/oauth/authorize"
-    _TOKEN_URL = "https://github.com/login/oauth/access_token"
-    _API_USER_URL = "https://api.github.com/user"
+    """Handle GitHub webhook event dispatch."""
 
     _TRIGGER_EVENTS: ClassVar[dict[str, list[str]]] = {
         "issues": ["issues"],
-        "issues_comment": ["issues_comment"],
+        "issue_comment": ["issues"],
     }
+
+    def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
+        webhook_secret = subscription.properties.get("webhook_secret")
+        if webhook_secret:
+            self._validate_signature(request, webhook_secret)
+
+        event_type = request.headers.get("X-GitHub-Event")
+        if not event_type:
+            raise TriggerDispatchError("Missing GitHub event type header")
+
+        # Validate payload and raise meaningful errors when parsing fails.
+        self._parse_payload(request)
+
+        triggers = self._TRIGGER_EVENTS.get(event_type, [])
+        response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
+        return TriggerDispatch(triggers=triggers, response=response)
+
+    def _parse_payload(self, request: Request) -> Mapping[str, Any]:
+        try:
+            content_type = request.headers.get("Content-Type", "")
+            if "application/x-www-form-urlencoded" in content_type:
+                form_data = request.form.get("payload")
+                if not form_data:
+                    raise TriggerDispatchError("Missing payload in form data")
+                payload = json.loads(form_data)
+            else:
+                payload = request.get_json(force=True)
+            if not payload:
+                raise TriggerDispatchError("Empty request body")
+            return payload
+        except TriggerDispatchError:
+            raise
+        except Exception as exc:  # pragma: no cover - defensive logging path
+            raise TriggerDispatchError(f"Failed to parse payload: {exc}") from exc
+
+    def _validate_signature(self, request: Request, webhook_secret: str) -> None:
+        signature = request.headers.get("X-Hub-Signature-256")
+        if not signature:
+            raise TriggerValidationError("Missing webhook signature")
+
+        expected_signature = (
+            "sha256=" + hmac.new(webhook_secret.encode(), request.get_data(), hashlib.sha256).hexdigest()
+        )
+        if not hmac.compare_digest(signature, expected_signature):
+            raise TriggerValidationError("Invalid webhook signature")
+
+
+class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
+    """Manage GitHub trigger subscriptions."""
+
+    _AUTH_URL = "https://github.com/login/oauth/authorize"
+    _TOKEN_URL = "https://github.com/login/oauth/access_token"
+    _API_USER_URL = "https://api.github.com/user"
+    _WEBHOOK_TTL = 30 * 24 * 60 * 60
+
+    def _validate_api_key(self, credentials: dict) -> None:
+        access_token = credentials.get("access_tokens")
+        if not access_token:
+            raise TriggerProviderCredentialValidationError("GitHub API Access Token is required.")
+
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Accept": "application/vnd.github+json",
+        }
+        try:
+            response = requests.get(self._API_USER_URL, headers=headers, timeout=10)
+            if response.status_code != 200:
+                raise TriggerProviderCredentialValidationError(response.json().get("message"))
+        except TriggerProviderCredentialValidationError:
+            raise
+        except Exception as exc:  # pragma: no cover - defensive logging path
+            raise TriggerProviderCredentialValidationError(str(exc)) from exc
 
     def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
         state = secrets.token_urlsafe(16)
@@ -69,64 +142,14 @@ class GithubProvider(TriggerProvider):
 
         return TriggerOAuthCredentials(credentials={"access_tokens": access_tokens}, expires_at=-1)
 
-    def _validate_credentials(self, credentials: dict) -> None:
-        try:
-            if "access_tokens" not in credentials or not credentials.get("access_tokens"):
-                raise TriggerProviderCredentialValidationError("GitHub API Access Token is required.")
-            headers = {
-                "Authorization": f"Bearer {credentials['access_tokens']}",
-                "Accept": "application/vnd.github+json",
-            }
-            response = requests.get(self._API_USER_URL, headers=headers, timeout=10)
-            if response.status_code != 200:
-                raise TriggerProviderCredentialValidationError(response.json().get("message"))
-        except Exception as e:
-            raise TriggerProviderCredentialValidationError(str(e)) from e
-
-    def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
-        if False:
-            webhook_secret = subscription.properties.get("webhook_secret")
-            if webhook_secret:
-                signature = request.headers.get("X-Hub-Signature-256")
-                if not signature:
-                    raise TriggerValidationError("Missing webhook signature")
-                expected_signature = (
-                    "sha256=" + hmac.new(webhook_secret.encode(), request.get_data(), hashlib.sha256).hexdigest()
-                )
-                if not hmac.compare_digest(signature, expected_signature):
-                    raise TriggerValidationError("Invalid webhook signature")
-
-        event_type = request.headers.get("X-GitHub-Event")
-        if not event_type:
-            raise TriggerDispatchError("Missing GitHub event type header")
-
-        try:
-            content_type = request.headers.get("Content-Type", "")
-            if "application/x-www-form-urlencoded" in content_type:
-                import json
-
-                form_data = request.form.get("payload")
-                if not form_data:
-                    raise TriggerDispatchError("Missing payload in form data")
-                payload = json.loads(form_data)
-            else:
-                payload = request.get_json(force=True)
-            if not payload:
-                raise TriggerDispatchError("Empty request body")
-        except Exception as e:
-            raise TriggerDispatchError(f"Failed to parse payload: {e}") from e
-
-        triggers = self._TRIGGER_EVENTS.get(event_type, [])
-        return TriggerDispatch(
-            triggers=triggers, response=Response(response='{"status": "ok"}', status=200, mimetype="application/json")
-        )
-
-    def _subscribe(self, endpoint: str, credentials: Mapping[str, Any], parameters: Mapping[str, Any]) -> Subscription:
-        webhook_id = uuid.uuid4().hex
-        webhook_secret = webhook_id
+    def _create_subscription(
+        self,
+        endpoint: str,
+        credentials: Mapping[str, Any],
+        selected_events: list[str],
+        parameters: Mapping[str, Any],
+    ) -> Subscription:
         repository = parameters.get("repository")
-        events = parameters.get("events", ["issue_comment", "issues"])
-
         if not repository:
             raise ValueError("repository is required (format: owner/repo)")
 
@@ -134,6 +157,9 @@ class GithubProvider(TriggerProvider):
             owner, repo = repository.split("/")
         except ValueError:
             raise ValueError("repository must be in format 'owner/repo'") from None
+
+        events = self._resolve_webhook_events(selected_events)
+        webhook_secret = uuid.uuid4().hex
 
         url = f"https://api.github.com/repos/{owner}/{repo}/hooks"
         headers = {
@@ -145,51 +171,45 @@ class GithubProvider(TriggerProvider):
             "name": "web",
             "active": True,
             "events": events,
-            "config": {"url": endpoint, "content_type": "json", "insecure_ssl": "0"},
+            "config": {"url": endpoint, "content_type": "json", "insecure_ssl": "0", "secret": webhook_secret},
         }
-
-        if webhook_secret:
-            webhook_data["config"]["secret"] = webhook_secret
 
         try:
             response = requests.post(url, json=webhook_data, headers=headers, timeout=10)
-            if response.status_code == 201:
-                webhook = response.json()
-                return Subscription(
-                    expires_at=int(time.time()) + 30 * 24 * 60 * 60,
-                    endpoint=endpoint,
-                    properties={
-                        "external_id": str(webhook["id"]),
-                        "repository": repository,
-                        "events": events,
-                        "webhook_secret": webhook_secret,
-                        "active": webhook["active"],
-                    },
-                )
-            else:
-                response_data = response.json() if response.content else {}
-                error_msg = response_data.get("message", "Unknown error")
-                error_details = response_data.get("errors", [])
+        except requests.RequestException as exc:
+            raise SubscriptionError(
+                f"Network error while creating webhook: {exc}", error_code="NETWORK_ERROR"
+            ) from exc
 
-                # print(f"GitHub webhook creation failed with status {response.status_code}")
-                # print(f"Request URL: {url}")
-                # print(f"Request data: {webhook_data}")
-                # print(f"Response: {response_data}")
+        if response.status_code == 201:
+            webhook = response.json()
+            return Subscription(
+                expires_at=int(time.time()) + self._WEBHOOK_TTL,
+                endpoint=endpoint,
+                properties={
+                    "external_id": str(webhook["id"]),
+                    "repository": repository,
+                    "events": events,
+                    "webhook_secret": webhook_secret,
+                    "active": webhook.get("active", True),
+                },
+            )
 
-                detailed_error = f"Failed to create GitHub webhook: {error_msg}"
-                if error_details:
-                    detailed_error += f" Details: {error_details}"
+        response_data = response.json() if response.content else {}
+        error_msg = response_data.get("message", "Unknown error")
+        error_details = response_data.get("errors", [])
+        detailed_error = f"Failed to create GitHub webhook: {error_msg}"
+        if error_details:
+            detailed_error += f" Details: {error_details}"
 
-                raise SubscriptionError(
-                    detailed_error,
-                    error_code="WEBHOOK_CREATION_FAILED",
-                    external_response=response_data,
-                )
-        except requests.RequestException as e:
-            raise SubscriptionError(f"Network error while creating webhook: {e}", error_code="NETWORK_ERROR") from e
+        raise SubscriptionError(
+            detailed_error,
+            error_code="WEBHOOK_CREATION_FAILED",
+            external_response=response_data,
+        )
 
-    def _unsubscribe(
-        self, endpoint: str, subscription: Subscription, credentials: Mapping[str, Any]
+    def _delete_subscription(
+        self, subscription: Subscription, credentials: Mapping[str, Any]
     ) -> UnsubscribeResult:
         external_id = subscription.properties.get("external_id")
         repository = subscription.properties.get("repository")
@@ -208,7 +228,7 @@ class GithubProvider(TriggerProvider):
                 message="Invalid repository format in properties",
                 error_code="INVALID_REPOSITORY",
                 external_response=None,
-            )
+            ) from None
 
         url = f"https://api.github.com/repos/{owner}/{repo}/hooks/{external_id}"
         headers = {
@@ -218,35 +238,59 @@ class GithubProvider(TriggerProvider):
 
         try:
             response = requests.delete(url, headers=headers, timeout=10)
-            if response.status_code == 204:
-                return UnsubscribeResult(
-                    success=True, message=f"Successfully removed webhook {external_id} from {repository}"
-                )
-            elif response.status_code == 404:
-                raise UnsubscribeError(
-                    message=f"Webhook {external_id} not found in repository {repository}",
-                    error_code="WEBHOOK_NOT_FOUND",
-                    external_response=response.json(),
-                )
-            else:
-                raise UnsubscribeError(
-                    message=f"Failed to delete webhook: {response.json().get('message', 'Unknown error')}",
-                    error_code="WEBHOOK_DELETION_FAILED",
-                    external_response=response.json(),
-                )
-        except requests.RequestException as e:
+        except requests.RequestException as exc:
             raise UnsubscribeError(
-                message=f"Network error while deleting webhook: {e}",
+                message=f"Network error while deleting webhook: {exc}",
                 error_code="NETWORK_ERROR",
+                external_response=None,
+            ) from exc
+
+        if response.status_code == 204:
+            return UnsubscribeResult(
+                success=True, message=f"Successfully removed webhook {external_id} from {repository}"
+            )
+
+        if response.status_code == 404:
+            raise UnsubscribeError(
+                message=f"Webhook {external_id} not found in repository {repository}",
+                error_code="WEBHOOK_NOT_FOUND",
                 external_response=response.json(),
             )
 
-    def _refresh(self, endpoint: str, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
+        raise UnsubscribeError(
+            message=f"Failed to delete webhook: {response.json().get('message', 'Unknown error')}",
+            error_code="WEBHOOK_DELETION_FAILED",
+            external_response=response.json(),
+        )
+
+    def _refresh(self, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
         return Subscription(
-            expires_at=int(time.time()) + 30 * 24 * 60 * 60,
-            endpoint=endpoint,
+            expires_at=int(time.time()) + self._WEBHOOK_TTL,
+            endpoint=subscription.endpoint,
             properties=subscription.properties,
         )
+
+    def _fetch_parameter_options(self, credentials: Mapping[str, Any], parameter: str) -> list[ParameterOption]:
+        if parameter != "repository":
+            return []
+
+        token = credentials.get("access_tokens")
+        if not token:
+            raise ValueError("access_tokens is required to fetch repositories")
+        return self._fetch_repositories(token)
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+    def _resolve_webhook_events(self, selected_events: list[str]) -> list[str]:
+        if not selected_events:
+            return ["issues", "issue_comment"]
+
+        resolved_events: set[str] = set()
+        for trigger in selected_events:
+            resolved_events.update(GithubProvider._TRIGGER_EVENTS.get(trigger, [trigger]))
+
+        return sorted(resolved_events) or ["issues"]
 
     def _fetch_repositories(self, access_token: str) -> list[ParameterOption]:
         headers = {
@@ -274,7 +318,7 @@ class GithubProvider(TriggerProvider):
                 try:
                     err = response.json()
                     message = err.get("message", str(err))
-                except Exception:
+                except Exception:  # pragma: no cover - fallback path
                     message = response.text
                 raise ValueError(f"Failed to fetch repositories from GitHub: {message}")
 
@@ -301,15 +345,3 @@ class GithubProvider(TriggerProvider):
             page += 1
 
         return options
-
-    def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
-        if not self.runtime:
-            raise ValueError("runtime is required")
-
-        if parameter == "repository":
-            token = self.runtime.credentials.get("access_tokens")
-            if not token:
-                raise ValueError("access_tokens is required")
-            return self._fetch_repositories(token)
-
-        return []

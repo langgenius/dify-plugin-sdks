@@ -207,15 +207,108 @@ class SubscriptionSchema(BaseModel):
     The subscription schema of the trigger provider
     """
 
-    parameters_schema: list[TriggerParameter] | None = Field(
+    parameters_schema: list[TriggerParameter] = Field(
         default_factory=list,
         description="The parameters schema required to create a subscription",
     )
 
-    properties_schema: list[ProviderConfig] | None = Field(
+    properties_schema: list[ProviderConfig] = Field(
         default_factory=list,
         description="The configuration schema stored in the subscription entity",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_schema(cls, data: Any) -> dict[str, Any]:
+        """Allow subscription schema defined either as dict or list.
+
+        Legacy providers used an object with explicit parameters/properties sections,
+        while the new trigger design allows a plain list (representing the
+        properties schema only). This validator normalises the payload to the
+        unified dictionary structure expected by Pydantic.
+        """
+
+        if data is None:
+            return {}
+
+        if isinstance(data, cls):
+            return data.model_dump()
+
+        if isinstance(data, list):
+            return {"properties_schema": data}
+
+        if isinstance(data, dict):
+            return data
+
+        raise ValueError("subscription_schema should be defined as a dict or a list")
+
+
+@docs(
+    description="The subscription constructor configuration of the trigger provider",
+)
+class TriggerSubscriptionConstructorConfigurationExtra(BaseModel):
+    """Additional configuration for trigger subscription constructor."""
+
+    @docs(
+        name="Python",
+        description="The python configuration for trigger subscription constructor",
+    )
+    class Python(BaseModel):
+        source: str = Field(..., description="The source file path for the constructor implementation")
+
+    python: Python
+
+
+@docs(
+    name="TriggerSubscriptionConstructor",
+    description="Configuration for a trigger subscription constructor",
+)
+class TriggerSubscriptionConstructorConfiguration(BaseModel):
+    """Configuration for a trigger subscription constructor implementation."""
+
+    parameters: list[TriggerParameter] = Field(
+        default_factory=list,
+        description="The user input parameters required to create a subscription",
+    )
+    credentials_schema: list[ProviderConfig] = Field(
+        default_factory=list,
+        description="The credentials schema required by the subscription constructor",
+    )
+    oauth_schema: OAuthSchema | None = Field(
+        default=None,
+        description="The OAuth schema of the subscription constructor if OAuth is supported",
+    )
+    extra: TriggerSubscriptionConstructorConfigurationExtra | None = Field(
+        default=None,
+        description="Extra metadata for locating the constructor implementation",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_credentials_schema(cls, data: Any) -> dict[str, Any]:
+        if data is None:
+            return {}
+
+        if isinstance(data, cls):
+            return data.model_dump()
+
+        if not isinstance(data, dict):
+            raise ValueError("subscription_constructor should be defined as a mapping")
+
+        normalised = dict(data)
+        original_credentials_schema = normalised.get("credentials_schema", [])
+        if isinstance(original_credentials_schema, dict):
+            credentials_schema: list[dict[str, Any]] = []
+            for name, param in original_credentials_schema.items():
+                param["name"] = name
+                credentials_schema.append(param)
+            normalised["credentials_schema"] = credentials_schema
+        elif isinstance(original_credentials_schema, list):
+            normalised["credentials_schema"] = original_credentials_schema
+        else:
+            raise ValueError("credentials_schema should be a list or dict")
+
+        return normalised
 
 
 @docs(
@@ -237,7 +330,14 @@ class TriggerProviderConfiguration(BaseModel):
         default=None,
         description="The OAuth schema of the trigger provider if OAuth is supported",
     )
-    subscription_schema: SubscriptionSchema = Field(..., description="The subscription schema of the trigger provider")
+    subscription_schema: SubscriptionSchema = Field(
+        default_factory=SubscriptionSchema,
+        description="The subscription schema of the trigger provider",
+    )
+    subscription_constructor: TriggerSubscriptionConstructorConfiguration | None = Field(
+        default=None,
+        description="The configuration of the trigger subscription constructor",
+    )
     triggers: list[TriggerConfiguration] = Field(default=[], description="The triggers of the trigger provider")
     extra: TriggerProviderConfigurationExtra = Field(..., description="The extra configuration of the trigger provider")
 
@@ -256,20 +356,6 @@ class TriggerProviderConfiguration(BaseModel):
             data["credentials_schema"] = original_credentials_schema
         else:
             raise ValueError("credentials_schema should be a list or dict")
-        return data
-
-    @model_validator(mode="before")
-    @classmethod
-    def validate_subscription_schema(cls, data: dict) -> dict:
-        # Handle subscription_schema conversion from dict to list format
-        original_subscription_schema = data.get("subscription_schema", [])
-        if isinstance(original_subscription_schema, dict):
-            subscription_schema: SubscriptionSchema = SubscriptionSchema(**original_subscription_schema)
-            data["subscription_schema"] = subscription_schema
-        elif isinstance(original_subscription_schema, list):
-            data["subscription_schema"] = original_subscription_schema
-        else:
-            raise ValueError("subscription_schema should be a dict or list")
         return data
 
     @field_validator("triggers", mode="before")
