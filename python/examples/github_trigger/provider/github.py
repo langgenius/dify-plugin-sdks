@@ -19,6 +19,7 @@ from dify_plugin.errors.trigger import (
     TriggerProviderCredentialValidationError,
     TriggerProviderOAuthError,
     TriggerValidationError,
+    UnsubscribeError,
 )
 from dify_plugin.interfaces.trigger import TriggerProvider
 
@@ -49,6 +50,10 @@ class GithubProvider(TriggerProvider):
         code = request.args.get("code")
         if not code:
             raise TriggerProviderOAuthError("No code provided")
+
+        if not system_credentials.get("client_id") or not system_credentials.get("client_secret"):
+            raise TriggerProviderOAuthError("Client ID or Client Secret is required")
+
         data = {
             "client_id": system_credentials["client_id"],
             "client_secret": system_credentials["client_secret"],
@@ -166,10 +171,10 @@ class GithubProvider(TriggerProvider):
                 error_msg = response_data.get("message", "Unknown error")
                 error_details = response_data.get("errors", [])
 
-                print(f"GitHub webhook creation failed with status {response.status_code}")
-                print(f"Request URL: {url}")
-                print(f"Request data: {webhook_data}")
-                print(f"Response: {response_data}")
+                # print(f"GitHub webhook creation failed with status {response.status_code}")
+                # print(f"Request URL: {url}")
+                # print(f"Request data: {webhook_data}")
+                # print(f"Response: {response_data}")
 
                 detailed_error = f"Failed to create GitHub webhook: {error_msg}"
                 if error_details:
@@ -190,15 +195,19 @@ class GithubProvider(TriggerProvider):
         repository = subscription.properties.get("repository")
 
         if not external_id or not repository:
-            return UnsubscribeResult(
-                success=False, message="Missing webhook ID or repository information", error_code="MISSING_PROPERTIES"
+            raise UnsubscribeError(
+                message="Missing webhook ID or repository information",
+                error_code="MISSING_PROPERTIES",
+                external_response=None,
             )
 
         try:
             owner, repo = repository.split("/")
         except ValueError:
-            return UnsubscribeResult(
-                success=False, message="Invalid repository format in properties", error_code="INVALID_REPOSITORY"
+            raise UnsubscribeError(
+                message="Invalid repository format in properties",
+                error_code="INVALID_REPOSITORY",
+                external_response=None,
             )
 
         url = f"https://api.github.com/repos/{owner}/{repo}/hooks/{external_id}"
@@ -214,21 +223,22 @@ class GithubProvider(TriggerProvider):
                     success=True, message=f"Successfully removed webhook {external_id} from {repository}"
                 )
             elif response.status_code == 404:
-                return UnsubscribeResult(
-                    success=False,
+                raise UnsubscribeError(
                     message=f"Webhook {external_id} not found in repository {repository}",
                     error_code="WEBHOOK_NOT_FOUND",
+                    external_response=response.json(),
                 )
             else:
-                return UnsubscribeResult(
-                    success=False,
+                raise UnsubscribeError(
                     message=f"Failed to delete webhook: {response.json().get('message', 'Unknown error')}",
-                    error_code="API_ERROR",
+                    error_code="WEBHOOK_DELETION_FAILED",
                     external_response=response.json(),
                 )
         except requests.RequestException as e:
-            return UnsubscribeResult(
-                success=False, message=f"Network error while deleting webhook: {e}", error_code="NETWORK_ERROR"
+            raise UnsubscribeError(
+                message=f"Network error while deleting webhook: {e}",
+                error_code="NETWORK_ERROR",
+                external_response=response.json(),
             )
 
     def _refresh(self, endpoint: str, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
@@ -293,6 +303,9 @@ class GithubProvider(TriggerProvider):
         return options
 
     def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        if not self.runtime:
+            raise ValueError("runtime is required")
+
         if parameter == "repository":
             token = self.runtime.credentials.get("access_tokens")
             if not token:

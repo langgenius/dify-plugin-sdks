@@ -47,5 +47,6 @@ class IssuesTrigger(TriggerEvent):
         return Event(
             variables={
                 "action": action,
+                # TODO: add more variables depends on the trigger configuration
             }
         )

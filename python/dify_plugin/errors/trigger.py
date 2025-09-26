@@ -34,6 +34,20 @@ class SubscriptionError(TriggerError):
         self.external_response = external_response
 
 
+class UnsubscribeError(TriggerError):
+    """
+    Raised when trigger unsubscribe operations fail.
+    """
+
+    def __init__(self, message: str, error_code: str | None = None, external_response: dict | None = None):
+        """
+        Initialize UnsubscribeError with detailed information.
+        """
+        super().__init__(message)
+        self.error_code = error_code
+        self.external_response = external_response
+
+
 class TriggerValidationError(TriggerError):
     """
     Raised when webhook signature validation fails.
