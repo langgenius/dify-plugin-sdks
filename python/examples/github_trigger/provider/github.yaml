@@ -1,0 +1,112 @@
+subscription_schema:
+  - name: "webhook_secret"
+    type: "secret-input"
+    required: false
+    label:
+      zh_Hans: "Webhook Secret"
+      en_US: "Webhook Secret"
+      ja_JP: "Webhookシークレット"
+    help:
+      en_US: "Optional webhook secret for validating GitHub webhook requests"
+      ja_JP: "GitHub Webhookリクエストの検証用のオプションのWebhookシークレット"
+      zh_Hans: "可选的用于验证 GitHub webhook 请求的 webhook 密钥"
+
+subscription_constructor: # OPTIONAL
+  parameters:
+    - name: "repository"
+      label:
+        en_US: "Repository"
+        zh_Hans: "仓库"
+        ja_JP: "リポジトリ"
+      type: "dynamic-select"
+      required: true
+      placeholder:
+        en_US: "owner/repo"
+        zh_Hans: "owner/repo"
+        ja_JP: "owner/repo"
+      help:
+        en_US: "GitHub repository in format owner/repo (e.g., microsoft/vscode)"
+        zh_Hans: "GitHub 仓库，格式为 owner/repo（例如：microsoft/vscode）"
+        ja_JP: "GitHubリポジトリは owner/repo 形式で入力してください（例: microsoft/vscode）"
+  credentials_schema:
+    access_tokens:
+      help:
+        en_US: Get your Access Tokens from GitHub
+        ja_JP: GitHub からアクセストークンを取得してください
+        zh_Hans: 从 GitHub 获取您的 Access Tokens
+      label:
+        en_US: Access Tokens
+        ja_JP: アクセストークン
+        zh_Hans: Access Tokens
+      placeholder:
+        en_US: Please input your GitHub Access Tokens
+        ja_JP: GitHub のアクセストークンを入力してください
+        zh_Hans: 请输入你的 GitHub Access Tokens
+      required: true
+      type: secret-input
+      url: https://github.com/settings/tokens?type=beta
+  oauth_schema:
+    client_schema:
+      - name: "client_id"
+        type: "secret-input"
+        required: true
+        url: https://github.com/settings/applications/new
+        placeholder:
+          en_US: "Please input your Client ID"
+          zh_Hans: "请输入你的 Client ID"
+          ja_JP: "クライアントIDを入力してください"
+        help:
+          en_US: "Client ID is used to authenticate requests to the GitHub API."
+          zh_Hans: "Client ID 用于认证请求到 GitHub API。"
+          ja_JP: "クライアントIDはGitHub APIへのリクエスト認証に使用されます。"
+        label:
+          zh_Hans: "Client ID"
+          en_US: "Client ID"
+          ja_JP: "クライアントID"
+      - name: "client_secret"
+        type: "secret-input"
+        required: true
+        url: https://github.com/settings/applications/new
+        placeholder:
+          en_US: "Please input your Client Secret"
+          zh_Hans: "请输入你的 Client Secret"
+          ja_JP: "クライアントシークレットを入力してください"
+        help:
+          en_US: "Client Secret is used to authenticate requests to the GitHub API."
+          zh_Hans: "Client Secret 用于认证请求到 GitHub API。"
+          ja_JP: "クライアントシークレットはGitHub APIへのリクエスト認証に使用されます。"
+        label:
+          zh_Hans: "Client Secret"
+          en_US: "Client Secret"
+          ja_JP: "クライアントシークレット"
+    credentials_schema:
+      - name: "access_tokens"
+        type: "secret-input"
+        label:
+          zh_Hans: "Access Token"
+          en_US: "Access Token"
+          ja_JP: "アクセストークン"
+  extra:
+    python:
+      source: provider/github.py
+
+triggers:
+  # Core Events (Consolidated)
+  - triggers/issues.yaml # Handles: opened, closed, reopened, edited, assigned, unassigned, labeled, unlabeled, etc.
+
+identity:
+  author: langgenius
+  description:
+    en_US: GitHub is an online software source code hosting service with webhook trigger support.
+    ja_JP: GitHub は、オンラインのソフトウェアソースコードホスティングサービスで、webhook トリガーのサポートがあります。
+    zh_Hans: GitHub 是一个在线软件源代码托管服务平台，支持 webhook 触发器。
+  icon: icon.svg
+  label:
+    en_US: GitHub Triggers
+    zh_Hans: GitHub 触发器
+    ja_JP: GitHub トリガー
+  name: github_trigger
+
+extra:
+  python:
+    source: provider/github.py
