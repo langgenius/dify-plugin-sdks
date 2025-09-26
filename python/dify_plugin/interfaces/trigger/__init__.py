@@ -12,7 +12,7 @@ from dify_plugin.entities.trigger import (
     Subscription,
     TriggerDispatch,
     TriggerRuntime,
-    Unsubscription,
+    UnsubscribeResult,
 )
 from dify_plugin.errors.trigger import SubscriptionError, TriggerDispatchError
 
@@ -288,7 +288,7 @@ class TriggerProvider:
         """
         raise NotImplementedError("This plugin should implement `_subscribe` method to enable event subscription")
 
-    def unsubscribe(self, subscription: Subscription, credentials: Mapping[str, Any]) -> Unsubscription:
+    def unsubscribe(self, subscription: Subscription, credentials: Mapping[str, Any]) -> UnsubscribeResult:
         """
         Remove a trigger subscription.
 
@@ -338,7 +338,7 @@ class TriggerProvider:
         """
         return self._unsubscribe(subscription, credentials)
 
-    def _unsubscribe(self, subscription: Subscription, credentials: Mapping[str, Any]) -> Unsubscription:
+    def _unsubscribe(self, subscription: Subscription, credentials: Mapping[str, Any]) -> UnsubscribeResult:
         """
         Internal method to implement unsubscription logic.
 

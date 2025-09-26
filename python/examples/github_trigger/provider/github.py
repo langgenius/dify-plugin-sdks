@@ -12,7 +12,7 @@ from werkzeug import Request, Response
 
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.oauth import TriggerOAuthCredentials
-from dify_plugin.entities.trigger import Subscription, TriggerDispatch, Unsubscription
+from dify_plugin.entities.trigger import Subscription, TriggerDispatch, UnsubscribeResult
 from dify_plugin.errors.trigger import (
     SubscriptionError,
     TriggerDispatchError,
@@ -183,19 +183,21 @@ class GithubProvider(TriggerProvider):
         except requests.RequestException as e:
             raise SubscriptionError(f"Network error while creating webhook: {e}", error_code="NETWORK_ERROR") from e
 
-    def _unsubscribe(self, endpoint: str, subscription: Subscription, credentials: Mapping[str, Any]) -> Unsubscription:
+    def _unsubscribe(
+        self, endpoint: str, subscription: Subscription, credentials: Mapping[str, Any]
+    ) -> UnsubscribeResult:
         external_id = subscription.properties.get("external_id")
         repository = subscription.properties.get("repository")
 
         if not external_id or not repository:
-            return Unsubscription(
+            return UnsubscribeResult(
                 success=False, message="Missing webhook ID or repository information", error_code="MISSING_PROPERTIES"
             )
 
         try:
             owner, repo = repository.split("/")
         except ValueError:
-            return Unsubscription(
+            return UnsubscribeResult(
                 success=False, message="Invalid repository format in properties", error_code="INVALID_REPOSITORY"
             )
 
@@ -208,24 +210,24 @@ class GithubProvider(TriggerProvider):
         try:
             response = requests.delete(url, headers=headers, timeout=10)
             if response.status_code == 204:
-                return Unsubscription(
+                return UnsubscribeResult(
                     success=True, message=f"Successfully removed webhook {external_id} from {repository}"
                 )
             elif response.status_code == 404:
-                return Unsubscription(
+                return UnsubscribeResult(
                     success=False,
                     message=f"Webhook {external_id} not found in repository {repository}",
                     error_code="WEBHOOK_NOT_FOUND",
                 )
             else:
-                return Unsubscription(
+                return UnsubscribeResult(
                     success=False,
                     message=f"Failed to delete webhook: {response.json().get('message', 'Unknown error')}",
                     error_code="API_ERROR",
                     external_response=response.json(),
                 )
         except requests.RequestException as e:
-            return Unsubscription(
+            return UnsubscribeResult(
                 success=False, message=f"Network error while deleting webhook: {e}", error_code="NETWORK_ERROR"
             )
 

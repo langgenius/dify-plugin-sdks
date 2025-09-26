@@ -9,7 +9,7 @@ from utils.signature_validator import validate_signature
 from werkzeug import Request, Response
 
 from dify_plugin.entities import ParameterOption
-from dify_plugin.entities.trigger import Subscription, TriggerDispatch, Unsubscription
+from dify_plugin.entities.trigger import Subscription, TriggerDispatch, UnsubscribeResult
 from dify_plugin.errors.trigger import (
     TriggerDispatchError,
     TriggerProviderCredentialValidationError,
@@ -210,14 +210,16 @@ class WhatsAppProvider(TriggerProvider):
             },
         )
 
-    def _unsubscribe(self, endpoint: str, subscription: Subscription, credentials: Mapping[str, Any]) -> Unsubscription:
+    def _unsubscribe(
+        self, endpoint: str, subscription: Subscription, credentials: Mapping[str, Any]
+    ) -> UnsubscribeResult:
         """
         Remove a WhatsApp webhook subscription
 
         Note: WhatsApp webhooks are managed at the app level in Meta Business,
         so this mainly marks the subscription as inactive internally.
         """
-        return Unsubscription(success=True, message="WhatsApp webhook subscription removed successfully")
+        return UnsubscribeResult(success=True, message="WhatsApp webhook subscription removed successfully")
 
     def _refresh(self, endpoint: str, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
         """

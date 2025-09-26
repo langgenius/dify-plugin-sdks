@@ -325,15 +325,15 @@ class Subscription(BaseModel):
 @docs(
     description="Result of a trigger unsubscription operation",
 )
-class Unsubscription(BaseModel):
+class UnsubscribeResult(BaseModel):
     """
-    Result of a trigger unsubscription operation.
+    Result of a trigger unsubscribe operation.
 
-    Provides detailed information about the unsubscription attempt,
+    Provides detailed information about the unsubscribe attempt,
     including success status and error details if failed.
     """
 
-    success: bool = Field(..., description="Whether the unsubscription was successful")
+    success: bool = Field(..., description="Whether the unsubscribe was successful")
 
     message: str | None = Field(
         None,
