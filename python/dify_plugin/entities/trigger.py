@@ -13,8 +13,8 @@ from dify_plugin.entities.provider_config import CommonParameterType, ProviderCo
 from dify_plugin.entities.tool import ParameterAutoGenerate, ParameterTemplate
 
 
-class TriggerRuntime(BaseModel):
-    credentials: dict[str, Any]
+class TriggerSubscriptionConstructorRuntime(BaseModel):
+    credentials: Mapping[str, Any]
     session_id: str | None
 
 
@@ -319,6 +319,16 @@ class Subscription(BaseModel):
 
     properties: Mapping[str, Any] = Field(
         ..., description="Subscription data containing all properties and provider-specific information"
+    )
+
+    subscribed_events: list[str] = Field(
+        default_factory=list,
+        description="The subscribed events of the subscription",
+    )
+
+    credentials: Mapping[str, Any] | None = Field(
+        default=None,
+        description="The credentials of the subscription, this is the credentials that will be used to validate the subscription",
     )
 
 

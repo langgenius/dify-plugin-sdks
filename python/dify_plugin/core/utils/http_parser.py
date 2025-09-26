@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from flask import Request, Response
+from werkzeug import Request, Response
 from werkzeug.datastructures import Headers
 
 

@@ -5,13 +5,14 @@ from typing import TypeVar
 
 import werkzeug
 import werkzeug.exceptions
-from python.dify_plugin.core.entities.providers import DatasourceProviderMapping
 from werkzeug import Request
 from werkzeug.routing import Map, Rule
 
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.entities.plugin.setup import PluginAsset, PluginConfiguration
+from dify_plugin.core.entities.providers import DatasourceProviderMapping
 from dify_plugin.core.model_factory import ModelFactory
+from dify_plugin.core.runtime import Session
 from dify_plugin.core.utils.class_loader import load_multi_subclasses_from_source, load_single_subclass_from_source
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
 from dify_plugin.entities.agent import AgentStrategyConfiguration, AgentStrategyProviderConfiguration
@@ -20,7 +21,11 @@ from dify_plugin.entities.endpoint import EndpointProviderConfiguration
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.provider import ModelProviderConfiguration
 from dify_plugin.entities.tool import ToolConfiguration, ToolProviderConfiguration
-from dify_plugin.entities.trigger import TriggerConfiguration, TriggerProviderConfiguration
+from dify_plugin.entities.trigger import (
+    TriggerConfiguration,
+    TriggerProviderConfiguration,
+    TriggerSubscriptionConstructorRuntime,
+)
 from dify_plugin.interfaces.agent import AgentStrategy
 from dify_plugin.interfaces.datasource import DatasourceProvider
 from dify_plugin.interfaces.datasource.online_document import OnlineDocumentDatasource
@@ -36,7 +41,7 @@ from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
 from dify_plugin.interfaces.tool import Tool, ToolProvider
-from dify_plugin.interfaces.trigger import TriggerEvent, TriggerProvider
+from dify_plugin.interfaces.trigger import TriggerEvent, TriggerProvider, TriggerSubscriptionConstructor
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
 T = TypeVar("T")
@@ -61,6 +66,10 @@ class PluginRegistration:
             dict[str, tuple[AgentStrategyConfiguration, type[AgentStrategy]]],
         ],
     ]
+
+    trigger_factory: (
+        None  # TBD: Codex, refactor triggers_mapping to use trigger_factory instead, remove triggers_mapping
+    )
 
     triggers_configuration: list[TriggerProviderConfiguration]
     triggers_mapping: dict[
@@ -457,28 +466,36 @@ class PluginRegistration:
                 model_factory = self.models_mapping[provider_registration][2]
                 return model_factory.get_instance(model_type)
 
-    def get_trigger_provider_cls(self, provider: str):
+    def get_trigger_provider(self, provider: str, session: Session) -> TriggerProvider:
+        # TBD: Codex, refactor triggers_mapping to use trigger_factory instead, remove triggers_mapping
+        # Please use `trigger_factory` to create trigger provider instance
         """
         get the trigger provider class by provider name
         :param provider: provider name
         :return: trigger provider class
         """
-        for provider_registration in self.triggers_mapping:
-            if provider_registration == provider:
-                return self.triggers_mapping[provider_registration][1]
 
-    def get_trigger_cls(self, provider: str, trigger: str):
+    def get_trigger_subscription_constructor(
+        self, provider: str, runtime: TriggerSubscriptionConstructorRuntime, session: Session
+    ) -> TriggerSubscriptionConstructor:
+        # TBD: Codex, Also this
+        """
+        get the trigger subscription constructor class by provider name
+        :param provider: provider name
+        :return: trigger subscription constructor class
+        """
+        # TBD: Codex, need to implement this
+
+    def get_trigger_event_handler(self, provider: str, event: str, session: Session) -> TriggerEvent:
+        # TBD: Codex, Also this, return instance instead of class
         """
         get the trigger class by provider
         :param provider: provider name
-        :param trigger: trigger name
+        :param event: event name
+        :param session: session
         :return: trigger class
         """
-        for provider_registration in self.triggers_mapping:
-            if provider_registration == provider:
-                registration = self.triggers_mapping[provider_registration][2].get(trigger)
-                if registration:
-                    return registration[1]
+        # TBD: Also this
 
     def get_supported_oauth_provider_cls(self, provider: str) -> type[OAuthProviderProtocol] | None:
         """
@@ -486,6 +503,7 @@ class PluginRegistration:
         :param provider: provider name
         :return: supported oauth providers
         """
+        # TBD: Codex, refactor triggers_mapping to use trigger_factory instead, remove triggers_mapping
         for provider_registration in self.triggers_mapping:
             if provider_registration == provider and self.triggers_mapping[provider_registration][0].oauth_schema:
                 return self.triggers_mapping[provider_registration][1]

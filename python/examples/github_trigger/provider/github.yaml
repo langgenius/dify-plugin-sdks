@@ -1,65 +1,18 @@
-credentials_schema:
-  access_tokens:
-    help:
-      en_US: Get your Access Tokens from GitHub
-      ja_JP: GitHub からアクセストークンを取得してください
-      zh_Hans: 从 GitHub 获取您的 Access Tokens
-    label:
-      en_US: Access Tokens
-      ja_JP: アクセストークン
-      zh_Hans: Access Tokens
-    placeholder:
-      en_US: Please input your GitHub Access Tokens
-      ja_JP: GitHub のアクセストークンを入力してください
-      zh_Hans: 请输入你的 GitHub Access Tokens
-    required: true
-    type: secret-input
-    url: https://github.com/settings/tokens?type=beta
-
-oauth_schema:
-  client_schema:
-    - name: "client_id"
-      type: "secret-input"
-      required: true
-      url: https://github.com/settings/applications/new
-      placeholder:
-        en_US: "Please input your Client ID"
-        zh_Hans: "请输入你的 Client ID"
-        ja_JP: "クライアントIDを入力してください"
-      help:
-        en_US: "Client ID is used to authenticate requests to the GitHub API."
-        zh_Hans: "Client ID 用于认证请求到 GitHub API。"
-        ja_JP: "クライアントIDはGitHub APIへのリクエスト認証に使用されます。"
-      label:
-        zh_Hans: "Client ID"
-        en_US: "Client ID"
-        ja_JP: "クライアントID"
-    - name: "client_secret"
-      type: "secret-input"
-      required: true
-      url: https://github.com/settings/applications/new
-      placeholder:
-        en_US: "Please input your Client Secret"
-        zh_Hans: "请输入你的 Client Secret"
-        ja_JP: "クライアントシークレットを入力してください"
-      help:
-        en_US: "Client Secret is used to authenticate requests to the GitHub API."
-        zh_Hans: "Client Secret 用于认证请求到 GitHub API。"
-        ja_JP: "クライアントシークレットはGitHub APIへのリクエスト認証に使用されます。"
-      label:
-        zh_Hans: "Client Secret"
-        en_US: "Client Secret"
-        ja_JP: "クライアントシークレット"
-  credentials_schema:
-    - name: "access_tokens"
-      type: "secret-input"
-      label:
-        zh_Hans: "Access Token"
-        en_US: "Access Token"
-        ja_JP: "アクセストークン"
-
 subscription_schema:
-  parameters_schema:
+  - name: "webhook_secret"
+    type: "secret-input"
+    required: false
+    label:
+      zh_Hans: "Webhook Secret"
+      en_US: "Webhook Secret"
+      ja_JP: "Webhookシークレット"
+    help:
+      en_US: "Optional webhook secret for validating GitHub webhook requests"
+      ja_JP: "GitHub Webhookリクエストの検証用のオプションのWebhookシークレット"
+      zh_Hans: "可选的用于验证 GitHub webhook 请求的 webhook 密钥"
+
+subscription_constructor: # OPTIONAL
+  parameters:
     - name: "repository"
       label:
         en_US: "Repository"
@@ -75,167 +28,64 @@ subscription_schema:
         en_US: "GitHub repository in format owner/repo (e.g., microsoft/vscode)"
         zh_Hans: "GitHub 仓库，格式为 owner/repo（例如：microsoft/vscode）"
         ja_JP: "GitHubリポジトリは owner/repo 形式で入力してください（例: microsoft/vscode）"
-    - name: "events"
-      type: "select"
+  credentials_schema:
+    access_tokens:
+      help:
+        en_US: Get your Access Tokens from GitHub
+        ja_JP: GitHub からアクセストークンを取得してください
+        zh_Hans: 从 GitHub 获取您的 Access Tokens
+      label:
+        en_US: Access Tokens
+        ja_JP: アクセストークン
+        zh_Hans: Access Tokens
+      placeholder:
+        en_US: Please input your GitHub Access Tokens
+        ja_JP: GitHub のアクセストークンを入力してください
+        zh_Hans: 请输入你的 GitHub Access Tokens
       required: true
-      default: ["*"]
-      multiple: true
-      options:
-        - value: "*"
-          label:
-            en_US: "All Events"
-            zh_Hans: "全部事件"
-            ja_JP: "すべてのイベント"
-        - value: "issues"
-          label:
-            en_US: "Issues"
-            zh_Hans: "Issues"
-            ja_JP: "イシュー"
-        - value: "issue_comment"
-          label:
-            en_US: "Issue Comments"
-            zh_Hans: "Issue 评论"
-            ja_JP: "イシューコメント"
-        - value: "pull_request"
-          label:
-            en_US: "Pull Requests"
-            zh_Hans: "Pull Requests"
-            ja_JP: "プルリクエスト"
-        - value: "pull_request_review"
-          label:
-            en_US: "Pull Request Reviews"
-            zh_Hans: "PR 审查"
-            ja_JP: "プルリクエストレビュー"
-        - value: "pull_request_review_comment"
-          label:
-            en_US: "Pull Request Review Comments"
-            zh_Hans: "PR 审查评论"
-            ja_JP: "プルリクエストレビュコメント"
-        - value: "push"
-          label:
-            en_US: "Push"
-            zh_Hans: "推送"
-            ja_JP: "プッシュ"
-        - value: "create"
-          label:
-            en_US: "Create (Branch/Tag)"
-            zh_Hans: "创建（分支/标签）"
-            ja_JP: "作成（ブランチ/タグ）"
-        - value: "delete"
-          label:
-            en_US: "Delete (Branch/Tag)"
-            zh_Hans: "删除（分支/标签）"
-            ja_JP: "削除（ブランチ/タグ）"
-        - value: "fork"
-          label:
-            en_US: "Fork"
-            zh_Hans: "Fork"
-            ja_JP: "フォーク"
-        - value: "star"
-          label:
-            en_US: "Star"
-            zh_Hans: "Star"
-            ja_JP: "スター"
-        - value: "watch"
-          label:
-            en_US: "Watch"
-            zh_Hans: "Watch"
-            ja_JP: "ウォッチ"
-        - value: "release"
-          label:
-            en_US: "Releases"
-            zh_Hans: "发布"
-            ja_JP: "リリース"
-        - value: "repository"
-          label:
-            en_US: "Repository"
-            zh_Hans: "仓库"
-            ja_JP: "リポジトリ"
-        - value: "deployment"
-          label:
-            en_US: "Deployments"
-            zh_Hans: "部署"
-            ja_JP: "デプロイ"
-        - value: "deployment_status"
-          label:
-            en_US: "Deployment Status"
-            zh_Hans: "部署状态"
-            ja_JP: "デプロイステータス"
-        - value: "workflow_run"
-          label:
-            en_US: "Workflow Runs"
-            zh_Hans: "工作流运行"
-            ja_JP: "ワークフロー実行"
-        - value: "workflow_dispatch"
-          label:
-            en_US: "Workflow Dispatch"
-            zh_Hans: "工作流触发"
-            ja_JP: "ワークフローのディスパッチ"
-        - value: "discussion"
-          label:
-            en_US: "Discussions"
-            zh_Hans: "讨论"
-            ja_JP: "ディスカッション"
-        - value: "discussion_comment"
-          label:
-            en_US: "Discussion Comments"
-            zh_Hans: "讨论评论"
-            ja_JP: "ディスカッションコメント"
-        - value: "commit_comment"
-          label:
-            en_US: "Commit Comments"
-            zh_Hans: "提交评论"
-            ja_JP: "コミットコメント"
-        - value: "member"
-          label:
-            en_US: "Members"
-            zh_Hans: "成员"
-            ja_JP: "メンバー"
-        - value: "milestone"
-          label:
-            en_US: "Milestones"
-            zh_Hans: "里程碑"
-            ja_JP: "マイルストーン"
-        - value: "label"
-          label:
-            en_US: "Labels"
-            zh_Hans: "标签"
-            ja_JP: "ラベル"
-        - value: "package"
-          label:
-            en_US: "Packages"
-            zh_Hans: "包"
-            ja_JP: "パッケージ"
-        - value: "gollum"
-          label:
-            en_US: "Wiki Pages"
-            zh_Hans: "Wiki 页面"
-            ja_JP: "Wikiページ"
-        - value: "ping"
-          label:
-            en_US: "Ping"
-            zh_Hans: "Ping"
-            ja_JP: "Ping"
-      label:
-        zh_Hans: "监听事件"
-        en_US: "Events to Listen"
-        ja_JP: "監視するイベント"
-      help:
-        en_US: "Select which GitHub events to subscribe to (select 'All Events' for all)"
-        ja_JP: "購読するGitHubイベントを選択してください（すべての場合は「すべてのイベント」を選択）"
-        zh_Hans: '选择要订阅的 GitHub 事件（选择"全部事件"以订阅所有）'
-  properties_schema:
-    - name: "webhook_secret"
-      type: "secret-input"
-      required: false
-      label:
-        zh_Hans: "Webhook Secret"
-        en_US: "Webhook Secret"
-        ja_JP: "Webhookシークレット"
-      help:
-        en_US: "Optional webhook secret for validating GitHub webhook requests"
-        ja_JP: "GitHub Webhookリクエストの検証用のオプションのWebhookシークレット"
-        zh_Hans: "可选的用于验证 GitHub webhook 请求的 webhook 密钥"
+      type: secret-input
+      url: https://github.com/settings/tokens?type=beta
+  oauth_schema:
+    client_schema:
+      - name: "client_id"
+        type: "secret-input"
+        required: true
+        url: https://github.com/settings/applications/new
+        placeholder:
+          en_US: "Please input your Client ID"
+          zh_Hans: "请输入你的 Client ID"
+          ja_JP: "クライアントIDを入力してください"
+        help:
+          en_US: "Client ID is used to authenticate requests to the GitHub API."
+          zh_Hans: "Client ID 用于认证请求到 GitHub API。"
+          ja_JP: "クライアントIDはGitHub APIへのリクエスト認証に使用されます。"
+        label:
+          zh_Hans: "Client ID"
+          en_US: "Client ID"
+          ja_JP: "クライアントID"
+      - name: "client_secret"
+        type: "secret-input"
+        required: true
+        url: https://github.com/settings/applications/new
+        placeholder:
+          en_US: "Please input your Client Secret"
+          zh_Hans: "请输入你的 Client Secret"
+          ja_JP: "クライアントシークレットを入力してください"
+        help:
+          en_US: "Client Secret is used to authenticate requests to the GitHub API."
+          zh_Hans: "Client Secret 用于认证请求到 GitHub API。"
+          ja_JP: "クライアントシークレットはGitHub APIへのリクエスト認証に使用されます。"
+        label:
+          zh_Hans: "Client Secret"
+          en_US: "Client Secret"
+          ja_JP: "クライアントシークレット"
+    credentials_schema:
+      - name: "access_tokens"
+        type: "secret-input"
+        label:
+          zh_Hans: "Access Token"
+          en_US: "Access Token"
+          ja_JP: "アクセストークン"
 
 triggers:
   # Core Events (Consolidated)

@@ -11,20 +11,22 @@ from dify_plugin.entities.trigger import (
     Event,
     Subscription,
     TriggerDispatch,
-    TriggerRuntime,
+    TriggerSubscriptionConstructorRuntime,
     UnsubscribeResult,
 )
 from dify_plugin.errors.trigger import SubscriptionError, TriggerDispatchError
+from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
 __all__ = [
     "SubscriptionError",
     "TriggerDispatchError",
     "TriggerEvent",
     "TriggerProvider",
+    "TriggerSubscriptionConstructor",
 ]
 
 
-class TriggerProvider:
+class TriggerProvider(ABC):
     """
     Base class for trigger providers that manage trigger subscriptions and event dispatching.
 
@@ -45,14 +47,12 @@ class TriggerProvider:
 
     # Optional context objects. They may be None in environments like schema generation
     # or static validation where execution context isn't initialized.
-    runtime: TriggerRuntime | None
-    session: Session | None
+    session: Session
 
     @final
     def __init__(
         self,
-        runtime: TriggerRuntime | None = None,
-        session: Session | None = None,
+        session: Session,
     ):
         """
         Initialize the trigger
@@ -62,55 +62,7 @@ class TriggerProvider:
         - Both `runtime` and `session` are optional; they may be None in contexts
           where execution is not happening (e.g., documentation generation).
         """
-        self.runtime = runtime
         self.session = session
-
-    def validate_credentials(self, credentials: dict):
-        return self._validate_credentials(credentials)
-
-    def _validate_credentials(self, credentials: dict):
-        raise NotImplementedError(
-            "This plugin should implement `_validate_credentials` method to enable credentials validation"
-        )
-
-    def oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
-        """
-        Get the authorization url
-
-        :param redirect_uri: redirect uri provided by dify api
-        :param system_credentials: system credentials including client_id and client_secret which oauth schema defined
-        :return: authorization url
-        """
-        return self._oauth_get_authorization_url(redirect_uri, system_credentials)
-
-    def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
-        raise NotImplementedError(
-            "The tool you are using does not support OAuth, please implement `_oauth_get_authorization_url` method"
-        )
-
-    def oauth_get_credentials(
-        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
-    ) -> OAuthCredentials:
-        """
-        Get the credentials
-
-        :param redirect_uri: redirect uri provided by dify api
-        :param system_credentials: system credentials including client_id and client_secret which oauth schema defined
-        :param request: raw http request
-        :return: credentials
-        """
-        credentials = self._oauth_get_credentials(redirect_uri, system_credentials, request)
-        return OAuthCredentials(
-            expires_at=credentials.expires_at,
-            credentials=credentials.credentials,
-        )
-
-    def _oauth_get_credentials(
-        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
-    ) -> TriggerOAuthCredentials:
-        raise NotImplementedError(
-            "The tool you are using does not support OAuth, please implement `_oauth_get_credentials` method"
-        )
 
     def dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
         """
@@ -170,6 +122,7 @@ class TriggerProvider:
         """
         return self._dispatch_event(subscription, request)
 
+    @abstractmethod
     def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
         """
         Internal method to implement event dispatch logic.
@@ -200,7 +153,81 @@ class TriggerProvider:
         """
         raise NotImplementedError("This plugin should implement `_dispatch_event` method to enable event dispatch")
 
-    def subscribe(self, endpoint: str, credentials: Mapping[str, Any], parameters: Mapping[str, Any]) -> Subscription:
+
+class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
+    """
+    The trigger subscription constructor interface
+    """
+
+    def __init__(self, runtime: TriggerSubscriptionConstructorRuntime, session: Session):
+        self.runtime = runtime
+        self.session = session
+
+    def validate_api_key(self, credentials: dict):
+        return self._validate_api_key(credentials)
+
+    def _validate_api_key(self, credentials: dict):
+        raise NotImplementedError(
+            "This plugin should implement `_validate_api_key` method to enable credentials validation"
+        )
+
+    def oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+        """
+        Get the authorization url
+
+        :param redirect_uri: redirect uri provided by dify api
+        :param system_credentials: system credentials including client_id and client_secret which oauth schema defined
+        :return: authorization url
+        """
+        return self._oauth_get_authorization_url(redirect_uri, system_credentials)
+
+    def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+        raise NotImplementedError(
+            "The trigger you are using does not support OAuth, please implement `_oauth_get_authorization_url` method"
+        )
+
+    def oauth_get_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
+    ) -> OAuthCredentials:
+        """
+        Get the credentials
+
+        :param redirect_uri: redirect uri provided by dify api
+        :param system_credentials: system credentials including client_id and client_secret which oauth schema defined
+        :param request: raw http request
+        :return: credentials
+        """
+        credentials = self._oauth_get_credentials(redirect_uri, system_credentials, request)
+        return OAuthCredentials(
+            expires_at=credentials.expires_at or -1,
+            credentials=credentials.credentials,
+        )
+
+    def _oauth_get_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
+    ) -> TriggerOAuthCredentials:
+        raise NotImplementedError(
+            "The trigger you are using does not support OAuth, please implement `_oauth_get_credentials` method"
+        )
+
+    def oauth_refresh_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
+    ) -> OAuthCredentials:
+        """
+        Refresh the credentials
+        """
+        return self._oauth_refresh_credentials(redirect_uri, system_credentials, credentials)
+
+    def _oauth_refresh_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
+    ) -> OAuthCredentials:
+        raise NotImplementedError(
+            "The trigger you are using does not support OAuth, please implement `_oauth_refresh_credentials` method"
+        )
+
+    def create_subscription(
+        self, endpoint: str, credentials: Mapping[str, Any], selected_events: list[str], parameters: Mapping[str, Any]
+    ) -> Subscription:
         """
         Create a trigger subscription with the external service.
 
@@ -255,9 +282,12 @@ class TriggerProvider:
             >>> print(result.endpoint)  # "https://dify.ai/webhooks/sub_123"
             >>> print(result.properties["external_id"])  # GitHub webhook ID
         """
-        return self._subscribe(endpoint, credentials, parameters)
+        return self._create_subscription(endpoint, credentials, selected_events, parameters)
 
-    def _subscribe(self, endpoint: str, credentials: Mapping[str, Any], parameters: Mapping[str, Any]) -> Subscription:
+    @abstractmethod
+    def _create_subscription(
+        self, endpoint: str, credentials: Mapping[str, Any], selected_events: list[str], parameters: Mapping[str, Any]
+    ) -> Subscription:
         """
         Internal method to implement subscription logic.
 
@@ -288,7 +318,7 @@ class TriggerProvider:
         """
         raise NotImplementedError("This plugin should implement `_subscribe` method to enable event subscription")
 
-    def unsubscribe(self, subscription: Subscription, credentials: Mapping[str, Any]) -> UnsubscribeResult:
+    def delete_subscription(self, subscription: Subscription, credentials: Mapping[str, Any]) -> UnsubscribeResult:
         """
         Remove a trigger subscription.
 
@@ -336,9 +366,9 @@ class TriggerProvider:
             >>> print(result.error_code)  # "INVALID_CREDENTIALS"
             >>> print(result.message)     # "Authentication failed: Invalid token"
         """
-        return self._unsubscribe(subscription, credentials)
+        return self._delete_subscription(subscription, credentials)
 
-    def _unsubscribe(self, subscription: Subscription, credentials: Mapping[str, Any]) -> UnsubscribeResult:
+    def _delete_subscription(self, subscription: Subscription, credentials: Mapping[str, Any]) -> UnsubscribeResult:
         """
         Internal method to implement unsubscription logic.
 
@@ -466,9 +496,9 @@ class TriggerProvider:
         """
         Fetch the parameter options of the trigger.
         """
-        return self._fetch_parameter_options(parameter)
+        return self._fetch_parameter_options(self.runtime.credentials, parameter)
 
-    def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+    def _fetch_parameter_options(self, credentials: Mapping[str, Any], parameter: str) -> list[ParameterOption]:
         """
         Fetch the parameter options of the trigger.
         """
@@ -484,14 +514,12 @@ class TriggerEvent(ABC):
 
     # Optional context objects. They may be None in environments like schema generation
     # or static validation where execution context isn't initialized.
-    runtime: TriggerRuntime | None
-    session: Session | None
+    session: Session
 
     @final
     def __init__(
         self,
-        runtime: TriggerRuntime | None = None,
-        session: Session | None = None,
+        session: Session,
     ):
         """
         Initialize the trigger
@@ -501,15 +529,7 @@ class TriggerEvent(ABC):
         - Both `runtime` and `session` are optional; they may be None in contexts
           where execution is not happening (e.g., documentation generation).
         """
-        self.runtime = runtime
         self.session = session
-
-    # Convenience helpers to make None-handling obvious to users
-    def has_runtime(self) -> bool:
-        return self.runtime is not None
-
-    def has_session(self) -> bool:
-        return self.session is not None
 
     ############################################################
     #        Methods that can be implemented by plugin         #

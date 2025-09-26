@@ -53,7 +53,7 @@ from dify_plugin.entities.datasource import (
     DatasourceRuntime,
 )
 from dify_plugin.entities.tool import ToolRuntime
-from dify_plugin.entities.trigger import Subscription, TriggerRuntime
+from dify_plugin.entities.trigger import TriggerSubscriptionConstructorRuntime
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
@@ -415,23 +415,19 @@ class PluginExecutor:
         # now we don't support tool and trigger at the same time
         # if provider_action is not provided, get trigger provider
         if data.provider_action is None or data.provider_action == "provider":
-            trigger_provider_cls = self.registration.get_trigger_provider_cls(data.provider)
-            if trigger_provider_cls:
-                return trigger_provider_cls(
-                    runtime=TriggerRuntime(
-                        credentials=data.credentials, user_id=data.user_id, session_id=session.session_id
-                    ),
-                    session=session,
-                )
-
-        trigger_cls = self.registration.get_trigger_cls(data.provider, data.provider_action)
-        if trigger_cls is not None:
-            return trigger_cls(
-                runtime=TriggerRuntime(
-                    credentials=data.credentials, user_id=data.user_id, session_id=session.session_id
+            trigger_provider = self.registration.get_trigger_subscription_constructor(
+                data.provider,
+                TriggerSubscriptionConstructorRuntime(
+                    credentials=data.credentials,
+                    session_id=session.session_id,
                 ),
-                session=session,
+                session,
             )
+            return trigger_provider
+
+        trigger_event = self.registration.get_trigger_event_handler(data.provider, data.provider_action, session)
+        if trigger_event is not None:
+            return trigger_event
 
         # get tool
         tool_cls = self.registration.get_tool_cls(data.provider, data.provider_action)
@@ -445,20 +441,10 @@ class PluginExecutor:
         """
         Invoke trigger
         """
-        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
-        trigger_cls = self.registration.get_trigger_cls(request.provider, request.trigger)
-
-        if not trigger_provider_cls or not trigger_cls:
-            raise ValueError(f"Trigger provider {request.provider} or trigger {request.trigger} not found")
-
-        trigger_runtime = TriggerRuntime(
-            credentials=request.credentials,
-            session_id=session.session_id,
-        )
-        trigger = trigger_cls(runtime=trigger_runtime, session=session)
+        trigger = self.registration.get_trigger_event_handler(request.provider, request.trigger, session)
         event = trigger.trigger(deserialize_request(binascii.unhexlify(request.raw_http_request)), request.parameters)
         return TriggerInvokeResponse(
-            event=event.model_dump(),
+            event=event,
         )
 
     def validate_trigger_provider_credentials(
@@ -467,26 +453,24 @@ class PluginExecutor:
         """
         Validate trigger provider credentials
         """
-        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
-        if not trigger_provider_cls:
-            raise ValueError(f"Trigger provider {request.provider} not found")
+        runtime = TriggerSubscriptionConstructorRuntime(
+            credentials=request.credentials,
+            session_id=session.session_id,
+        )
 
-        provider_instance = trigger_provider_cls()
-        provider_instance.validate_credentials(request.credentials)
+        provider_instance = self.registration.get_trigger_subscription_constructor(request.provider, runtime, session)
+        provider_instance.validate_api_key(request.credentials)
         return {"result": True}
 
     def dispatch_trigger_event(self, session: Session, request: TriggerDispatchEventRequest) -> TriggerDispatchResponse:
         """
         Dispatch trigger event
         """
-        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
-        if not trigger_provider_cls:
-            raise ValueError(f"Trigger provider {request.provider} not found")
+        trigger_provider_instance = self.registration.get_trigger_provider(request.provider, session)
 
         bytes_data = binascii.unhexlify(request.raw_http_request)
-        provider_instance = trigger_provider_cls()
-        subscription = Subscription(**request.subscription)
-        dispatch_result = provider_instance.dispatch_event(subscription, deserialize_request(bytes_data))
+        subscription = request.subscription
+        dispatch_result = trigger_provider_instance.dispatch_event(subscription, deserialize_request(bytes_data))
         return TriggerDispatchResponse(
             triggers=dispatch_result.triggers,
             raw_http_response=binascii.hexlify(serialize_response(dispatch_result.response)).decode(),
@@ -496,43 +480,61 @@ class PluginExecutor:
         """
         Subscribe to a trigger with the external service
         """
-        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
-        if not trigger_provider_cls:
-            raise ValueError(f"Trigger provider {request.provider} not found")
+        trigger_provider_instance = self.registration.get_trigger_subscription_constructor(
+            request.provider,
+            TriggerSubscriptionConstructorRuntime(
+                credentials=request.credentials,
+                session_id=session.session_id,
+            ),
+            session,
+        )
 
-        provider_instance = trigger_provider_cls()
-        subscription = provider_instance.subscribe(request.endpoint, request.credentials, request.parameters)
+        subscription = trigger_provider_instance.create_subscription(
+            request.endpoint,
+            request.credentials,
+            request.selected_events,
+            request.parameters,
+        )
         return TriggerSubscriptionResponse(subscription=subscription.model_dump())
 
     def unsubscribe_trigger(self, session: Session, request: TriggerUnsubscribeRequest) -> TriggerUnsubscribeResponse:
         """
         Unsubscribe from a trigger subscription
         """
-        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
-        if not trigger_provider_cls:
-            raise ValueError(f"Trigger provider {request.provider} not found")
+        trigger_subscription_constructor_instance = self.registration.get_trigger_subscription_constructor(
+            request.provider,
+            TriggerSubscriptionConstructorRuntime(
+                credentials=request.credentials,
+                session_id=session.session_id,
+            ),
+            session,
+        )
 
-        # Reconstruct Subscription object from dict
-        subscription = Subscription(**request.subscription)
-
-        provider_instance = trigger_provider_cls()
-        unsubscription = provider_instance.unsubscribe(subscription, request.credentials)
+        unsubscription = trigger_subscription_constructor_instance.delete_subscription(
+            request.subscription, request.credentials
+        )
         return TriggerUnsubscribeResponse(subscription=unsubscription.model_dump())
 
     def refresh_trigger(self, session: Session, request: TriggerRefreshRequest) -> TriggerRefreshResponse:
         """
         Refresh/extend an existing trigger subscription without changing configuration
         """
-        trigger_provider_cls = self.registration.get_trigger_provider_cls(request.provider)
+        trigger_provider_cls = self.registration.get_trigger_provider(request.provider, session)
         if not trigger_provider_cls:
             raise ValueError(f"Trigger provider {request.provider} not found")
 
-        # Reconstruct Subscription object from dict
-        subscription = Subscription(**request.subscription)
-
-        provider_instance = trigger_provider_cls()
+        trigger_subscription_constructor_instance = self.registration.get_trigger_subscription_constructor(
+            request.provider,
+            TriggerSubscriptionConstructorRuntime(
+                credentials=request.credentials,
+                session_id=session.session_id,
+            ),
+            session,
+        )
         return TriggerRefreshResponse(
-            subscription=provider_instance.refresh(subscription, request.credentials).model_dump()
+            subscription=trigger_subscription_constructor_instance.refresh(
+                request.subscription, request.credentials
+            ).model_dump()
         )
 
     def fetch_parameter_options(self, session: Session, data: DynamicParameterFetchParameterOptionsRequest):

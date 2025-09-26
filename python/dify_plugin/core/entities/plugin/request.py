@@ -20,6 +20,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.entities.provider_config import CredentialType
+from dify_plugin.entities.trigger import Subscription, Event
 
 
 class PluginInvokeType(StrEnum):
@@ -383,7 +384,7 @@ class TriggerInvokeRequest(BaseModel):
 
 
 class TriggerInvokeResponse(BaseModel):
-    event: Mapping[str, Any]
+    event: Event
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -402,7 +403,7 @@ class TriggerDispatchEventRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Trigger
     action: TriggerActions = TriggerActions.DispatchTriggerEvent
     provider: str
-    subscription: dict
+    subscription: Subscription
     raw_http_request: str
     user_id: str
 
@@ -423,6 +424,7 @@ class TriggerSubscribeRequest(BaseModel):
     credentials: dict
     endpoint: str
     parameters: dict
+    selected_events: list[str]
     user_id: str
 
     model_config = ConfigDict(protected_namespaces=())
@@ -438,7 +440,7 @@ class TriggerUnsubscribeRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Trigger
     action: TriggerActions = TriggerActions.UnsubscribeTrigger
     provider: str
-    subscription: dict  # Subscription object serialized as dict
+    subscription: Subscription
     credentials: dict  # From credentials_schema
     user_id: str
 
@@ -455,7 +457,7 @@ class TriggerRefreshRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Trigger
     action: TriggerActions = TriggerActions.RefreshTrigger
     provider: str
-    subscription: dict  # Subscription object serialized as dict
+    subscription: Subscription
     credentials: dict  # From credentials_schema
     user_id: str
 
