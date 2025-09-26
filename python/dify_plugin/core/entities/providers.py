@@ -1,10 +1,10 @@
 from collections.abc import Mapping
 
-from python.dify_plugin.entities.datasource_manifest import DatasourceProviderManifest
-from python.dify_plugin.interfaces.datasource import DatasourceProvider
-from python.dify_plugin.interfaces.datasource.online_document import OnlineDocumentDatasource
-from python.dify_plugin.interfaces.datasource.online_drive import OnlineDriveDatasource
-from python.dify_plugin.interfaces.datasource.website import WebsiteCrawlDatasource
+from dify_plugin.entities.datasource_manifest import DatasourceProviderManifest
+from dify_plugin.interfaces.datasource import DatasourceProvider
+from dify_plugin.interfaces.datasource.online_document import OnlineDocumentDatasource
+from dify_plugin.interfaces.datasource.online_drive import OnlineDriveDatasource
+from dify_plugin.interfaces.datasource.website import WebsiteCrawlDatasource
 
 
 class DatasourceProviderMapping:

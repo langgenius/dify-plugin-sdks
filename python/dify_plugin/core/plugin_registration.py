@@ -291,15 +291,12 @@ class PluginRegistration:
                 )
 
             subscription_constructor_cls = (
-                subscription_constructor_cls_candidates[0]
-                if subscription_constructor_cls_candidates
-                else None
+                subscription_constructor_cls_candidates[0] if subscription_constructor_cls_candidates else None
             )
 
             if provider.subscription_constructor and subscription_constructor_cls is None:
                 raise ValueError(
-                    "Trigger subscription constructor configuration declared but no implementation "
-                    f"found in {source}."
+                    f"Trigger subscription constructor configuration declared but no implementation found in {source}."
                 )
 
             # load triggers class
@@ -527,7 +524,7 @@ class PluginRegistration:
                     return constructor_cls
 
             if configuration.oauth_schema:
-                return self.trigger_factory.get_provider_cls(provider)
+                return self.trigger_factory.get_subscription_constructor_cls(provider)
 
         for provider_registration in self.tools_mapping:
             if provider_registration == provider and self.tools_mapping[provider_registration][0].oauth_schema:

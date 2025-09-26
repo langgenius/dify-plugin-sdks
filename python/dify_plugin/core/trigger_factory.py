@@ -1,7 +1,3 @@
-from __future__ import annotations
-
-"""Utilities for registering trigger providers and retrieving runtime classes."""
-
 from collections.abc import Mapping
 from dataclasses import dataclass
 
@@ -123,9 +119,7 @@ class TriggerFactory:
 
         return entry.subscription_constructor_cls(runtime, session)
 
-    def get_subscription_constructor_cls(
-        self, provider_name: str
-    ) -> type[TriggerSubscriptionConstructor] | None:
+    def get_subscription_constructor_cls(self, provider_name: str) -> type[TriggerSubscriptionConstructor] | None:
         return self._get_entry(provider_name).subscription_constructor_cls
 
     # ------------------------------------------------------------------
@@ -141,9 +135,7 @@ class TriggerFactory:
         _, trigger_cls = entry.triggers[event]
         return trigger_cls(session)
 
-    def get_trigger_configuration(
-        self, provider_name: str, event: str
-    ) -> TriggerConfiguration | None:
+    def get_trigger_configuration(self, provider_name: str, event: str) -> TriggerConfiguration | None:
         entry = self._get_entry(provider_name)
         trigger = entry.triggers.get(event)
         if trigger is None:
