@@ -730,6 +730,15 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                             },
                         }
                         sub_messages.append(sub_message_dict)
+                    elif message_content.type == PromptMessageContentType.VIDEO:
+                        message_content = cast(VideoPromptMessageContent, message_content)
+                        sub_message_dict = {
+                            "type": "video_url",
+                            "video_url": {
+                                "url": message_content.data,
+                            },
+                        }
+                        sub_messages.append(sub_message_dict)
 
                 message_dict = {"role": "user", "content": sub_messages}
         elif isinstance(message, AssistantPromptMessage):
