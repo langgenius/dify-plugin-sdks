@@ -39,6 +39,7 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
+    VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
