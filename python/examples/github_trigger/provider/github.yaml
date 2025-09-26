@@ -86,6 +86,9 @@ subscription_constructor: # OPTIONAL
           zh_Hans: "Access Token"
           en_US: "Access Token"
           ja_JP: "アクセストークン"
+  extra:
+    python:
+      source: provider/github.py
 
 triggers:
   # Core Events (Consolidated)
