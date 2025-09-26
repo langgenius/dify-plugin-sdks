@@ -6,7 +6,7 @@ from werkzeug import Request
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
-from dify_plugin.entities.trigger import Event, TriggerRuntime
+from dify_plugin.entities.trigger import Event
 from dify_plugin.interfaces.trigger import TriggerEvent
 
 
@@ -30,5 +30,5 @@ def test_construct_trigger():
         writer=StdioResponseWriter(),
     )
 
-    trigger = TriggerImpl(runtime=TriggerRuntime(credentials={}, session_id="test"), session=session)
+    trigger = TriggerImpl(session=session)
     assert trigger is not None
