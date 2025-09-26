@@ -26,6 +26,7 @@ class InitializeMessage(BaseModel):
         MODEL_DECLARATION = "model_declaration"
         ENDPOINT_DECLARATION = "endpoint_declaration"
         AGENT_STRATEGY_DECLARATION = "agent_strategy_declaration"
+        DATASOURCE_DECLARATION = "datasource_declaration"
         TRIGGER_DECLARATION = "trigger_declaration"
         END = "end"
 

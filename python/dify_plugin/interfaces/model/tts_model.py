@@ -181,14 +181,20 @@ class TTSModel(AIModel):
         :param user: unique user id
         :return: translated audio file
         """
-        try:
-            return self._invoke(
-                model=model,
-                tenant_id=tenant_id,
-                credentials=credentials,
-                user=user,
-                content_text=content_text,
-                voice=voice,
-            )
-        except Exception as e:
-            raise self._transform_invoke_error(e) from e
+        with self.timing_context():
+            try:
+                result = self._invoke(
+                    model=model,
+                    tenant_id=tenant_id,
+                    credentials=credentials,
+                    user=user,
+                    content_text=content_text,
+                    voice=voice,
+                )
+                if isinstance(result, bytes):
+                    return result
+                elif isinstance(result, Generator):
+                    # NOTE: `yield from` cannot been replaced by `return` because of `timing_context`
+                    yield from result
+            except Exception as e:
+                raise self._transform_invoke_error(e) from e

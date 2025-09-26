@@ -12,6 +12,7 @@ from dify_plugin.config.logger_format import plugin_logger_handler
 from dify_plugin.core.entities.message import InitializeMessage
 from dify_plugin.core.entities.plugin.request import (
     AgentActions,
+    DatasourceActions,
     DynamicParameterActions,
     EndpointActions,
     ModelActions,
@@ -150,6 +151,15 @@ class Plugin(IOServer, Router):
                 + "\n\n"
             )
 
+        if self.registration.datasource_configuration:
+            tcp_stream.write(
+                InitializeMessage(
+                    type=InitializeMessage.Type.DATASOURCE_DECLARATION,
+                    data=List(root=self.registration.datasource_configuration).model_dump(),
+                ).model_dump_json()
+                + "\n\n"
+            )
+
         if self.registration.triggers_configuration:
             tcp_stream.write(
                 InitializeMessage(
@@ -215,8 +225,6 @@ class Plugin(IOServer, Router):
             logger.info(f"Installed agent: {agent.identity.name}")
         for trigger_provider in self.registration.triggers_configuration:
             logger.info(f"Installed trigger provider: {trigger_provider.identity.name}")
-            for trigger in trigger_provider.triggers:
-                logger.info(f"  - Installed Trigger: {trigger.identity.name}")
 
     def _register_request_routes(self):
         """
@@ -319,9 +327,27 @@ class Plugin(IOServer, Router):
         )
 
         self.register_route(
-            self.plugin_executer.fetch_parameter_options,
-            lambda data: data.get("type") == PluginInvokeType.DynamicParameter.value
-            and data.get("action") == DynamicParameterActions.FetchParameterOptions.value,
+            self.plugin_executer.validate_datasource_credentials,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.ValidateCredentials.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_crawl_website,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeWebsiteDatasourceGetCrawl.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_get_page_content,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeOnlineDocumentDatasourceGetPageContent.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_get_pages,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeOnlineDocumentDatasourceGetPages.value,
         )
 
         self.register_route(
@@ -340,6 +366,24 @@ class Plugin(IOServer, Router):
             self.plugin_executer.refresh_oauth_credentials,
             lambda data: data.get("type") == PluginInvokeType.OAuth.value
             and data.get("action") == OAuthActions.RefreshCredentials.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_online_drive_browse_files,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeOnlineDriveBrowseFiles.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.datasource_online_drive_download_file,
+            lambda data: data.get("type") == PluginInvokeType.Datasource.value
+            and data.get("action") == DatasourceActions.InvokeOnlineDriveDownloadFile.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.fetch_parameter_options,
+            lambda data: data.get("type") == PluginInvokeType.DynamicParameter.value
+            and data.get("action") == DynamicParameterActions.FetchParameterOptions.value,
         )
 
         # Trigger routes
@@ -406,6 +450,7 @@ class Plugin(IOServer, Router):
             app_id=app_id,
             endpoint_id=endpoint_id,
             context=context,
+            max_invocation_timeout=self.config.MAX_INVOCATION_TIMEOUT,
         )
         response = self.dispatch(session, data)
         if response:

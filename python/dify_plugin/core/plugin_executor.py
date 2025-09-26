@@ -7,6 +7,12 @@ from werkzeug import Response
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.entities.plugin.request import (
     AgentInvokeRequest,
+    DatasourceCrawlWebsiteRequest,
+    DatasourceGetPageContentRequest,
+    DatasourceGetPagesRequest,
+    DatasourceOnlineDriveBrowseFilesRequest,
+    DatasourceOnlineDriveDownloadFileRequest,
+    DatasourceValidateCredentialsRequest,
     DynamicParameterFetchParameterOptionsRequest,
     EndpointInvokeRequest,
     ModelGetAIModelSchemas,
@@ -43,6 +49,9 @@ from dify_plugin.core.plugin_registration import PluginRegistration
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.utils.http_parser import deserialize_request, serialize_response
 from dify_plugin.entities.agent import AgentRuntime
+from dify_plugin.entities.datasource import (
+    DatasourceRuntime,
+)
 from dify_plugin.entities.tool import ToolRuntime
 from dify_plugin.entities.trigger import Subscription, TriggerRuntime
 from dify_plugin.interfaces.endpoint import Endpoint
@@ -381,6 +390,18 @@ class PluginExecutor:
             "expires_at": credentials.expires_at,
         }
 
+    def validate_datasource_credentials(self, session: Session, data: DatasourceValidateCredentialsRequest):
+        provider_instance_cls = self.registration.get_datasource_provider_cls(data.provider)
+        if provider_instance_cls is None:
+            raise ValueError(f"Provider `{data.provider}` not found")
+
+        provider_instance = provider_instance_cls()
+        provider_instance.validate_credentials(data.credentials)
+
+        return {
+            "result": True,
+        }
+
     def _get_dynamic_parameter_action(
         self, session: Session, data: DynamicParameterFetchParameterOptionsRequest
     ) -> DynamicSelectProtocol | None:
@@ -522,3 +543,83 @@ class PluginExecutor:
         return {
             "options": action_instance.fetch_parameter_options(data.parameter),
         }
+
+    def datasource_crawl_website(self, session: Session, data: DatasourceCrawlWebsiteRequest):
+        datasource_cls = self.registration.get_website_crawl_datasource_cls(data.provider, data.datasource)
+        if datasource_cls is None:
+            raise ValueError(f"Datasource `{data.datasource}` not found for provider `{data.provider}`")
+
+        datasource_instance = datasource_cls(
+            runtime=DatasourceRuntime(
+                credentials=data.credentials,
+                user_id=data.user_id,
+                session_id=session.session_id,
+            ),
+            session=session,
+        )
+
+        return datasource_instance.website_crawl(data.datasource_parameters)
+
+    def datasource_get_pages(self, session: Session, data: DatasourceGetPagesRequest):
+        datasource_cls = self.registration.get_online_document_datasource_cls(data.provider, data.datasource)
+        if datasource_cls is None:
+            raise ValueError(f"Datasource `{data.datasource}` not found for provider `{data.provider}`")
+
+        datasource_instance = datasource_cls(
+            runtime=DatasourceRuntime(
+                credentials=data.credentials,
+                user_id=data.user_id,
+                session_id=session.session_id,
+            ),
+            session=session,
+        )
+
+        yield datasource_instance.get_pages(data.datasource_parameters)
+
+    def datasource_get_page_content(self, session: Session, data: DatasourceGetPageContentRequest):
+        datasource_cls = self.registration.get_online_document_datasource_cls(data.provider, data.datasource)
+        if datasource_cls is None:
+            raise ValueError(f"Datasource `{data.datasource}` not found for provider `{data.provider}`")
+
+        datasource_instance = datasource_cls(
+            runtime=DatasourceRuntime(
+                credentials=data.credentials,
+                user_id=data.user_id,
+                session_id=session.session_id,
+            ),
+            session=session,
+        )
+
+        return datasource_instance.get_content(page=data.page)
+
+    def datasource_online_drive_browse_files(self, session: Session, data: DatasourceOnlineDriveBrowseFilesRequest):
+        datasource_cls = self.registration.get_online_drive_datasource_cls(data.provider, data.datasource)
+        if datasource_cls is None:
+            raise ValueError(f"Datasource `{data.datasource}` not found for provider `{data.provider}`")
+
+        datasource_instance = datasource_cls(
+            runtime=DatasourceRuntime(
+                credentials=data.credentials,
+                user_id=data.user_id,
+                session_id=session.session_id,
+            ),
+            session=session,
+        )
+
+        yield datasource_instance.browse_files(data.request)
+
+    def datasource_online_drive_download_file(self, session: Session, data: DatasourceOnlineDriveDownloadFileRequest):
+        datasource_cls = self.registration.get_online_drive_datasource_cls(data.provider, data.datasource)
+        if datasource_cls is None:
+            raise ValueError(f"Datasource `{data.datasource}` not found for provider `{data.provider}`")
+
+        datasource_instance = datasource_cls(
+            runtime=DatasourceRuntime(
+                credentials=data.credentials,
+                user_id=data.user_id,
+                session_id=session.session_id,
+            ),
+            session=session,
+        )
+
+        return datasource_instance.download_file(data.request)

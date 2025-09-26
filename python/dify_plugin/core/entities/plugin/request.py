@@ -4,6 +4,11 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from dify_plugin.entities.datasource import (
+    GetOnlineDocumentPageContentRequest,
+    OnlineDriveBrowseFilesRequest,
+    OnlineDriveDownloadFileRequest,
+)
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -24,6 +29,7 @@ class PluginInvokeType(StrEnum):
     Agent = "agent_strategy"
     Trigger = "trigger"
     OAuth = "oauth"
+    Datasource = "datasource"
     DynamicParameter = "dynamic_parameter"
 
 
@@ -69,6 +75,15 @@ class OAuthActions(StrEnum):
     GetAuthorizationUrl = "get_authorization_url"
     GetCredentials = "get_credentials"
     RefreshCredentials = "refresh_credentials"
+
+
+class DatasourceActions(StrEnum):
+    ValidateCredentials = "validate_datasource_credentials"
+    InvokeWebsiteDatasourceGetCrawl = "invoke_website_datasource_get_crawl"
+    InvokeOnlineDocumentDatasourceGetPages = "invoke_online_document_datasource_get_pages"
+    InvokeOnlineDocumentDatasourceGetPageContent = "invoke_online_document_datasource_get_page_content"
+    InvokeOnlineDriveBrowseFiles = "invoke_online_drive_browse_files"
+    InvokeOnlineDriveDownloadFile = "invoke_online_drive_download_file"
 
 
 class DynamicParameterActions(StrEnum):
@@ -293,6 +308,58 @@ class DynamicParameterFetchParameterOptionsRequest(BaseModel):
     parameter: str
 
     model_config = ConfigDict(protected_namespaces=())
+
+
+class DatasourceValidateCredentialsRequest(PluginAccessRequest):
+    type: PluginInvokeType = PluginInvokeType.Datasource
+    action: DatasourceActions = DatasourceActions.ValidateCredentials
+    provider: str
+    credentials: Mapping[str, Any]
+
+
+class DatasourceCrawlWebsiteRequest(PluginAccessRequest):
+    type: PluginInvokeType = PluginInvokeType.Datasource
+    action: DatasourceActions = DatasourceActions.InvokeWebsiteDatasourceGetCrawl
+    provider: str
+    datasource: str
+    credentials: Mapping[str, Any]
+    datasource_parameters: Mapping[str, Any]
+
+
+class DatasourceGetPagesRequest(PluginAccessRequest):
+    type: PluginInvokeType = PluginInvokeType.Datasource
+    action: DatasourceActions = DatasourceActions.InvokeOnlineDocumentDatasourceGetPages
+    provider: str
+    datasource: str
+    credentials: Mapping[str, Any]
+    datasource_parameters: Mapping[str, Any]
+
+
+class DatasourceGetPageContentRequest(PluginAccessRequest):
+    type: PluginInvokeType = PluginInvokeType.Datasource
+    action: DatasourceActions = DatasourceActions.InvokeOnlineDocumentDatasourceGetPageContent
+    provider: str
+    datasource: str
+    credentials: Mapping[str, Any]
+    page: GetOnlineDocumentPageContentRequest
+
+
+class DatasourceOnlineDriveBrowseFilesRequest(PluginAccessRequest):
+    type: PluginInvokeType = PluginInvokeType.Datasource
+    action: DatasourceActions = DatasourceActions.InvokeOnlineDriveBrowseFiles
+    provider: str
+    datasource: str
+    credentials: Mapping[str, Any]
+    request: OnlineDriveBrowseFilesRequest
+
+
+class DatasourceOnlineDriveDownloadFileRequest(PluginAccessRequest):
+    type: PluginInvokeType = PluginInvokeType.Datasource
+    action: DatasourceActions = DatasourceActions.InvokeOnlineDriveDownloadFile
+    provider: str
+    datasource: str
+    credentials: Mapping[str, Any]
+    request: OnlineDriveDownloadFileRequest
 
 
 class TriggerInvokeRequest(BaseModel):

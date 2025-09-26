@@ -81,13 +81,14 @@ class InvokeCredentials(BaseModel):
     Invoke credentials
 
     Session Level Credentials, used to store session level credentials, such as tool call credentials.
-    Especially for the backwards invoke, when invoker is not specified
-    We need to use the credential id from the session context.
+    Especially for the backwards invoke, when invoker is not specified, we need to use the credential id from the
+    session context.
     """
 
     tool_credentials: dict[str, str] = Field(
         default_factory=dict,
-        description="This is a map of tool provider to credential id.",
+        description="This is a map of tool provider to credential id. It is used to store the credential id for the "
+        "tool provider.",
     )
 
     def get_credential_id(self, provider: str) -> str | None:
@@ -119,6 +120,7 @@ class Session:
         app_id: str | None = None,
         endpoint_id: str | None = None,
         context: SessionContext | dict | None = None,
+        max_invocation_timeout: int = 250,
     ) -> None:
         # current session id
         self.session_id: str = session_id
@@ -152,6 +154,9 @@ class Session:
 
         # dify plugin daemon url
         self.dify_plugin_daemon_url: str | None = dify_plugin_daemon_url
+
+        # max invocation timeout (seconds)
+        self.max_invocation_timeout: int = max_invocation_timeout
 
         # register invocations
         self._register_invocations()
@@ -237,16 +242,19 @@ class BackwardsInvocation(Generic[T], ABC):
         convert string into type T
         """
         empty_response_count = 0
+        # get max timeout count, each wait is 1 second, so timeout count equals timeout seconds
+        max_timeout_count = self.session.max_invocation_timeout if self.session else 250
 
         for chunk in generator:
             """
-            accept response from input stream and wait for at most 60 seconds
+            accept response from input stream and wait,
+            exit when consecutive empty responses exceed configured timeout value
             """
             if chunk is None:
                 empty_response_count += 1
-                # if no response for 250 seconds, break
-                if empty_response_count >= 250:
-                    raise Exception("invocation exited without response")
+                # if consecutive empty responses exceed max timeout count, break
+                if empty_response_count >= max_timeout_count:
+                    raise Exception(f"invocation exited without response after {max_timeout_count} seconds")
                 continue
 
             event = BackwardsInvocationResponseEvent(**chunk.data)

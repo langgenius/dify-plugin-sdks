@@ -65,7 +65,8 @@ class Speech2TextModel(AIModel):
         :param user: unique user id
         :return: text for given audio file
         """
-        try:
-            return self._invoke(model, credentials, file, user)
-        except Exception as e:
-            raise self._transform_invoke_error(e) from e
+        with self.timing_context():
+            try:
+                return self._invoke(model, credentials, file, user)
+            except Exception as e:
+                raise self._transform_invoke_error(e) from e

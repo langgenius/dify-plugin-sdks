@@ -49,6 +49,9 @@ class ToolInvocation(BackwardsInvocation[ToolInvokeMessage]):
             "tool_parameters": parameters,
         }
 
+        if self.session and self.session.app_id:
+            payload["app_id"] = self.session.app_id
+
         if credential_id is not None:
             # use credential id from parameters
             payload["credential_id"] = credential_id

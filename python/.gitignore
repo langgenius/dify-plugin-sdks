@@ -95,3 +95,12 @@ pyrightconfig.json
 .idea/
 
 # End of https://www.toptal.com/developers/gitignore/api/python
+
+
+# IDEA
+.idea
+
+
+# for plugin development
+# Ignore all files in the plugins directory
+plugins

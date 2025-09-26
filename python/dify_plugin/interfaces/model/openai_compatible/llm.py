@@ -694,7 +694,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         # transform response
         result = LLMResult(
             id=message_id,
-            model=response_json["model"],
+            model=response_json.get("model", model),
             message=assistant_message,
             usage=usage,
         )
