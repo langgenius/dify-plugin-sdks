@@ -92,7 +92,7 @@ class DynamicParameterActions(StrEnum):
 
 # merge all the access actions
 PluginAccessAction = (
-    AgentActions | TriggerActions | ToolActions | ModelActions | EndpointActions | DynamicParameterActions
+    AgentActions | TriggerActions | ToolActions | ModelActions | EndpointActions | DynamicParameterActions | DatasourceActions
 )
 
 
@@ -360,6 +360,7 @@ class DatasourceOnlineDriveDownloadFileRequest(PluginAccessRequest):
     datasource: str
     credentials: Mapping[str, Any]
     request: OnlineDriveDownloadFileRequest
+
 
 
 class TriggerInvokeRequest(BaseModel):
