@@ -92,17 +92,15 @@ class MessageDeliveredTrigger(TriggerEvent):
                 "delivered_at": status.get("timestamp", ""),
                 "delivery_attempts": 1,  # WhatsApp doesn't provide this, defaulting to 1
                 "message_type": "unknown",  # Would need to track from original send
-            }
+            },
         }
 
         # Add conversation info if requested
         if include_conversation and conversation:
             variables["status"]["conversation"] = {
                 "id": conversation.get("id", ""),
-                "origin": {
-                    "type": conversation.get("origin", {}).get("type", "")
-                },
-                "expiry_timestamp": conversation.get("expiry_timestamp", "")
+                "origin": {"type": conversation.get("origin", {}).get("type", "")},
+                "expiry_timestamp": conversation.get("expiry_timestamp", ""),
             }
 
         # Add pricing info if available
@@ -110,7 +108,7 @@ class MessageDeliveredTrigger(TriggerEvent):
             variables["status"]["pricing"] = {
                 "billable": pricing.get("billable", False),
                 "pricing_model": pricing.get("pricing_model", ""),
-                "category": pricing.get("category", "")
+                "category": pricing.get("category", ""),
             }
 
         return Event(variables=variables)

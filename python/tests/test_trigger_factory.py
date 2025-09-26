@@ -2,6 +2,7 @@ from collections.abc import Mapping
 from typing import Any
 from unittest.mock import MagicMock
 
+import pytest
 from werkzeug import Request, Response
 
 from dify_plugin.core.runtime import Session
@@ -36,10 +37,7 @@ class MockTriggerProvider(TriggerProvider):
         """
         Dispatch event from webhook
         """
-        return TriggerDispatch(
-            triggers=["test_event"],
-            response=Response("OK", status=200)
-        )
+        return TriggerDispatch(triggers=["test_event"], response=Response("OK", status=200))
 
 
 class MockTriggerSubscriptionConstructor(TriggerSubscriptionConstructor):
@@ -73,10 +71,7 @@ class MockTriggerSubscriptionConstructor(TriggerSubscriptionConstructor):
         """
         Delete subscription
         """
-        return UnsubscribeResult(
-            success=True,
-            message="Successfully unsubscribed"
-        )
+        return UnsubscribeResult(success=True, message="Successfully unsubscribed")
 
     def _refresh(self, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
         """
@@ -108,12 +103,7 @@ class MockTriggerEvent(TriggerEvent):
         """
         Trigger the event
         """
-        return Event(
-            variables={
-                "test_variable": "test_value",
-                "event_data": request.get_data(as_text=True)
-            }
-        )
+        return Event(variables={"test_variable": "test_value", "event_data": request.get_data(as_text=True)})
 
 
 def test_trigger_factory_register_and_get_provider():
@@ -136,9 +126,7 @@ def test_trigger_factory_register_and_get_provider():
             parameters=[],
             credentials_schema=[],
             extra=TriggerSubscriptionConstructorConfigurationExtra(
-                python=TriggerSubscriptionConstructorConfigurationExtra.Python(
-                    source="test_constructor.py"
-                )
+                python=TriggerSubscriptionConstructorConfigurationExtra.Python(source="test_constructor.py")
             ),
         ),
         extra=TriggerProviderConfigurationExtra(
@@ -164,14 +152,12 @@ def test_trigger_factory_register_and_get_provider():
             human=I18nObject(en_US="Human description"),
             llm=I18nObject(en_US="LLM description"),
         ),
-        extra=TriggerConfigurationExtra(
-            python=TriggerConfigurationExtra.Python(source="test_event.py")
-        ),
+        extra=TriggerConfigurationExtra(python=TriggerConfigurationExtra.Python(source="test_event.py")),
         output_schema={"test_variable": {"type": "string"}},
     )
 
     # Register trigger provider with triggers
-    registration = factory.register_trigger_provider(
+    factory.register_trigger_provider(
         configuration=provider_config,
         provider_cls=MockTriggerProvider,
         subscription_constructor_cls=MockTriggerSubscriptionConstructor,
@@ -198,10 +184,7 @@ def test_trigger_factory_subscription_constructor():
     """
     factory = TriggerFactory()
     session = MagicMock(spec=Session)
-    runtime = TriggerSubscriptionConstructorRuntime(
-        credentials={"api_key": "test_key"},
-        session_id="test_session"
-    )
+    runtime = TriggerSubscriptionConstructorRuntime(credentials={"api_key": "test_key"}, session_id="test_session")
 
     # Create provider configuration with subscription constructor
     provider_config = TriggerProviderConfiguration(
@@ -216,9 +199,7 @@ def test_trigger_factory_subscription_constructor():
             parameters=[],
             credentials_schema=[],
             extra=TriggerSubscriptionConstructorConfigurationExtra(
-                python=TriggerSubscriptionConstructorConfigurationExtra.Python(
-                    source="test_constructor.py"
-                )
+                python=TriggerSubscriptionConstructorConfigurationExtra.Python(source="test_constructor.py")
             ),
         ),
         extra=TriggerProviderConfigurationExtra(
@@ -280,9 +261,7 @@ def test_trigger_factory_trigger_events():
             human=I18nObject(en_US="Human description"),
             llm=I18nObject(en_US="LLM description"),
         ),
-        extra=TriggerConfigurationExtra(
-            python=TriggerConfigurationExtra.Python(source="test_event.py")
-        ),
+        extra=TriggerConfigurationExtra(python=TriggerConfigurationExtra.Python(source="test_event.py")),
     )
 
     # Register provider with trigger
@@ -324,11 +303,8 @@ def test_trigger_factory_error_handling():
     session = MagicMock(spec=Session)
 
     # Test getting non-existent provider
-    try:
+    with pytest.raises(ValueError, match="Trigger provider `non_existent` not found"):
         factory.get_trigger_provider("non_existent", session)
-        assert False, "Should raise ValueError"
-    except ValueError as e:
-        assert "Trigger provider `non_existent` not found" in str(e)
 
     # Create and register a provider
     provider_config = TriggerProviderConfiguration(
@@ -352,31 +328,19 @@ def test_trigger_factory_error_handling():
     )
 
     # Test duplicate registration
-    try:
+    with pytest.raises(ValueError, match="Trigger provider `test_provider` is already registered"):
         factory.register_trigger_provider(
             configuration=provider_config,
             provider_cls=MockTriggerProvider,
             subscription_constructor_cls=None,
             triggers={},
         )
-        assert False, "Should raise ValueError for duplicate registration"
-    except ValueError as e:
-        assert "Trigger provider `test_provider` is already registered" in str(e)
 
     # Test getting non-existent trigger event
-    try:
+    with pytest.raises(ValueError, match="Trigger `non_existent` not found in provider `test_provider`"):
         factory.get_trigger_event_handler("test_provider", "non_existent", session)
-        assert False, "Should raise ValueError"
-    except ValueError as e:
-        assert "Trigger `non_existent` not found in provider `test_provider`" in str(e)
 
     # Test getting subscription constructor when none exists
-    runtime = TriggerSubscriptionConstructorRuntime(
-        credentials={"api_key": "test_key"},
-        session_id="test_session"
-    )
-    try:
+    runtime = TriggerSubscriptionConstructorRuntime(credentials={"api_key": "test_key"}, session_id="test_session")
+    with pytest.raises(ValueError, match="Trigger provider `test_provider` does not define a subscription constructor"):
         factory.get_subscription_constructor("test_provider", runtime, session)
-        assert False, "Should raise ValueError"
-    except ValueError as e:
-        assert "Trigger provider `test_provider` does not define a subscription constructor" in str(e)

@@ -414,7 +414,8 @@ class Subscription(BaseModel):
 
     credentials: Mapping[str, Any] | None = Field(
         default=None,
-        description="The credentials of the subscription, this is the credentials that will be used to validate the subscription",
+        description="The credentials of the subscription, this is the credentials "
+        "that will be used to validate the subscription",
     )
 
 

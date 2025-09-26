@@ -177,9 +177,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         try:
             response = requests.post(url, json=webhook_data, headers=headers, timeout=10)
         except requests.RequestException as exc:
-            raise SubscriptionError(
-                f"Network error while creating webhook: {exc}", error_code="NETWORK_ERROR"
-            ) from exc
+            raise SubscriptionError(f"Network error while creating webhook: {exc}", error_code="NETWORK_ERROR") from exc
 
         if response.status_code == 201:
             webhook = response.json()
@@ -208,9 +206,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             external_response=response_data,
         )
 
-    def _delete_subscription(
-        self, subscription: Subscription, credentials: Mapping[str, Any]
-    ) -> UnsubscribeResult:
+    def _delete_subscription(self, subscription: Subscription, credentials: Mapping[str, Any]) -> UnsubscribeResult:
         external_id = subscription.properties.get("external_id")
         repository = subscription.properties.get("repository")
 
