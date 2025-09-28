@@ -58,7 +58,7 @@ class OAICompatRerankModel(RerankModel):
             "Content-Type": "application/json",
         }
         # Only add Authorization header when api_key is not empty
-        api_key = credentials.get('api_key')
+        api_key = credentials.get("api_key")
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
