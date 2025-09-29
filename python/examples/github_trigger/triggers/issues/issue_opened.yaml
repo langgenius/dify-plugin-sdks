@@ -1,0 +1,604 @@
+identity:
+  name: issue_opened
+  author: langgenius
+  label:
+    en_US: Issue Opened
+    zh_Hans: Issue 打开
+    pt_BR: Issue Aberta
+
+description:
+  human:
+    en_US: Triggers when a new issue is opened
+    zh_Hans: 当新 issue 打开时触发
+    pt_BR: Dispara quando uma nova issue é aberta
+  llm:
+    en_US: This trigger activates when a new issue is opened on a GitHub repository, providing information about the issue, repository, and user who opened it.
+    zh_Hans: 当在 GitHub 仓库中打开新 issue 时，此触发器会被激活，提供有关 issue、仓库和打开它的用户的信息。
+    pt_BR: Este gatilho é ativado quando uma nova issue é aberta em um repositório do GitHub, fornecendo informações sobre a issue, repositório e usuário que a abriu.
+
+parameters:
+- name: labels
+  label:
+    en_US: Required Labels
+    zh_Hans: 必需标签
+    ja_JP: 必須ラベル
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if issue has these labels (e.g., bug, enhancement, urgent, comma-separated)"
+    zh_Hans: "仅当议题有这些标签时触发（例如：bug, enhancement, urgent，逗号分隔）"
+    ja_JP: "イシューがこれらのラベルを持つ場合のみトリガー（例: bug, enhancement, urgent，カンマ区切り）"
+
+- name: assignee
+  label:
+    en_US: Assignee Filter
+    zh_Hans: 受理人过滤
+    ja_JP: 担当者フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if assigned to these users (e.g., username1, username2, comma-separated)"
+    zh_Hans: "仅当分配给这些用户时触发（例如：username1, username2，逗号分隔）"
+    ja_JP: "これらのユーザーに割り当てられた場合のみトリガー（例: username1, username2，カンマ区切り）"
+
+- name: authors
+  label:
+    en_US: Authors
+    zh_Hans: 作者
+    ja_JP: 作成者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for issues from these authors (e.g., user1, user2, comma-separated)"
+    zh_Hans: "仅对这些作者的议题触发（例如：user1, user2，逗号分隔）"
+    ja_JP: "これらの作成者のイシューのみトリガー（例: user1, user2，カンマ区切り）"
+
+- name: milestone
+  label:
+    en_US: Milestone
+    zh_Hans: 里程碑
+    ja_JP: マイルストーン
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for issues with these milestones (e.g., v1.0, v2.0, comma-separated, default: all)"
+    zh_Hans: "仅对具有这些里程碑的议题触发（例如：v1.0, v2.0，逗号分隔，默认所有）"
+    ja_JP: "これらのマイルストーンのイシューのみトリガー（例: v1.0, v2.0，カンマ区切り，デフォルト: 全て）"
+
+- name: title_pattern
+  label:
+    en_US: Title Pattern
+    zh_Hans: 标题模式
+    ja_JP: タイトルパターン
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if title matches this pattern (e.g., [BUG]*, [FEATURE]*, supports wildcards)"
+    zh_Hans: "仅当标题匹配此模式时触发（例如：[BUG]*, [FEATURE]*，支持通配符）"
+    ja_JP: "タイトルがこのパターンに一致する場合のみトリガー（例: [BUG]*, [FEATURE]*，ワイルドカード対応）"
+
+- name: body_contains
+  label:
+    en_US: Body Contains
+    zh_Hans: 正文包含
+    ja_JP: 本文に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if body contains these keywords (e.g., regression, critical, comma-separated)"
+    zh_Hans: "仅当正文包含这些关键词时触发（例如：regression, critical，逗号分隔）"
+    ja_JP: "本文にこれらのキーワードが含まれる場合のみトリガー（例: regression, critical，カンマ区切り）"
+
+output_schema:
+  type: object
+  properties:
+    issue:
+      type: object
+      description: The issue itself
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier of the issue
+        node_id:
+          type: string
+          description: Node ID of the issue
+        number:
+          type: integer
+          description: Issue number
+        title:
+          type: string
+          description: Title of the issue
+        body:
+          type:
+          - string
+
+          description: Contents of the issue
+        state:
+          type: string
+          enum:
+          - open
+          - closed
+          description: State of the issue
+        state_reason:
+          type:
+          - string
+
+        locked:
+          type: boolean
+          description: Whether the issue is locked
+        active_lock_reason:
+          type:
+          - string
+
+          enum:
+          - resolved
+          - off-topic
+          - too heated
+          - spam
+          - null
+        comments:
+          type: integer
+          description: Number of comments
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        closed_at:
+          type:
+          - string
+
+          format: date-time
+        author_association:
+          type: string
+          enum:
+          - COLLABORATOR
+          - CONTRIBUTOR
+          - FIRST_TIMER
+          - FIRST_TIME_CONTRIBUTOR
+          - MANNEQUIN
+          - MEMBER
+          - NONE
+          - OWNER
+          description: How the author is associated with the repository
+
+        user:
+          type:
+          - object
+
+          description: User who created the issue
+          properties:
+            id:
+              type: integer
+              format: int64
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+            name:
+              type: string
+            email:
+              type:
+              - string
+
+          required:
+          - id
+          - login
+
+        assignee:
+          type:
+          - object
+
+          description: User assigned to the issue
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+          required:
+          - id
+          - login
+
+        assignees:
+          type: array
+          description: Users assigned to the issue
+          items:
+            type:
+            - object
+
+            properties:
+              id:
+                type: integer
+              login:
+                type: string
+              avatar_url:
+                type: string
+                format: uri
+              html_url:
+                type: string
+                format: uri
+              type:
+                type: string
+                enum:
+                - Bot
+                - User
+                - Organization
+            required:
+            - id
+            - login
+
+        labels:
+          type: array
+          description: Labels on the issue
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              node_id:
+                type: string
+              name:
+                type: string
+                description: The name of the label
+              color:
+                type: string
+                description: 6-character hex code, without the leading #
+              default:
+                type: boolean
+              description:
+                type:
+                - string
+
+              url:
+                type: string
+                format: uri
+            required:
+            - id
+            - name
+            - color
+
+        milestone:
+          type:
+          - object
+
+          description: A collection of related issues and pull requests
+          properties:
+            id:
+              type: integer
+            node_id:
+              type: string
+            number:
+              type: integer
+              description: The number of the milestone
+            title:
+              type: string
+              description: The title of the milestone
+            description:
+              type:
+              - string
+
+            state:
+              type: string
+              enum:
+              - open
+              - closed
+              description: The state of the milestone
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+            due_on:
+              type:
+              - string
+
+              format: date-time
+            closed_at:
+              type:
+              - string
+
+              format: date-time
+            open_issues:
+              type: integer
+            closed_issues:
+              type: integer
+            html_url:
+              type: string
+              format: uri
+          required:
+          - id
+          - number
+          - title
+          - state
+
+        html_url:
+          type: string
+          format: uri
+          description: URL to view the issue on GitHub
+        url:
+          type: string
+          format: uri
+          description: API URL for the issue
+        repository_url:
+          type: string
+          format: uri
+        labels_url:
+          type: string
+          format: uri-template
+        comments_url:
+          type: string
+          format: uri
+        events_url:
+          type: string
+          format: uri
+        timeline_url:
+          type: string
+          format: uri
+
+        reactions:
+          type: object
+          properties:
+            url:
+              type: string
+              format: uri
+            total_count:
+              type: integer
+            "+1":
+              type: integer
+            "-1":
+              type: integer
+            laugh:
+              type: integer
+            confused:
+              type: integer
+            heart:
+              type: integer
+            hooray:
+              type: integer
+            eyes:
+              type: integer
+            rocket:
+              type: integer
+          required:
+          - total_count
+      required:
+      - id
+      - node_id
+      - number
+      - title
+      - state
+      - created_at
+      - updated_at
+      - user
+      - html_url
+      - url
+      - repository_url
+      - labels_url
+      - comments_url
+      - events_url
+      - comments
+      - locked
+      - author_association
+      - reactions
+
+    repository:
+      type: object
+      description: The repository where the issue was opened
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier of the repository
+        node_id:
+          type: string
+        name:
+          type: string
+          description: The name of the repository
+        full_name:
+          type: string
+          description: Full name including owner
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type:
+          - object
+
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          oneOf:
+          - type: integer
+          - type: string
+            format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          oneOf:
+          - type: integer
+          - type: string
+            format: date-time
+        homepage:
+          type:
+          - string
+
+        size:
+          type: integer
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type:
+          - string
+
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+          description: The default branch of the repository
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+    organization:
+      type: object
+      description: The organization that owns the repository (if applicable)
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        url:
+          type: string
+          format: uri
+        avatar_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+      required:
+      - id
+      - login
+      - node_id
+      - url
+
+    installation:
+      type: object
+      description: The GitHub App installation (if applicable)
+      properties:
+        id:
+          type: integer
+        node_id:
+          type: string
+      required:
+      - id
+      - node_id
+
+  required:
+  - issue
+  - repository
+  - sender
+
+extra:
+  python:
+    source: triggers/issues/issue_opened.py

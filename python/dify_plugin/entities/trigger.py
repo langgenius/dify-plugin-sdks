@@ -200,51 +200,6 @@ class TriggerProviderConfigurationExtra(BaseModel):
 
 
 @docs(
-    name="SubscriptionSchema",
-    description="The subscription schema of the trigger provider",
-)
-class SubscriptionSchema(BaseModel):
-    """
-    The subscription schema of the trigger provider
-    """
-
-    parameters_schema: list[TriggerParameter] = Field(
-        default_factory=list,
-        description="The parameters schema required to create a subscription",
-    )
-
-    properties_schema: list[ProviderConfig] = Field(
-        default_factory=list,
-        description="The configuration schema stored in the subscription entity",
-    )
-
-    @model_validator(mode="before")
-    @classmethod
-    def normalize_schema(cls, data: Any) -> dict[str, Any]:
-        """Allow subscription schema defined either as dict or list.
-
-        Legacy providers used an object with explicit parameters/properties sections,
-        while the new trigger design allows a plain list (representing the
-        properties schema only). This validator normalises the payload to the
-        unified dictionary structure expected by Pydantic.
-        """
-
-        if data is None:
-            return {}
-
-        if isinstance(data, cls):
-            return data.model_dump()
-
-        if isinstance(data, list):
-            return {"properties_schema": data}
-
-        if isinstance(data, dict):
-            return data
-
-        raise ValueError("subscription_schema should be defined as a dict or a list")
-
-
-@docs(
     description="The subscription constructor configuration of the trigger provider",
 )
 class TriggerSubscriptionConstructorConfigurationExtra(BaseModel):
@@ -323,17 +278,9 @@ class TriggerProviderConfiguration(BaseModel):
     """
 
     identity: TriggerProviderIdentity = Field(..., description="The identity of the trigger provider")
-    credentials_schema: list[ProviderConfig] = Field(
+    subscription_schema: list[ProviderConfig] = Field(
         default_factory=list,
         description="The credentials schema of the trigger provider",
-    )
-    oauth_schema: OAuthSchema | None = Field(
-        default=None,
-        description="The OAuth schema of the trigger provider if OAuth is supported",
-    )
-    subscription_schema: SubscriptionSchema = Field(
-        default_factory=SubscriptionSchema,
-        description="The subscription schema of the trigger provider",
     )
     subscription_constructor: TriggerSubscriptionConstructorConfiguration | None = Field(
         default=None,

@@ -523,9 +523,6 @@ class PluginRegistration:
                 if constructor_cls:
                     return constructor_cls
 
-            if configuration.oauth_schema:
-                return self.trigger_factory.get_subscription_constructor_cls(provider)
-
         for provider_registration in self.tools_mapping:
             if provider_registration == provider and self.tools_mapping[provider_registration][0].oauth_schema:
                 return self.tools_mapping[provider_registration][1]

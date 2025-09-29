@@ -30,9 +30,10 @@ from dify_plugin.interfaces.trigger import TriggerProvider, TriggerSubscriptionC
 class GithubProvider(TriggerProvider):
     """Handle GitHub webhook event dispatch."""
 
-    _TRIGGER_EVENTS: ClassVar[dict[str, list[str]]] = {
-        "issues": ["issues"],
-        "issue_comment": ["issues"],
+    __TRIGGER_EVENTS_MAPPING: ClassVar[Mapping[str, Mapping[str, list[str]]]] = {
+        "issues": {
+            "opened": ["issue_opened"],
+        }
     }
 
     def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
@@ -44,14 +45,19 @@ class GithubProvider(TriggerProvider):
         if not event_type:
             raise TriggerDispatchError("Missing GitHub event type header")
 
-        # Validate payload and raise meaningful errors when parsing fails.
-        self._parse_payload(request)
-
-        triggers = self._TRIGGER_EVENTS.get(event_type, [])
+        payload = self._validate_payload(request)
+        triggers = self._dispatch_event_triggers(event_type, payload)
         response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
         return TriggerDispatch(triggers=triggers, response=response)
 
-    def _parse_payload(self, request: Request) -> Mapping[str, Any]:
+    def _dispatch_event_triggers(self, event_type: str, payload: Mapping[str, Any]) -> list[str]:
+        event_type = event_type.lower()
+        if event_type == "issues":
+            action = payload.get("action")
+            return self.__TRIGGER_EVENTS_MAPPING["issues"].get(action, [])
+        return []
+
+    def _validate_payload(self, request: Request) -> Mapping[str, Any]:
         try:
             content_type = request.headers.get("Content-Type", "")
             if "application/x-www-form-urlencoded" in content_type:

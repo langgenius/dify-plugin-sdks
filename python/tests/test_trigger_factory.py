@@ -121,7 +121,6 @@ def test_trigger_factory_register_and_get_provider():
             label=I18nObject(en_US="Test Provider"),
             description=I18nObject(en_US="Test Provider Description"),
         ),
-        credentials_schema=[],
         subscription_constructor=TriggerSubscriptionConstructorConfiguration(
             parameters=[],
             credentials_schema=[],
@@ -194,7 +193,6 @@ def test_trigger_factory_subscription_constructor():
             label=I18nObject(en_US="Test Provider"),
             description=I18nObject(en_US="Test Provider Description"),
         ),
-        credentials_schema=[],
         subscription_constructor=TriggerSubscriptionConstructorConfiguration(
             parameters=[],
             credentials_schema=[],
@@ -244,7 +242,6 @@ def test_trigger_factory_trigger_events():
             label=I18nObject(en_US="Test Provider"),
             description=I18nObject(en_US="Test Provider Description"),
         ),
-        credentials_schema=[],
         extra=TriggerProviderConfigurationExtra(
             python=TriggerProviderConfigurationExtra.Python(source="test_provider.py")
         ),
@@ -314,7 +311,6 @@ def test_trigger_factory_error_handling():
             label=I18nObject(en_US="Test Provider"),
             description=I18nObject(en_US="Test Provider Description"),
         ),
-        credentials_schema=[],
         extra=TriggerProviderConfigurationExtra(
             python=TriggerProviderConfigurationExtra.Python(source="test_provider.py")
         ),
