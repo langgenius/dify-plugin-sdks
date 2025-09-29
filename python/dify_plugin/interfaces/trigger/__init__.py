@@ -159,7 +159,7 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
     The trigger subscription constructor interface
     """
 
-    def __init__(self, runtime: TriggerSubscriptionConstructorRuntime, session: Session):
+    def __init__(self, runtime: TriggerSubscriptionConstructorRuntime = None, session: Session = None):
         self.runtime = runtime
         self.session = session
 
