@@ -29,6 +29,7 @@ class CommonParameterType(Enum):
     FILE = "file"
     FILES = "files"
     BOOLEAN = "boolean"
+    CHECKBOX = "checkbox"
     APP_SELECTOR = "app-selector"
     MODEL_SELECTOR = "model-selector"
     # TOOL_SELECTOR = "tool-selector"

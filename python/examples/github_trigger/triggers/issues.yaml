@@ -22,7 +22,7 @@ parameters:
       en_US: Event
       zh_Hans: 事件
       ja_JP: イベント
-    type: select
+    type: checkbox
     required: false
     options:
       - value: opened

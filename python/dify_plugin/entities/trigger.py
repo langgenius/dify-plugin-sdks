@@ -71,6 +71,7 @@ class TriggerParameter(BaseModel):
         NUMBER = CommonParameterType.NUMBER.value
         BOOLEAN = CommonParameterType.BOOLEAN.value
         SELECT = CommonParameterType.SELECT.value
+        CHECKBOX = CommonParameterType.CHECKBOX.value
         FILE = CommonParameterType.FILE.value
         FILES = CommonParameterType.FILES.value
         MODEL_SELECTOR = CommonParameterType.MODEL_SELECTOR.value
