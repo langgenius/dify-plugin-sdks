@@ -18,17 +18,21 @@ class TriggerSubscriptionConstructorRuntime(BaseModel):
     session_id: str | None
 
 
-class TriggerDispatch(BaseModel):
+class EventDispatch(BaseModel):
     """
-    The trigger dispatch result from trigger provider.
+    The dispatch result from a trigger when processing an incoming webhook.
 
-    Supports dispatching single or multiple triggers from a single webhook call.
-    When multiple triggers are specified, each trigger will trigger its corresponding workflow.
+    Contains the list of Event names that should be invoked and the HTTP response
+    to return to the webhook caller.
+
+    Supports dispatching single or multiple Events from a single webhook call.
+    When multiple Events are specified, each Event will transform the webhook
+    and trigger its corresponding workflow.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    triggers: list[str] = Field(..., description="List of trigger names that will be triggered.")
+    events: list[str] = Field(..., description="List of Event names that should be invoked.")
     response: Response = Field(
         ...,
         description="The HTTP Response object returned to third-party calls. For example, webhook calls, etc.",
@@ -36,11 +40,14 @@ class TriggerDispatch(BaseModel):
 
 
 @docs(
-    description="The response of the trigger",
+    description="The structured output variables from an event",
 )
-class Event(BaseModel):
+class Variables(BaseModel):
     """
-    The response of the trigger
+    The structured output variables from an event after processing.
+
+    Contains the extracted and transformed variables that will be passed to workflows.
+    The structure of variables must match the output_schema defined in the event's YAML configuration.
     """
 
     variables: Mapping[str, Any] = Field(
@@ -50,23 +57,23 @@ class Event(BaseModel):
 
 
 @docs(
-    description="The option of the trigger parameter",
+    description="The option of the event parameter",
 )
-class TriggerParameterOption(ParameterOption):
+class EventParameterOption(ParameterOption):
     """
-    The option of the trigger parameter
+    The option of the event parameter
     """
 
 
 @docs(
     description="The type of the parameter",
 )
-class TriggerParameter(BaseModel):
+class EventParameter(BaseModel):
     """
-    The parameter of the trigger
+    The parameter of the event
     """
 
-    class TriggerParameterType(StrEnum):
+    class EventParameterType(StrEnum):
         STRING = CommonParameterType.STRING.value
         NUMBER = CommonParameterType.NUMBER.value
         BOOLEAN = CommonParameterType.BOOLEAN.value
@@ -82,7 +89,7 @@ class TriggerParameter(BaseModel):
 
     name: str = Field(..., description="The name of the parameter")
     label: I18nObject = Field(..., description="The label presented to the user")
-    type: TriggerParameterType = Field(..., description="The type of the parameter")
+    type: EventParameterType = Field(..., description="The type of the parameter")
     auto_generate: ParameterAutoGenerate | None = Field(default=None, description="The auto generate of the parameter")
     template: ParameterTemplate | None = Field(default=None, description="The template of the parameter")
     scope: str | None = None
@@ -95,11 +102,11 @@ class TriggerParameter(BaseModel):
     min: Union[float, int] | None = None
     max: Union[float, int] | None = None
     precision: int | None = None
-    options: list[TriggerParameterOption] | None = None
+    options: list[EventParameterOption] | None = None
     description: I18nObject | None = None
 
 
-class TriggerLabelEnum(Enum):
+class EventLabelEnum(Enum):
     WEBHOOKS = "webhooks"
 
 
@@ -117,28 +124,28 @@ class TriggerProviderIdentity(BaseModel):
     description: I18nObject = Field(..., description="The description of the trigger provider")
     icon: str | None = Field(default=None, description="The icon of the trigger provider")
     icon_dark: str | None = Field(default=None, description="The dark mode icon of the trigger provider")
-    tags: list[TriggerLabelEnum] = Field(default_factory=list, description="The tags of the trigger provider")
+    tags: list[EventLabelEnum] = Field(default_factory=list, description="The tags of the trigger provider")
 
 
 @docs(
-    description="The identity of the trigger",
+    description="The identity of an event",
 )
-class TriggerIdentity(BaseModel):
+class EventIdentity(BaseModel):
     """
-    The identity of the trigger
+    The identity of an event
     """
 
-    author: str = Field(..., description="The author of the trigger")
-    name: str = Field(..., description="The name of the trigger")
-    label: I18nObject = Field(..., description="The label of the trigger")
+    author: str = Field(..., description="The author of the event")
+    name: str = Field(..., description="The name of the event")
+    label: I18nObject = Field(..., description="The label of the event")
 
 
 @docs(
-    description="The description of the trigger",
+    description="The description of an event",
 )
-class TriggerDescription(BaseModel):
+class EventDescription(BaseModel):
     """
-    The description of the trigger
+    The description of an event
     """
 
     human: I18nObject = Field(..., description="Human readable description")
@@ -146,38 +153,38 @@ class TriggerDescription(BaseModel):
 
 
 @docs(
-    description="The extra configuration for trigger",
+    description="The extra configuration for an event",
 )
-class TriggerConfigurationExtra(BaseModel):
+class EventConfigurationExtra(BaseModel):
     """
-    The extra configuration for trigger
+    The extra configuration for an event
     """
 
     @docs(
         name="Python",
-        description="The python configuration for trigger",
+        description="The python configuration for event",
     )
     class Python(BaseModel):
-        source: str = Field(..., description="The source file path for the trigger implementation")
+        source: str = Field(..., description="The source file path for the event implementation")
 
     python: Python
 
 
 @docs(
-    name="Trigger",
-    description="The configuration of a trigger",
+    name="Event",
+    description="The configuration of an event",
 )
-class TriggerConfiguration(BaseModel):
+class EventConfiguration(BaseModel):
     """
-    The configuration of a trigger
+    The configuration of an event
     """
 
-    identity: TriggerIdentity = Field(..., description="The identity of the trigger")
-    parameters: list[TriggerParameter] = Field(default=[], description="The parameters of the trigger")
-    description: TriggerDescription = Field(..., description="The description of the trigger")
-    extra: TriggerConfigurationExtra = Field(..., description="The extra configuration of the trigger")
+    identity: EventIdentity = Field(..., description="The identity of the event")
+    parameters: list[EventParameter] = Field(default=[], description="The parameters of the event")
+    description: EventDescription = Field(..., description="The description of the event")
+    extra: EventConfigurationExtra = Field(..., description="The extra configuration of the event")
     output_schema: Mapping[str, Any] | None = Field(
-        default=None, description="The output schema that this trigger produces"
+        default=None, description="The output schema that this event produces"
     )
 
 
@@ -222,7 +229,7 @@ class TriggerSubscriptionConstructorConfigurationExtra(BaseModel):
 class TriggerSubscriptionConstructorConfiguration(BaseModel):
     """Configuration for a trigger subscription constructor implementation."""
 
-    parameters: list[TriggerParameter] = Field(
+    parameters: list[EventParameter] = Field(
         default_factory=list,
         description="The user input parameters required to create a subscription",
     )
@@ -270,7 +277,7 @@ class TriggerSubscriptionConstructorConfiguration(BaseModel):
 @docs(
     name="TriggerProvider",
     description="The configuration of a trigger provider",
-    outside_reference_fields={"triggers": TriggerConfiguration},
+    outside_reference_fields={"events": EventConfiguration},
 )
 class TriggerProviderConfiguration(BaseModel):
     """
@@ -286,7 +293,7 @@ class TriggerProviderConfiguration(BaseModel):
         default=None,
         description="The configuration of the trigger subscription constructor",
     )
-    triggers: list[TriggerConfiguration] = Field(default=[], description="The triggers of the trigger provider")
+    events: list[EventConfiguration] = Field(default=[], description="The Events of the trigger")
     extra: TriggerProviderConfigurationExtra = Field(..., description="The extra configuration of the trigger provider")
 
     @model_validator(mode="before")
@@ -306,33 +313,33 @@ class TriggerProviderConfiguration(BaseModel):
             raise ValueError("credentials_schema should be a list or dict")
         return data
 
-    @field_validator("triggers", mode="before")
+    @field_validator("events", mode="before")
     @classmethod
-    def validate_triggers(cls, value) -> list[TriggerConfiguration]:
+    def validate_events(cls, value) -> list[EventConfiguration]:
         if not isinstance(value, list):
-            raise ValueError("triggers should be a list")
+            raise ValueError("events should be a list")
 
-        triggers: list[TriggerConfiguration] = []
+        events: list[EventConfiguration] = []
 
-        for trigger in value:
+        for event in value:
             # read from yaml
-            if not isinstance(trigger, str):
-                raise ValueError("trigger path should be a string")
+            if not isinstance(event, str):
+                raise ValueError("event path should be a string")
             try:
-                file = load_yaml_file(trigger)
-                triggers.append(
-                    TriggerConfiguration(
-                        identity=TriggerIdentity(**file["identity"]),
-                        parameters=[TriggerParameter(**param) for param in file.get("parameters", []) or []],
-                        description=TriggerDescription(**file["description"]),
-                        extra=TriggerConfigurationExtra(**file.get("extra", {})),
+                file = load_yaml_file(event)
+                events.append(
+                    EventConfiguration(
+                        identity=EventIdentity(**file["identity"]),
+                        parameters=[EventParameter(**param) for param in file.get("parameters", []) or []],
+                        description=EventDescription(**file["description"]),
+                        extra=EventConfigurationExtra(**file.get("extra", {})),
                         output_schema=file.get("output_schema", None),
                     )
                 )
             except Exception as e:
-                raise ValueError(f"Error loading trigger configuration: {e!s}") from e
+                raise ValueError(f"Error loading event configuration: {e!s}") from e
 
-        return triggers
+        return events
 
 
 @docs(

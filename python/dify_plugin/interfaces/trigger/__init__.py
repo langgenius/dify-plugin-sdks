@@ -8,9 +8,9 @@ from dify_plugin.core.runtime import Session
 from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
 from dify_plugin.entities.trigger import (
-    Event,
+    Variables,
     Subscription,
-    TriggerDispatch,
+    EventDispatch,
     TriggerSubscriptionConstructorRuntime,
     UnsubscribeResult,
 )
@@ -20,33 +20,34 @@ from dify_plugin.protocol.oauth import OAuthProviderProtocol
 __all__ = [
     "SubscriptionError",
     "TriggerDispatchError",
-    "TriggerEvent",
-    "TriggerProvider",
+    "Event",
+    "Trigger",
     "TriggerSubscriptionConstructor",
 ]
 
 
-class TriggerProvider(ABC):
+class Trigger(ABC):
     """
-    Base class for trigger providers that manage trigger subscriptions and event dispatching.
+    Base class for triggers that receive and dispatch incoming webhook requests.
 
-    A trigger provider acts as a bridge between external services and Dify's trigger system,
-    handling both push-based (webhook) and pull-based (polling) trigger patterns.
+    A Trigger receives webhooks from external services and routes them to the appropriate
+    Events for processing. It handles validation and determines which Events should be invoked.
 
     Responsibilities:
-    1. Subscribe/unsubscribe triggers with external services
-    2. Dispatch incoming events to appropriate trigger handlers
-    3. Manage authentication (OAuth/API keys)
-    4. Validate webhook signatures and handle security
+    1. Receive incoming webhook requests
+    2. Validate webhook signatures and security
+    3. Parse webhook payload to determine event type
+    4. Dispatch to appropriate Event(s)
+    5. Return HTTP response to webhook caller
+
+    Note: Subscription management (create/delete/refresh) and OAuth flows are handled by
+    TriggerSubscriptionConstructor, not Trigger.
 
     Example implementations:
-    - GitHub webhook provider: Manages GitHub webhooks and dispatches push/PR events
-    - RSS polling provider: Polls RSS feeds and dispatches new item events
-    - Slack webhook provider: Handles Slack event subscriptions
+    - GitHub Trigger: Validates GitHub webhooks and dispatches to issue/PR Events
+    - Slack Trigger: Validates Slack webhooks and dispatches to message Events
     """
 
-    # Optional context objects. They may be None in environments like schema generation
-    # or static validation where execution context isn't initialized.
     session: Session
 
     @final
@@ -55,22 +56,20 @@ class TriggerProvider(ABC):
         session: Session,
     ):
         """
-        Initialize the trigger
+        Initialize the Trigger.
 
         NOTE:
         - This method has been marked as final, DO NOT OVERRIDE IT.
-        - Both `runtime` and `session` are optional; they may be None in contexts
-          where execution is not happening (e.g., documentation generation).
         """
         self.session = session
 
-    def dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
+    def dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
         """
-        Dispatch an incoming webhook event to the appropriate trigger handler.
+        Dispatch an incoming webhook to the appropriate Events.
 
-        This method is called when an external service sends an event to the webhook endpoint.
-        The provider should validate the request, determine the event type, and return
-        information about how to route this event to the correct trigger.
+        This method is called when an external service sends a webhook to the endpoint.
+        The trigger should validate the request, determine the event type, and return
+        information about which Events should process this webhook.
 
         Args:
             subscription: The Subscription object containing:
@@ -89,9 +88,9 @@ class TriggerProvider(ABC):
                     - Parse event payload from body
 
         Returns:
-            TriggerDispatch: Contains:
-                                - triggers: List of trigger names to dispatch (each triggers its workflow)
-                                - response: HTTP response to return to the webhook caller
+            EventDispatch: Contains:
+                          - events: List of Event names to invoke (each triggers its workflow)
+                          - response: HTTP response to return to the webhook caller
 
         Raises:
             TriggerValidationError: If signature validation fails
@@ -107,23 +106,24 @@ class TriggerProvider(ABC):
             ...
             ...     # Determine event type
             ...     event_type = request.headers.get("X-GitHub-Event")
+            ...     action = request.get_json().get("action")
             ...
             ...     # Return dispatch information
-            ...     return TriggerEventDispatch(
-            ...         triggers=[event_type],  # e.g., ["push"], ["pull_request"]
+            ...     return EventDispatch(
+            ...         events=["issue_opened"],  # Event name(s) to invoke
             ...         response=Response("OK", status=200)
             ...     )
             ...
-            ...     # Or dispatch multiple events from one webhook
-            ...     return TriggerEventDispatch(
-            ...         triggers=["issues", "issues.opened"],  # Trigger multiple workflows
+            ...     # Or dispatch multiple Events from one webhook
+            ...     return EventDispatch(
+            ...         events=["issue_opened", "issue_labeled"],  # Multiple Events
             ...         response=Response("OK", status=200)
             ...     )
         """
         return self._dispatch_event(subscription, request)
 
     @abstractmethod
-    def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
+    def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
         """
         Internal method to implement event dispatch logic.
 
@@ -136,8 +136,8 @@ class TriggerProvider(ABC):
         2. Extract event information:
            - Parse event type from headers or body
            - Extract relevant payload data
-        3. Return TriggerDispatch with:
-           - triggers: List of trigger names to dispatch (can be single or multiple)
+        3. Return EventDispatch with:
+           - events: List of Event names to invoke (can be single or multiple)
            - response: Appropriate HTTP response for the webhook
 
         Args:
@@ -145,7 +145,7 @@ class TriggerProvider(ABC):
             request: Incoming webhook HTTP request
 
         Returns:
-            TriggerDispatch: Trigger routing information
+            EventDispatch: Event dispatch routing information
 
         Raises:
             TriggerValidationError: For security validation failures
@@ -156,17 +156,38 @@ class TriggerProvider(ABC):
 
 class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
     """
-    The trigger subscription constructor interface
+    Base class for managing trigger subscriptions with external services.
+
+    The TriggerSubscriptionConstructor handles the lifecycle of webhook subscriptions,
+    including creating webhooks with external services, managing credentials, and
+    handling OAuth flows.
+
+    Responsibilities:
+    1. Create subscriptions with external services (e.g., create GitHub webhooks)
+    2. Delete subscriptions when no longer needed
+    3. Refresh subscriptions before they expire
+    4. Validate credentials (API keys or OAuth tokens)
+    5. Handle OAuth authorization flows
+    6. Fetch dynamic parameter options (e.g., list of repositories)
+
+    Note: This is separate from Trigger, which handles incoming webhook dispatch.
+
+    Example implementations:
+    - GitHub Constructor: Creates/deletes GitHub webhooks via GitHub API
+    - Slack Constructor: Manages Slack event subscriptions via Slack API
     """
 
-    def __init__(self, runtime: TriggerSubscriptionConstructorRuntime = None, session: Session = None):
+    runtime: TriggerSubscriptionConstructorRuntime | None
+    session: Session | None
+
+    def __init__(self, runtime: TriggerSubscriptionConstructorRuntime | None = None, session: Session | None = None):
         self.runtime = runtime
         self.session = session
 
-    def validate_api_key(self, credentials: dict):
-        return self._validate_api_key(credentials)
+    def validate_api_key(self, credentials: Mapping[str, Any]) -> None:
+        return self._validate_api_key(credentials=credentials)
 
-    def _validate_api_key(self, credentials: dict):
+    def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
         raise NotImplementedError(
             "This plugin should implement `_validate_api_key` method to enable credentials validation"
         )
@@ -179,7 +200,7 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         :param system_credentials: system credentials including client_id and client_secret which oauth schema defined
         :return: authorization url
         """
-        return self._oauth_get_authorization_url(redirect_uri, system_credentials)
+        return self._oauth_get_authorization_url(redirect_uri=redirect_uri, system_credentials=system_credentials)
 
     def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
         raise NotImplementedError(
@@ -197,7 +218,9 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         :param request: raw http request
         :return: credentials
         """
-        credentials = self._oauth_get_credentials(redirect_uri, system_credentials, request)
+        credentials: TriggerOAuthCredentials = self._oauth_get_credentials(
+            redirect_uri=redirect_uri, system_credentials=system_credentials, request=request
+        )
         return OAuthCredentials(
             expires_at=credentials.expires_at or -1,
             credentials=credentials.credentials,
@@ -215,8 +238,15 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
     ) -> OAuthCredentials:
         """
         Refresh the credentials
+
+        :param redirect_uri: redirect uri provided by dify api
+        :param system_credentials: system credentials including client_id and client_secret which oauth schema defined
+        :param credentials: credentials
+        :return: refreshed credentials
         """
-        return self._oauth_refresh_credentials(redirect_uri, system_credentials, credentials)
+        return self._oauth_refresh_credentials(
+            redirect_uri=redirect_uri, system_credentials=system_credentials, credentials=credentials
+        )
 
     def _oauth_refresh_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
@@ -282,7 +312,9 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             >>> print(result.endpoint)  # "https://dify.ai/webhooks/sub_123"
             >>> print(result.properties["external_id"])  # GitHub webhook ID
         """
-        return self._create_subscription(endpoint, credentials, selected_events, parameters)
+        return self._create_subscription(
+            endpoint=endpoint, credentials=credentials, selected_events=selected_events, parameters=parameters
+        )
 
     @abstractmethod
     def _create_subscription(
@@ -366,7 +398,7 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             >>> print(result.error_code)  # "INVALID_CREDENTIALS"
             >>> print(result.message)     # "Authentication failed: Invalid token"
         """
-        return self._delete_subscription(subscription, credentials)
+        return self._delete_subscription(subscription=subscription, credentials=credentials)
 
     def _delete_subscription(self, subscription: Subscription, credentials: Mapping[str, Any]) -> UnsubscribeResult:
         """
@@ -457,7 +489,7 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             ... )
             >>> print(result.expires_at)  # Extended by default duration
         """
-        return self._refresh(subscription, credentials)
+        return self._refresh(subscription=subscription, credentials=credentials)
 
     def _refresh(self, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
         """
@@ -496,7 +528,9 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         """
         Fetch the parameter options of the trigger.
         """
-        return self._fetch_parameter_options(self.runtime.credentials, parameter)
+        if self.runtime is None:
+            raise ValueError("Runtime is not initialized")
+        return self._fetch_parameter_options(credentials=self.runtime.credentials, parameter=parameter)
 
     def _fetch_parameter_options(self, credentials: Mapping[str, Any], parameter: str) -> list[ParameterOption]:
         """
@@ -507,9 +541,30 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         )
 
 
-class TriggerEvent(ABC):
+class Event(ABC):
     """
-    The trigger event interface
+    Base class for events that transform incoming webhook payloads into workflow variables.
+
+    An Event receives a raw webhook request and transforms it into structured Variables
+    that can be consumed by workflows. Each event implements:
+    1. Data transformation from provider-specific format to standard output
+    2. Filtering logic based on user-defined parameters
+    3. Parameter validation and option fetching
+
+    Responsibilities:
+    - Parse and validate webhook payload
+    - Apply user-configured filters (e.g., label filters, author filters)
+    - Extract and transform data into output_schema format
+    - Return structured Variables with extracted data
+
+    Example implementations:
+    - IssueOpenedEvent: Transforms GitHub issue webhook into workflow variables
+    - MessageTextEvent: Transforms WhatsApp message webhook into workflow variables
+
+    Workflow:
+    1. Trigger receives webhook → dispatch_event() → returns Event names
+    2. Dify invokes the specified Event → _on_event() → returns Variables
+    3. Variables are passed to the workflow for processing
     """
 
     # Optional context objects. They may be None in environments like schema generation
@@ -522,12 +577,12 @@ class TriggerEvent(ABC):
         session: Session,
     ):
         """
-        Initialize the trigger
+        Initialize the Event.
 
         NOTE:
         - This method has been marked as final, DO NOT OVERRIDE IT.
-        - Both `runtime` and `session` are optional; they may be None in contexts
-          where execution is not happening (e.g., documentation generation).
+        - The `session` parameter may be None in contexts where execution
+          is not happening (e.g., schema generation, documentation generation).
         """
         self.session = session
 
@@ -536,11 +591,45 @@ class TriggerEvent(ABC):
     ############################################################
 
     @abstractmethod
-    def _trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
         """
-        Trigger the trigger with the given request.
+        Transform the incoming webhook request into structured Variables.
 
-        To be implemented by subclasses.
+        This method should:
+        1. Parse the webhook payload from the request
+        2. Apply filtering logic based on parameters
+        3. Extract relevant data matching the output_schema
+        4. Return a structured Variables object
+
+        Args:
+            request: The incoming webhook HTTP request containing the raw payload.
+                    Use request.get_json() to parse JSON body.
+            parameters: User-configured parameters for filtering and transformation
+                       (e.g., label filters, regex patterns, threshold values).
+                       These come from the subscription configuration.
+
+        Returns:
+            Variables: Structured variables matching the output_schema
+                      defined in the event's YAML configuration.
+
+        Raises:
+            EventIgnoreError: When the event should be filtered out based on parameters
+            ValueError: When the payload is invalid or missing required fields
+
+        Example:
+            >>> def _on_event(self, request, parameters):
+            ...     payload = request.get_json()
+            ...
+            ...     # Apply filters
+            ...     if not self._matches_filters(payload, parameters):
+            ...         raise EventIgnoreError()
+            ...
+            ...     # Transform data
+            ...     return Variables(variables={
+            ...         "title": payload["issue"]["title"],
+            ...         "author": payload["issue"]["user"]["login"],
+            ...         "url": payload["issue"]["html_url"],
+            ...     })
         """
 
     def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
@@ -559,14 +648,14 @@ class TriggerEvent(ABC):
     #                 For executor use only                    #
     ############################################################
 
-    def trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
+    def on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
         """
-        Trigger the trigger with the given request.
+        Process the event with the given request.
         """
-        return self._trigger(request, parameters)
+        return self._on_event(request=request, parameters=parameters)
 
     def fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
         """
         Fetch the parameter options of the trigger.
         """
-        return self._fetch_parameter_options(parameter)
+        return self._fetch_parameter_options(parameter=parameter)

@@ -104,8 +104,8 @@ subscription_constructor:
     python:
       source: provider/github.py
 
-triggers:
-- triggers/issues/issue_opened.yaml
+events:
+- events/issues/issue_opened.yaml
 
 identity:
   author: langgenius

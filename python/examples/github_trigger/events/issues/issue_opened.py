@@ -2,18 +2,18 @@ from collections.abc import Mapping
 import re
 from typing import Any
 
-from dify_plugin.errors.trigger import TriggerIgnoreEventError
+from dify_plugin.errors.trigger import EventIgnoreError
 from werkzeug import Request
 
-from dify_plugin.entities.trigger import Event
-from dify_plugin.interfaces.trigger import TriggerEvent
+from dify_plugin.entities.trigger import Variables
+from dify_plugin.interfaces.trigger import Event
 
 
-class IssueOpenedTrigger(TriggerEvent):
+class IssueOpenedEvent(Event):
     """
-    GitHub Issue Opened Event Trigger
+    GitHub Issue Opened Event
 
-    This trigger handles GitHub issue opened events and extracts relevant
+    This event transforms GitHub issue opened webhook events and extracts relevant
     information from the webhook payload to provide as variables to the workflow.
     """
 
@@ -24,7 +24,7 @@ class IssueOpenedTrigger(TriggerEvent):
 
         title = issue.get("title", "")
         if not re.match(pattern, title):
-            raise TriggerIgnoreEventError()
+            raise EventIgnoreError()
 
     def _check_labels(self, issue: dict, labels_param: str) -> None:
         """Check if issue has required labels"""
@@ -37,7 +37,7 @@ class IssueOpenedTrigger(TriggerEvent):
 
         issue_labels = [label.get("name") for label in issue.get("labels", [])]
         if not any(label in issue_labels for label in required_labels):
-            raise TriggerIgnoreEventError()
+            raise EventIgnoreError()
 
     def _check_assignee(self, issue: dict, assignee_param: str) -> None:
         """Check if issue is assigned to allowed users"""
@@ -61,7 +61,7 @@ class IssueOpenedTrigger(TriggerEvent):
                 issue_assignees.append(login)
 
         if not any(assignee in issue_assignees for assignee in allowed_assignees):
-            raise TriggerIgnoreEventError()
+            raise EventIgnoreError()
 
     def _check_authors(self, issue: dict, authors_param: str) -> None:
         """Check if issue author is in allowed list"""
@@ -74,7 +74,7 @@ class IssueOpenedTrigger(TriggerEvent):
 
         issue_author = issue.get("user", {}).get("login")
         if issue_author not in allowed_authors:
-            raise TriggerIgnoreEventError()
+            raise EventIgnoreError()
 
     def _check_milestone(self, issue: dict, milestone_param: str) -> None:
         """Check if issue milestone matches allowed milestones"""
@@ -87,11 +87,11 @@ class IssueOpenedTrigger(TriggerEvent):
 
         milestone = issue.get("milestone")
         if not milestone:
-            raise TriggerIgnoreEventError()
+            raise EventIgnoreError()
 
         milestone_title = milestone.get("title")
         if not milestone_title or milestone_title not in allowed_milestones:
-            raise TriggerIgnoreEventError()
+            raise EventIgnoreError()
 
     def _check_body_contains(self, issue: dict, body_contains_param: str) -> None:
         """Check if issue body contains required keywords"""
@@ -104,11 +104,11 @@ class IssueOpenedTrigger(TriggerEvent):
 
         issue_body = (issue.get("body") or "").lower()
         if not any(keyword in issue_body for keyword in keywords):
-            raise TriggerIgnoreEventError()
+            raise EventIgnoreError()
 
-    def _trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
         """
-        Handle GitHub issue opened event trigger
+        Transform GitHub issue opened webhook event into structured Variables
         """
         payload = request.get_json()
         if not payload:
@@ -126,4 +126,4 @@ class IssueOpenedTrigger(TriggerEvent):
         self._check_milestone(issue, parameters.get("milestone"))
         self._check_body_contains(issue, parameters.get("body_contains"))
 
-        return Event(variables={**payload})
+        return Variables(variables={**payload})

@@ -6,8 +6,8 @@ from werkzeug import Request, Response
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
-from dify_plugin.entities.trigger import Subscription, TriggerDispatch, TriggerSubscriptionConstructorRuntime
-from dify_plugin.interfaces.trigger import TriggerProvider, TriggerSubscriptionConstructor
+from dify_plugin.entities.trigger import Subscription, EventDispatch, TriggerSubscriptionConstructorRuntime
+from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
 
 
 def test_construct_trigger_provider():
@@ -15,9 +15,9 @@ def test_construct_trigger_provider():
     Test that the TriggerProvider can be constructed without implementing any methods
     """
 
-    class TriggerProviderImpl(TriggerProvider):
-        def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
-            return TriggerDispatch(triggers=["test_event"], response=Response("OK", status=200))
+    class TriggerProviderImpl(Trigger):
+        def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
+            return EventDispatch(events=["test_event"], response=Response("OK", status=200))
 
     session = Session(
         session_id="test",

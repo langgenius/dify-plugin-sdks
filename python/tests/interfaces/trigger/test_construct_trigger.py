@@ -6,22 +6,22 @@ from werkzeug import Request
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
-from dify_plugin.entities.trigger import Event
-from dify_plugin.interfaces.trigger import TriggerEvent
+from dify_plugin.entities.trigger import Variables
+from dify_plugin.interfaces.trigger import Event
 
 
 def test_construct_trigger():
     """
-    Test the constructor of Trigger
+    Test the constructor of Event
 
     NOTE:
-    - This test is to ensure that the constructor of Trigger is not overridden.
+    - This test is to ensure that the constructor of Event is not overridden.
     - And ensure a breaking change will be detected by CI.
     """
 
-    class TriggerImpl(TriggerEvent):
-        def _trigger(self, request: Request, parameters: Mapping) -> Event:
-            return Event(variables={})
+    class TriggerImpl(Event):
+        def _on_event(self, request: Request, parameters: Mapping) -> Variables:
+            return Variables(variables={})
 
     session = Session(
         session_id="test",

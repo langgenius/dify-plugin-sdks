@@ -9,14 +9,14 @@ from dify_plugin.core.runtime import Session
 from dify_plugin.core.trigger_factory import TriggerFactory
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.trigger import (
-    Event,
+    Variables,
     Subscription,
-    TriggerConfiguration,
-    TriggerConfigurationExtra,
-    TriggerDescription,
-    TriggerDispatch,
-    TriggerIdentity,
-    TriggerParameter,
+    EventConfiguration,
+    EventConfigurationExtra,
+    EventDescription,
+    EventDispatch,
+    EventIdentity,
+    EventParameter,
     TriggerProviderConfiguration,
     TriggerProviderConfigurationExtra,
     TriggerProviderIdentity,
@@ -25,19 +25,19 @@ from dify_plugin.entities.trigger import (
     TriggerSubscriptionConstructorRuntime,
     UnsubscribeResult,
 )
-from dify_plugin.interfaces.trigger import TriggerEvent, TriggerProvider, TriggerSubscriptionConstructor
+from dify_plugin.interfaces.trigger import Event, Trigger, TriggerSubscriptionConstructor
 
 
-class MockTriggerProvider(TriggerProvider):
+class MockTriggerProvider(Trigger):
     """
     Mock Trigger Provider
     """
 
-    def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
+    def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
         """
         Dispatch event from webhook
         """
-        return TriggerDispatch(triggers=["test_event"], response=Response("OK", status=200))
+        return EventDispatch(events=["test_event"], response=Response("OK", status=200))
 
 
 class MockTriggerSubscriptionConstructor(TriggerSubscriptionConstructor):
@@ -94,16 +94,16 @@ class MockTriggerSubscriptionConstructor(TriggerSubscriptionConstructor):
         ]
 
 
-class MockTriggerEvent(TriggerEvent):
+class MockEventHandler(Event):
     """
-    Mock Trigger Event
+    Mock Event
     """
 
-    def _trigger(self, request: Request, parameters: Mapping[str, Any]) -> Event:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
         """
-        Trigger the event
+        Transform the webhook request into Variables
         """
-        return Event(variables={"test_variable": "test_value", "event_data": request.get_data(as_text=True)})
+        return Variables(variables={"test_variable": "test_value", "event_data": request.get_data(as_text=True)})
 
 
 def test_trigger_factory_register_and_get_provider():
@@ -134,33 +134,33 @@ def test_trigger_factory_register_and_get_provider():
     )
 
     # Create trigger configuration
-    trigger_config = TriggerConfiguration(
-        identity=TriggerIdentity(
+    trigger_config = EventConfiguration(
+        identity=EventIdentity(
             author="test",
             name="test_event",
             label=I18nObject(en_US="Test Event"),
         ),
         parameters=[
-            TriggerParameter(
+            EventParameter(
                 name="test_param",
                 label=I18nObject(en_US="Test Parameter"),
-                type=TriggerParameter.TriggerParameterType.STRING,
+                type=EventParameter.EventParameterType.STRING,
             )
         ],
-        description=TriggerDescription(
+        description=EventDescription(
             human=I18nObject(en_US="Human description"),
             llm=I18nObject(en_US="LLM description"),
         ),
-        extra=TriggerConfigurationExtra(python=TriggerConfigurationExtra.Python(source="test_event.py")),
+        extra=EventConfigurationExtra(python=EventConfigurationExtra.Python(source="test_event.py")),
         output_schema={"test_variable": {"type": "string"}},
     )
 
-    # Register trigger provider with triggers
+    # Register trigger provider with events
     factory.register_trigger_provider(
         configuration=provider_config,
         provider_cls=MockTriggerProvider,
         subscription_constructor_cls=MockTriggerSubscriptionConstructor,
-        triggers={"test_event": (trigger_config, MockTriggerEvent)},
+        events={"test_event": (trigger_config, MockEventHandler)},
     )
 
     # Test getting provider instance
@@ -210,7 +210,7 @@ def test_trigger_factory_subscription_constructor():
         configuration=provider_config,
         provider_cls=MockTriggerProvider,
         subscription_constructor_cls=MockTriggerSubscriptionConstructor,
-        triggers={},
+        events={},
     )
 
     # Test has_subscription_constructor
@@ -247,49 +247,49 @@ def test_trigger_factory_trigger_events():
         ),
     )
 
-    trigger_config = TriggerConfiguration(
-        identity=TriggerIdentity(
+    trigger_config = EventConfiguration(
+        identity=EventIdentity(
             author="test",
             name="test_event",
             label=I18nObject(en_US="Test Event"),
         ),
         parameters=[],
-        description=TriggerDescription(
+        description=EventDescription(
             human=I18nObject(en_US="Human description"),
             llm=I18nObject(en_US="LLM description"),
         ),
-        extra=TriggerConfigurationExtra(python=TriggerConfigurationExtra.Python(source="test_event.py")),
+        extra=EventConfigurationExtra(python=EventConfigurationExtra.Python(source="test_event.py")),
     )
 
-    # Register provider with trigger
+    # Register provider with events
     registration = factory.register_trigger_provider(
         configuration=provider_config,
         provider_cls=MockTriggerProvider,
         subscription_constructor_cls=None,
-        triggers={},
+        events={},
     )
 
     # Register trigger after provider registration
     registration.register_trigger(
         name="test_event",
         configuration=trigger_config,
-        trigger_cls=MockTriggerEvent,
+        trigger_cls=MockEventHandler,
     )
 
-    # Test get trigger event handler
-    event_handler = factory.get_trigger_event_handler("test_provider", "test_event", session)
-    assert isinstance(event_handler, MockTriggerEvent)
-    assert event_handler.session == session
+    # Test get Event
+    event = factory.get_trigger_event_handler("test_provider", "test_event", session)
+    assert isinstance(event, MockEventHandler)
+    assert event.session == session
 
     # Test get trigger configuration
     config = factory.get_trigger_configuration("test_provider", "test_event")
     assert config == trigger_config
 
-    # Test iterate triggers
-    triggers = factory.iter_triggers("test_provider")
-    assert "test_event" in triggers
-    assert triggers["test_event"][0] == trigger_config
-    assert triggers["test_event"][1] == MockTriggerEvent
+    # Test iterate events
+    events = factory.iter_events("test_provider")
+    assert "test_event" in events
+    assert events["test_event"][0] == trigger_config
+    assert events["test_event"][1] == MockEventHandler
 
 
 def test_trigger_factory_error_handling():
@@ -320,7 +320,7 @@ def test_trigger_factory_error_handling():
         configuration=provider_config,
         provider_cls=MockTriggerProvider,
         subscription_constructor_cls=None,
-        triggers={},
+        events={},
     )
 
     # Test duplicate registration
@@ -329,11 +329,11 @@ def test_trigger_factory_error_handling():
             configuration=provider_config,
             provider_cls=MockTriggerProvider,
             subscription_constructor_cls=None,
-            triggers={},
+            events={},
         )
 
-    # Test getting non-existent trigger event
-    with pytest.raises(ValueError, match="Trigger `non_existent` not found in provider `test_provider`"):
+    # Test getting non-existent event
+    with pytest.raises(ValueError, match="Event `non_existent` not found in provider `test_provider`"):
         factory.get_trigger_event_handler("test_provider", "non_existent", session)
 
     # Test getting subscription constructor when none exists

@@ -442,7 +442,7 @@ class PluginExecutor:
         Invoke trigger
         """
         trigger = self.registration.get_trigger_event_handler(request.provider, request.trigger, session)
-        event = trigger.trigger(deserialize_request(binascii.unhexlify(request.raw_http_request)), request.parameters)
+        event = trigger.on_event(deserialize_request(binascii.unhexlify(request.raw_http_request)), request.parameters)
         return TriggerInvokeResponse(
             event=event,
         )
@@ -472,7 +472,7 @@ class PluginExecutor:
         subscription = request.subscription
         dispatch_result = trigger_provider_instance.dispatch_event(subscription, deserialize_request(bytes_data))
         return TriggerDispatchResponse(
-            triggers=dispatch_result.triggers,
+            triggers=dispatch_result.events,
             raw_http_response=binascii.hexlify(serialize_response(dispatch_result.response)).decode(),
         )
 

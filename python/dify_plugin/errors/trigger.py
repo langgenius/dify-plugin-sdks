@@ -88,9 +88,12 @@ class TriggerProviderOAuthError(TriggerError):
     pass
 
 
-class TriggerIgnoreEventError(TriggerError):
+class EventIgnoreError(TriggerError):
     """
-    Raised when an event should be ignored.
+    Raised when an event should be ignored based on filter criteria.
+
+    This is thrown by Event._on_event() when the webhook payload
+    doesn't match user-configured filters (e.g., labels, authors, patterns).
     """
 
     pass

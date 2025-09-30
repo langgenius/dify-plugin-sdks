@@ -600,4 +600,4 @@ output_schema:
 
 extra:
   python:
-    source: triggers/issues/issue_opened.py
+    source: events/issues/issue_opened.py

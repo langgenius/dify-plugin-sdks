@@ -3,11 +3,11 @@ from dataclasses import dataclass
 
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities.trigger import (
-    TriggerConfiguration,
+    EventConfiguration,
     TriggerProviderConfiguration,
     TriggerSubscriptionConstructorRuntime,
 )
-from dify_plugin.interfaces.trigger import TriggerEvent, TriggerProvider, TriggerSubscriptionConstructor
+from dify_plugin.interfaces.trigger import Event, Trigger, TriggerSubscriptionConstructor
 
 
 @dataclass(slots=True)
@@ -15,9 +15,9 @@ class _TriggerProviderEntry:
     """Internal container storing metadata associated with a trigger provider."""
 
     configuration: TriggerProviderConfiguration
-    provider_cls: type[TriggerProvider]
+    provider_cls: type[Trigger]
     subscription_constructor_cls: type[TriggerSubscriptionConstructor] | None
-    triggers: dict[str, tuple[TriggerConfiguration, type[TriggerEvent]]]
+    events: dict[str, tuple[EventConfiguration, type[Event]]]
 
 
 class TriggerProviderRegistration:
@@ -30,17 +30,17 @@ class TriggerProviderRegistration:
         self,
         *,
         name: str,
-        configuration: TriggerConfiguration,
-        trigger_cls: type[TriggerEvent],
+        configuration: EventConfiguration,
+        trigger_cls: type[Event],
     ) -> None:
-        """Register a trigger implementation for the provider."""
+        """Register an event implementation for the provider."""
 
-        if name in self._entry.triggers:
+        if name in self._entry.events:
             raise ValueError(
-                f"Trigger `{name}` is already registered for provider `{self._entry.configuration.identity.name}`"
+                f"Event `{name}` is already registered for provider `{self._entry.configuration.identity.name}`"
             )
 
-        self._entry.triggers[name] = (configuration, trigger_cls)
+        self._entry.events[name] = (configuration, trigger_cls)
 
 
 class TriggerFactory:
@@ -55,9 +55,9 @@ class TriggerFactory:
         self,
         *,
         configuration: TriggerProviderConfiguration,
-        provider_cls: type[TriggerProvider],
+        provider_cls: type[Trigger],
         subscription_constructor_cls: type[TriggerSubscriptionConstructor] | None,
-        triggers: Mapping[str, tuple[TriggerConfiguration, type[TriggerEvent]]],
+        events: Mapping[str, tuple[EventConfiguration, type[Event]]],
     ) -> TriggerProviderRegistration:
         """Register a trigger provider and its runtime classes."""
 
@@ -71,21 +71,21 @@ class TriggerFactory:
             configuration=configuration,
             provider_cls=provider_cls,
             subscription_constructor_cls=subscription_constructor_cls,
-            triggers={},
+            events={},
         )
 
         self._providers[provider_name] = entry
 
         registration = TriggerProviderRegistration(entry)
-        # Pre-populate the registry with triggers that were already discovered
-        # during plugin loading. Providers can keep adding more triggers by
+        # Pre-populate the registry with events that were already discovered
+        # during plugin loading. Providers can keep adding more events by
         # calling ``registration.register_trigger`` inside their module level
         # registration hook.
-        for name, (trigger_config, trigger_cls) in triggers.items():
+        for name, (event_config, event_cls) in events.items():
             registration.register_trigger(
                 name=name,
-                configuration=trigger_config,
-                trigger_cls=trigger_cls,
+                configuration=event_config,
+                trigger_cls=event_cls,
             )
 
         return registration
@@ -93,13 +93,13 @@ class TriggerFactory:
     # ------------------------------------------------------------------
     # Provider factories
     # ------------------------------------------------------------------
-    def get_trigger_provider(self, provider_name: str, session: Session) -> TriggerProvider:
+    def get_trigger_provider(self, provider_name: str, session: Session) -> Trigger:
         """Instantiate the trigger provider implementation for the given provider name."""
 
         entry = self._get_entry(provider_name)
         return entry.provider_cls(session)
 
-    def get_provider_cls(self, provider_name: str) -> type[TriggerProvider]:
+    def get_provider_cls(self, provider_name: str) -> type[Trigger]:
         return self._get_entry(provider_name).provider_cls
 
     def has_subscription_constructor(self, provider_name: str) -> bool:
@@ -123,32 +123,32 @@ class TriggerFactory:
         return self._get_entry(provider_name).subscription_constructor_cls
 
     # ------------------------------------------------------------------
-    # Trigger event factories
+    # Event factories
     # ------------------------------------------------------------------
-    def get_trigger_event_handler(self, provider_name: str, event: str, session: Session) -> TriggerEvent:
-        """Instantiate a trigger event handler for the given provider and event name."""
+    def get_trigger_event_handler(self, provider_name: str, event: str, session: Session) -> Event:
+        """Instantiate an event for the given provider and event name."""
 
         entry = self._get_entry(provider_name)
-        if event not in entry.triggers:
-            raise ValueError(f"Trigger `{event}` not found in provider `{provider_name}`")
+        if event not in entry.events:
+            raise ValueError(f"Event `{event}` not found in provider `{provider_name}`")
 
-        _, trigger_cls = entry.triggers[event]
-        return trigger_cls(session)
+        _, event_cls = entry.events[event]
+        return event_cls(session)
 
-    def get_trigger_configuration(self, provider_name: str, event: str) -> TriggerConfiguration | None:
+    def get_trigger_configuration(self, provider_name: str, event: str) -> EventConfiguration | None:
         entry = self._get_entry(provider_name)
-        trigger = entry.triggers.get(event)
-        if trigger is None:
+        event_entry = entry.events.get(event)
+        if event_entry is None:
             return None
-        return trigger[0]
+        return event_entry[0]
 
-    def iter_triggers(self, provider_name: str) -> Mapping[str, tuple[TriggerConfiguration, type[TriggerEvent]]]:
-        """Return a shallow copy of the registered triggers for inspection."""
+    def iter_events(self, provider_name: str) -> Mapping[str, tuple[EventConfiguration, type[Event]]]:
+        """Return a shallow copy of the registered events for inspection."""
 
         # Returning a copy ensures callers cannot mutate the internal registry
         # inadvertently, while still providing a dictionary-like interface for
-        # tooling and API handlers that need to enumerate triggers.
-        return dict(self._get_entry(provider_name).triggers)
+        # tooling and API handlers that need to enumerate events.
+        return dict(self._get_entry(provider_name).events)
 
     def get_configuration(self, provider_name: str) -> TriggerProviderConfiguration:
         return self._get_entry(provider_name).configuration

@@ -23,7 +23,7 @@ from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.provider import ModelProviderConfiguration
 from dify_plugin.entities.tool import ToolConfiguration, ToolProviderConfiguration
 from dify_plugin.entities.trigger import (
-    TriggerConfiguration,
+    EventConfiguration,
     TriggerProviderConfiguration,
     TriggerSubscriptionConstructorRuntime,
 )
@@ -42,7 +42,7 @@ from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
 from dify_plugin.interfaces.tool import Tool, ToolProvider
-from dify_plugin.interfaces.trigger import TriggerEvent, TriggerProvider, TriggerSubscriptionConstructor
+from dify_plugin.interfaces.trigger import Event, Trigger, TriggerSubscriptionConstructor
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
 T = TypeVar("T")
@@ -275,7 +275,7 @@ class PluginRegistration:
             provider_cls = load_single_subclass_from_source(
                 module_name=module_source,
                 script_path=os.path.join(os.getcwd(), source),
-                parent_type=TriggerProvider,
+                parent_type=Trigger,
             )
 
             subscription_constructor_cls_candidates = load_multi_subclasses_from_source(
@@ -299,16 +299,16 @@ class PluginRegistration:
                     f"Trigger subscription constructor configuration declared but no implementation found in {source}."
                 )
 
-            # load triggers class
-            trigger_registrations: list[tuple[str, TriggerConfiguration, type[TriggerEvent]]] = []
-            for trigger in provider.triggers:
+            # load events class
+            trigger_registrations: list[tuple[str, EventConfiguration, type[Event]]] = []
+            for trigger in provider.events:
                 trigger_source = trigger.extra.python.source
                 trigger_module_source = os.path.splitext(trigger_source)[0]
                 trigger_module_source = trigger_module_source.replace("/", ".")
                 trigger_cls = load_single_subclass_from_source(
                     module_name=trigger_module_source,
                     script_path=os.path.join(os.getcwd(), trigger_source),
-                    parent_type=TriggerEvent,
+                    parent_type=Event,
                 )
                 trigger_registrations.append((trigger.identity.name, trigger, trigger_cls))
 
@@ -316,7 +316,7 @@ class PluginRegistration:
                 configuration=provider,
                 provider_cls=provider_cls,
                 subscription_constructor_cls=subscription_constructor_cls,
-                triggers={},
+                events={},
             )
 
             for name, trigger_config, trigger_cls in trigger_registrations:
@@ -489,7 +489,7 @@ class PluginRegistration:
                 model_factory = self.models_mapping[provider_registration][2]
                 return model_factory.get_instance(model_type)
 
-    def get_trigger_provider(self, provider_name: str, session: Session) -> TriggerProvider:
+    def get_trigger_provider(self, provider_name: str, session: Session) -> Trigger:
         """Get the trigger provider instance by provider name."""
 
         return self.trigger_factory.get_trigger_provider(provider_name, session)
@@ -501,8 +501,8 @@ class PluginRegistration:
 
         return self.trigger_factory.get_subscription_constructor(provider_name, runtime, session)
 
-    def get_trigger_event_handler(self, provider_name: str, event: str, session: Session) -> TriggerEvent:
-        """Get the trigger event handler instance by provider and event name."""
+    def get_trigger_event_handler(self, provider_name: str, event: str, session: Session) -> Event:
+        """Get the event instance by provider and event name."""
 
         return self.trigger_factory.get_trigger_event_handler(provider_name, event, session)
 

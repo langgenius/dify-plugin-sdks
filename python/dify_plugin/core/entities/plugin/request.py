@@ -20,7 +20,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.entities.provider_config import CredentialType
-from dify_plugin.entities.trigger import Event, Subscription
+from dify_plugin.entities.trigger import Variables, Subscription
 
 
 class PluginInvokeType(StrEnum):
@@ -384,7 +384,7 @@ class TriggerInvokeRequest(BaseModel):
 
 
 class TriggerInvokeResponse(BaseModel):
-    event: Event
+    event: Variables
 
     model_config = ConfigDict(protected_namespaces=())
 

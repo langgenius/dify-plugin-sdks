@@ -15,7 +15,7 @@ from werkzeug import Request, Response
 
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.oauth import TriggerOAuthCredentials
-from dify_plugin.entities.trigger import Subscription, TriggerDispatch, UnsubscribeResult
+from dify_plugin.entities.trigger import Subscription, EventDispatch, UnsubscribeResult
 from dify_plugin.errors.trigger import (
     SubscriptionError,
     TriggerDispatchError,
@@ -24,10 +24,10 @@ from dify_plugin.errors.trigger import (
     TriggerValidationError,
     UnsubscribeError,
 )
-from dify_plugin.interfaces.trigger import TriggerProvider, TriggerSubscriptionConstructor
+from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
 
 
-class GithubProvider(TriggerProvider):
+class GithubTrigger(Trigger):
     """Handle GitHub webhook event dispatch."""
 
     __TRIGGER_EVENTS_MAPPING: ClassVar[Mapping[str, Mapping[str, list[str]]]] = {
@@ -36,7 +36,7 @@ class GithubProvider(TriggerProvider):
         }
     }
 
-    def _dispatch_event(self, subscription: Subscription, request: Request) -> TriggerDispatch:
+    def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
         webhook_secret = subscription.properties.get("webhook_secret")
         if webhook_secret:
             self._validate_signature(request, webhook_secret)
@@ -46,11 +46,11 @@ class GithubProvider(TriggerProvider):
             raise TriggerDispatchError("Missing GitHub event type header")
 
         payload = self._validate_payload(request)
-        triggers = self._dispatch_event_triggers(event_type, payload)
+        events = self._dispatch_event_handlers(event_type, payload)
         response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
-        return TriggerDispatch(triggers=triggers, response=response)
+        return EventDispatch(events=events, response=response)
 
-    def _dispatch_event_triggers(self, event_type: str, payload: Mapping[str, Any]) -> list[str]:
+    def _dispatch_event_handlers(self, event_type: str, payload: Mapping[str, Any]) -> list[str]:
         event_type = event_type.lower()
         if event_type == "issues":
             action = payload.get("action")
@@ -95,7 +95,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     _API_USER_URL = "https://api.github.com/user"
     _WEBHOOK_TTL = 30 * 24 * 60 * 60
 
-    def _validate_api_key(self, credentials: dict) -> None:
+    def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
         access_token = credentials.get("access_tokens")
         if not access_token:
             raise TriggerProviderCredentialValidationError("GitHub API Access Token is required.")
@@ -290,7 +290,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         resolved_events: set[str] = set()
         for trigger in selected_events:
-            resolved_events.update(GithubProvider._TRIGGER_EVENTS.get(trigger, [trigger]))
+            resolved_events.update(GithubTrigger._TRIGGER_EVENTS.get(trigger, [trigger]))
 
         return sorted(resolved_events) or ["issues"]
 
