@@ -11,8 +11,8 @@ label:
   zh_Hans: GitHub
 meta:
   arch:
-    - amd64
-    - arm64
+  - amd64
+  - arm64
   runner:
     entrypoint: main
     language: python
@@ -22,7 +22,7 @@ meta:
 name: github_trigger
 plugins:
   triggers:
-    - provider/github.yaml
+  - provider/github.yaml
 resource:
   memory: 1048576
   permission:
@@ -32,6 +32,6 @@ resource:
     tool:
       enabled: true
 tags:
-  - utilities
+- utilities
 type: plugin
-version: 1.1.0
+version: 1.1.1
