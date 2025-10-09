@@ -17,7 +17,7 @@ class IssueOpenedEvent(Event):
     information from the webhook payload to provide as variables to the workflow.
     """
 
-    def _check_title_pattern(self, issue: dict, pattern: str) -> None:
+    def _check_title_pattern(self, issue: Mapping[str, Any], pattern: str | None) -> None:
         """Check if issue title matches the pattern"""
         if not pattern:
             return
@@ -26,7 +26,7 @@ class IssueOpenedEvent(Event):
         if not re.match(pattern, title):
             raise EventIgnoreError()
 
-    def _check_labels(self, issue: dict, labels_param: str) -> None:
+    def _check_labels(self, issue: Mapping[str, Any], labels_param: str | None) -> None:
         """Check if issue has required labels"""
         if not labels_param:
             return
@@ -39,7 +39,7 @@ class IssueOpenedEvent(Event):
         if not any(label in issue_labels for label in required_labels):
             raise EventIgnoreError()
 
-    def _check_assignee(self, issue: dict, assignee_param: str) -> None:
+    def _check_assignee(self, issue: Mapping[str, Any], assignee_param: str | None) -> None:
         """Check if issue is assigned to allowed users"""
         if not assignee_param:
             return
@@ -48,7 +48,7 @@ class IssueOpenedEvent(Event):
         if not allowed_assignees:
             return
 
-        issue_assignees = []
+        issue_assignees: list[str] = []
 
         # Collect assignee usernames
         single_assignee = issue.get("assignee")
@@ -63,7 +63,7 @@ class IssueOpenedEvent(Event):
         if not any(assignee in issue_assignees for assignee in allowed_assignees):
             raise EventIgnoreError()
 
-    def _check_authors(self, issue: dict, authors_param: str) -> None:
+    def _check_authors(self, issue: Mapping[str, Any], authors_param: str | None) -> None:
         """Check if issue author is in allowed list"""
         if not authors_param:
             return
@@ -76,7 +76,7 @@ class IssueOpenedEvent(Event):
         if issue_author not in allowed_authors:
             raise EventIgnoreError()
 
-    def _check_milestone(self, issue: dict, milestone_param: str) -> None:
+    def _check_milestone(self, issue: Mapping[str, Any], milestone_param: str | None) -> None:
         """Check if issue milestone matches allowed milestones"""
         if not milestone_param:
             return
@@ -93,7 +93,7 @@ class IssueOpenedEvent(Event):
         if not milestone_title or milestone_title not in allowed_milestones:
             raise EventIgnoreError()
 
-    def _check_body_contains(self, issue: dict, body_contains_param: str) -> None:
+    def _check_body_contains(self, issue: Mapping[str, Any], body_contains_param: str | None) -> None:
         """Check if issue body contains required keywords"""
         if not body_contains_param:
             return

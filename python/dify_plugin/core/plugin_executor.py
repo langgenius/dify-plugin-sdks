@@ -472,7 +472,7 @@ class PluginExecutor:
         subscription = request.subscription
         dispatch_result = trigger_provider_instance.dispatch_event(subscription, deserialize_request(bytes_data))
         return TriggerDispatchResponse(
-            triggers=dispatch_result.events,
+            events=dispatch_result.events,
             raw_http_response=binascii.hexlify(serialize_response(dispatch_result.response)).decode(),
         )
 

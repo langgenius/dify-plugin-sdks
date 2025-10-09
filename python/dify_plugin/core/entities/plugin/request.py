@@ -411,7 +411,7 @@ class TriggerDispatchEventRequest(BaseModel):
 
 
 class TriggerDispatchResponse(BaseModel):
-    triggers: list[str]
+    events: list[str]
     raw_http_response: str
 
     model_config = ConfigDict(protected_namespaces=())
