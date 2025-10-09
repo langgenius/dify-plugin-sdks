@@ -40,6 +40,11 @@ class GithubTrigger(Trigger):
             "unlabeled": ["issue_unlabeled"],
             "assigned": ["issue_assigned"],
             "unassigned": ["issue_unassigned"],
+        },
+        "issue_comment": {
+            "created": ["comment_created"],
+            "edited": ["comment_edited"],
+            "deleted": ["comment_deleted"],
         }
     }
 
@@ -59,9 +64,11 @@ class GithubTrigger(Trigger):
 
     def _dispatch_event_handlers(self, event_type: str, payload: Mapping[str, Any]) -> list[str]:
         event_type = event_type.lower()
-        if event_type == "issues":
-            action = payload.get("action")
-            return self.__TRIGGER_EVENTS_MAPPING["issues"].get(action, [])
+        action = payload.get("action")
+
+        if event_type in self.__TRIGGER_EVENTS_MAPPING:
+            return self.__TRIGGER_EVENTS_MAPPING[event_type].get(action, [])
+
         return []
 
     def _validate_payload(self, request: Request) -> Mapping[str, Any]:

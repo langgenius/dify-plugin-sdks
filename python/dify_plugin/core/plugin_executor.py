@@ -53,7 +53,7 @@ from dify_plugin.entities.datasource import (
     DatasourceRuntime,
 )
 from dify_plugin.entities.tool import ToolRuntime
-from dify_plugin.entities.trigger import TriggerSubscriptionConstructorRuntime
+from dify_plugin.entities.trigger import Subscription, TriggerSubscriptionConstructorRuntime
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
@@ -489,7 +489,7 @@ class PluginExecutor:
             session,
         )
 
-        subscription = trigger_provider_instance.create_subscription(
+        subscription: Subscription = trigger_provider_instance.create_subscription(
             request.endpoint,
             request.credentials,
             request.selected_events,

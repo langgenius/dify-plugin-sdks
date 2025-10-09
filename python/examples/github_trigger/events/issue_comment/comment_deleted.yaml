@@ -1,0 +1,150 @@
+identity:
+  name: comment_deleted
+  author: langgenius
+  label:
+    en_US: Comment Deleted
+    zh_Hans: 评论删除
+    ja_JP: コメント削除
+
+description:
+  human:
+    en_US: Triggers when a comment is deleted from an issue or pull request
+    zh_Hans: 当从 issue 或 pull request 删除评论时触发
+    ja_JP: issue または pull request からコメントが削除されたときにトリガーがアクティブになります。
+  llm:
+    en_US: This trigger activates when a comment is deleted from an issue or pull request in a GitHub repository, providing information about the deleted comment, the issue/PR, repository, and user who deleted it. Note that GitHub may not reliably send this event - it requires proper permissions and may not work through the UI.
+    zh_Hans: 当在 GitHub 仓库的 issue 或 pull request 上删除评论时，此触发器会被激活，提供有关已删除评论、issue/PR、仓库和删除评论的用户的信息。注意 GitHub 可能不会可靠地发送此事件 - 需要适当的权限，并且可能无法通过 UI 工作。
+    ja_JP: GitHub リポジトリの issue または pull request からコメントが削除されたときにトリガーがアクティブになり、削除されたコメント、issue/PR、リポジトリ、およびコメントを削除したユーザーに関する情報を提供します。注意：GitHub はこのイベントを確実に送信しない可能性があります - 適切な権限が必要で、UI 経由では機能しない場合があります。
+parameters:
+- name: comment_body_contains
+  label:
+    en_US: Deleted Comment Contained
+    zh_Hans: 删除的评论包含
+    ja_JP: 削除されたコメントに含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if deleted comment contained these keywords (e.g., spam, inappropriate, off-topic, comma-separated). Leave empty for no content filtering."
+    zh_Hans: "仅当删除的评论包含这些关键词时触发（例如：spam, inappropriate, off-topic，逗号分隔）。留空则不过滤内容。"
+    ja_JP: "削除されたコメントにこれらのキーワードが含まれる場合のみトリガー（例: spam, inappropriate, off-topic，カンマ区切り）。空の場合は内容フィルタなし。"
+
+- name: deleter
+  label:
+    en_US: Deleted By
+    zh_Hans: 删除者
+    ja_JP: 削除者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if deleted by these users (e.g., moderator, admin, owner, comma-separated). Leave empty to allow any user."
+    zh_Hans: "仅当由这些用户删除时触发（例如：moderator, admin, owner，逗号分隔）。留空则允许任何用户。"
+    ja_JP: "これらのユーザーによって削除された場合のみトリガー（例: moderator, admin, owner，カンマ区切り）。空の場合は全てのユーザーを許可。"
+
+- name: comment_author
+  label:
+    en_US: Comment Author
+    zh_Hans: 评论作者
+    ja_JP: コメント作成者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the deleted comment was from these authors (e.g., spammer, banned-user, comma-separated). Leave empty for any author."
+    zh_Hans: "仅当删除的评论来自这些作者时触发（例如：spammer, banned-user，逗号分隔）。留空则对任何作者触发。"
+    ja_JP: "削除されたコメントがこれらの作成者からの場合のみトリガー（例: spammer, banned-user，カンマ区切り）。空の場合は任意の作成者。"
+
+- name: issue_labels
+  label:
+    en_US: Issue/PR Labels
+    zh_Hans: Issue/PR 标签
+    ja_JP: Issue/PR ラベル
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the issue/PR has these labels (e.g., moderated, sensitive, comma-separated). Leave empty for no label filtering."
+    zh_Hans: "仅当 issue/PR 有这些标签时触发（例如：moderated, sensitive，逗号分隔）。留空则不过滤标签。"
+    ja_JP: "issue/PR がこれらのラベルを持つ場合のみトリガー（例: moderated, sensitive，カンマ区切り）。空の場合はラベルフィルタなし。"
+
+- name: is_pull_request
+  label:
+    en_US: Is Pull Request
+    zh_Hans: 是否为 Pull Request
+    ja_JP: Pull Request かどうか
+  type: boolean
+  required: false
+  description:
+    en_US: "Filter by comment type: true for PR comments only, false for issue comments only. Leave empty for both."
+    zh_Hans: "按评论类型过滤：true 仅 PR 评论，false 仅 issue 评论。留空则两者都允许。"
+    ja_JP: "コメントタイプでフィルタ：true は PR コメントのみ、false は issue コメントのみ。空の場合は両方。"
+
+output_schema:
+  type: object
+  properties:
+    comment:
+      type: object
+      description: The comment that was deleted
+      properties:
+        id:
+          type: integer
+          description: Unique identifier of the deleted comment
+        body:
+          type: string
+          description: Content of the deleted comment
+        user:
+          type: object
+          description: Original author of the deleted comment
+          properties:
+            login:
+              type: string
+            id:
+              type: integer
+        created_at:
+          type: string
+          format: date-time
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - body
+      - user
+      - created_at
+
+    issue:
+      type: object
+      description: The issue or pull request that the comment was deleted from
+      required:
+      - id
+      - number
+      - title
+      - state
+      - user
+      - html_url
+
+    repository:
+      type: object
+      description: The repository where the comment was deleted
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - owner
+      - html_url
+
+    sender:
+      type: object
+      description: The user who triggered the event (deleted the comment)
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - comment
+  - issue
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/issue_comment/comment_deleted.py

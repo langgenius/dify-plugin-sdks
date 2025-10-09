@@ -21,12 +21,23 @@ parameters:
     en_US: Close Reason
     zh_Hans: 关闭原因
     ja_JP: クローズ理由
-  type: string
+  type: select
   required: false
   description:
-    en_US: "Only trigger for specific close reasons (e.g., completed, not_planned, comma-separated). Leave empty to trigger for all close reasons."
-    zh_Hans: "仅对特定关闭原因触发（例如：completed, not_planned，逗号分隔）。留空则对所有关闭原因触发。"
-    ja_JP: "特定のクローズ理由のみトリガー（例: completed, not_planned，カンマ区切り）。空の場合は全てのクローズ理由でトリガー。"
+    en_US: "Only trigger for specific close reasons. Leave empty to trigger for all close reasons."
+    zh_Hans: "仅对特定关闭原因触发。留空则对所有关闭原因触发。"
+    ja_JP: "特定のクローズ理由のみトリガー。空の場合は全てのクローズ理由でトリガー。"
+  options:
+    - value: completed
+      label:
+        en_US: Completed
+        zh_Hans: 已完成
+        ja_JP: 完了
+    - value: not_planned
+      label:
+        en_US: Not Planned
+        zh_Hans: 未计划
+        ja_JP: 予定なし
 
 - name: labels
   label:

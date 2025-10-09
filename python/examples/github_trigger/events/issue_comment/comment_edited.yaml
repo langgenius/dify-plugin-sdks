@@ -1,0 +1,146 @@
+identity:
+  name: comment_edited
+  author: langgenius
+  label:
+    en_US: Comment Edited
+    zh_Hans: 评论编辑
+    ja_JP: コメント編集
+
+description:
+  human:
+    en_US: Triggers when a comment is edited on an issue or pull request
+    zh_Hans: 当 issue 或 pull request 上的评论被编辑时触发
+    ja_JP: issue または pull request のコメントが編集されたときにトリガーがアクティブになります。
+  llm:
+    en_US: This trigger activates when a comment is edited on an issue or pull request in a GitHub repository, providing information about the comment, what was changed, the issue/PR, repository, and user who edited it.
+    zh_Hans: 当在 GitHub 仓库的 issue 或 pull request 上编辑评论时，此触发器会被激活，提供有关评论、更改内容、issue/PR、仓库和编辑评论的用户的信息。
+    ja_JP: GitHub リポジトリの issue または pull request のコメントが編集されたときにトリガーがアクティブになり、コメント、変更内容、issue/PR、リポジトリ、およびコメントを編集したユーザーに関する情報を提供します。
+parameters:
+- name: comment_body_contains
+  label:
+    en_US: Comment Body Contains
+    zh_Hans: 评论内容包含
+    ja_JP: コメント本文に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if edited comment contains these keywords (e.g., updated, clarification, correction, comma-separated). Leave empty for no content filtering."
+    zh_Hans: "仅当编辑后的评论包含这些关键词时触发（例如：updated, clarification, correction，逗号分隔）。留空则不过滤内容。"
+    ja_JP: "編集されたコメントにこれらのキーワードが含まれる場合のみトリガー（例: updated, clarification, correction，カンマ区切り）。空の場合は内容フィルタなし。"
+
+- name: editor
+  label:
+    en_US: Editor
+    zh_Hans: 编辑者
+    ja_JP: 編集者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if edited by these users (e.g., maintainer, moderator, comma-separated). Leave empty to allow any user."
+    zh_Hans: "仅当由这些用户编辑时触发（例如：maintainer, moderator，逗号分隔）。留空则允许任何用户。"
+    ja_JP: "これらのユーザーによって編集された場合のみトリガー（例: maintainer, moderator，カンマ区切り）。空の場合は全てのユーザーを許可。"
+
+- name: issue_labels
+  label:
+    en_US: Issue/PR Labels
+    zh_Hans: Issue/PR 标签
+    ja_JP: Issue/PR ラベル
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the issue/PR has these labels (e.g., discussion, documentation, needs-clarification, comma-separated). Leave empty for no label filtering."
+    zh_Hans: "仅当 issue/PR 有这些标签时触发（例如：discussion, documentation, needs-clarification，逗号分隔）。留空则不过滤标签。"
+    ja_JP: "issue/PR がこれらのラベルを持つ場合のみトリガー（例: discussion, documentation, needs-clarification，カンマ区切り）。空の場合はラベルフィルタなし。"
+
+- name: issue_state
+  label:
+    en_US: Issue/PR State
+    zh_Hans: Issue/PR 状态
+    ja_JP: Issue/PR の状態
+  type: select
+  required: false
+  description:
+    en_US: "Only trigger for specific issue/PR states. Leave empty for all states."
+    zh_Hans: "仅对特定 issue/PR 状态触发。留空则对所有状态触发。"
+    ja_JP: "特定の issue/PR 状態のみトリガー。空の場合は全ての状態でトリガー。"
+  options:
+    - value: open
+      label:
+        en_US: Open
+        zh_Hans: 打开
+        ja_JP: オープン
+    - value: closed
+      label:
+        en_US: Closed
+        zh_Hans: 关闭
+        ja_JP: クローズ
+
+- name: is_pull_request
+  label:
+    en_US: Is Pull Request
+    zh_Hans: 是否为 Pull Request
+    ja_JP: Pull Request かどうか
+  type: boolean
+  required: false
+  description:
+    en_US: "Filter by comment type: true for PR comments only, false for issue comments only. Leave empty for both."
+    zh_Hans: "按评论类型过滤：true 仅 PR 评论，false 仅 issue 评论。留空则两者都允许。"
+    ja_JP: "コメントタイプでフィルタ：true は PR コメントのみ、false は issue コメントのみ。空の場合は両方。"
+
+output_schema:
+  type: object
+  properties:
+    comment:
+      type: object
+      description: The comment that was edited
+      required:
+      - id
+      - body
+      - user
+      - created_at
+      - updated_at
+      - html_url
+
+    changes:
+      type: object
+      description: The fields that were changed and their previous values
+
+    issue:
+      type: object
+      description: The issue or pull request that was commented on
+      required:
+      - id
+      - number
+      - title
+      - state
+      - user
+      - html_url
+
+    repository:
+      type: object
+      description: The repository where the comment was edited
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - owner
+      - html_url
+
+    sender:
+      type: object
+      description: The user who triggered the event
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - comment
+  - issue
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/issue_comment/comment_edited.py

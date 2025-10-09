@@ -22,12 +22,8 @@ class IssueClosedEvent(Event):
         if not state_reason_param:
             return
 
-        allowed_reasons = [reason.strip() for reason in state_reason_param.split(",") if reason.strip()]
-        if not allowed_reasons:
-            return
-
         issue_state_reason = issue.get("state_reason")
-        if not issue_state_reason or issue_state_reason not in allowed_reasons:
+        if not issue_state_reason or issue_state_reason != state_reason_param:
             raise EventIgnoreError()
 
     def _check_title_pattern(self, issue: Mapping[str, Any], pattern: str | None) -> None:

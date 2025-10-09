@@ -424,7 +424,7 @@ class TriggerSubscribeRequest(BaseModel):
     credentials: dict
     endpoint: str
     parameters: dict
-    selected_events: list[str]
+    selected_events: list[str] | None
     user_id: str
 
     model_config = ConfigDict(protected_namespaces=())
