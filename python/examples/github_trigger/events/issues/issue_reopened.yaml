@@ -1,0 +1,117 @@
+identity:
+  name: issue_reopened
+  author: langgenius
+  label:
+    en_US: Issue Reopened
+    zh_Hans: Issue 重新打开
+    ja_JP: Issue 再オープン
+
+description:
+  human:
+    en_US: Triggers when a closed issue is reopened
+    zh_Hans: 当已关闭的 issue 重新打开时触发
+    ja_JP: クローズされた issue が再度オープンされたときにトリガーがアクティブになります。
+  llm:
+    en_US: This trigger activates when a closed issue is reopened on a GitHub repository, providing information about the issue, repository, and user who reopened it.
+    zh_Hans: 当在 GitHub 仓库中重新打开已关闭的 issue 时，此触发器会被激活，提供有关 issue、仓库和重新打开它的用户的信息。
+    ja_JP: クローズされた issue が GitHub リポジトリで再度オープンされたときにトリガーがアクティブになり、issue、リポジトリ、および issue を再オープンしたユーザーに関する情報を提供します。
+parameters:
+- name: labels
+  label:
+    en_US: Required Labels
+    zh_Hans: 必需标签
+    ja_JP: 必須ラベル
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if issue has these labels (e.g., bug, needs-attention, regression, comma-separated). Leave empty for no label filtering."
+    zh_Hans: "仅当议题有这些标签时触发（例如：bug, needs-attention, regression，逗号分隔）。留空则不过滤标签。"
+    ja_JP: "イシューがこれらのラベルを持つ場合のみトリガー（例: bug, needs-attention, regression，カンマ区切り）。空の場合はラベルフィルタなし。"
+
+- name: reopener
+  label:
+    en_US: Reopened By
+    zh_Hans: 重新打开者
+    ja_JP: 再オープンしたユーザー
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if reopened by these users (e.g., project-maintainer, team-lead, comma-separated). Leave empty to allow any user."
+    zh_Hans: "仅当由这些用户重新打开时触发（例如：project-maintainer, team-lead，逗号分隔）。留空则允许任何用户。"
+    ja_JP: "これらのユーザーによって再オープンされた場合のみトリガー（例: project-maintainer, team-lead，カンマ区切り）。空の場合は全てのユーザーを許可。"
+
+- name: milestone
+  label:
+    en_US: Milestone
+    zh_Hans: 里程碑
+    ja_JP: マイルストーン
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for issues with these milestones (e.g., v1.0, v2.0, Hotfix, comma-separated). Leave empty for all milestones."
+    zh_Hans: "仅对具有这些里程碑的议题触发（例如：v1.0, v2.0, Hotfix，逗号分隔）。留空则对所有里程碑触发。"
+    ja_JP: "これらのマイルストーンのイシューのみトリガー（例: v1.0, v2.0, Hotfix，カンマ区切り）。空の場合は全てのマイルストーンでトリガー。"
+
+- name: title_pattern
+  label:
+    en_US: Title Pattern
+    zh_Hans: 标题模式
+    ja_JP: タイトルパターン
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if title matches this regex pattern (e.g., ^\\[BUG\\].*, .*reopened.*, supports regex). Leave empty for no title filtering."
+    zh_Hans: "仅当标题匹配此正则表达式模式时触发（例如：^\\[BUG\\].*, .*reopened.*，支持正则表达式）。留空则不过滤标题。"
+    ja_JP: "タイトルがこの正規表現パターンに一致する場合のみトリガー（例: ^\\[BUG\\].*, .*reopened.*，正規表現対応）。空の場合はタイトルフィルタなし。"
+
+output_schema:
+  type: object
+  properties:
+    issue:
+      type: object
+      description: The issue itself
+      required:
+      - id
+      - node_id
+      - number
+      - title
+      - state
+      - created_at
+      - updated_at
+      - user
+      - html_url
+
+    repository:
+      type: object
+      description: The repository where the issue was reopened
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+
+    sender:
+      type: object
+      description: The user who triggered the event
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - issue
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/issues/issue_reopened.py

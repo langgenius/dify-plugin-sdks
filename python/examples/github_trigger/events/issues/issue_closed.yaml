@@ -1,0 +1,129 @@
+identity:
+  name: issue_closed
+  author: langgenius
+  label:
+    en_US: Issue Closed
+    zh_Hans: Issue 关闭
+    ja_JP: Issue クローズ
+
+description:
+  human:
+    en_US: Triggers when an issue is closed
+    zh_Hans: 当 issue 关闭时触发
+    ja_JP: issue がクローズされたときにトリガーがアクティブになります。
+  llm:
+    en_US: This trigger activates when an issue is closed on a GitHub repository, providing information about the issue, close reason, repository, and user who closed it.
+    zh_Hans: 当在 GitHub 仓库中关闭 issue 时，此触发器会被激活，提供有关 issue、关闭原因、仓库和关闭它的用户的信息。
+    ja_JP: issue が GitHub リポジトリでクローズされたときにトリガーがアクティブになり、issue、クローズ理由、リポジトリ、および issue をクローズしたユーザーに関する情報を提供します。
+parameters:
+- name: state_reason
+  label:
+    en_US: Close Reason
+    zh_Hans: 关闭原因
+    ja_JP: クローズ理由
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for specific close reasons (e.g., completed, not_planned, comma-separated). Leave empty to trigger for all close reasons."
+    zh_Hans: "仅对特定关闭原因触发（例如：completed, not_planned，逗号分隔）。留空则对所有关闭原因触发。"
+    ja_JP: "特定のクローズ理由のみトリガー（例: completed, not_planned，カンマ区切り）。空の場合は全てのクローズ理由でトリガー。"
+
+- name: labels
+  label:
+    en_US: Required Labels
+    zh_Hans: 必需标签
+    ja_JP: 必須ラベル
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if issue has these labels (e.g., bug, critical, resolved, comma-separated). Leave empty for no label filtering."
+    zh_Hans: "仅当议题有这些标签时触发（例如：bug, critical, resolved，逗号分隔）。留空则不过滤标签。"
+    ja_JP: "イシューがこれらのラベルを持つ場合のみトリガー（例: bug, critical, resolved，カンマ区切り）。空の場合はラベルフィルタなし。"
+
+- name: closer
+  label:
+    en_US: Closed By
+    zh_Hans: 关闭者
+    ja_JP: クローズしたユーザー
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if closed by these users (e.g., john, alice, bot-user, comma-separated). Leave empty to allow any user."
+    zh_Hans: "仅当由这些用户关闭时触发（例如：john, alice, bot-user，逗号分隔）。留空则允许任何用户。"
+    ja_JP: "これらのユーザーによってクローズされた場合のみトリガー（例: john, alice, bot-user，カンマ区切り）。空の場合は全てのユーザーを許可。"
+
+- name: milestone
+  label:
+    en_US: Milestone
+    zh_Hans: 里程碑
+    ja_JP: マイルストーン
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for issues with these milestones (e.g., v1.0, v2.0, Sprint-1, comma-separated). Leave empty for all milestones."
+    zh_Hans: "仅对具有这些里程碑的议题触发（例如：v1.0, v2.0, Sprint-1，逗号分隔）。留空则对所有里程碑触发。"
+    ja_JP: "これらのマイルストーンのイシューのみトリガー（例: v1.0, v2.0, Sprint-1，カンマ区切り）。空の場合は全てのマイルストーンでトリガー。"
+
+- name: title_pattern
+  label:
+    en_US: Title Pattern
+    zh_Hans: 标题模式
+    ja_JP: タイトルパターン
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if title matches this regex pattern (e.g., ^\\[BUG\\].*, .*URGENT.*, supports regex). Leave empty for no title filtering."
+    zh_Hans: "仅当标题匹配此正则表达式模式时触发（例如：^\\[BUG\\].*, .*URGENT.*，支持正则表达式）。留空则不过滤标题。"
+    ja_JP: "タイトルがこの正規表現パターンに一致する場合のみトリガー（例: ^\\[BUG\\].*, .*URGENT.*，正規表現対応）。空の場合はタイトルフィルタなし。"
+
+output_schema:
+  type: object
+  properties:
+    issue:
+      type: object
+      description: The issue itself
+      required:
+      - id
+      - node_id
+      - number
+      - title
+      - state
+      - created_at
+      - updated_at
+      - user
+      - html_url
+
+    repository:
+      type: object
+      description: The repository where the issue was closed
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+
+    sender:
+      type: object
+      description: The user who triggered the event
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - issue
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/issues/issue_closed.py

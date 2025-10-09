@@ -1,0 +1,137 @@
+identity:
+  name: issue_unassigned
+  author: langgenius
+  label:
+    en_US: Issue Unassigned
+    zh_Hans: Issue 取消分配
+    ja_JP: Issue 割り当て解除
+
+description:
+  human:
+    en_US: Triggers when an issue is unassigned from a user
+    zh_Hans: 当 issue 的分配被取消时触发
+    ja_JP: issue のユーザーへの割り当てが解除されたときにトリガーがアクティブになります。
+  llm:
+    en_US: This trigger activates when an issue is unassigned from a user on a GitHub repository, providing information about the issue, the user who was unassigned, repository, and user who removed the assignment.
+    zh_Hans: 当在 GitHub 仓库中取消 issue 的用户分配时，此触发器会被激活，提供有关 issue、被取消分配的用户、仓库和移除分配的用户的信息。
+    ja_JP: issue の GitHub リポジトリでのユーザーへの割り当てが解除されたときにトリガーがアクティブになり、issue、割り当てが解除されたユーザー、リポジトリ、および割り当てを解除したユーザーに関する情報を提供します。
+parameters:
+- name: unassigned_from
+  label:
+    en_US: Unassigned From
+    zh_Hans: 取消分配自
+    ja_JP: 割り当て解除元
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if unassigned from these specific users (e.g., developer-1, team-member, comma-separated). Leave empty to trigger for any unassigned user."
+    zh_Hans: "仅当从这些特定用户取消分配时触发（例如：developer-1, team-member，逗号分隔）。留空则对任何被取消分配的用户触发。"
+    ja_JP: "これらの特定のユーザーから割り当てが解除された場合のみトリガー（例: developer-1, team-member，カンマ区切り）。空の場合は任意のユーザーでトリガー。"
+
+- name: labels
+  label:
+    en_US: Required Labels
+    zh_Hans: 必需标签
+    ja_JP: 必須ラベル
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if issue has these labels (e.g., on-hold, blocked, needs-reassignment, comma-separated). Leave empty for no label filtering."
+    zh_Hans: "仅当议题有这些标签时触发（例如：on-hold, blocked, needs-reassignment，逗号分隔）。留空则不过滤标签。"
+    ja_JP: "イシューがこれらのラベルを持つ場合のみトリガー（例: on-hold, blocked, needs-reassignment，カンマ区切り）。空の場合はラベルフィルタなし。"
+
+- name: unassigner
+  label:
+    en_US: Unassigned By
+    zh_Hans: 取消分配者
+    ja_JP: 割り当て解除したユーザー
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if unassigned by these users (e.g., project-manager, admin, comma-separated). Leave empty to allow any user."
+    zh_Hans: "仅当由这些用户取消分配时触发（例如：project-manager, admin，逗号分隔）。留空则允许任何用户。"
+    ja_JP: "これらのユーザーによって割り当てが解除された場合のみトリガー（例: project-manager, admin，カンマ区切り）。空の場合は全てのユーザーを許可。"
+
+- name: milestone
+  label:
+    en_US: Milestone
+    zh_Hans: 里程碑
+    ja_JP: マイルストーン
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for issues with these milestones (e.g., v1.0, v2.0, Backlog, comma-separated). Leave empty for all milestones."
+    zh_Hans: "仅对具有这些里程碑的议题触发（例如：v1.0, v2.0, Backlog，逗号分隔）。留空则对所有里程碑触发。"
+    ja_JP: "これらのマイルストーンのイシューのみトリガー（例: v1.0, v2.0, Backlog，カンマ区切り）。空の場合は全てのマイルストーンでトリガー。"
+
+- name: title_pattern
+  label:
+    en_US: Title Pattern
+    zh_Hans: 标题模式
+    ja_JP: タイトルパターン
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if title matches this regex pattern (e.g., ^\\[BLOCKED\\].*, .*unassigned.*, supports regex). Leave empty for no title filtering."
+    zh_Hans: "仅当标题匹配此正则表达式模式时触发（例如：^\\[BLOCKED\\].*, .*unassigned.*，支持正则表达式）。留空则不过滤标题。"
+    ja_JP: "タイトルがこの正規表現パターンに一致する場合のみトリガー（例: ^\\[BLOCKED\\].*, .*unassigned.*，正規表現対応）。空の場合はタイトルフィルタなし。"
+
+output_schema:
+  type: object
+  properties:
+    issue:
+      type: object
+      description: The issue itself
+      required:
+      - id
+      - node_id
+      - number
+      - title
+      - state
+      - created_at
+      - updated_at
+      - user
+      - html_url
+
+    assignee:
+      type: object
+      description: The user who was unassigned from the issue
+      required:
+      - id
+      - login
+
+    repository:
+      type: object
+      description: The repository where the issue was unassigned
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+
+    sender:
+      type: object
+      description: The user who triggered the event
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - issue
+  - assignee
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/issues/issue_unassigned.py

@@ -33,6 +33,13 @@ class GithubTrigger(Trigger):
     __TRIGGER_EVENTS_MAPPING: ClassVar[Mapping[str, Mapping[str, list[str]]]] = {
         "issues": {
             "opened": ["issue_opened"],
+            "closed": ["issue_closed"],
+            "reopened": ["issue_reopened"],
+            "edited": ["issue_edited"],
+            "labeled": ["issue_labeled"],
+            "unlabeled": ["issue_unlabeled"],
+            "assigned": ["issue_assigned"],
+            "unassigned": ["issue_unassigned"],
         }
     }
 

@@ -1,0 +1,126 @@
+identity:
+  name: issue_labeled
+  author: langgenius
+  label:
+    en_US: Issue Labeled
+    zh_Hans: Issue 添加标签
+    ja_JP: Issue ラベル追加
+
+description:
+  human:
+    en_US: Triggers when a label is added to an issue
+    zh_Hans: 当给 issue 添加标签时触发
+    ja_JP: issue にラベルが追加されたときにトリガーがアクティブになります。
+  llm:
+    en_US: This trigger activates when a label is added to an issue on a GitHub repository, providing information about the issue, the label that was added, repository, and user who added it.
+    zh_Hans: 当在 GitHub 仓库中给 issue 添加标签时，此触发器会被激活，提供有关 issue、添加的标签、仓库和添加它的用户的信息。
+    ja_JP: issue に GitHub リポジトリでラベルが追加されたときにトリガーがアクティブになり、issue、追加されたラベル、リポジトリ、およびラベルを追加したユーザーに関する情報を提供します。
+parameters:
+- name: added_label
+  label:
+    en_US: Added Label
+    zh_Hans: 添加的标签
+    ja_JP: 追加されたラベル
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if these specific labels were added (e.g., critical, priority-high, security, comma-separated). Leave empty to trigger for any label addition."
+    zh_Hans: "仅当添加了这些特定标签时触发（例如：critical, priority-high, security，逗号分隔）。留空则对任何标签添加触发。"
+    ja_JP: "これらの特定のラベルが追加された場合のみトリガー（例: critical, priority-high, security，カンマ区切り）。空の場合は任意のラベル追加でトリガー。"
+
+- name: labeler
+  label:
+    en_US: Labeled By
+    zh_Hans: 标签添加者
+    ja_JP: ラベルを追加したユーザー
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if labeled by these users (e.g., project-manager, triage-bot, comma-separated). Leave empty to allow any user."
+    zh_Hans: "仅当由这些用户添加标签时触发（例如：project-manager, triage-bot，逗号分隔）。留空则允许任何用户。"
+    ja_JP: "これらのユーザーによってラベルが追加された場合のみトリガー（例: project-manager, triage-bot，カンマ区切り）。空の場合は全てのユーザーを許可。"
+
+- name: milestone
+  label:
+    en_US: Milestone
+    zh_Hans: 里程碑
+    ja_JP: マイルストーン
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for issues with these milestones (e.g., v1.0, v2.0, Release-Candidate, comma-separated). Leave empty for all milestones."
+    zh_Hans: "仅对具有这些里程碑的议题触发（例如：v1.0, v2.0, Release-Candidate，逗号分隔）。留空则对所有里程碑触发。"
+    ja_JP: "これらのマイルストーンのイシューのみトリガー（例: v1.0, v2.0, Release-Candidate，カンマ区切り）。空の場合は全てのマイルストーンでトリガー。"
+
+- name: title_pattern
+  label:
+    en_US: Title Pattern
+    zh_Hans: 标题模式
+    ja_JP: タイトルパターン
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if title matches this regex pattern (e.g., ^\\[URGENT\\].*, .*security.*, supports regex). Leave empty for no title filtering."
+    zh_Hans: "仅当标题匹配此正则表达式模式时触发（例如：^\\[URGENT\\].*, .*security.*，支持正则表达式）。留空则不过滤标题。"
+    ja_JP: "タイトルがこの正規表現パターンに一致する場合のみトリガー（例: ^\\[URGENT\\].*, .*security.*，正規表現対応）。空の場合はタイトルフィルタなし。"
+
+output_schema:
+  type: object
+  properties:
+    issue:
+      type: object
+      description: The issue itself
+      required:
+      - id
+      - node_id
+      - number
+      - title
+      - state
+      - created_at
+      - updated_at
+      - user
+      - html_url
+
+    label:
+      type: object
+      description: The label that was added
+      required:
+      - id
+      - name
+      - color
+
+    repository:
+      type: object
+      description: The repository where the label was added
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+
+    sender:
+      type: object
+      description: The user who triggered the event
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - issue
+  - label
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/issues/issue_labeled.py

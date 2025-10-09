@@ -106,6 +106,13 @@ subscription_constructor:
 
 events:
 - events/issues/issue_opened.yaml
+- events/issues/issue_closed.yaml
+- events/issues/issue_reopened.yaml
+- events/issues/issue_edited.yaml
+- events/issues/issue_labeled.yaml
+- events/issues/issue_unlabeled.yaml
+- events/issues/issue_assigned.yaml
+- events/issues/issue_unassigned.yaml
 
 identity:
   author: langgenius
