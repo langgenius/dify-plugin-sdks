@@ -20,7 +20,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.entities.provider_config import CredentialType
-from dify_plugin.entities.trigger import Variables, Subscription
+from dify_plugin.entities.trigger import Subscription, Variables
 
 
 class PluginInvokeType(StrEnum):

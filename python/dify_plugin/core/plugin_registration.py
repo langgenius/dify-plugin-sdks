@@ -517,11 +517,14 @@ class PluginRegistration:
         except ValueError:
             configuration = None
 
-        if configuration:
-            if configuration.subscription_constructor and configuration.subscription_constructor.oauth_schema:
-                constructor_cls = self.trigger_factory.get_subscription_constructor_cls(provider)
-                if constructor_cls:
-                    return constructor_cls
+        if (
+            configuration
+            and configuration.subscription_constructor
+            and configuration.subscription_constructor.oauth_schema
+        ):
+            constructor_cls = self.trigger_factory.get_subscription_constructor_cls(provider)
+            if constructor_cls:
+                return constructor_cls
 
         for provider_registration in self.tools_mapping:
             if provider_registration == provider and self.tools_mapping[provider_registration][0].oauth_schema:

@@ -9,14 +9,13 @@ from dify_plugin.core.runtime import Session
 from dify_plugin.core.trigger_factory import TriggerFactory
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.trigger import (
-    Variables,
-    Subscription,
     EventConfiguration,
     EventConfigurationExtra,
     EventDescription,
     EventDispatch,
     EventIdentity,
     EventParameter,
+    Subscription,
     TriggerProviderConfiguration,
     TriggerProviderConfigurationExtra,
     TriggerProviderIdentity,
@@ -24,6 +23,7 @@ from dify_plugin.entities.trigger import (
     TriggerSubscriptionConstructorConfigurationExtra,
     TriggerSubscriptionConstructorRuntime,
     UnsubscribeResult,
+    Variables,
 )
 from dify_plugin.interfaces.trigger import Event, Trigger, TriggerSubscriptionConstructor
 

@@ -8,20 +8,20 @@ from dify_plugin.core.runtime import Session
 from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
 from dify_plugin.entities.trigger import (
-    Variables,
-    Subscription,
     EventDispatch,
+    Subscription,
     TriggerSubscriptionConstructorRuntime,
     UnsubscribeResult,
+    Variables,
 )
 from dify_plugin.errors.trigger import SubscriptionError, TriggerDispatchError
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
 __all__ = [
-    "SubscriptionError",
-    "TriggerDispatchError",
     "Event",
+    "SubscriptionError",
     "Trigger",
+    "TriggerDispatchError",
     "TriggerSubscriptionConstructor",
 ]
 

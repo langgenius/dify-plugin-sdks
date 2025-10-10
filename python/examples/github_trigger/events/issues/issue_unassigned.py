@@ -1,11 +1,11 @@
-from collections.abc import Mapping
 import re
+from collections.abc import Mapping
 from typing import Any
 
-from dify_plugin.errors.trigger import EventIgnoreError
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Variables
+from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.trigger import Event
 
 
@@ -23,7 +23,9 @@ class IssueUnassignedEvent(Event):
         if not unassigned_from_param:
             return
 
-        allowed_unassignees = [unassignee.strip() for unassignee in unassigned_from_param.split(",") if unassignee.strip()]
+        allowed_unassignees = [
+            unassignee.strip() for unassignee in unassigned_from_param.split(",") if unassignee.strip()
+        ]
         if not allowed_unassignees:
             return
 
