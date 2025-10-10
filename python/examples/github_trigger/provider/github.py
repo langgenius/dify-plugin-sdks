@@ -49,7 +49,7 @@ class GithubTrigger(Trigger):
         event_type = event_type.lower()
         action: str | None = payload.get("action")
         if event_type == "issues":
-            return f"issues_{action}"
+            return f"issue_{action}"
 
         if event_type == "issue_comments":
             return f"issue_comment_{action}"
