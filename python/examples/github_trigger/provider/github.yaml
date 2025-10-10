@@ -437,6 +437,8 @@ events:
 - events/issue_comment/issue_comment_created.yaml
 - events/issue_comment/issue_comment_edited.yaml
 - events/issue_comment/issue_comment_deleted.yaml
+- events/star/star_created.yaml
+- events/star/star_deleted.yaml
 
 identity:
   author: langgenius

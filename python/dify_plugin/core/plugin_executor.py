@@ -35,8 +35,8 @@ from dify_plugin.core.entities.plugin.request import (
     ToolValidateCredentialsRequest,
     TriggerDispatchEventRequest,
     TriggerDispatchResponse,
-    TriggerInvokeRequest,
-    TriggerInvokeResponse,
+    TriggerInvokeEventRequest,
+    TriggerInvokeEventResponse,
     TriggerRefreshRequest,
     TriggerRefreshResponse,
     TriggerSubscribeRequest,
@@ -53,7 +53,7 @@ from dify_plugin.entities.datasource import (
     DatasourceRuntime,
 )
 from dify_plugin.entities.tool import ToolRuntime
-from dify_plugin.entities.trigger import Subscription, TriggerSubscriptionConstructorRuntime
+from dify_plugin.entities.trigger import Subscription, TriggerSubscriptionConstructorRuntime, Variables
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
@@ -62,7 +62,7 @@ from dify_plugin.interfaces.model.rerank_model import RerankModel
 from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
-from dify_plugin.interfaces.trigger import TriggerSubscriptionConstructor
+from dify_plugin.interfaces.trigger import Event, TriggerSubscriptionConstructor
 from dify_plugin.protocol.dynamic_select import DynamicSelectProtocol
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
@@ -438,14 +438,17 @@ class PluginExecutor:
                 session=session,
             )
 
-    def invoke_trigger(self, session: Session, request: TriggerInvokeRequest):
+    def invoke_trigger_event(self, session: Session, request: TriggerInvokeEventRequest):
         """
-        Invoke trigger
+        Invoke trigger event
         """
-        trigger = self.registration.get_trigger_event_handler(request.provider, request.trigger, session)
-        event = trigger.on_event(deserialize_request(binascii.unhexlify(request.raw_http_request)), request.parameters)
-        return TriggerInvokeResponse(
-            event=event,
+        event: Event = self.registration.get_trigger_event_handler(request.provider, request.event, session)
+        variables: Variables = event.on_event(
+            request=deserialize_request(raw_data=binascii.unhexlify(request.raw_http_request)),
+            parameters=request.parameters,
+        )
+        return TriggerInvokeEventResponse(
+            variables=variables.variables,
         )
 
     def validate_trigger_provider_credentials(

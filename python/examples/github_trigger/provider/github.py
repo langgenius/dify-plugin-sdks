@@ -41,9 +41,8 @@ class GithubTrigger(Trigger):
 
         payload: Mapping[str, Any] = self._validate_payload(request)
         response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
-        return EventDispatch(
-            events=[self._dispatch_trigger_event(event_type=event_type, payload=payload)], response=response
-        )
+        event: str = self._dispatch_trigger_event(event_type=event_type, payload=payload)
+        return EventDispatch(events=[event] if event else [], response=response)
 
     def _dispatch_trigger_event(self, event_type: str, payload: Mapping[str, Any]) -> str:
         event_type = event_type.lower()
@@ -54,7 +53,10 @@ class GithubTrigger(Trigger):
         if event_type == "issue_comments":
             return f"issue_comment_{action}"
 
-        raise TriggerDispatchError(f"Unsupported event type: {event_type}")
+        if event_type == "star":
+            return f"star_{action}"
+
+        return ""
 
     def _validate_payload(self, request: Request) -> Mapping[str, Any]:
         try:

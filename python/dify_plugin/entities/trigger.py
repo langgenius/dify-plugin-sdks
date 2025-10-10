@@ -32,7 +32,7 @@ class EventDispatch(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    events: list[str] = Field(..., description="List of Event names that should be invoked.")
+    events: list[str] = Field(default_factory=list, description="List of Event names that should be invoked.")
     response: Response = Field(
         ...,
         description="The HTTP Response object returned to third-party calls. For example, webhook calls, etc.",

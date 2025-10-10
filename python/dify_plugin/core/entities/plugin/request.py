@@ -2,7 +2,7 @@ from collections.abc import Mapping
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from dify_plugin.entities.datasource import (
     GetOnlineDocumentPageContentRequest,
@@ -20,7 +20,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.entities.provider_config import CredentialType
-from dify_plugin.entities.trigger import Subscription, Variables
+from dify_plugin.entities.trigger import Subscription
 
 
 class PluginInvokeType(StrEnum):
@@ -39,7 +39,7 @@ class AgentActions(StrEnum):
 
 
 class TriggerActions(StrEnum):
-    InvokeTrigger = "invoke_trigger"
+    InvokeTriggerEvent = "invoke_trigger_event"
     ValidateProviderCredentials = "validate_trigger_credentials"
     DispatchTriggerEvent = "dispatch_trigger_event"
     SubscribeTrigger = "subscribe_trigger"
@@ -369,11 +369,11 @@ class DatasourceOnlineDriveDownloadFileRequest(PluginAccessRequest):
     request: OnlineDriveDownloadFileRequest
 
 
-class TriggerInvokeRequest(BaseModel):
+class TriggerInvokeEventRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Trigger
-    action: TriggerActions = TriggerActions.InvokeTrigger
+    action: TriggerActions = TriggerActions.InvokeTriggerEvent
     provider: str
-    trigger: str
+    event: str
     credentials: Mapping[str, Any]
     credential_type: CredentialType = CredentialType.API_KEY
     user_id: str
@@ -383,8 +383,10 @@ class TriggerInvokeRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
 
-class TriggerInvokeResponse(BaseModel):
-    event: Variables
+class TriggerInvokeEventResponse(BaseModel):
+    variables: Mapping[str, Any] = Field(
+        description="The output variables of the event, same with the schema defined in `output_schema` in the YAML",
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 

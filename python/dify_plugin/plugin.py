@@ -388,9 +388,9 @@ class Plugin(IOServer, Router):
 
         # Trigger routes
         self.register_route(
-            self.plugin_executer.invoke_trigger,
+            self.plugin_executer.invoke_trigger_event,
             lambda data: data.get("type") == PluginInvokeType.Trigger.value
-            and data.get("action") == TriggerActions.InvokeTrigger.value,
+            and data.get("action") == TriggerActions.InvokeTriggerEvent.value,
         )
 
         self.register_route(
