@@ -275,6 +275,11 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
                         - {"api_key": "sk-..."} for API key auth
                         - {} for services that don't require auth
 
+            selected_events: List of event types to subscribe to.
+                        If None, all events will be subscribed to.
+                        This is optional and can be left as None.
+                        If provided, only the selected events will be subscribed to.
+
             parameters: Parameters for creating the subscription.
                         Structure depends on provider's parameters_schema.
 
