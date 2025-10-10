@@ -8,7 +8,7 @@ import time
 import urllib.parse
 import uuid
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, cast
 
 import requests
 from werkzeug import Request, Response
@@ -162,10 +162,8 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         except ValueError:
             raise ValueError("repository must be in format 'owner/repo'") from None
 
-        selected_events: list[str] = parameters.get("events", [])
-        events = self._resolve_webhook_events(selected_events=selected_events)
+        events: list[str] = parameters.get("events", [])
         webhook_secret = uuid.uuid4().hex
-
         url = f"https://api.github.com/repos/{owner}/{repo}/hooks"
         headers = {
             "Authorization": f"Bearer {credentials.get('access_tokens')}",
@@ -198,7 +196,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                 },
             )
 
-        response_data = response.json() if response.content else {}
+        response_data: dict[str, Any] = response.json() if response.content else {}
         error_msg = response_data.get("message", "Unknown error")
         error_details = response_data.get("errors", [])
         detailed_error = f"Failed to create GitHub webhook: {error_msg}"
@@ -283,15 +281,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
-    def _resolve_webhook_events(self, selected_events: list[str]) -> list[str]:
-        if not selected_events:
-            return [key for key in GithubTrigger._TRIGGER_EVENTS_MAPPING.keys()]
-
-        resolved_events: set[str] = set()
-        for trigger in selected_events:
-            resolved_events.update(GithubTrigger._TRIGGER_EVENTS.get(trigger, [trigger]))
-
-        return sorted(resolved_events) or ["issues"]
 
     def _fetch_repositories(self, access_token: str) -> list[ParameterOption]:
         headers = {
@@ -323,14 +312,15 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                     message = response.text
                 raise ValueError(f"Failed to fetch repositories from GitHub: {message}")
 
-            repos = response.json() or []
-            if not isinstance(repos, list):
+            raw_repos: Any = response.json() or []
+            if not isinstance(raw_repos, list):
                 raise ValueError("Unexpected response format from GitHub API when fetching repositories")
 
+            repos = cast(list[dict[str, Any]], raw_repos)
             for repo in repos:
                 full_name = repo.get("full_name")
-                owner = repo.get("owner") or {}
-                avatar_url = owner.get("avatar_url")
+                owner: dict[str, Any] = repo.get("owner") or {}
+                avatar_url: str | None = owner.get("avatar_url")
                 if full_name:
                     options.append(
                         ParameterOption(
