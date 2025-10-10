@@ -256,7 +256,7 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         )
 
     def create_subscription(
-        self, endpoint: str, credentials: Mapping[str, Any], selected_events: list[str], parameters: Mapping[str, Any]
+        self, endpoint: str, credentials: Mapping[str, Any], parameters: Mapping[str, Any]
     ) -> Subscription:
         """
         Create a trigger subscription with the external service.
@@ -274,11 +274,6 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
                         - {"access_token": "ghp_..."} for GitHub
                         - {"api_key": "sk-..."} for API key auth
                         - {} for services that don't require auth
-
-            selected_events: List of event types to subscribe to.
-                        If None, all events will be subscribed to.
-                        This is optional and can be left as None.
-                        If provided, only the selected events will be subscribed to.
 
             parameters: Parameters for creating the subscription.
                         Structure depends on provider's parameters_schema.
@@ -317,13 +312,11 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             >>> print(result.endpoint)  # "https://dify.ai/webhooks/sub_123"
             >>> print(result.properties["external_id"])  # GitHub webhook ID
         """
-        return self._create_subscription(
-            endpoint=endpoint, credentials=credentials, selected_events=selected_events, parameters=parameters
-        )
+        return self._create_subscription(endpoint=endpoint, credentials=credentials, parameters=parameters)
 
     @abstractmethod
     def _create_subscription(
-        self, endpoint: str, credentials: Mapping[str, Any], selected_events: list[str], parameters: Mapping[str, Any]
+        self, endpoint: str, credentials: Mapping[str, Any], parameters: Mapping[str, Any]
     ) -> Subscription:
         """
         Internal method to implement subscription logic.
@@ -344,7 +337,7 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             endpoint: The webhook endpoint URL allocated by Dify for receiving events
 
             credentials: Authentication credentials
-            parameters: Subscription parameters
+            parameters: Subscription creation parameters
 
         Returns:
             Subscription: Subscription details with metadata for future operations

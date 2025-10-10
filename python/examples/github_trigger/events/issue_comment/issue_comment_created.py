@@ -9,7 +9,7 @@ from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
 
 
-class CommentCreatedEvent(Event):
+class IssueCommentCreatedEvent(Event):
     """
     GitHub Issue Comment Created Event
 

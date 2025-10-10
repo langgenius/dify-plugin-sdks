@@ -1,5 +1,4 @@
 from collections.abc import Mapping
-import re
 from typing import Any
 
 from dify_plugin.errors.trigger import EventIgnoreError
@@ -9,18 +8,20 @@ from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
 
 
-class CommentEditedEvent(Event):
+class IssueCommentDeletedEvent(Event):
     """
-    GitHub Issue Comment Edited Event
+    GitHub Issue Comment Deleted Event
 
-    This event transforms GitHub issue comment edited webhook events and extracts relevant
+    This event transforms GitHub issue comment deleted webhook events and extracts relevant
     information from the webhook payload to provide as variables to the workflow.
     Works for both issue comments and pull request comments.
-    The payload includes a 'changes' object showing what was modified.
+
+    Note: There are known issues with GitHub not reliably sending deleted events.
+    This may require "Issues: Read & write" permission to work correctly.
     """
 
     def _check_comment_body_contains(self, comment: Mapping[str, Any], body_contains_param: str | None) -> None:
-        """Check if comment body contains required keywords"""
+        """Check if deleted comment body contained required keywords"""
         if not body_contains_param:
             return
 
@@ -32,17 +33,30 @@ class CommentEditedEvent(Event):
         if not any(keyword in comment_body for keyword in keywords):
             raise EventIgnoreError()
 
-    def _check_editor(self, payload: Mapping[str, Any], editor_param: str | None) -> None:
-        """Check if the editor is in allowed list"""
-        if not editor_param:
+    def _check_deleter(self, payload: Mapping[str, Any], deleter_param: str | None) -> None:
+        """Check if the deleter is in allowed list"""
+        if not deleter_param:
             return
 
-        allowed_editors = [editor.strip() for editor in editor_param.split(",") if editor.strip()]
-        if not allowed_editors:
+        allowed_deleters = [deleter.strip() for deleter in deleter_param.split(",") if deleter.strip()]
+        if not allowed_deleters:
             return
 
-        editor = payload.get("sender", {}).get("login")
-        if editor not in allowed_editors:
+        deleter = payload.get("sender", {}).get("login")
+        if deleter not in allowed_deleters:
+            raise EventIgnoreError()
+
+    def _check_comment_author(self, comment: Mapping[str, Any], author_param: str | None) -> None:
+        """Check if the original comment author is in allowed list"""
+        if not author_param:
+            return
+
+        allowed_authors = [author.strip() for author in author_param.split(",") if author.strip()]
+        if not allowed_authors:
+            return
+
+        author = comment.get("user", {}).get("login")
+        if author not in allowed_authors:
             raise EventIgnoreError()
 
     def _check_issue_labels(self, issue: Mapping[str, Any], labels_param: str | None) -> None:
@@ -58,17 +72,8 @@ class CommentEditedEvent(Event):
         if not any(label in issue_labels for label in required_labels):
             raise EventIgnoreError()
 
-    def _check_issue_state(self, issue: Mapping[str, Any], state_param: str | None) -> None:
-        """Check if issue state matches the filter"""
-        if not state_param:
-            return
-
-        issue_state = issue.get("state", "").lower()
-        if issue_state != state_param.lower():
-            raise EventIgnoreError()
-
     def _check_is_pull_request(self, issue: Mapping[str, Any], is_pr_param: bool | None) -> None:
-        """Check if comment is on a pull request"""
+        """Check if comment was on a pull request"""
         if is_pr_param is None:
             return
 
@@ -80,7 +85,7 @@ class CommentEditedEvent(Event):
 
     def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
         """
-        Transform GitHub issue comment edited webhook event into structured Variables
+        Transform GitHub issue comment deleted webhook event into structured Variables
         """
         payload = request.get_json()
         if not payload:
@@ -96,9 +101,9 @@ class CommentEditedEvent(Event):
 
         # Apply all filters
         self._check_comment_body_contains(comment, parameters.get("comment_body_contains"))
-        self._check_editor(payload, parameters.get("editor"))
+        self._check_deleter(payload, parameters.get("deleter"))
+        self._check_comment_author(comment, parameters.get("comment_author"))
         self._check_issue_labels(issue, parameters.get("issue_labels"))
-        self._check_issue_state(issue, parameters.get("issue_state"))
         self._check_is_pull_request(issue, parameters.get("is_pull_request"))
 
         return Variables(variables={**payload})

@@ -62,6 +62,7 @@ from dify_plugin.interfaces.model.rerank_model import RerankModel
 from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
+from dify_plugin.interfaces.trigger import TriggerSubscriptionConstructor
 from dify_plugin.protocol.dynamic_select import DynamicSelectProtocol
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
@@ -458,8 +459,10 @@ class PluginExecutor:
             session_id=session.session_id,
         )
 
-        provider_instance = self.registration.get_trigger_subscription_constructor(request.provider, runtime, session)
-        provider_instance.validate_api_key(request.credentials)
+        provider_instance: TriggerSubscriptionConstructor = self.registration.get_trigger_subscription_constructor(
+            request.provider, runtime, session
+        )
+        provider_instance.validate_api_key(credentials=request.credentials)
         return {"result": True}
 
     def dispatch_trigger_event(self, session: Session, request: TriggerDispatchEventRequest) -> TriggerDispatchResponse:
@@ -490,10 +493,9 @@ class PluginExecutor:
         )
 
         subscription: Subscription = trigger_provider_instance.create_subscription(
-            request.endpoint,
-            request.credentials,
-            request.selected_events,
-            request.parameters,
+            endpoint=request.endpoint,
+            credentials=request.credentials,
+            parameters=request.parameters,
         )
         return TriggerSubscriptionResponse(subscription=subscription.model_dump())
 

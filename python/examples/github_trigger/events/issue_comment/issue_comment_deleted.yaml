@@ -1,10 +1,10 @@
 identity:
-  name: comment_deleted
+  name: issue_comment_deleted
   author: langgenius
   label:
-    en_US: Comment Deleted
-    zh_Hans: 评论删除
-    ja_JP: コメント削除
+    en_US: Issue Comment Deleted
+    zh_Hans: Issue 评论删除
+    ja_JP: Issue コメント削除
 
 description:
   human:
@@ -147,4 +147,4 @@ output_schema:
 
 extra:
   python:
-    source: events/issue_comment/comment_deleted.py
+    source: events/issue_comment/issue_comment_deleted.py

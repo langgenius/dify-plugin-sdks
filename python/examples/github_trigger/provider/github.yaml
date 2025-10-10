@@ -119,9 +119,9 @@ events:
 - events/issues/issue_unlabeled.yaml
 - events/issues/issue_assigned.yaml
 - events/issues/issue_unassigned.yaml
-- events/issue_comment/comment_created.yaml
-- events/issue_comment/comment_edited.yaml
-- events/issue_comment/comment_deleted.yaml
+- events/issue_comment/issue_comment_created.yaml
+- events/issue_comment/issue_comment_edited.yaml
+- events/issue_comment/issue_comment_deleted.yaml
 
 identity:
   author: langgenius

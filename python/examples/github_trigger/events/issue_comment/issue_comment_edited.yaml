@@ -1,10 +1,10 @@
 identity:
-  name: comment_edited
+  name: issue_comment_edited
   author: langgenius
   label:
-    en_US: Comment Edited
-    zh_Hans: 评论编辑
-    ja_JP: コメント編集
+    en_US: Issue Comment Edited
+    zh_Hans: Issue 评论编辑
+    ja_JP: Issue コメント編集
 
 description:
   human:
@@ -143,4 +143,4 @@ output_schema:
 
 extra:
   python:
-    source: events/issue_comment/comment_edited.py
+    source: events/issue_comment/issue_comment_edited.py

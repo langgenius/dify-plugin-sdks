@@ -8,7 +8,7 @@ import time
 import urllib.parse
 import uuid
 from collections.abc import Mapping
-from typing import Any, ClassVar
+from typing import Any
 
 import requests
 from werkzeug import Request, Response
@@ -30,46 +30,31 @@ from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstruct
 class GithubTrigger(Trigger):
     """Handle GitHub webhook event dispatch."""
 
-    __TRIGGER_EVENTS_MAPPING: ClassVar[Mapping[str, Mapping[str, list[str]]]] = {
-        "issues": {
-            "opened": ["issue_opened"],
-            "closed": ["issue_closed"],
-            "reopened": ["issue_reopened"],
-            "edited": ["issue_edited"],
-            "labeled": ["issue_labeled"],
-            "unlabeled": ["issue_unlabeled"],
-            "assigned": ["issue_assigned"],
-            "unassigned": ["issue_unassigned"],
-        },
-        "issue_comment": {
-            "created": ["comment_created"],
-            "edited": ["comment_edited"],
-            "deleted": ["comment_deleted"],
-        }
-    }
-
     def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
         webhook_secret = subscription.properties.get("webhook_secret")
         if webhook_secret:
-            self._validate_signature(request, webhook_secret)
+            self._validate_signature(request=request, webhook_secret=webhook_secret)
 
-        event_type = request.headers.get("X-GitHub-Event")
+        event_type: str | None = request.headers.get("X-GitHub-Event")
         if not event_type:
             raise TriggerDispatchError("Missing GitHub event type header")
 
-        payload = self._validate_payload(request)
-        events = self._dispatch_event_handlers(event_type, payload)
+        payload: Mapping[str, Any] = self._validate_payload(request)
         response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
-        return EventDispatch(events=events, response=response)
+        return EventDispatch(
+            events=[self._dispatch_trigger_event(event_type=event_type, payload=payload)], response=response
+        )
 
-    def _dispatch_event_handlers(self, event_type: str, payload: Mapping[str, Any]) -> list[str]:
+    def _dispatch_trigger_event(self, event_type: str, payload: Mapping[str, Any]) -> str:
         event_type = event_type.lower()
-        action = payload.get("action")
+        action: str | None = payload.get("action")
+        if event_type == "issues":
+            return f"issues_{action}"
 
-        if event_type in self.__TRIGGER_EVENTS_MAPPING:
-            return self.__TRIGGER_EVENTS_MAPPING[event_type].get(action, [])
+        if event_type == "issue_comments":
+            return f"issue_comment_{action}"
 
-        return []
+        raise TriggerDispatchError(f"Unsupported event type: {event_type}")
 
     def _validate_payload(self, request: Request) -> Mapping[str, Any]:
         try:
@@ -166,7 +151,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         self,
         endpoint: str,
         credentials: Mapping[str, Any],
-        selected_events: list[str],
         parameters: Mapping[str, Any],
     ) -> Subscription:
         repository = parameters.get("repository")
@@ -178,7 +162,8 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         except ValueError:
             raise ValueError("repository must be in format 'owner/repo'") from None
 
-        events = self._resolve_webhook_events(selected_events)
+        selected_events: list[str] = parameters.get("events", [])
+        events = self._resolve_webhook_events(selected_events=selected_events)
         webhook_secret = uuid.uuid4().hex
 
         url = f"https://api.github.com/repos/{owner}/{repo}/hooks"
@@ -300,7 +285,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     # ------------------------------------------------------------------
     def _resolve_webhook_events(self, selected_events: list[str]) -> list[str]:
         if not selected_events:
-            return ["issues", "issue_comment"]
+            return [key for key in GithubTrigger._TRIGGER_EVENTS_MAPPING.keys()]
 
         resolved_events: set[str] = set()
         for trigger in selected_events:

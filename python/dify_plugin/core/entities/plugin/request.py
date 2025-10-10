@@ -374,11 +374,11 @@ class TriggerInvokeRequest(BaseModel):
     action: TriggerActions = TriggerActions.InvokeTrigger
     provider: str
     trigger: str
-    credentials: dict
+    credentials: Mapping[str, Any]
     credential_type: CredentialType = CredentialType.API_KEY
     user_id: str
     raw_http_request: str
-    parameters: dict
+    parameters: Mapping[str, Any]
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -393,7 +393,7 @@ class TriggerValidateProviderCredentialsRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Trigger
     action: TriggerActions = TriggerActions.ValidateProviderCredentials
     provider: str
-    credentials: dict
+    credentials: Mapping[str, Any]
     user_id: str
 
     model_config = ConfigDict(protected_namespaces=())
@@ -421,17 +421,16 @@ class TriggerSubscribeRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.Trigger
     action: TriggerActions = TriggerActions.SubscribeTrigger
     provider: str
-    credentials: dict
+    credentials: Mapping[str, Any]
     endpoint: str
-    parameters: dict
-    selected_events: list[str] | None
+    parameters: Mapping[str, Any]
     user_id: str
 
     model_config = ConfigDict(protected_namespaces=())
 
 
 class TriggerSubscriptionResponse(BaseModel):
-    subscription: dict
+    subscription: Mapping[str, Any]
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -441,14 +440,14 @@ class TriggerUnsubscribeRequest(BaseModel):
     action: TriggerActions = TriggerActions.UnsubscribeTrigger
     provider: str
     subscription: Subscription
-    credentials: dict  # From credentials_schema
+    credentials: Mapping[str, Any]  # From credentials_schema
     user_id: str
 
     model_config = ConfigDict(protected_namespaces=())
 
 
 class TriggerUnsubscribeResponse(BaseModel):
-    subscription: dict
+    subscription: Mapping[str, Any]
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -458,13 +457,13 @@ class TriggerRefreshRequest(BaseModel):
     action: TriggerActions = TriggerActions.RefreshTrigger
     provider: str
     subscription: Subscription
-    credentials: dict  # From credentials_schema
+    credentials: Mapping[str, Any]  # From credentials_schema
     user_id: str
 
     model_config = ConfigDict(protected_namespaces=())
 
 
 class TriggerRefreshResponse(BaseModel):
-    subscription: dict
+    subscription: Mapping[str, Any]
 
     model_config = ConfigDict(protected_namespaces=())

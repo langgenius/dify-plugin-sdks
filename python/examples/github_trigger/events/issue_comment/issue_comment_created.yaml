@@ -1,10 +1,10 @@
 identity:
-  name: comment_created
+  name: issue_comment_created
   author: langgenius
   label:
-    en_US: Comment Created
-    zh_Hans: 评论创建
-    ja_JP: コメント作成
+    en_US: Issue Comment Created
+    zh_Hans: Issue 评论创建
+    ja_JP: Issue コメント作成
 
 description:
   human:
@@ -162,4 +162,4 @@ output_schema:
 
 extra:
   python:
-    source: events/issue_comment/comment_created.py
+    source: events/issue_comment/issue_comment_created.py
