@@ -1,7 +1,7 @@
 import binascii
 import tempfile
-from collections.abc import Generator, Iterable
-from typing import Any, Mapping
+from collections.abc import Generator, Iterable, Mapping
+from typing import Any
 
 from werkzeug import Request, Response
 

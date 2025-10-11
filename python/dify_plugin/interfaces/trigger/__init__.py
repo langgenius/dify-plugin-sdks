@@ -398,7 +398,8 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
 
         Args:
             subscription: The Subscription object returned from create_subscription().
-                        Contains expires_at, endpoint, parameters, credentials, and credential_type with all necessary information.
+                        Contains expires_at, endpoint, parameters, credentials,
+                        and credential_type with all necessary information.
 
             credential_type: The type of the credentials, e.g., "api-key", "oauth2", "unauthorized"
 
