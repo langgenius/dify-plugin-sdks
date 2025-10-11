@@ -363,15 +363,20 @@ class PluginExecutor:
 
             yield result
 
-    def _get_oauth_provider_instance(self, provider: str) -> OAuthProviderProtocol:
-        provider_cls = self.registration.get_supported_oauth_provider_cls(provider)
-        if provider_cls is None:
+    def _get_oauth_provider_instance(self, session: Session, provider: str) -> OAuthProviderProtocol:
+        oauth_supported_provider: OAuthProviderProtocol | None = self.registration.get_supported_oauth_provider(
+            session=session,
+            provider=provider,
+        )
+        if oauth_supported_provider is None:
             raise ValueError(f"Provider `{provider}` does not support OAuth")
 
-        return provider_cls()
+        return oauth_supported_provider
 
     def get_oauth_authorization_url(self, session: Session, data: OAuthGetAuthorizationUrlRequest) -> Mapping[str, str]:
-        provider_instance: OAuthProviderProtocol = self._get_oauth_provider_instance(provider=data.provider)
+        provider_instance: OAuthProviderProtocol = self._get_oauth_provider_instance(
+            session=session, provider=data.provider
+        )
 
         return {
             "authorization_url": provider_instance.oauth_get_authorization_url(
@@ -380,7 +385,9 @@ class PluginExecutor:
         }
 
     def get_oauth_credentials(self, session: Session, data: OAuthGetCredentialsRequest) -> Mapping[str, Any]:
-        provider_instance: OAuthProviderProtocol = self._get_oauth_provider_instance(provider=data.provider)
+        provider_instance: OAuthProviderProtocol = self._get_oauth_provider_instance(
+            session=session, provider=data.provider
+        )
         bytes_data: bytes = binascii.unhexlify(data.raw_http_request)
         request: Request = deserialize_request(bytes_data)
 
@@ -397,7 +404,9 @@ class PluginExecutor:
     def refresh_oauth_credentials(
         self, session: Session, data: OAuthRefreshCredentialsRequest
     ) -> dict[str, Mapping[str, Any] | int]:
-        provider_instance: OAuthProviderProtocol = self._get_oauth_provider_instance(provider=data.provider)
+        provider_instance: OAuthProviderProtocol = self._get_oauth_provider_instance(
+            session=session, provider=data.provider
+        )
         credentials: OAuthCredentials = provider_instance.oauth_refresh_credentials(
             redirect_uri=data.redirect_uri, system_credentials=data.system_credentials, credentials=data.credentials
         )

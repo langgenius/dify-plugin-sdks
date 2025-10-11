@@ -523,7 +523,7 @@ class PluginRegistration:
             runtime=runtime,
         )
 
-    def get_supported_oauth_provider_cls(self, provider: str) -> type[OAuthProviderProtocol] | None:
+    def get_supported_oauth_provider(self, session: Session, provider: str) -> OAuthProviderProtocol | None:
         """
         get provider which supports oauth
         :param provider: provider name
@@ -539,18 +539,24 @@ class PluginRegistration:
             and configuration.subscription_constructor
             and configuration.subscription_constructor.oauth_schema
         ):
-            constructor_cls = self.trigger_factory.get_subscription_constructor_cls(provider)
+            constructor_cls: type[TriggerSubscriptionConstructor] | None = (
+                self.trigger_factory.get_subscription_constructor_cls(provider)
+            )
             if constructor_cls:
-                return constructor_cls
+                return constructor_cls(
+                    runtime=TriggerSubscriptionConstructorRuntime(
+                        session=session, credential_type=CredentialType.UNAUTHORIZED
+                    )
+                )
 
         for provider_registration in self.tools_mapping:
             if provider_registration == provider and self.tools_mapping[provider_registration][0].oauth_schema:
-                return self.tools_mapping[provider_registration][1]
+                return self.tools_mapping[provider_registration][1]()
 
         if provider in self.datasource_mapping:
-            datasource = self.datasource_mapping[provider]
+            datasource: DatasourceProviderMapping = self.datasource_mapping[provider]
             if datasource.configuration.oauth_schema:
-                return datasource.provider_cls
+                return datasource.provider_cls()
 
         return None
 
