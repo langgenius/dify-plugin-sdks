@@ -17,6 +17,17 @@ description:
     ja_JP: ユーザーが GitHub リポジトリにスターを付けたときにトリガーがアクティブになり、リポジトリとスターを付けたユーザーに関する情報を提供します。
 
 parameters:
+- name: time_range
+  label:
+    en_US: Time Range
+    zh_Hans: 时间范围
+    ja_JP: 時間範囲
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for stars in the last time range (e.g., 1h, 1d, 1w, 1m, 1y)"
+    zh_Hans: "仅对过去一段时间内的 star 操作触发（例如：1h, 1d, 1w, 1m, 1y）"
+    ja_JP: "過去の時間範囲内のスターのみトリガー（例: 1h, 1d, 1w, 1m, 1y）"
 
 output_schema:
   type: object
