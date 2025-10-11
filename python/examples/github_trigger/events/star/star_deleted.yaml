@@ -17,17 +17,21 @@ description:
     ja_JP: ユーザーが GitHub リポジトリからスターを削除したときにトリガーがアクティブになり、リポジトリとスターを削除したユーザーに関する情報を提供します。
 
 parameters:
-- name: unstarred_by
+- name: "repository"
   label:
-    en_US: Unstarred By
-    zh_Hans: 取消 Star 用户过滤
-    ja_JP: ユーザーフィルター
-  type: string
+    en_US: "Repository(test for dynamic-select)"
+    zh_Hans: "仓库(测试用)"
+    ja_JP: "リポジトリ"
+  type: "dynamic-select"
   required: false
-  description:
-    en_US: "Only trigger for unstars from these users (e.g., user1, user2, comma-separated)"
-    zh_Hans: "仅对这些用户的取消 star 操作触发（例如：user1, user2，逗号分隔）"
-    ja_JP: "これらのユーザーのスター削除のみトリガー（例: user1, user2，カンマ区切り）"
+  placeholder:
+    en_US: "owner/repo"
+    zh_Hans: "owner/repo"
+    ja_JP: "owner/repo"
+  help:
+    en_US: "GitHub repository in format owner/repo (e.g., microsoft/vscode)"
+    zh_Hans: "GitHub 仓库，格式为 owner/repo（例如：microsoft/vscode）"
+    ja_JP: "GitHubリポジトリは owner/repo 形式で入力してください（例: microsoft/vscode）"
 
 output_schema:
   type: object

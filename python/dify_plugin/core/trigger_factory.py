@@ -1,13 +1,15 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Any
 
 from dify_plugin.core.runtime import Session
+from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import (
     EventConfiguration,
     TriggerProviderConfiguration,
     TriggerSubscriptionConstructorRuntime,
 )
-from dify_plugin.interfaces.trigger import Event, Trigger, TriggerSubscriptionConstructor
+from dify_plugin.interfaces.trigger import Event, EventRuntime, Trigger, TriggerRuntime, TriggerSubscriptionConstructor
 
 
 @dataclass(slots=True)
@@ -93,11 +95,23 @@ class TriggerFactory:
     # ------------------------------------------------------------------
     # Provider factories
     # ------------------------------------------------------------------
-    def get_trigger_provider(self, provider_name: str, session: Session) -> Trigger:
+    def get_trigger_provider(
+        self,
+        provider_name: str,
+        session: Session,
+        credentials: Mapping[str, Any] | None,
+        credential_type: CredentialType | None,
+    ) -> Trigger:
         """Instantiate the trigger provider implementation for the given provider name."""
 
         entry = self._get_entry(provider_name)
-        return entry.provider_cls(session)
+        return entry.provider_cls(
+            runtime=TriggerRuntime(
+                session=session,
+                credential_type=credential_type or CredentialType.UNAUTHORIZED,
+                credentials=credentials,
+            )
+        )
 
     def get_provider_cls(self, provider_name: str) -> type[Trigger]:
         return self._get_entry(provider_name).provider_cls
@@ -109,7 +123,6 @@ class TriggerFactory:
         self,
         provider_name: str,
         runtime: TriggerSubscriptionConstructorRuntime,
-        session: Session,
     ) -> TriggerSubscriptionConstructor:
         """Instantiate the subscription constructor implementation."""
 
@@ -117,7 +130,7 @@ class TriggerFactory:
         if not entry.subscription_constructor_cls:
             raise ValueError(f"Trigger provider `{provider_name}` does not define a subscription constructor")
 
-        return entry.subscription_constructor_cls(runtime, session)
+        return entry.subscription_constructor_cls(runtime)
 
     def get_subscription_constructor_cls(self, provider_name: str) -> type[TriggerSubscriptionConstructor] | None:
         return self._get_entry(provider_name).subscription_constructor_cls
@@ -125,7 +138,15 @@ class TriggerFactory:
     # ------------------------------------------------------------------
     # Event factories
     # ------------------------------------------------------------------
-    def get_trigger_event_handler(self, provider_name: str, event: str, session: Session) -> Event:
+
+    def get_trigger_event_handler_safely(self, provider_name: str, event: str, runtime: EventRuntime) -> Event | None:
+        entry = self._get_entry(provider_name)
+        if event not in entry.events:
+            return None
+        _, event_cls = entry.events[event]
+        return event_cls(runtime)
+
+    def get_trigger_event_handler(self, provider_name: str, event: str, runtime: EventRuntime) -> Event:
         """Instantiate an event for the given provider and event name."""
 
         entry = self._get_entry(provider_name)
@@ -133,7 +154,7 @@ class TriggerFactory:
             raise ValueError(f"Event `{event}` not found in provider `{provider_name}`")
 
         _, event_cls = entry.events[event]
-        return event_cls(session)
+        return event_cls(runtime)
 
     def get_trigger_configuration(self, provider_name: str, event: str) -> EventConfiguration | None:
         entry = self._get_entry(provider_name)

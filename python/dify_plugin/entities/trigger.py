@@ -6,16 +6,28 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from werkzeug import Response
 
 from dify_plugin.core.documentation.schema_doc import docs
+from dify_plugin.core.runtime import Session
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.oauth import OAuthSchema
-from dify_plugin.entities.provider_config import CommonParameterType, ProviderConfig
+from dify_plugin.entities.provider_config import CommonParameterType, CredentialType, ProviderConfig
 from dify_plugin.entities.tool import ParameterAutoGenerate, ParameterTemplate
 
 
-class TriggerSubscriptionConstructorRuntime(BaseModel):
-    credentials: Mapping[str, Any]
-    session_id: str | None
+class TriggerSubscriptionConstructorRuntime:
+    session: Session
+    credentials: Mapping[str, Any] | None
+    credential_type: CredentialType
+
+    def __init__(
+        self,
+        session: Session,
+        credential_type: CredentialType,
+        credentials: Mapping[str, Any] | None = None,
+    ):
+        self.session = session
+        self.credentials = credentials
+        self.credential_type = credential_type
 
 
 class EventDispatch(BaseModel):
@@ -353,24 +365,28 @@ class Subscription(BaseModel):
     """
 
     expires_at: int = Field(
-        ..., description="The timestamp when the subscription will expire, this for refresh the subscription"
+        default=-1,
+        description=(
+            "The timestamp when the subscription will expire, used for refreshing the subscription. "
+            "Set to -1 if the subscription does not expire"
+        ),
     )
 
     endpoint: str = Field(..., description="The webhook endpoint URL allocated by Dify for receiving events")
 
-    properties: Mapping[str, Any] = Field(
-        ..., description="Subscription data containing all properties and provider-specific information"
-    )
-
-    subscribed_events: list[str] = Field(
-        default_factory=list,
-        description="The subscribed events of the subscription",
-    )
-
-    credentials: Mapping[str, Any] | None = Field(
+    parameters: Mapping[str, Any] | None = Field(
         default=None,
-        description="The credentials of the subscription, this is the credentials "
-        "that will be used to validate the subscription",
+        description=(
+            "The parameters of the subscription, only available when the subscription "
+            "is created by the trigger subscription constructor"
+        ),
+    )
+    properties: Mapping[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "The necessary information for this subscription, e.g., external_id, events, repository, etc. "
+            "These properties are defined in `subscription_schema` in the provider's YAML"
+        ),
     )
 
 

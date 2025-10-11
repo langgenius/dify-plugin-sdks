@@ -307,8 +307,8 @@ class OAuthRefreshCredentialsRequest(PluginAccessRequest):
 class DynamicParameterFetchParameterOptionsRequest(BaseModel):
     type: PluginInvokeType = PluginInvokeType.DynamicParameter
     action: DynamicParameterActions = DynamicParameterActions.FetchParameterOptions
-    credentials: dict
-    credential_type: CredentialType = CredentialType.API_KEY
+    credentials: dict[str, Any]
+    credential_type: CredentialType = CredentialType.UNAUTHORIZED
     provider: str
     provider_action: str
     user_id: str
@@ -406,6 +406,8 @@ class TriggerDispatchEventRequest(BaseModel):
     action: TriggerActions = TriggerActions.DispatchTriggerEvent
     provider: str
     subscription: Subscription
+    credentials: Mapping[str, Any] | None
+    credential_type: CredentialType | None
     raw_http_request: str
     user_id: str
 
@@ -424,6 +426,7 @@ class TriggerSubscribeRequest(BaseModel):
     action: TriggerActions = TriggerActions.SubscribeTrigger
     provider: str
     credentials: Mapping[str, Any]
+    credential_type: CredentialType
     endpoint: str
     parameters: Mapping[str, Any]
     user_id: str
@@ -442,6 +445,7 @@ class TriggerUnsubscribeRequest(BaseModel):
     action: TriggerActions = TriggerActions.UnsubscribeTrigger
     provider: str
     subscription: Subscription
+    credential_type: CredentialType
     credentials: Mapping[str, Any]  # From credentials_schema
     user_id: str
 
@@ -459,6 +463,7 @@ class TriggerRefreshRequest(BaseModel):
     action: TriggerActions = TriggerActions.RefreshTrigger
     provider: str
     subscription: Subscription
+    credential_type: CredentialType
     credentials: Mapping[str, Any]  # From credentials_schema
     user_id: str
 

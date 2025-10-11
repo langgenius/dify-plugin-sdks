@@ -7,6 +7,7 @@ from werkzeug import Request
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
+from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import (
     EventDispatch,
     Subscription,
@@ -14,16 +15,42 @@ from dify_plugin.entities.trigger import (
     UnsubscribeResult,
     Variables,
 )
-from dify_plugin.errors.trigger import SubscriptionError, TriggerDispatchError
+from dify_plugin.errors.trigger import EventIgnoreError, SubscriptionError, TriggerDispatchError
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
 __all__ = [
     "Event",
+    "EventIgnoreError",
     "SubscriptionError",
     "Trigger",
     "TriggerDispatchError",
     "TriggerSubscriptionConstructor",
 ]
+
+
+class TriggerRuntime:
+    """
+    Trigger Runtime
+
+    - session: Session
+    - credentials: credentials from the trigger subscription constructor
+                 Only available when the subscription is created by the trigger subscription constructor
+    - credential_type: Credential type
+    """
+
+    session: Session
+    credentials: Mapping[str, Any] | None = None
+    credential_type: CredentialType = CredentialType.UNAUTHORIZED
+
+    def __init__(
+        self,
+        session: Session,
+        credential_type: CredentialType,
+        credentials: Mapping[str, Any] | None = None,
+    ):
+        self.session = session
+        self.credentials = credentials
+        self.credential_type = credential_type
 
 
 class Trigger(ABC):
@@ -48,12 +75,12 @@ class Trigger(ABC):
     - Slack Trigger: Validates Slack webhooks and dispatches to message Events
     """
 
-    session: Session
+    runtime: TriggerRuntime
 
     @final
     def __init__(
         self,
-        session: Session,
+        runtime: TriggerRuntime,
     ):
         """
         Initialize the Trigger.
@@ -61,7 +88,7 @@ class Trigger(ABC):
         NOTE:
         - This method has been marked as final, DO NOT OVERRIDE IT.
         """
-        self.session = session
+        self.runtime = runtime
 
     def dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
         """
@@ -83,7 +110,7 @@ class Trigger(ABC):
             request: The incoming HTTP request from the external service.
                     Contains headers, body, and other HTTP request data.
                     Use this to:
-                    - Validate webhook signatures (using subscription.data['webhook_secret'])
+                    - Validate webhook signatures (for example, using subscription.properties['webhook_secret'])
                     - Extract event type from headers
                     - Parse event payload from body
 
@@ -120,7 +147,7 @@ class Trigger(ABC):
             ...         response=Response("OK", status=200)
             ...     )
         """
-        return self._dispatch_event(subscription, request)
+        return self._dispatch_event(subscription=subscription, request=request)
 
     @abstractmethod
     def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
@@ -131,7 +158,7 @@ class Trigger(ABC):
 
         Implementation checklist:
         1. Validate the webhook request:
-           - Check signature/HMAC using webhook_secret from subscription.properties
+           - Check signature/HMAC using properties when you create the subscription from subscription.properties
            - Verify request is from expected source
         2. Extract event information:
            - Parse event type from headers or body
@@ -177,12 +204,10 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
     - Slack Constructor: Manages Slack event subscriptions via Slack API
     """
 
-    runtime: TriggerSubscriptionConstructorRuntime | None
-    session: Session | None
+    runtime: TriggerSubscriptionConstructorRuntime
 
-    def __init__(self, runtime: TriggerSubscriptionConstructorRuntime | None = None, session: Session | None = None):
+    def __init__(self, runtime: TriggerSubscriptionConstructorRuntime):
         self.runtime = runtime
-        self.session = session
 
     def validate_api_key(self, credentials: Mapping[str, Any]) -> None:
         return self._validate_api_key(credentials=credentials)
@@ -256,37 +281,40 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         )
 
     def create_subscription(
-        self, endpoint: str, credentials: Mapping[str, Any], parameters: Mapping[str, Any]
+        self,
+        endpoint: str,
+        parameters: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+        credential_type: CredentialType,
     ) -> Subscription:
         """
         Create a trigger subscription with the external service.
 
-        This method handles different trigger patterns:
-        - Push-based (Webhook): Registers a callback URL with the external service
-        - Pull-based (Polling): Configures polling parameters (no external registration)
+        Registers a callback URL with the external service to receive events
 
         Args:
+
             endpoint: The webhook endpoint URL allocated by Dify for receiving events
 
+            parameters: Parameters for creating the subscription.
+                        Structure depends on provider's parameters_schema and may include:
+                        - "webhook_secret" (str): Secret for webhook signature validation
+                        - "events" (list[str]): Event types to subscribe to
+                        - "repository" (str): Target repository for GitHub
+                        - Other provider-specific configuration
+
+            credential_type: The type of the credentials, e.g., "api-key", "oauth2", "unauthorized"
+
             credentials: Authentication credentials for the external service.
-                        Structure depends on provider's credentials_schema.
+                        Structure depends on provider's credential_type.
+                        For API key auth, according to `credentials_schema` defined in the YAML.
+                        For OAuth auth, according to `oauth_schema.credentials_schema` defined in the YAML.
+                        For unauthorized auth, there is no credentials.
                         Examples:
                         - {"access_token": "ghp_..."} for GitHub
                         - {"api_key": "sk-..."} for API key auth
                         - {} for services that don't require auth
 
-            parameters: Parameters for creating the subscription.
-                        Structure depends on provider's parameters_schema.
-
-                        Dify automatically injects:
-                        - "endpoint" (str): The webhook endpoint URL allocated by Dify for receiving events
-                          Example: "https://dify.ai/webhooks/sub_abc123"
-
-                        Additional parameters from parameters_schema may include:
-                               - "webhook_secret" (str): Secret for webhook signature validation
-                               - "events" (list[str]): Event types to subscribe to
-                               - "repository" (str): Target repository for GitHub
-                               - Other provider-specific configuration
 
         Returns:
             Subscription: Contains subscription details including:
@@ -303,20 +331,29 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             GitHub webhook subscription:
             >>> result = provider.subscribe(
             ...     credentials={"access_token": "ghp_abc123"},
+            ...     credential_type="api-key",
             ...     parameters={
-            ...         "webhook_secret": "whsec_abc...",  # From properties_schema
-            ...         "repository": "owner/repo",  # From parameters_schema
-            ...         "events": ["push", "pull_request"]  # From parameters_schema
+            ...         "repository": "owner/repo",  # From `subscription_constructor.parameters`
+            ...         "events": ["push", "pull_request"]  # From `subscription_constructor.parameters`
             ...     }
             ... )
             >>> print(result.endpoint)  # "https://dify.ai/webhooks/sub_123"
             >>> print(result.properties["external_id"])  # GitHub webhook ID
         """
-        return self._create_subscription(endpoint=endpoint, credentials=credentials, parameters=parameters)
+        return self._create_subscription(
+            endpoint=endpoint,
+            parameters=parameters,
+            credentials=credentials,
+            credential_type=credential_type,
+        )
 
     @abstractmethod
     def _create_subscription(
-        self, endpoint: str, credentials: Mapping[str, Any], parameters: Mapping[str, Any]
+        self,
+        endpoint: str,
+        parameters: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+        credential_type: CredentialType,
     ) -> Subscription:
         """
         Internal method to implement subscription logic.
@@ -324,20 +361,20 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         Subclasses must override this method to handle subscription creation.
 
         Implementation checklist:
-        1. Extract endpoint from parameters
+        1. Use the endpoint parameter provided by Dify
         2. Register webhook with external service using their API
-        3. Store all necessary information in Subscription.properties
+        3. Store all necessary information in Subscription.properties for future operations(e.g., dispatch_event)
         4. Return Subscription with:
            - expires_at: Set appropriate expiration time
-           - endpoint: The webhook endpoint from parameters, injected by Dify
+           - endpoint: The webhook endpoint URL allocated by Dify for receiving events, same with the endpoint parameter
            - parameters: The parameters of the subscription
            - properties: All configuration and external IDs
 
         Args:
             endpoint: The webhook endpoint URL allocated by Dify for receiving events
-
-            credentials: Authentication credentials
             parameters: Subscription creation parameters
+            credentials: Authentication credentials
+            credential_type: The type of the credentials, e.g., "api-key", "oauth2", "unauthorized"
 
         Returns:
             Subscription: Subscription details with metadata for future operations
@@ -346,32 +383,46 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             SubscriptionError: For operational failures (API errors, invalid credentials)
             ValueError: For programming errors (missing required params)
         """
-        raise NotImplementedError("This plugin should implement `_subscribe` method to enable event subscription")
+        raise NotImplementedError(
+            "This plugin should implement `_create_subscription` method to enable event subscription"
+        )
 
-    def delete_subscription(self, subscription: Subscription, credentials: Mapping[str, Any]) -> UnsubscribeResult:
+    def delete_subscription(
+        self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
+    ) -> UnsubscribeResult:
         """
-        Remove a trigger subscription.
+        Delete a subscription from the external service.
+
+        When the user deletes the subscription, Dify will call this method to remove
+        the trigger subscription from the external service via their API.
 
         Args:
-            subscription: The Subscription object returned from subscribe().
-                         Contains expires_at, endpoint, and properties with all necessary information.
+            subscription: The Subscription object returned from create_subscription().
+                        Contains expires_at, endpoint, parameters, credentials, and credential_type with all necessary information.
 
-            credentials: Authentication credentials for the external service.
-                        Structure defined in provider's credentials_schema.
-                        May contain refreshed tokens if OAuth tokens were renewed.
+            credential_type: The type of the credentials, e.g., "api-key", "oauth2", "unauthorized"
+
+            credentials: Current authentication credentials for the external service.
+                        Structure defined in provider's credential_type.
+                        For API key auth, according to `credentials_schema` defined in the YAML.
+                        For OAuth auth, according to `oauth_schema.credentials_schema` defined in the YAML.
+                        For unauthorized auth, there is no credentials.
                         Examples:
                         - {"access_token": "ghp_..."} for GitHub
                         - {"api_key": "sk-..."} for API key auth
 
+
         Returns:
-            Unsubscription: Detailed result of the unsubscription operation:
+            UnsubscribeResult: Detailed result of the unsubscription operation:
                           - success=True: Operation completed successfully
                           - success=False: Operation failed, check message and error_code
 
         Note:
             This method should never raise exceptions for operational failures.
-            Use the Unsubscription result to communicate all outcomes.
+            Use the UnsubscribeResult object to communicate all outcomes.
             Only raise exceptions for programming errors (e.g., invalid parameters).
+            If this method raises an exception, Dify will still remove the subscription
+            but display a warning message to the user.
 
         Examples:
             Successful unsubscription:
@@ -382,6 +433,7 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             ... )
             >>> result = provider.unsubscribe(
             ...     subscription=subscription,
+            ...     credential_type="api-key",
             ...     credentials={"access_token": "ghp_abc123"}  # From credentials_schema
             ... )
             >>> assert result.success == True
@@ -390,15 +442,21 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             Failed unsubscription:
             >>> result = provider.unsubscribe(
             ...     subscription=subscription,
+            ...     credential_type="api-key",
             ...     credentials={"access_token": "invalid"}
             ... )
             >>> assert result.success == False
             >>> print(result.error_code)  # "INVALID_CREDENTIALS"
             >>> print(result.message)     # "Authentication failed: Invalid token"
         """
-        return self._delete_subscription(subscription=subscription, credentials=credentials)
+        return self._delete_subscription(
+            subscription=subscription, credentials=credentials, credential_type=credential_type
+        )
 
-    def _delete_subscription(self, subscription: Subscription, credentials: Mapping[str, Any]) -> UnsubscribeResult:
+    @abstractmethod
+    def _delete_subscription(
+        self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
+    ) -> UnsubscribeResult:
         """
         Internal method to implement unsubscription logic.
 
@@ -406,28 +464,24 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
 
         Implementation guidelines:
         1. Extract necessary IDs from subscription.properties (e.g., external_id)
-        2. Use external service API to delete the webhook
+        2. Use credentials and credential_type to call external service API to delete the webhook
         3. Handle common errors (not found, unauthorized, etc.)
-        4. Always return Unsubscription with detailed status
-        5. Never raise exceptions for operational failures - use Unsubscription.success=False
+        4. Always return UnsubscribeResult with detailed status
+        5. Never raise exceptions for operational failures - use UnsubscribeResult.success=False
 
         Args:
             subscription: The Subscription object with endpoint and properties fields
-            credentials: Authentication credentials from credentials_schema
 
         Returns:
-            Unsubscription: Always returns result, never raises for operational failures
-
-        Common error_codes:
-        - "WEBHOOK_NOT_FOUND": External webhook doesn't exist
-        - "INVALID_CREDENTIALS": Authentication failed
-        - "API_ERROR": External service API error
-        - "NETWORK_ERROR": Connection issues
-        - "RATE_LIMITED": API rate limit exceeded
+            UnsubscribeResult: Always returns result, never raises for operational failures
         """
-        raise NotImplementedError("This plugin should implement `_unsubscribe` method to enable event unsubscription")
+        raise NotImplementedError(
+            "This plugin should implement `_delete_subscription` method to enable event unsubscription"
+        )
 
-    def refresh(self, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
+    def refresh_subscription(
+        self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
+    ) -> Subscription:
         """
         Refresh/extend an existing subscription without changing its configuration.
 
@@ -435,15 +489,19 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         while keeping all settings and configuration unchanged. Use this when:
         - A subscription is approaching expiration (check expires_at timestamp)
         - You want to keep the subscription active with the same settings
-        - No configuration changes are needed
-
+        - The subscription properties need to be updated routinely
 
         Args:
             subscription: The current Subscription object to refresh.
                          Contains expires_at and properties with all configuration.
 
+            credential_type: The type of the credentials, e.g., "api-key", "oauth2", "unauthorized"
+
             credentials: Current authentication credentials for the external service.
-                        Structure defined in provider's credentials_schema.
+                        Structure defined in provider's credential_type.
+                        For API key auth, according to `credentials_schema` defined in the YAML.
+                        For OAuth auth, according to `oauth_schema.credentials_schema` defined in the YAML.
+                        For unauthorized auth, there is no credentials.
                         Examples:
                         - {"access_token": "ghp_..."} for GitHub
                         - {"api_key": "sk-..."} for API key auth
@@ -451,7 +509,7 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         Returns:
             Subscription: Refreshed subscription with:
                          - expires_at: Extended expiration timestamp
-                         - properties: Same properties (configuration unchanged)
+                         - properties: New properties for this subscription or same properties if no need to update
 
         Raises:
             SubscriptionError: If refresh fails (e.g., invalid credentials, API errors)
@@ -470,55 +528,48 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             ... )
             >>> result = provider.refresh(
             ...     subscription=current_sub,
+            ...     credential_type="api-key",
             ...     credentials={"access_token": "ghp_abc123"}
             ... )
             >>> print(result.expires_at)  # Extended timestamp
-            >>> print(result.properties)  # Same configuration
-
-            Refresh polling subscription:
-            >>> current_sub = Subscription(
-            ...     expires_at=1234567890,
-            ...     endpoint="https://dify.ai/webhooks/sub_456",
-            ...     properties={"feed_url": "https://example.com/rss", "interval": 300}
-            ... )
-            >>> result = provider.refresh(
-            ...     subscription=current_sub,
-            ...     credentials={}
-            ... )
-            >>> print(result.expires_at)  # Extended by default duration
+            >>> print(result.properties)  # New properties for this subscription or same properties if no need to update
         """
-        return self._refresh(subscription=subscription, credentials=credentials)
+        return self._refresh_subscription(
+            subscription=subscription, credentials=credentials, credential_type=credential_type
+        )
 
-    def _refresh(self, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
+    @abstractmethod
+    def _refresh_subscription(
+        self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
+    ) -> Subscription:
         """
         Internal method to implement subscription refresh logic.
 
         Subclasses must override this method to handle simple expiration extension.
 
         Implementation patterns:
-        1. For webhooks with expiration:
-           - Call service's refresh/extend API if available
-           - Or re-register with same settings if needed
-           - Keep same external_id if possible
+        1. For webhooks without expiration (e.g., GitHub):
+           - Update the Subscription.expires_at=-1 then Dify will never call this method again
 
-        2. For polling subscriptions:
-           - Simply extend the expires_at timestamp
-           - No external API calls typically needed
-
-        3. For lease-based subscriptions (e.g., Microsoft Graph):
-           - Call service's lease renewal API
+        2. For lease-based subscriptions (e.g., Microsoft Graph):
+           - Use the information in Subscription.properties to call service's lease renewal API if available
            - Handle renewal limits (some services limit renewal count)
+           - Update the Subscription.properties and Subscription.expires_at for next time renewal if needed
 
         Args:
             subscription: Current subscription with properties
-            credentials: Current authentication credentials from credentials_schema
+            credential_type: The type of the credentials, e.g., "api-key", "oauth2", "unauthorized"
+            credentials: Current authentication credentials from credentials_schema.
+                        For API key auth, according to `credentials_schema` defined in the YAML.
+                        For OAuth auth, according to `oauth_schema.credentials_schema` defined in the YAML.
+                        For unauthorized auth, there is no credentials.
 
         Returns:
             Subscription: Same subscription with extended expiration
+                        or new properties and expires_at for next time renewal
 
         Raises:
             SubscriptionError: For operational failures (API errors, invalid credentials)
-            ValueError: For programming errors (missing required params)
         """
         raise NotImplementedError("This plugin should implement `_refresh` method to enable subscription refresh")
 
@@ -526,17 +577,67 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         """
         Fetch the parameter options of the trigger.
         """
-        if self.runtime is None:
-            raise ValueError("Runtime is not initialized")
-        return self._fetch_parameter_options(credentials=self.runtime.credentials, parameter=parameter)
+        return self._fetch_parameter_options(
+            parameter=parameter,
+            credentials=self.runtime.credentials or {},
+            credential_type=self.runtime.credential_type,
+        )
 
-    def _fetch_parameter_options(self, credentials: Mapping[str, Any], parameter: str) -> list[ParameterOption]:
+    def _fetch_parameter_options(
+        self, parameter: str, credentials: Mapping[str, Any], credential_type: CredentialType
+    ) -> list[ParameterOption]:
         """
         Fetch the parameter options of the trigger.
+
+        Implementation guidelines:
+        When you need to fetch parameter options from an external service, use the credentials
+        and credential_type to call the external service API, then return the options to Dify
+        for user selection.
+
+        Args:
+            parameter: The parameter name for which to fetch options
+            credentials: Authentication credentials for the external service
+            credential_type: The type of credentials (e.g., "api-key", "oauth2", "unauthorized")
+
+        Returns:
+            list[ParameterOption]: A list of available options for the parameter
+
+        Examples:
+            GitHub Repositories:
+            >>> result = provider.fetch_parameter_options(parameter="repository")
+            >>> print(result)  # [ParameterOption(label="owner/repo", value="owner/repo")]
+
+            Slack Channels:
+            >>> result = provider.fetch_parameter_options(parameter="channel")
+            >>> print(result)  # [ParameterOption(label="general", value="general")]
+
+            You can also return options with avatar URLs if available:
+            >>> result = provider.fetch_parameter_options(parameter="github_repository_maintainer")
+            >>> print(result)  # [ParameterOption(label="Joel", value="iamjoel", icon="https://avatars.githubusercontent.com/u/2120155?s=40&v=4")]
         """
         raise NotImplementedError(
             "This plugin should implement `_fetch_parameter_options` method to enable dynamic select parameter"
         )
+
+
+class EventRuntime:
+    """
+    Event Runtime
+    """
+
+    session: Session
+    credentials: Mapping[str, Any] | None = None
+    credential_type: CredentialType = CredentialType.UNAUTHORIZED
+
+    def __init__(
+        self,
+        session: Session,
+        credential_type: CredentialType,
+        credentials: Mapping[str, Any] | None = None,
+    ):
+        self.session = session
+        self.credentials = credentials
+        self.credential_type = credential_type
 
 
 class Event(ABC):
@@ -567,22 +668,22 @@ class Event(ABC):
 
     # Optional context objects. They may be None in environments like schema generation
     # or static validation where execution context isn't initialized.
-    session: Session
+    runtime: EventRuntime
 
     @final
     def __init__(
         self,
-        session: Session,
+        runtime: EventRuntime,
     ):
         """
         Initialize the Event.
 
         NOTE:
         - This method has been marked as final, DO NOT OVERRIDE IT.
-        - The `session` parameter may be None in contexts where execution
+        - The `runtime` parameter may be None in contexts where execution
           is not happening (e.g., schema generation, documentation generation).
         """
-        self.session = session
+        self.runtime = runtime
 
     ############################################################
     #        Methods that can be implemented by plugin         #

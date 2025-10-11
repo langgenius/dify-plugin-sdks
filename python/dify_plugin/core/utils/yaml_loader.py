@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Any
 
 import yaml
 
@@ -10,7 +11,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(plugin_logger_handler)
 
 
-def load_yaml_file(file_path: str, ignore_error: bool = False) -> dict:
+def load_yaml_file(file_path: str, ignore_error: bool = False) -> dict[str, Any]:
     """
     Safe loading a YAML file to a dict
     :param file_path: the path of the YAML file

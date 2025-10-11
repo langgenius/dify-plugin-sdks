@@ -1,4 +1,6 @@
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
 import pytest
 from werkzeug import Request, Response
@@ -6,8 +8,14 @@ from werkzeug import Request, Response
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
-from dify_plugin.entities.trigger import EventDispatch, Subscription, TriggerSubscriptionConstructorRuntime
-from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
+from dify_plugin.entities.provider_config import CredentialType
+from dify_plugin.entities.trigger import (
+    EventDispatch,
+    Subscription,
+    TriggerSubscriptionConstructorRuntime,
+    UnsubscribeResult,
+)
+from dify_plugin.interfaces.trigger import Trigger, TriggerRuntime, TriggerSubscriptionConstructor
 
 
 def test_construct_trigger_provider():
@@ -25,8 +33,11 @@ def test_construct_trigger_provider():
         reader=StdioRequestReader(),
         writer=StdioResponseWriter(),
     )
+    runtime = TriggerRuntime(
+        credentials={"api_key": "test_key"}, session=session, credential_type=CredentialType.API_KEY
+    )
 
-    provider = TriggerProviderImpl(session=session)
+    provider = TriggerProviderImpl(runtime=runtime)
     assert provider is not None
 
 
@@ -36,22 +47,41 @@ def test_oauth_get_authorization_url():
     """
 
     class TriggerProviderImpl(TriggerSubscriptionConstructor):
-        def _validate_api_key(self, credentials: dict):
-            return True
+        def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
+            pass
 
         def _create_subscription(
-            self, endpoint: str, credentials: dict, selected_events: list[str], parameters: dict
+            self,
+            endpoint: str,
+            parameters: Mapping[str, Any],
+            credentials: Mapping[str, Any],
+            credential_type: CredentialType,
         ) -> Subscription:
             """
             Create a subscription
             """
+
             return Subscription(
                 expires_at=1000,
                 properties={},
                 endpoint=endpoint,
-                credentials=credentials,
-                subscribed_events=selected_events,
             )
+
+        def _delete_subscription(
+            self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
+        ) -> UnsubscribeResult:
+            """
+            Delete a subscription
+            """
+            return UnsubscribeResult(success=True, message="Successfully unsubscribed")
+
+        def _refresh_subscription(
+            self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
+        ) -> Subscription:
+            """
+            Refresh a subscription
+            """
+            return Subscription(expires_at=1000, properties={}, endpoint=subscription.endpoint)
 
     session = Session(
         session_id="test",
@@ -59,7 +89,9 @@ def test_oauth_get_authorization_url():
         reader=StdioRequestReader(),
         writer=StdioResponseWriter(),
     )
-    runtime = TriggerSubscriptionConstructorRuntime(credentials={}, session_id="test")
-    provider = TriggerProviderImpl(session=session, runtime=runtime)
+    runtime = TriggerSubscriptionConstructorRuntime(
+        credentials={}, session=session, credential_type=CredentialType.UNAUTHORIZED
+    )
+    provider = TriggerProviderImpl(runtime=runtime)
     with pytest.raises(NotImplementedError):
         provider.oauth_get_authorization_url("http://redirect.uri", {})

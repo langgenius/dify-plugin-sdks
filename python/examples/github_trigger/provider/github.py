@@ -15,6 +15,7 @@ from werkzeug import Request, Response
 
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.oauth import TriggerOAuthCredentials
+from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
 from dify_plugin.errors.trigger import (
     SubscriptionError,
@@ -152,8 +153,9 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     def _create_subscription(
         self,
         endpoint: str,
-        credentials: Mapping[str, Any],
         parameters: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+        credential_type: CredentialType,
     ) -> Subscription:
         repository = parameters.get("repository")
         if not repository:
@@ -189,6 +191,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             return Subscription(
                 expires_at=int(time.time()) + self._WEBHOOK_TTL,
                 endpoint=endpoint,
+                parameters=parameters,
                 properties={
                     "external_id": str(webhook["id"]),
                     "repository": repository,
@@ -211,7 +214,9 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             external_response=response_data,
         )
 
-    def _delete_subscription(self, subscription: Subscription, credentials: Mapping[str, Any]) -> UnsubscribeResult:
+    def _delete_subscription(
+        self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
+    ) -> UnsubscribeResult:
         external_id = subscription.properties.get("external_id")
         repository = subscription.properties.get("repository")
 
@@ -264,14 +269,18 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             external_response=response.json(),
         )
 
-    def _refresh(self, subscription: Subscription, credentials: Mapping[str, Any]) -> Subscription:
+    def _refresh_subscription(
+        self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
+    ) -> Subscription:
         return Subscription(
             expires_at=int(time.time()) + self._WEBHOOK_TTL,
             endpoint=subscription.endpoint,
             properties=subscription.properties,
         )
 
-    def _fetch_parameter_options(self, credentials: Mapping[str, Any], parameter: str) -> list[ParameterOption]:
+    def _fetch_parameter_options(
+        self, parameter: str, credentials: Mapping[str, Any], credential_type: CredentialType
+    ) -> list[ParameterOption]:
         if parameter != "repository":
             return []
 
@@ -285,7 +294,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     # ------------------------------------------------------------------
 
     def _fetch_repositories(self, access_token: str) -> list[ParameterOption]:
-        headers = {
+        headers: Mapping[str, str] = {
             "Authorization": f"Bearer {access_token}",
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",

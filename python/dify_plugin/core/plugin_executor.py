@@ -1,8 +1,9 @@
 import binascii
 import tempfile
 from collections.abc import Generator, Iterable
+from typing import Any, Mapping
 
-from werkzeug import Response
+from werkzeug import Request, Response
 
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.entities.plugin.request import (
@@ -48,12 +49,22 @@ from dify_plugin.core.entities.plugin.request import (
 from dify_plugin.core.plugin_registration import PluginRegistration
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.utils.http_parser import deserialize_request, serialize_response
+from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.agent import AgentRuntime
 from dify_plugin.entities.datasource import (
     DatasourceRuntime,
 )
+from dify_plugin.entities.oauth import OAuthCredentials
+from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolRuntime
-from dify_plugin.entities.trigger import Subscription, TriggerSubscriptionConstructorRuntime, Variables
+from dify_plugin.entities.trigger import (
+    EventDispatch,
+    Subscription,
+    TriggerSubscriptionConstructorRuntime,
+    UnsubscribeResult,
+    Variables,
+)
+from dify_plugin.interfaces.datasource import DatasourceProvider
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
@@ -62,7 +73,8 @@ from dify_plugin.interfaces.model.rerank_model import RerankModel
 from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
-from dify_plugin.interfaces.trigger import Event, TriggerSubscriptionConstructor
+from dify_plugin.interfaces.tool import Tool
+from dify_plugin.interfaces.trigger import Event, EventRuntime, Trigger, TriggerSubscriptionConstructor
 from dify_plugin.protocol.dynamic_select import DynamicSelectProtocol
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
@@ -358,21 +370,23 @@ class PluginExecutor:
 
         return provider_cls()
 
-    def get_oauth_authorization_url(self, session: Session, data: OAuthGetAuthorizationUrlRequest):
-        provider_instance = self._get_oauth_provider_instance(data.provider)
+    def get_oauth_authorization_url(self, session: Session, data: OAuthGetAuthorizationUrlRequest) -> Mapping[str, str]:
+        provider_instance: OAuthProviderProtocol = self._get_oauth_provider_instance(provider=data.provider)
 
         return {
             "authorization_url": provider_instance.oauth_get_authorization_url(
-                data.redirect_uri, data.system_credentials
+                redirect_uri=data.redirect_uri, system_credentials=data.system_credentials
             ),
         }
 
-    def get_oauth_credentials(self, session: Session, data: OAuthGetCredentialsRequest):
-        provider_instance = self._get_oauth_provider_instance(data.provider)
-        bytes_data = binascii.unhexlify(data.raw_http_request)
-        request = deserialize_request(bytes_data)
+    def get_oauth_credentials(self, session: Session, data: OAuthGetCredentialsRequest) -> Mapping[str, Any]:
+        provider_instance: OAuthProviderProtocol = self._get_oauth_provider_instance(provider=data.provider)
+        bytes_data: bytes = binascii.unhexlify(data.raw_http_request)
+        request: Request = deserialize_request(bytes_data)
 
-        credentials = provider_instance.oauth_get_credentials(data.redirect_uri, data.system_credentials, request)
+        credentials: OAuthCredentials = provider_instance.oauth_get_credentials(
+            redirect_uri=data.redirect_uri, system_credentials=data.system_credentials, request=request
+        )
 
         return {
             "metadata": credentials.metadata or {},
@@ -380,10 +394,12 @@ class PluginExecutor:
             "expires_at": credentials.expires_at,
         }
 
-    def refresh_oauth_credentials(self, session: Session, data: OAuthRefreshCredentialsRequest):
-        provider_instance = self._get_oauth_provider_instance(data.provider)
-        credentials = provider_instance.oauth_refresh_credentials(
-            data.redirect_uri, data.system_credentials, data.credentials
+    def refresh_oauth_credentials(
+        self, session: Session, data: OAuthRefreshCredentialsRequest
+    ) -> dict[str, Mapping[str, Any] | int]:
+        provider_instance: OAuthProviderProtocol = self._get_oauth_provider_instance(provider=data.provider)
+        credentials: OAuthCredentials = provider_instance.oauth_refresh_credentials(
+            redirect_uri=data.redirect_uri, system_credentials=data.system_credentials, credentials=data.credentials
         )
 
         return {
@@ -391,13 +407,14 @@ class PluginExecutor:
             "expires_at": credentials.expires_at,
         }
 
-    def validate_datasource_credentials(self, session: Session, data: DatasourceValidateCredentialsRequest):
-        provider_instance_cls = self.registration.get_datasource_provider_cls(data.provider)
-        if provider_instance_cls is None:
-            raise ValueError(f"Provider `{data.provider}` not found")
-
+    def validate_datasource_credentials(
+        self, session: Session, data: DatasourceValidateCredentialsRequest
+    ) -> dict[str, bool]:
+        provider_instance_cls: type[DatasourceProvider] = self.registration.get_datasource_provider_cls(
+            provider=data.provider
+        )
         provider_instance = provider_instance_cls()
-        provider_instance.validate_credentials(data.credentials)
+        provider_instance.validate_credentials(credentials=data.credentials)
 
         return {
             "result": True,
@@ -413,36 +430,47 @@ class PluginExecutor:
         :param data: data
         :return: dynamic parameter provider class
         """
-        # now we don't support tool and trigger at the same time
-        # if provider_action is not provided, get trigger provider
-        if data.provider_action is None or data.provider_action == "provider":
-            trigger_provider = self.registration.get_trigger_subscription_constructor(
-                data.provider,
-                TriggerSubscriptionConstructorRuntime(
+        if data.provider_action and data.provider_action == "provider":
+            trigger_provider: TriggerSubscriptionConstructor = self.registration.get_trigger_subscription_constructor(
+                provider_name=data.provider,
+                runtime=TriggerSubscriptionConstructorRuntime(
+                    session=session,
                     credentials=data.credentials,
-                    session_id=session.session_id,
+                    credential_type=data.credential_type,
                 ),
-                session,
             )
             return trigger_provider
 
-        trigger_event = self.registration.get_trigger_event_handler(data.provider, data.provider_action, session)
+        trigger_event: Event | None = self.registration.try_get_trigger_event_handler(
+            provider_name=data.provider,
+            event=data.provider_action,
+            runtime=EventRuntime(
+                session=session, credential_type=data.credential_type, credentials=data.credentials or {}
+            ),
+        )
         if trigger_event is not None:
             return trigger_event
 
         # get tool
-        tool_cls = self.registration.get_tool_cls(data.provider, data.provider_action)
+        tool_cls: type[Tool] | None = self.registration.get_tool_cls(provider=data.provider, tool=data.provider_action)
         if tool_cls is not None:
             return tool_cls(
                 runtime=ToolRuntime(credentials=data.credentials, user_id=data.user_id, session_id=session.session_id),
                 session=session,
             )
+        raise ValueError("Cannot find the target to fetch parameter options")
 
-    def invoke_trigger_event(self, session: Session, request: TriggerInvokeEventRequest):
+    def invoke_trigger_event(self, session: Session, request: TriggerInvokeEventRequest) -> TriggerInvokeEventResponse:
         """
         Invoke trigger event
         """
-        event: Event = self.registration.get_trigger_event_handler(request.provider, request.event, session)
+        event: Event = self.registration.get_trigger_event_handler(
+            provider_name=request.provider,
+            event=request.event,
+            runtime=EventRuntime(
+                session=session, credential_type=request.credential_type, credentials=request.credentials or {}
+            ),
+        )
         variables: Variables = event.on_event(
             request=deserialize_request(raw_data=binascii.unhexlify(request.raw_http_request)),
             parameters=request.parameters,
@@ -458,12 +486,13 @@ class PluginExecutor:
         Validate trigger provider credentials
         """
         runtime = TriggerSubscriptionConstructorRuntime(
+            session=session,
             credentials=request.credentials,
-            session_id=session.session_id,
+            credential_type=CredentialType.API_KEY,
         )
 
         provider_instance: TriggerSubscriptionConstructor = self.registration.get_trigger_subscription_constructor(
-            request.provider, runtime, session
+            provider_name=request.provider, runtime=runtime
         )
         provider_instance.validate_api_key(credentials=request.credentials)
         return {"result": True}
@@ -472,33 +501,42 @@ class PluginExecutor:
         """
         Dispatch trigger event
         """
-        trigger_provider_instance = self.registration.get_trigger_provider(request.provider, session)
-
-        bytes_data = binascii.unhexlify(request.raw_http_request)
-        subscription = request.subscription
-        dispatch_result = trigger_provider_instance.dispatch_event(subscription, deserialize_request(bytes_data))
+        trigger_provider_instance: Trigger = self.registration.get_trigger_provider(
+            provider_name=request.provider,
+            session=session,
+            credentials=request.credentials,
+            credential_type=request.credential_type,
+        )
+        subscription: Subscription = request.subscription
+        original_request: Request = deserialize_request(raw_data=binascii.unhexlify(request.raw_http_request))
+        dispatch_result: EventDispatch = trigger_provider_instance.dispatch_event(
+            subscription=subscription, request=original_request
+        )
         return TriggerDispatchResponse(
             events=dispatch_result.events,
-            raw_http_response=binascii.hexlify(serialize_response(dispatch_result.response)).decode(),
+            raw_http_response=binascii.hexlify(data=serialize_response(response=dispatch_result.response)).decode(),
         )
 
     def subscribe_trigger(self, session: Session, request: TriggerSubscribeRequest) -> TriggerSubscriptionResponse:
         """
         Subscribe to a trigger with the external service
         """
-        trigger_provider_instance = self.registration.get_trigger_subscription_constructor(
-            request.provider,
-            TriggerSubscriptionConstructorRuntime(
-                credentials=request.credentials,
-                session_id=session.session_id,
-            ),
-            session,
+        trigger_provider_instance: TriggerSubscriptionConstructor = (
+            self.registration.get_trigger_subscription_constructor(
+                provider_name=request.provider,
+                runtime=TriggerSubscriptionConstructorRuntime(
+                    session=session,
+                    credentials=request.credentials,
+                    credential_type=request.credential_type,
+                ),
+            )
         )
 
         subscription: Subscription = trigger_provider_instance.create_subscription(
             endpoint=request.endpoint,
-            credentials=request.credentials,
             parameters=request.parameters,
+            credentials=request.credentials,
+            credential_type=request.credential_type,
         )
         return TriggerSubscriptionResponse(subscription=subscription.model_dump())
 
@@ -506,17 +544,19 @@ class PluginExecutor:
         """
         Unsubscribe from a trigger subscription
         """
-        trigger_subscription_constructor_instance = self.registration.get_trigger_subscription_constructor(
-            request.provider,
-            TriggerSubscriptionConstructorRuntime(
-                credentials=request.credentials,
-                session_id=session.session_id,
-            ),
-            session,
+        trigger_subscription_constructor_instance: TriggerSubscriptionConstructor = (
+            self.registration.get_trigger_subscription_constructor(
+                provider_name=request.provider,
+                runtime=TriggerSubscriptionConstructorRuntime(
+                    session=session,
+                    credentials=request.credentials,
+                    credential_type=request.credential_type,
+                ),
+            )
         )
 
-        unsubscription = trigger_subscription_constructor_instance.delete_subscription(
-            request.subscription, request.credentials
+        unsubscription: UnsubscribeResult = trigger_subscription_constructor_instance.delete_subscription(
+            subscription=request.subscription, credentials=request.credentials, credential_type=request.credential_type
         )
         return TriggerUnsubscribeResponse(subscription=unsubscription.model_dump())
 
@@ -524,38 +564,35 @@ class PluginExecutor:
         """
         Refresh/extend an existing trigger subscription without changing configuration
         """
-        trigger_provider_cls = self.registration.get_trigger_provider(request.provider, session)
-        if not trigger_provider_cls:
-            raise ValueError(f"Trigger provider {request.provider} not found")
-
-        trigger_subscription_constructor_instance = self.registration.get_trigger_subscription_constructor(
-            request.provider,
-            TriggerSubscriptionConstructorRuntime(
-                credentials=request.credentials,
-                session_id=session.session_id,
-            ),
-            session,
+        trigger_subscription_constructor_instance: TriggerSubscriptionConstructor = (
+            self.registration.get_trigger_subscription_constructor(
+                provider_name=request.provider,
+                runtime=TriggerSubscriptionConstructorRuntime(
+                    session=session,
+                    credentials=request.credentials,
+                    credential_type=request.credential_type,
+                ),
+            )
         )
         return TriggerRefreshResponse(
-            subscription=trigger_subscription_constructor_instance.refresh(
-                request.subscription, request.credentials
+            subscription=trigger_subscription_constructor_instance.refresh_subscription(
+                subscription=request.subscription,
+                credentials=request.credentials,
+                credential_type=request.credential_type,
             ).model_dump()
         )
 
-    def fetch_parameter_options(self, session: Session, data: DynamicParameterFetchParameterOptionsRequest):
-        action_instance = self._get_dynamic_parameter_action(session, data)
-        if action_instance is None:
-            raise ValueError(f"Provider `{data.provider}` not found")
-
+    def fetch_parameter_options(
+        self, session: Session, data: DynamicParameterFetchParameterOptionsRequest
+    ) -> dict[str, list[ParameterOption]]:
+        action_instance: DynamicSelectProtocol | None = self._get_dynamic_parameter_action(session=session, data=data)
+        assert action_instance, f"Provider `{data.provider}` not found"
         return {
-            "options": action_instance.fetch_parameter_options(data.parameter),
+            "options": action_instance.fetch_parameter_options(parameter=data.parameter),
         }
 
     def datasource_crawl_website(self, session: Session, data: DatasourceCrawlWebsiteRequest):
         datasource_cls = self.registration.get_website_crawl_datasource_cls(data.provider, data.datasource)
-        if datasource_cls is None:
-            raise ValueError(f"Datasource `{data.datasource}` not found for provider `{data.provider}`")
-
         datasource_instance = datasource_cls(
             runtime=DatasourceRuntime(
                 credentials=data.credentials,
@@ -569,9 +606,6 @@ class PluginExecutor:
 
     def datasource_get_pages(self, session: Session, data: DatasourceGetPagesRequest):
         datasource_cls = self.registration.get_online_document_datasource_cls(data.provider, data.datasource)
-        if datasource_cls is None:
-            raise ValueError(f"Datasource `{data.datasource}` not found for provider `{data.provider}`")
-
         datasource_instance = datasource_cls(
             runtime=DatasourceRuntime(
                 credentials=data.credentials,
@@ -585,9 +619,6 @@ class PluginExecutor:
 
     def datasource_get_page_content(self, session: Session, data: DatasourceGetPageContentRequest):
         datasource_cls = self.registration.get_online_document_datasource_cls(data.provider, data.datasource)
-        if datasource_cls is None:
-            raise ValueError(f"Datasource `{data.datasource}` not found for provider `{data.provider}`")
-
         datasource_instance = datasource_cls(
             runtime=DatasourceRuntime(
                 credentials=data.credentials,
@@ -601,9 +632,6 @@ class PluginExecutor:
 
     def datasource_online_drive_browse_files(self, session: Session, data: DatasourceOnlineDriveBrowseFilesRequest):
         datasource_cls = self.registration.get_online_drive_datasource_cls(data.provider, data.datasource)
-        if datasource_cls is None:
-            raise ValueError(f"Datasource `{data.datasource}` not found for provider `{data.provider}`")
-
         datasource_instance = datasource_cls(
             runtime=DatasourceRuntime(
                 credentials=data.credentials,
@@ -617,9 +645,6 @@ class PluginExecutor:
 
     def datasource_online_drive_download_file(self, session: Session, data: DatasourceOnlineDriveDownloadFileRequest):
         datasource_cls = self.registration.get_online_drive_datasource_cls(data.provider, data.datasource)
-        if datasource_cls is None:
-            raise ValueError(f"Datasource `{data.datasource}` not found for provider `{data.provider}`")
-
         datasource_instance = datasource_cls(
             runtime=DatasourceRuntime(
                 credentials=data.credentials,

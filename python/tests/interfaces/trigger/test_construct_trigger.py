@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
 from werkzeug import Request
 
@@ -19,8 +20,8 @@ def test_construct_trigger():
     - And ensure a breaking change will be detected by CI.
     """
 
-    class TriggerImpl(Event):
-        def _on_event(self, request: Request, parameters: Mapping) -> Variables:
+    class TriggerEventImpl(Event):
+        def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
             return Variables(variables={})
 
     session = Session(
@@ -30,5 +31,5 @@ def test_construct_trigger():
         writer=StdioResponseWriter(),
     )
 
-    trigger = TriggerImpl(session=session)
+    trigger = TriggerEventImpl(session=session)
     assert trigger is not None

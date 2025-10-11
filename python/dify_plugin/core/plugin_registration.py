@@ -1,7 +1,7 @@
 import os
 from collections.abc import Mapping
 from pathlib import Path
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import werkzeug
 import werkzeug.exceptions
@@ -21,6 +21,7 @@ from dify_plugin.entities.datasource_manifest import DatasourceProviderManifest,
 from dify_plugin.entities.endpoint import EndpointProviderConfiguration
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.provider import ModelProviderConfiguration
+from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolConfiguration, ToolProviderConfiguration
 from dify_plugin.entities.trigger import (
     EventConfiguration,
@@ -42,7 +43,7 @@ from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
 from dify_plugin.interfaces.tool import Tool, ToolProvider
-from dify_plugin.interfaces.trigger import Event, Trigger, TriggerSubscriptionConstructor
+from dify_plugin.interfaces.trigger import Event, EventRuntime, Trigger, TriggerSubscriptionConstructor
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
 T = TypeVar("T")
@@ -489,22 +490,38 @@ class PluginRegistration:
                 model_factory = self.models_mapping[provider_registration][2]
                 return model_factory.get_instance(model_type)
 
-    def get_trigger_provider(self, provider_name: str, session: Session) -> Trigger:
+    def get_trigger_provider(
+        self,
+        provider_name: str,
+        session: Session,
+        credentials: Mapping[str, Any] | None,
+        credential_type: CredentialType | None,
+    ) -> Trigger:
         """Get the trigger provider instance by provider name."""
 
-        return self.trigger_factory.get_trigger_provider(provider_name, session)
+        return self.trigger_factory.get_trigger_provider(provider_name, session, credentials, credential_type)
 
     def get_trigger_subscription_constructor(
-        self, provider_name: str, runtime: TriggerSubscriptionConstructorRuntime, session: Session
+        self,
+        provider_name: str,
+        runtime: TriggerSubscriptionConstructorRuntime,
     ) -> TriggerSubscriptionConstructor:
         """Get the trigger subscription constructor instance by provider name."""
 
-        return self.trigger_factory.get_subscription_constructor(provider_name, runtime, session)
+        return self.trigger_factory.get_subscription_constructor(provider_name=provider_name, runtime=runtime)
 
-    def get_trigger_event_handler(self, provider_name: str, event: str, session: Session) -> Event:
+    def get_trigger_event_handler(self, provider_name: str, event: str, runtime: EventRuntime) -> Event:
+        """Get the event instance by provider and event name."""
+        return self.trigger_factory.get_trigger_event_handler(provider_name=provider_name, event=event, runtime=runtime)
+
+    def try_get_trigger_event_handler(self, provider_name: str, event: str, runtime: EventRuntime) -> Event | None:
         """Get the event instance by provider and event name."""
 
-        return self.trigger_factory.get_trigger_event_handler(provider_name, event, session)
+        return self.trigger_factory.get_trigger_event_handler_safely(
+            provider_name=provider_name,
+            event=event,
+            runtime=runtime,
+        )
 
     def get_supported_oauth_provider_cls(self, provider: str) -> type[OAuthProviderProtocol] | None:
         """
@@ -537,7 +554,7 @@ class PluginRegistration:
 
         return None
 
-    def get_datasource_provider_cls(self, provider: str):
+    def get_datasource_provider_cls(self, provider: str) -> type[DatasourceProvider]:
         """
         get the datasource provider class by provider name
         :param provider: provider name
@@ -547,33 +564,33 @@ class PluginRegistration:
             return self.datasource_mapping[provider].provider_cls
         raise ValueError(f"Datasource provider {provider} not found")
 
-    def get_website_crawl_datasource_cls(self, provider: str, datasource: str):
+    def get_website_crawl_datasource_cls(self, provider: str, datasource: str) -> type[WebsiteCrawlDatasource]:
         """
         get the website crawl datasource class by provider and datasource name
         :param provider: provider name
         :param datasource: datasource name
         :return: website crawl datasource class
         """
-        if provider in self.datasource_mapping:
-            result = self.datasource_mapping[provider].website_crawl_datasource_mapping.get(datasource)
-            if result:
-                return result
+        if provider in self.datasource_mapping and (
+            result := self.datasource_mapping[provider].website_crawl_datasource_mapping.get(datasource)
+        ):
+            return result
         raise ValueError(f"Website crawl datasource {datasource} not found for provider {provider}")
 
-    def get_online_document_datasource_cls(self, provider: str, datasource: str):
+    def get_online_document_datasource_cls(self, provider: str, datasource: str) -> type[OnlineDocumentDatasource]:
         """
         get the online document datasource class by provider and datasource name
         :param provider: provider name
         :param datasource: datasource name
         :return: online document datasource class
         """
-        if provider in self.datasource_mapping:
-            result = self.datasource_mapping[provider].online_document_datasource_mapping.get(datasource)
-            if result:
-                return result
+        if provider in self.datasource_mapping and (
+            result := self.datasource_mapping[provider].online_document_datasource_mapping.get(datasource)
+        ):
+            return result
         raise ValueError(f"Online document datasource {datasource} not found for provider {provider}")
 
-    def dispatch_endpoint_request(self, request: Request) -> tuple[type[Endpoint], Mapping]:
+    def dispatch_endpoint_request(self, request: Request) -> tuple[type[Endpoint], Mapping[str, Any]]:
         """
         dispatch endpoint request, match the request to the registered endpoints
 
@@ -586,15 +603,15 @@ class PluginRegistration:
         except werkzeug.exceptions.HTTPException as e:
             raise ValueError(f"Failed to dispatch endpoint request: {e!s}") from e
 
-    def get_online_drive_datasource_cls(self, provider: str, datasource: str):
+    def get_online_drive_datasource_cls(self, provider: str, datasource: str) -> type[OnlineDriveDatasource]:
         """
         get the online drive datasource class by provider and datasource name
         :param provider: provider name
         :param datasource: datasource name
         :return: online drive datasource class
         """
-        if provider in self.datasource_mapping:
-            result = self.datasource_mapping[provider].online_drive_datasource_mapping.get(datasource)
-            if result:
-                return result
+        if provider in self.datasource_mapping and (
+            result := self.datasource_mapping[provider].online_drive_datasource_mapping.get(datasource)
+        ):
+            return result
         raise ValueError(f"Online drive datasource {datasource} not found for provider {provider}")

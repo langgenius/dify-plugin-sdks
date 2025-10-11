@@ -17,17 +17,6 @@ description:
     ja_JP: ユーザーが GitHub リポジトリにスターを付けたときにトリガーがアクティブになり、リポジトリとスターを付けたユーザーに関する情報を提供します。
 
 parameters:
-- name: starred_by
-  label:
-    en_US: Starred By
-    zh_Hans: Star 用户过滤
-    ja_JP: ユーザーフィルター
-  type: string
-  required: false
-  description:
-    en_US: "Only trigger for stars from these users (e.g., user1, user2, comma-separated)"
-    zh_Hans: "仅对这些用户的 star 操作触发（例如：user1, user2，逗号分隔）"
-    ja_JP: "これらのユーザーのスターのみトリガー（例: user1, user2，カンマ区切り）"
 
 output_schema:
   type: object
