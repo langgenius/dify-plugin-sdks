@@ -26,7 +26,7 @@ from dify_plugin.entities.trigger import (
     UnsubscribeResult,
     Variables,
 )
-from dify_plugin.interfaces.trigger import Event, Trigger, TriggerSubscriptionConstructor
+from dify_plugin.interfaces.trigger import Event, EventRuntime, Trigger, TriggerSubscriptionConstructor
 
 
 class MockTriggerProvider(Trigger):
@@ -277,7 +277,9 @@ def test_trigger_factory_trigger_events():
     )
 
     # Test get Event
-    event = factory.get_trigger_event_handler("test_provider", "test_event", session)
+    event = factory.get_trigger_event_handler(
+        "test_provider", "test_event", EventRuntime(session=session, credential_type=CredentialType.UNAUTHORIZED)
+    )
     assert isinstance(event, MockEventHandler)
     assert event.runtime.session == session
 

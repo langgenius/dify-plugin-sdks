@@ -7,8 +7,9 @@ from werkzeug import Request
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
+from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import Variables
-from dify_plugin.interfaces.trigger import Event
+from dify_plugin.interfaces.trigger import Event, EventRuntime
 
 
 def test_construct_trigger():
@@ -31,5 +32,5 @@ def test_construct_trigger():
         writer=StdioResponseWriter(),
     )
 
-    trigger = TriggerEventImpl(session=session)
+    trigger = TriggerEventImpl(runtime=EventRuntime(session=session, credential_type=CredentialType.UNAUTHORIZED))
     assert trigger is not None
