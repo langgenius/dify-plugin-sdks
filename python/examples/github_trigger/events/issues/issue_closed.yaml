@@ -7,14 +7,9 @@ identity:
     ja_JP: Issue クローズ
 
 description:
-  human:
-    en_US: Triggers when an issue is closed
-    zh_Hans: 当 issue 关闭时触发
-    ja_JP: issue がクローズされたときにトリガーがアクティブになります。
-  llm:
-    en_US: This trigger activates when an issue is closed on a GitHub repository, providing information about the issue, close reason, repository, and user who closed it.
-    zh_Hans: 当在 GitHub 仓库中关闭 issue 时，此触发器会被激活，提供有关 issue、关闭原因、仓库和关闭它的用户的信息。
-    ja_JP: issue が GitHub リポジトリでクローズされたときにトリガーがアクティブになり、issue、クローズ理由、リポジトリ、および issue をクローズしたユーザーに関する情報を提供します。
+  en_US: Triggers when an issue is closed
+  zh_Hans: 当 issue 关闭时触发
+  ja_JP: issue がクローズされたときにトリガーがアクティブになります。
 parameters:
 - name: state_reason
   label:

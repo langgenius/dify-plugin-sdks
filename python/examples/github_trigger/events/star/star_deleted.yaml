@@ -7,14 +7,9 @@ identity:
     ja_JP: Star 削除
 
 description:
-  human:
-    en_US: Triggers when someone unstars the repository
-    zh_Hans: 当有人移除仓库的 star 时触发
-    ja_JP: 誰かがリポジトリのスターを削除したときにトリガーされます
-  llm:
-    en_US: This trigger activates when a user removes their star from a GitHub repository, providing information about the repository and the user who unstarred it.
-    zh_Hans: 当用户移除 GitHub 仓库的 star 时，此触发器会被激活，提供有关仓库和移除 star 的用户的信息。
-    ja_JP: ユーザーが GitHub リポジトリからスターを削除したときにトリガーがアクティブになり、リポジトリとスターを削除したユーザーに関する情報を提供します。
+  en_US: Triggers when someone unstars the repository
+  zh_Hans: 当有人移除仓库的 star 时触发
+  ja_JP: 誰かがリポジトリのスターを削除したときにトリガーされます
 
 parameters:
 - name: "repository"

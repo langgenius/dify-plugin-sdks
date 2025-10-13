@@ -7,14 +7,9 @@ identity:
     ja_JP: Issue ラベル削除
 
 description:
-  human:
-    en_US: Triggers when a label is removed from an issue
-    zh_Hans: 当从 issue 移除标签时触发
-    ja_JP: issue からラベルが削除されたときにトリガーがアクティブになります。
-  llm:
-    en_US: This trigger activates when a label is removed from an issue on a GitHub repository, providing information about the issue, the label that was removed, repository, and user who removed it.
-    zh_Hans: 当在 GitHub 仓库中从 issue 移除标签时，此触发器会被激活，提供有关 issue、移除的标签、仓库和移除它的用户的信息。
-    ja_JP: issue から GitHub リポジトリでラベルが削除されたときにトリガーがアクティブになり、issue、削除されたラベル、リポジトリ、およびラベルを削除したユーザーに関する情報を提供します。
+  en_US: Triggers when a label is removed from an issue
+  zh_Hans: 当从 issue 移除标签时触发
+  ja_JP: issue からラベルが削除されたときにトリガーがアクティブになります。
 parameters:
 - name: removed_label
   label:

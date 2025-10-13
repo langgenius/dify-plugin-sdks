@@ -7,14 +7,9 @@ identity:
     ja_JP: Issue 開かれた
 
 description:
-  human:
-    en_US: Triggers when a new issue is opened
-    zh_Hans: 当新 issue 打开时触发
-    ja_JP: 新しい issue が開かれたときにトリガーがアクティブになります。
-  llm:
-    en_US: This trigger activates when a new issue is opened on a GitHub repository, providing information about the issue, repository, and user who opened it.
-    zh_Hans: 当在 GitHub 仓库中打开新 issue 时，此触发器会被激活，提供有关 issue、仓库和打开它的用户的信息。
-    ja_JP: 新しい issue が GitHub リポジトリで開かれたときにトリガーがアクティブになり、issue、リポジトリ、および issue を開いたユーザーに関する情報を提供します。
+  en_US: Triggers when a new issue is opened
+  zh_Hans: 当新 issue 打开时触发
+  ja_JP: 新しい issue が開かれたときにトリガーがアクティブになります。
 parameters:
 - name: labels
   label:

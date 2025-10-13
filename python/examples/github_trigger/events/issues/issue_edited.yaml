@@ -7,14 +7,9 @@ identity:
     ja_JP: Issue 編集
 
 description:
-  human:
-    en_US: Triggers when an issue is edited
-    zh_Hans: 当 issue 被编辑时触发
-    ja_JP: issue が編集されたときにトリガーがアクティブになります。
-  llm:
-    en_US: This trigger activates when an issue is edited on a GitHub repository, providing information about the issue, what was changed, repository, and user who edited it.
-    zh_Hans: 当在 GitHub 仓库中编辑 issue 时，此触发器会被激活，提供有关 issue、更改内容、仓库和编辑它的用户的信息。
-    ja_JP: issue が GitHub リポジトリで編集されたときにトリガーがアクティブになり、issue、変更内容、リポジトリ、および issue を編集したユーザーに関する情報を提供します。
+  en_US: Triggers when an issue is edited
+  zh_Hans: 当 issue 被编辑时触发
+  ja_JP: issue が編集されたときにトリガーがアクティブになります。
 parameters:
 - name: changed_fields
   label:

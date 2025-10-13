@@ -7,15 +7,9 @@ identity:
     ja_JP: Star 追加
 
 description:
-  human:
-    en_US: Triggers when someone stars the repository
-    zh_Hans: 当有人给仓库添加 star 时触发
-    ja_JP: 誰かがリポジトリにスターを付けたときにトリガーされます
-  llm:
-    en_US: This trigger activates when a user stars a GitHub repository, providing information about the repository and the user who starred it.
-    zh_Hans: 当用户给 GitHub 仓库添加 star 时，此触发器会被激活，提供有关仓库和添加 star 的用户的信息。
-    ja_JP: ユーザーが GitHub リポジトリにスターを付けたときにトリガーがアクティブになり、リポジトリとスターを付けたユーザーに関する情報を提供します。
-
+  en_US: Triggers when someone stars the repository
+  zh_Hans: 当有人给仓库添加 star 时触发
+  ja_JP: 誰かがリポジトリにスターを付けたときにトリガーされます
 parameters:
 - name: time_range
   label:

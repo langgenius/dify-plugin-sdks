@@ -7,14 +7,9 @@ identity:
     ja_JP: Issue 再オープン
 
 description:
-  human:
-    en_US: Triggers when a closed issue is reopened
-    zh_Hans: 当已关闭的 issue 重新打开时触发
-    ja_JP: クローズされた issue が再度オープンされたときにトリガーがアクティブになります。
-  llm:
-    en_US: This trigger activates when a closed issue is reopened on a GitHub repository, providing information about the issue, repository, and user who reopened it.
-    zh_Hans: 当在 GitHub 仓库中重新打开已关闭的 issue 时，此触发器会被激活，提供有关 issue、仓库和重新打开它的用户的信息。
-    ja_JP: クローズされた issue が GitHub リポジトリで再度オープンされたときにトリガーがアクティブになり、issue、リポジトリ、および issue を再オープンしたユーザーに関する情報を提供します。
+  en_US: Triggers when a closed issue is reopened
+  zh_Hans: 当已关闭的 issue 重新打开时触发
+  ja_JP: クローズされた issue が再度オープンされたときにトリガーがアクティブになります。
 parameters:
 - name: labels
   label:

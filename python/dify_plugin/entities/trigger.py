@@ -183,7 +183,6 @@ class EventConfigurationExtra(BaseModel):
 
 
 @docs(
-    name="Event",
     description="The configuration of an event",
 )
 class EventConfiguration(BaseModel):
@@ -193,7 +192,7 @@ class EventConfiguration(BaseModel):
 
     identity: EventIdentity = Field(..., description="The identity of the event")
     parameters: list[EventParameter] = Field(default=[], description="The parameters of the event")
-    description: EventDescription = Field(..., description="The description of the event")
+    description: I18nObject = Field(..., description="The description of the event")
     extra: EventConfigurationExtra = Field(..., description="The extra configuration of the event")
     output_schema: Mapping[str, Any] | None = Field(
         default=None, description="The output schema that this event produces"
@@ -343,7 +342,7 @@ class TriggerProviderConfiguration(BaseModel):
                     EventConfiguration(
                         identity=EventIdentity(**file["identity"]),
                         parameters=[EventParameter(**param) for param in file.get("parameters", []) or []],
-                        description=EventDescription(**file["description"]),
+                        description=I18nObject(**file["description"]),
                         extra=EventConfigurationExtra(**file.get("extra", {})),
                         output_schema=file.get("output_schema", None),
                     )
