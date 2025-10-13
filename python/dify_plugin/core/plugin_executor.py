@@ -454,7 +454,14 @@ class PluginExecutor:
             provider_name=data.provider,
             event=data.provider_action,
             runtime=EventRuntime(
-                session=session, credential_type=data.credential_type, credentials=data.credentials or {}
+                session=session,
+                credential_type=data.credential_type,
+                credentials=data.credentials or {},
+                subscription=Subscription(
+                    expires_at=-1,
+                    endpoint="NO_SUBSCRIPTION",
+                    properties={},
+                ),
             ),
         )
         if trigger_event is not None:
@@ -477,7 +484,10 @@ class PluginExecutor:
             provider_name=request.provider,
             event=request.event,
             runtime=EventRuntime(
-                session=session, credential_type=request.credential_type, credentials=request.credentials or {}
+                session=session,
+                credential_type=request.credential_type,
+                credentials=request.credentials or {},
+                subscription=request.subscription,
             ),
         )
         variables: Variables = event.on_event(

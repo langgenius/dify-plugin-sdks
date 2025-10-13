@@ -627,6 +627,9 @@ class EventRuntime:
     """
 
     session: Session
+
+    # Only available when the on_event invoke
+    subscription: Subscription
     credentials: Mapping[str, Any] | None = None
     credential_type: CredentialType = CredentialType.UNAUTHORIZED
 
@@ -634,9 +637,11 @@ class EventRuntime:
         self,
         session: Session,
         credential_type: CredentialType,
+        subscription: Subscription,
         credentials: Mapping[str, Any] | None = None,
     ):
         self.session = session
+        self.subscription = subscription
         self.credentials = credentials
         self.credential_type = credential_type
 

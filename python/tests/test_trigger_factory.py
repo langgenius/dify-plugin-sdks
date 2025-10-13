@@ -278,7 +278,17 @@ def test_trigger_factory_trigger_events():
 
     # Test get Event
     event = factory.get_trigger_event_handler(
-        "test_provider", "test_event", EventRuntime(session=session, credential_type=CredentialType.UNAUTHORIZED)
+        "test_provider",
+        "test_event",
+        EventRuntime(
+            session=session,
+            credential_type=CredentialType.UNAUTHORIZED,
+            subscription=Subscription(
+                expires_at=1234567890,
+                endpoint="test_endpoint",
+                properties={"external_id": "test_external_id", "webhook_secret": "test_secret"},
+            ),
+        ),
     )
     assert isinstance(event, MockEventHandler)
     assert event.runtime.session == session

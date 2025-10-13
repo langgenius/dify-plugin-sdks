@@ -376,6 +376,7 @@ class TriggerInvokeEventRequest(BaseModel):
     event: str
     credentials: Mapping[str, Any]
     credential_type: CredentialType = CredentialType.API_KEY
+    subscription: Subscription
     user_id: str
     raw_http_request: str
     parameters: Mapping[str, Any]
