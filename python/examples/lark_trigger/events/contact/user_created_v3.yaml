@@ -1,0 +1,215 @@
+identity:
+  name: user_created_v3
+  author: langgenius
+  label:
+    en_US: New Employee Joined
+    zh_Hans: 新员工入职
+    ja_JP: 新入社員入社
+
+description:
+  human:
+    en_US: Notifies when a new employee joins the organization
+    zh_Hans: 当新员工加入组织时通知
+    ja_JP: 新しい従業員が組織に参加したときに通知
+  llm:
+    en_US: This event activates when a new employee is onboarded to the organization, providing comprehensive employee information.
+    zh_Hans: 当新员工入职到组织时激活，提供全面的员工信息。
+    ja_JP: 新しい従業員が組織に入社したときにアクティブになり、包括的な従業員情報を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    open_id:
+      type: string
+      description:
+        en_US: Employee Open ID
+        zh_Hans: 员工 Open ID
+        ja_JP: 従業員 Open ID
+    
+    union_id:
+      type: string
+      description:
+        en_US: Employee Union ID
+        zh_Hans: 员工 Union ID
+        ja_JP: 従業員 Union ID
+    
+    user_id:
+      type: string
+      description:
+        en_US: Employee User ID
+        zh_Hans: 员工 User ID
+        ja_JP: 従業員 User ID
+    
+    name:
+      type: string
+      description:
+        en_US: Employee name
+        zh_Hans: 员工姓名
+        ja_JP: 従業員名
+    
+    en_name:
+      type: string
+      description:
+        en_US: Employee English name
+        zh_Hans: 员工英文名
+        ja_JP: 従業員英語名
+    
+    nickname:
+      type: string
+      description:
+        en_US: Employee nickname
+        zh_Hans: 员工昵称
+        ja_JP: 従業員ニックネーム
+    
+    email:
+      type: string
+      description:
+        en_US: Personal email
+        zh_Hans: 个人邮箱
+        ja_JP: 個人メール
+    
+    enterprise_email:
+      type: string
+      description:
+        en_US: Work email
+        zh_Hans: 工作邮箱
+        ja_JP: 仕事用メール
+    
+    mobile:
+      type: string
+      description:
+        en_US: Mobile phone number
+        zh_Hans: 手机号码
+        ja_JP: 携帯電話番号
+    
+    mobile_visible:
+      type: boolean
+      description:
+        en_US: Whether mobile is visible to others
+        zh_Hans: 手机号是否对他人可见
+        ja_JP: 携帯番号が他の人に表示されるかどうか
+    
+    job_title:
+      type: string
+      description:
+        en_US: Job title
+        zh_Hans: 职位名称
+        ja_JP: 役職
+    
+    employee_no:
+      type: string
+      description:
+        en_US: Employee number
+        zh_Hans: 工号
+        ja_JP: 社員番号
+    
+    employee_type:
+      type: number
+      description:
+        en_US: Employee type
+        zh_Hans: 员工类型
+        ja_JP: 従業員タイプ
+    
+    leader_user_id:
+      type: string
+      description:
+        en_US: Direct manager ID
+        zh_Hans: 直属上级ID
+        ja_JP: 直属上司ID
+    
+    department_ids:
+      type: string
+      description:
+        en_US: Department IDs (JSON array)
+        zh_Hans: 部门ID列表（JSON数组）
+        ja_JP: 部門IDリスト（JSON配列）
+    
+    city:
+      type: string
+      description:
+        en_US: Work city
+        zh_Hans: 工作城市
+        ja_JP: 勤務都市
+    
+    country:
+      type: string
+      description:
+        en_US: Work country
+        zh_Hans: 工作国家
+        ja_JP: 勤務国
+    
+    work_station:
+      type: string
+      description:
+        en_US: Work location
+        zh_Hans: 工作地点
+        ja_JP: 勤務地
+    
+    time_zone:
+      type: string
+      description:
+        en_US: Time zone
+        zh_Hans: 时区
+        ja_JP: タイムゾーン
+    
+    join_time:
+      type: number
+      description:
+        en_US: Join date timestamp
+        zh_Hans: 入职日期时间戳
+        ja_JP: 入社日タイムスタンプ
+    
+    gender:
+      type: number
+      description:
+        en_US: Gender (0=secret, 1=male, 2=female)
+        zh_Hans: 性别（0=保密，1=男，2=女）
+        ja_JP: 性別（0=秘密、1=男性、2=女性）
+    
+    is_tenant_manager:
+      type: boolean
+      description:
+        en_US: Whether is organization admin
+        zh_Hans: 是否是组织管理员
+        ja_JP: 組織管理者かどうか
+    
+    is_frozen:
+      type: boolean
+      description:
+        en_US: Whether account is frozen
+        zh_Hans: 账号是否被冻结
+        ja_JP: アカウントが凍結されているかどうか
+    
+    is_resigned:
+      type: boolean
+      description:
+        en_US: Whether employee has resigned
+        zh_Hans: 员工是否已离职
+        ja_JP: 従業員が退職したかどうか
+    
+    is_activated:
+      type: boolean
+      description:
+        en_US: Whether account is activated
+        zh_Hans: 账号是否已激活
+        ja_JP: アカウントがアクティブ化されているかどうか
+    
+    job_level_id:
+      type: string
+      description:
+        en_US: Job level identifier
+        zh_Hans: 职级标识符
+        ja_JP: 職級識別子
+    
+    job_family_id:
+      type: string
+      description:
+        en_US: Job family identifier
+        zh_Hans: 职系标识符
+        ja_JP: 職系識別子
+
+extra:
+  python:
+    source: events/contact/user_created_v3.py

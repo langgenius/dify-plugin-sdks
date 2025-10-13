@@ -1,0 +1,137 @@
+identity:
+  name: p2p_im_message_receive_v1
+  author: langgenius
+  label:
+    en_US: Received IM Message
+    zh_Hans: 收到 IM 消息
+    ja_JP: IM メッセージ受信
+
+description:
+  human:
+    en_US: Triggers when an IM message is received
+    zh_Hans: 当收到 IM 消息时触发
+    ja_JP: IM メッセージが受信されたときにトリガーがアクティブになります。
+  llm:
+    en_US: This trigger activates when the Bot receives an IM message, providing information about the message.
+    zh_Hans: 当 Bot 收到 IM 消息时，此触发器会被激活，提供有关消息的信息。
+    ja_JP: IM メッセージが受信されたときにトリガーがアクティブになり、IM メッセージに関する情報を提供します。
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    content:
+      type: string
+      description:
+        en_US: The message content
+        zh_Hans: 消息内容
+        ja_JP: メッセージ内容
+    
+    message_id:
+      type: string
+      description:
+        en_US: Message ID
+        zh_Hans: 消息 ID
+        ja_JP: メッセージID
+    
+    message_type:
+      type: string
+      description:
+        en_US: Message type (text, image, file, etc.)
+        zh_Hans: 消息类型（文本、图片、文件等）
+        ja_JP: メッセージタイプ（テキスト、画像、ファイルなど）
+    
+    chat_id:
+      type: string
+      description:
+        en_US: Chat ID
+        zh_Hans: 会话 ID
+        ja_JP: チャットID
+    
+    chat_type:
+      type: string
+      description:
+        en_US: Chat type (p2p, group)
+        zh_Hans: 会话类型（单聊、群聊）
+        ja_JP: チャットタイプ（個人、グループ）
+    
+    root_id:
+      type: string
+      description:
+        en_US: Root message ID (for replies)
+        zh_Hans: 根消息 ID（用于回复）
+        ja_JP: ルートメッセージID（返信用）
+    
+    parent_id:
+      type: string
+      description:
+        en_US: Parent message ID
+        zh_Hans: 父消息 ID
+        ja_JP: 親メッセージID
+    
+    thread_id:
+      type: string
+      description:
+        en_US: Thread ID
+        zh_Hans: 话题 ID
+        ja_JP: スレッドID
+    
+    create_time:
+      type: string
+      description:
+        en_US: Message creation timestamp
+        zh_Hans: 消息创建时间戳
+        ja_JP: メッセージ作成タイムスタンプ
+    
+    update_time:
+      type: string
+      description:
+        en_US: Message update timestamp
+        zh_Hans: 消息更新时间戳
+        ja_JP: メッセージ更新タイムスタンプ
+    
+    user_agent:
+      type: string
+      description:
+        en_US: User agent of the sender
+        zh_Hans: 发送者的用户代理
+        ja_JP: 送信者のユーザーエージェント
+    
+    sender_type:
+      type: string
+      description:
+        en_US: Sender type (user, bot)
+        zh_Hans: 发送者类型（用户、机器人）
+        ja_JP: 送信者タイプ（ユーザー、ボット）
+    
+    tenant_key:
+      type: string
+      description:
+        en_US: Tenant key
+        zh_Hans: 租户密钥
+        ja_JP: テナントキー
+    
+    sender_user_id:
+      type: string
+      description:
+        en_US: Sender user ID
+        zh_Hans: 发送者用户 ID
+        ja_JP: 送信者ユーザーID
+    
+    sender_open_id:
+      type: string
+      description:
+        en_US: Sender open ID
+        zh_Hans: 发送者 Open ID
+        ja_JP: 送信者オープンID
+    
+    sender_union_id:
+      type: string
+      description:
+        en_US: Sender union ID
+        zh_Hans: 发送者 Union ID
+        ja_JP: 送信者ユニオンID
+
+extra:
+  python:
+    source: events/p2p_im_message_receive_v1.py

@@ -1,0 +1,89 @@
+identity:
+  name: chat_member_user_removed_v1
+  author: langgenius
+  label:
+    en_US: Members Left
+    zh_Hans: 成员离开
+    ja_JP: メンバー退出
+
+description:
+  human:
+    en_US: Notifies when members leave or are removed from a group chat
+    zh_Hans: 当成员离开或被移出群聊时通知
+    ja_JP: メンバーがグループチャットから退出または削除されたときに通知
+  llm:
+    en_US: This event activates when one or more users leave or are removed from a group chat, providing information about who left and who removed them.
+    zh_Hans: 当一个或多个用户离开或被移出群聊时，此事件会被激活，提供离开的成员和操作者的信息。
+    ja_JP: 1人以上のユーザーがグループチャットから退出または削除されたときにアクティブになり、退出したメンバーと削除した人の情報を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    chat_id:
+      type: string
+      description:
+        en_US: Group chat identifier
+        zh_Hans: 群聊标识符
+        ja_JP: グループチャット識別子
+    
+    chat_name:
+      type: string
+      description:
+        en_US: Name of the group chat
+        zh_Hans: 群聊名称
+        ja_JP: グループチャット名
+    
+    is_external:
+      type: string
+      description:
+        en_US: Whether the chat includes external users
+        zh_Hans: 群聊是否包含外部用户
+        ja_JP: 外部ユーザーを含むチャットかどうか
+    
+    operator_user_id:
+      type: string
+      description:
+        en_US: ID of the person who removed members
+        zh_Hans: 移除成员的人的ID
+        ja_JP: メンバーを削除した人のID
+    
+    operator_open_id:
+      type: string
+      description:
+        en_US: Open ID of the person who removed members
+        zh_Hans: 移除成员的人的Open ID
+        ja_JP: メンバーを削除した人のOpen ID
+    
+    operator_union_id:
+      type: string
+      description:
+        en_US: Union ID of the person who removed members
+        zh_Hans: 移除成员的人的Union ID
+        ja_JP: メンバーを削除した人のUnion ID
+    
+    operator_tenant_key:
+      type: string
+      description:
+        en_US: Organization key of the operator
+        zh_Hans: 操作者的组织密钥
+        ja_JP: 操作者の組織キー
+    
+    removed_members:
+      type: string
+      description:
+        en_US: List of members who left (JSON format)
+        zh_Hans: 离开的成员列表（JSON格式）
+        ja_JP: 退出したメンバーのリスト（JSON形式）
+    
+    removed_members_count:
+      type: string
+      description:
+        en_US: Number of members removed
+        zh_Hans: 移除的成员数量
+        ja_JP: 削除されたメンバー数
+
+extra:
+  python:
+    source: events/chat_member_user_removed_v1.py

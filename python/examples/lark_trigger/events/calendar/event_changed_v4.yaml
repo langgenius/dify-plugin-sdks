@@ -1,0 +1,68 @@
+identity:
+  name: calendar_event_changed_v4
+  author: langgenius
+  label:
+    en_US: Calendar Event Updated
+    zh_Hans: 日历事件更新
+    ja_JP: カレンダーイベント更新
+
+description:
+  human:
+    en_US: Notifies when a calendar event is created, modified, or cancelled
+    zh_Hans: 当日历事件被创建、修改或取消时通知
+    ja_JP: カレンダーイベントが作成、変更、またはキャンセルされたときに通知
+  llm:
+    en_US: This event activates when changes occur to calendar events, including creation, updates, cancellations, and attendee responses.
+    zh_Hans: 当日历事件发生变化时激活，包括创建、更新、取消和参与者响应。
+    ja_JP: カレンダーイベントに変更が発生したときにアクティブになります。作成、更新、キャンセル、参加者の応答を含みます。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    calendar_id:
+      type: string
+      description:
+        en_US: Calendar identifier
+        zh_Hans: 日历标识符
+        ja_JP: カレンダー識別子
+    
+    event_id:
+      type: string
+      description:
+        en_US: Event identifier
+        zh_Hans: 事件标识符
+        ja_JP: イベント識別子
+    
+    change_type:
+      type: string
+      description:
+        en_US: Type of change (created, updated, deleted)
+        zh_Hans: 变更类型（创建、更新、删除）
+        ja_JP: 変更タイプ（作成、更新、削除）
+    
+    affected_users:
+      type: string
+      description:
+        en_US: List of affected users (JSON format)
+        zh_Hans: 受影响的用户列表（JSON格式）
+        ja_JP: 影響を受けるユーザーのリスト（JSON形式）
+    
+    affected_users_count:
+      type: string
+      description:
+        en_US: Number of affected users
+        zh_Hans: 受影响的用户数量
+        ja_JP: 影響を受けるユーザー数
+    
+    rsvp_responses:
+      type: string
+      description:
+        en_US: Attendee response details (JSON format)
+        zh_Hans: 参与者响应详情（JSON格式）
+        ja_JP: 参加者の応答詳細（JSON形式）
+
+extra:
+  python:
+    source: events/calendar/event_changed_v4.py

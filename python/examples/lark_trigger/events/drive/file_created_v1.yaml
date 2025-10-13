@@ -1,0 +1,68 @@
+identity:
+  name: file_created_v1
+  author: langgenius
+  label:
+    en_US: File Created
+    zh_Hans: 文件创建
+    ja_JP: ファイル作成
+
+description:
+  human:
+    en_US: Notifies when a new file is created in drive
+    zh_Hans: 当云盘中创建新文件时通知
+    ja_JP: ドライブに新しいファイルが作成されたときに通知
+  llm:
+    en_US: This event activates when a new file or document is created in the drive, providing information about the file and its creator.
+    zh_Hans: 当在云盘中创建新文件或文档时激活，提供文件和创建者的信息。
+    ja_JP: ドライブに新しいファイルまたはドキュメントが作成されたときにアクティブになり、ファイルとその作成者の情報を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description:
+        en_US: File identifier
+        zh_Hans: 文件标识符
+        ja_JP: ファイル識別子
+    
+    file_type:
+      type: string
+      description:
+        en_US: Type of file (doc, sheet, folder, etc.)
+        zh_Hans: 文件类型（文档、表格、文件夹等）
+        ja_JP: ファイルタイプ（ドキュメント、シート、フォルダなど）
+    
+    folder_token:
+      type: string
+      description:
+        en_US: Parent folder identifier
+        zh_Hans: 父文件夹标识符
+        ja_JP: 親フォルダ識別子
+    
+    creator_user_id:
+      type: string
+      description:
+        en_US: ID of the file creator
+        zh_Hans: 文件创建者的ID
+        ja_JP: ファイル作成者のID
+    
+    creator_open_id:
+      type: string
+      description:
+        en_US: Open ID of the file creator
+        zh_Hans: 文件创建者的Open ID
+        ja_JP: ファイル作成者のOpen ID
+    
+    creator_union_id:
+      type: string
+      description:
+        en_US: Union ID of the file creator
+        zh_Hans: 文件创建者的Union ID
+        ja_JP: ファイル作成者のUnion ID
+
+extra:
+  python:
+    source: events/drive/file_created_v1.py

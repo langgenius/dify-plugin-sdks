@@ -1,0 +1,103 @@
+identity:
+  name: department_created_v3
+  author: langgenius
+  label:
+    en_US: New Department Created
+    zh_Hans: 新部门创建
+    ja_JP: 新部門作成
+
+description:
+  human:
+    en_US: Notifies when a new department is created
+    zh_Hans: 当创建新部门时通知
+    ja_JP: 新しい部門が作成されたときに通知
+  llm:
+    en_US: This event activates when a new department is created in the organization structure, providing department details.
+    zh_Hans: 当在组织架构中创建新部门时激活，提供部门详细信息。
+    ja_JP: 組織構造に新しい部門が作成されたときにアクティブになり、部門の詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    department_id:
+      type: string
+      description:
+        en_US: Department ID
+        zh_Hans: 部门 ID
+        ja_JP: 部門 ID
+    
+    open_department_id:
+      type: string
+      description:
+        en_US: Open Department ID
+        zh_Hans: 部门 Open ID
+        ja_JP: 部門 Open ID
+    
+    parent_department_id:
+      type: string
+      description:
+        en_US: Parent department ID
+        zh_Hans: 上级部门 ID
+        ja_JP: 上位部門 ID
+    
+    name:
+      type: string
+      description:
+        en_US: Department name
+        zh_Hans: 部门名称
+        ja_JP: 部門名
+    
+    chat_id:
+      type: string
+      description:
+        en_US: Department group chat ID
+        zh_Hans: 部门群聊 ID
+        ja_JP: 部門グループチャット ID
+    
+    leader_user_id:
+      type: string
+      description:
+        en_US: Department leader ID
+        zh_Hans: 部门负责人 ID
+        ja_JP: 部門リーダー ID
+    
+    order:
+      type: number
+      description:
+        en_US: Display order
+        zh_Hans: 显示顺序
+        ja_JP: 表示順序
+    
+    status:
+      type: string
+      description:
+        en_US: Department status
+        zh_Hans: 部门状态
+        ja_JP: 部門ステータス
+    
+    unit_ids:
+      type: string
+      description:
+        en_US: Unit IDs (JSON array)
+        zh_Hans: 单元 ID 列表（JSON数组）
+        ja_JP: ユニット ID リスト（JSON配列）
+    
+    leaders:
+      type: string
+      description:
+        en_US: Department leaders (JSON array)
+        zh_Hans: 部门领导列表（JSON数组）
+        ja_JP: 部門リーダーリスト（JSON配列）
+    
+    hrbps:
+      type: string
+      description:
+        en_US: HR business partners (JSON array)
+        zh_Hans: HR业务合作伙伴列表（JSON数组）
+        ja_JP: HRビジネスパートナーリスト（JSON配列）
+
+extra:
+  python:
+    source: events/contact/department_created_v3.py
