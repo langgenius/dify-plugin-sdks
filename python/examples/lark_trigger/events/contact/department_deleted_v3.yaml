@@ -1,0 +1,117 @@
+identity:
+  name: department_deleted_v3
+  author: langgenius
+  label:
+    en_US: Department Deleted
+    zh_Hans: 部门删除
+    ja_JP: 部門削除
+
+description:
+  human:
+    en_US: Triggers when a department is removed from Lark contacts.
+    zh_Hans: 当 Lark 通讯录中的部门被删除时触发。
+    ja_JP: Lark 連絡先の部門が削除されたときにトリガーされます。
+  llm:
+    en_US: Fires when a department is deleted, including the department snapshot and prior metadata for downstream cleanup.
+    zh_Hans: 当部门被删除时触发，提供部门快照及删除前的元数据，便于后续清理。
+    ja_JP: 部門が削除された際に発火し、部門のスナップショットと削除前のメタデータを提供して後続処理を支援します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    department_id:
+      type: string
+      description:
+        en_US: Department ID of the removed department
+        zh_Hans: 被删除部门的 ID
+        ja_JP: 削除された部門のID
+
+    open_department_id:
+      type: string
+      description:
+        en_US: Open department ID
+        zh_Hans: Open 部门 ID
+        ja_JP: Open 部門ID
+
+    name:
+      type: string
+      description:
+        en_US: Department name
+        zh_Hans: 部门名称
+        ja_JP: 部門名
+
+    parent_department_id:
+      type: string
+      description:
+        en_US: Parent department ID
+        zh_Hans: 上级部门 ID
+        ja_JP: 上位部門ID
+
+    leader_user_id:
+      type: string
+      description:
+        en_US: Department leader user ID
+        zh_Hans: 部门负责人用户 ID
+        ja_JP: 部門責任者のユーザーID
+
+    chat_id:
+      type: string
+      description:
+        en_US: Associated group chat ID
+        zh_Hans: 关联群聊 ID
+        ja_JP: 関連チャットID
+
+    order:
+      type: integer
+      description:
+        en_US: Department order value
+        zh_Hans: 部门排序值
+        ja_JP: 部門の並び順値
+
+    unit_ids:
+      type: string
+      description:
+        en_US: Associated unit IDs (JSON array)
+        zh_Hans: 关联单元 ID 列表（JSON 数组）
+        ja_JP: 関連ユニットID一覧（JSON 配列）
+
+    is_deleted:
+      type: boolean
+      description:
+        en_US: Whether the department is marked as deleted after removal
+        zh_Hans: 部门删除后是否被标记为删除
+        ja_JP: 削除後に部門が削除済みとしてマークされているか
+
+    leaders:
+      type: string
+      description:
+        en_US: Department leader assignments (JSON array)
+        zh_Hans: 部门领导配置（JSON 数组）
+        ja_JP: 部門リーダー設定（JSON 配列）
+
+    department_hrbps:
+      type: string
+      description:
+        en_US: HRBP users for the department (JSON array)
+        zh_Hans: 部门 HRBP 用户列表（JSON 数组）
+        ja_JP: 部門のHRBPユーザー一覧（JSON 配列）
+
+    current_department_json:
+      type: string
+      description:
+        en_US: Department snapshot at deletion time (JSON object)
+        zh_Hans: 删除时的部门快照（JSON 对象）
+        ja_JP: 削除時の部門スナップショット（JSON オブジェクト）
+
+    previous_department_json:
+      type: string
+      description:
+        en_US: Previous metadata before deletion (JSON object)
+        zh_Hans: 删除前的部门元数据（JSON 对象）
+        ja_JP: 削除前の部門メタデータ（JSON オブジェクト）
+
+extra:
+  python:
+    source: events/contact/department_deleted_v3.py

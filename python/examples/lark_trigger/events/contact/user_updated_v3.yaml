@@ -1,0 +1,271 @@
+identity:
+  name: user_updated_v3
+  author: langgenius
+  label:
+    en_US: Employee Updated
+    zh_Hans: 员工信息更新
+    ja_JP: 従業員情報更新
+
+description:
+  human:
+    en_US: Triggers when an employee profile is updated in Lark contacts.
+    zh_Hans: 当 Lark 通讯录中的员工资料被更新时触发。
+    ja_JP: Lark 連絡先の従業員プロフィールが更新されたときにトリガーされます。
+  llm:
+    en_US: Fires when an employee record changes, returning current and previous profile snapshots for auditing or sync.
+    zh_Hans: 当员工档案发生变更时触发，返回当前与之前的资料快照，方便审计或同步。
+    ja_JP: 従業員レコードが変更された際に発火し、監査や同期に利用できる最新と以前のプロフィールスナップショットを提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    user_id:
+      type: string
+      description:
+        en_US: Employee user ID
+        zh_Hans: 员工用户 ID
+        ja_JP: 従業員のユーザーID
+
+    open_id:
+      type: string
+      description:
+        en_US: Employee open ID
+        zh_Hans: 员工 Open ID
+        ja_JP: 従業員のOpen ID
+
+    union_id:
+      type: string
+      description:
+        en_US: Employee union ID
+        zh_Hans: 员工 Union ID
+        ja_JP: 従業員のUnion ID
+
+    name:
+      type: string
+      description:
+        en_US: Display name
+        zh_Hans: 显示名称
+        ja_JP: 表示名
+
+    en_name:
+      type: string
+      description:
+        en_US: English name
+        zh_Hans: 英文名
+        ja_JP: 英語名
+
+    nickname:
+      type: string
+      description:
+        en_US: Nickname
+        zh_Hans: 昵称
+        ja_JP: ニックネーム
+
+    email:
+      type: string
+      description:
+        en_US: Primary email address
+        zh_Hans: 主邮箱地址
+        ja_JP: メインメールアドレス
+
+    enterprise_email:
+      type: string
+      description:
+        en_US: Enterprise email address
+        zh_Hans: 企业邮箱
+        ja_JP: 企業メールアドレス
+
+    job_title:
+      type: string
+      description:
+        en_US: Job title
+        zh_Hans: 职位
+        ja_JP: 役職
+
+    mobile:
+      type: string
+      description:
+        en_US: Mobile phone number
+        zh_Hans: 手机号
+        ja_JP: 携帯電話番号
+
+    mobile_visible:
+      type: boolean
+      description:
+        en_US: Whether the mobile number is visible to colleagues
+        zh_Hans: 手机号是否对同事可见
+        ja_JP: 携帯番号が同僚に表示されるか
+
+    gender:
+      type: integer
+      description:
+        en_US: Gender value defined in Lark (0 unknown, 1 male, 2 female)
+        zh_Hans: Lark 定义的性别值（0 未知，1 男，2 女）
+        ja_JP: Larkで定義された性別値（0 不明、1 男性、2 女性）
+
+    leader_user_id:
+      type: string
+      description:
+        en_US: Direct leader user ID
+        zh_Hans: 直属领导用户 ID
+        ja_JP: 直属上司のユーザーID
+
+    city:
+      type: string
+      description:
+        en_US: City location
+        zh_Hans: 所在城市
+        ja_JP: 所在都市
+
+    country:
+      type: string
+      description:
+        en_US: Country location
+        zh_Hans: 所在国家
+        ja_JP: 所在国
+
+    work_station:
+      type: string
+      description:
+        en_US: Workplace or desk info
+        zh_Hans: 工位信息
+        ja_JP: 勤務場所情報
+
+    join_time:
+      type: integer
+      description:
+        en_US: Join timestamp (epoch milliseconds)
+        zh_Hans: 入职时间戳（毫秒）
+        ja_JP: 入社タイムスタンプ（ミリ秒）
+
+    is_tenant_manager:
+      type: boolean
+      description:
+        en_US: Whether the user is a tenant administrator
+        zh_Hans: 是否为租户管理员
+        ja_JP: テナント管理者かどうか
+
+    employee_no:
+      type: string
+      description:
+        en_US: Employee number
+        zh_Hans: 员工编号
+        ja_JP: 従業員番号
+
+    employee_type:
+      type: integer
+      description:
+        en_US: Employee type value
+        zh_Hans: 员工类型值
+        ja_JP: 従業員タイプ値
+
+    time_zone:
+      type: string
+      description:
+        en_US: Preferred time zone
+        zh_Hans: 首选时区
+        ja_JP: 優先タイムゾーン
+
+    job_level_id:
+      type: string
+      description:
+        en_US: Job level identifier
+        zh_Hans: 职级 ID
+        ja_JP: 職位レベルID
+
+    job_family_id:
+      type: string
+      description:
+        en_US: Job family identifier
+        zh_Hans: 职族 ID
+        ja_JP: 職種ファミリーID
+
+    status_is_frozen:
+      type: boolean
+      description:
+        en_US: Whether the account is frozen
+        zh_Hans: 账号是否冻结
+        ja_JP: アカウントが凍結されているか
+
+    status_is_resigned:
+      type: boolean
+      description:
+        en_US: Whether the employee has resigned
+        zh_Hans: 员工是否离职
+        ja_JP: 従業員が退職しているか
+
+    status_is_activated:
+      type: boolean
+      description:
+        en_US: Whether the account is activated
+        zh_Hans: 账号是否激活
+        ja_JP: アカウントが有効化されているか
+
+    status_is_exited:
+      type: boolean
+      description:
+        en_US: Whether the employee has exited
+        zh_Hans: 员工是否已经退出
+        ja_JP: 従業員が退社したか
+
+    status_is_unjoin:
+      type: boolean
+      description:
+        en_US: Whether the employee never joined
+        zh_Hans: 员工是否未入职
+        ja_JP: 従業員が入社していないか
+
+    department_ids:
+      type: string
+      description:
+        en_US: Department IDs the employee belongs to (JSON array)
+        zh_Hans: 员工所属部门 ID 列表（JSON 数组）
+        ja_JP: 従業員が所属する部門ID一覧（JSON 配列）
+
+    positions:
+      type: string
+      description:
+        en_US: Position assignments with department context (JSON array)
+        zh_Hans: 员工职位分配及部门信息（JSON 数组）
+        ja_JP: 部門情報を含む職務割り当て（JSON 配列）
+
+    orders:
+      type: string
+      description:
+        en_US: Department ranking configuration (JSON array)
+        zh_Hans: 部门排序配置（JSON 数组）
+        ja_JP: 部門の並び順設定（JSON 配列）
+
+    custom_attributes:
+      type: string
+      description:
+        en_US: Custom attribute values (JSON array)
+        zh_Hans: 自定义属性值（JSON 数组）
+        ja_JP: カスタム属性の値（JSON 配列）
+
+    dotted_line_leader_user_ids:
+      type: string
+      description:
+        en_US: Dotted line leader user IDs (JSON array)
+        zh_Hans: 虚线汇报领导用户 ID（JSON 数组）
+        ja_JP: 点線上司のユーザーID一覧（JSON 配列）
+
+    current_user_json:
+      type: string
+      description:
+        en_US: Current user snapshot (JSON object)
+        zh_Hans: 当前用户快照（JSON 对象）
+        ja_JP: 現在のユーザースナップショット（JSON オブジェクト）
+
+    previous_user_json:
+      type: string
+      description:
+        en_US: Previous user snapshot before the update (JSON object)
+        zh_Hans: 更新前的用户快照（JSON 对象）
+        ja_JP: 更新前のユーザースナップショット（JSON オブジェクト）
+
+extra:
+  python:
+    source: events/contact/user_updated_v3.py
