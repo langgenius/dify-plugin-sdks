@@ -7,14 +7,9 @@ identity:
     ja_JP: ドライブファイル編集
 
 description:
-  human:
-    en_US: Triggers when a monitored Drive file is modified.
-    zh_Hans: 当监控的云文档文件被编辑时触发。
-    ja_JP: 監視対象のドライブファイルが編集されたときにトリガーされます。
-  llm:
-    en_US: Fires when a Drive file changes, returning operator and subscriber details for collaborative tracking.
-    zh_Hans: 当云文档发生更改时触发，返回协作者和订阅者详情，便于协作追踪。
-    ja_JP: ドライブファイルに変更があった際に発火し、共同編集者と購読者の詳細を提供します。
+  en_US: Fires when a Drive file changes, returning operator and subscriber details for collaborative tracking.
+  zh_Hans: 当云文档发生更改时触发，返回协作者和订阅者详情，便于协作追踪。
+  ja_JP: ドライブファイルに変更があった際に発火し、共同編集者と購読者の詳細を提供します。
 
 parameters: []
 

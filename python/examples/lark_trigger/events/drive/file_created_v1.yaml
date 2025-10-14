@@ -7,14 +7,9 @@ identity:
     ja_JP: ファイル作成
 
 description:
-  human:
-    en_US: Notifies when a new file is created in drive
-    zh_Hans: 当云盘中创建新文件时通知
-    ja_JP: ドライブに新しいファイルが作成されたときに通知
-  llm:
-    en_US: This event activates when a new file or document is created in the drive, providing information about the file and its creator.
-    zh_Hans: 当在云盘中创建新文件或文档时激活，提供文件和创建者的信息。
-    ja_JP: ドライブに新しいファイルまたはドキュメントが作成されたときにアクティブになり、ファイルとその作成者の情報を提供します。
+  en_US: This event activates when a new file or document is created in the drive, providing information about the file and its creator.
+  zh_Hans: 当在云盘中创建新文件或文档时激活，提供文件和创建者的信息。
+  ja_JP: ドライブに新しいファイルまたはドキュメントが作成されたときにアクティブになり、ファイルとその作成者の情報を提供します。
 
 parameters: []
 

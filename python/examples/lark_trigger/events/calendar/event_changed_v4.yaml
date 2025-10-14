@@ -7,14 +7,9 @@ identity:
     ja_JP: カレンダーイベント更新
 
 description:
-  human:
-    en_US: Notifies when a calendar event is created, modified, or cancelled
-    zh_Hans: 当日历事件被创建、修改或取消时通知
-    ja_JP: カレンダーイベントが作成、変更、またはキャンセルされたときに通知
-  llm:
-    en_US: This event activates when changes occur to calendar events, including creation, updates, cancellations, and attendee responses.
-    zh_Hans: 当日历事件发生变化时激活，包括创建、更新、取消和参与者响应。
-    ja_JP: カレンダーイベントに変更が発生したときにアクティブになります。作成、更新、キャンセル、参加者の応答を含みます。
+  en_US: This event activates when changes occur to calendar events, including creation, updates, cancellations, and attendee responses.
+  zh_Hans: 当日历事件发生变化时激活，包括创建、更新、取消和参与者响应。
+  ja_JP: カレンダーイベントに変更が発生したときにアクティブになります。作成、更新、キャンセル、参加者の応答を含みます。
 
 parameters: []
 

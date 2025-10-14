@@ -7,14 +7,9 @@ identity:
     ja_JP: メッセージリアクション追加
 
 description:
-  human:
-    en_US: Notifies when someone adds an emoji reaction to a message
-    zh_Hans: 当有人对消息添加表情回应时通知
-    ja_JP: メッセージに絵文字リアクションが追加されたときに通知
-  llm:
-    en_US: This event activates when a user adds an emoji reaction to a message, providing details about the reaction and who added it.
-    zh_Hans: 当用户对消息添加表情反应时，此事件会被激活，提供反应的详情和添加者信息。
-    ja_JP: ユーザーがメッセージに絵文字リアクションを追加したときにアクティブになり、リアクションと追加者の詳細を提供します。
+  en_US: This event activates when a user adds an emoji reaction to a message, providing details about the reaction and who added it.
+  zh_Hans: 当用户对消息添加表情反应时，此事件会被激活，提供反应的详情和添加者信息。
+  ja_JP: ユーザーがメッセージに絵文字リアクションを追加したときにアクティブになり、リアクションと追加者の詳細を提供します。
 
 parameters: []
 
@@ -27,49 +22,49 @@ output_schema:
         en_US: ID of the message that received a reaction
         zh_Hans: 收到表情回应的消息ID
         ja_JP: リアクションを受けたメッセージID
-    
+
     emoji_type:
       type: string
       description:
         en_US: The emoji used for the reaction
         zh_Hans: 用于回应的表情符号
         ja_JP: リアクションに使用された絵文字
-    
+
     operator_type:
       type: string
       description:
         en_US: Type of operator (user or app)
         zh_Hans: 操作者类型（用户或应用）
         ja_JP: 操作者のタイプ（ユーザーまたはアプリ）
-    
+
     reactor_user_id:
       type: string
       description:
         en_US: ID of the person who added the reaction
         zh_Hans: 添加表情回应的人的ID
         ja_JP: リアクションを追加した人のID
-    
+
     reactor_open_id:
       type: string
       description:
         en_US: Open ID of the person who added the reaction
         zh_Hans: 添加表情回应的人的Open ID
         ja_JP: リアクションを追加した人のOpen ID
-    
+
     reactor_union_id:
       type: string
       description:
         en_US: Union ID of the person who added the reaction
         zh_Hans: 添加表情回应的人的Union ID
         ja_JP: リアクションを追加した人のUnion ID
-    
+
     app_id:
       type: string
       description:
         en_US: App ID if reaction was added by an app
         zh_Hans: 如果是应用添加的回应，应用的ID
         ja_JP: アプリによるリアクションの場合のアプリID
-    
+
     action_time:
       type: string
       description:
@@ -79,4 +74,4 @@ output_schema:
 
 extra:
   python:
-    source: events/message_reaction_added_v1.py
+    source: events/im/message_reaction_added_v1.py

@@ -7,14 +7,9 @@ identity:
     ja_JP: 承認ステータス変更
 
 description:
-  human:
-    en_US: Notifies when an approval request is submitted, approved, or rejected
-    zh_Hans: 当审批请求被提交、批准或拒绝时通知
-    ja_JP: 承認リクエストが送信、承認、または拒否されたときに通知
-  llm:
-    en_US: This event activates when the status of an approval request changes, providing details about the approval and its current state.
-    zh_Hans: 当审批请求的状态发生变化时激活，提供审批详情和当前状态。
-    ja_JP: 承認リクエストのステータスが変更されたときにアクティブになり、承認の詳細と現在の状態を提供します。
+  en_US: This event activates when the status of an approval request changes, providing details about the approval and its current state.
+  zh_Hans: 当审批请求的状态发生变化时激活，提供审批详情和当前状态。
+  ja_JP: 承認リクエストのステータスが変更されたときにアクティブになり、承認の詳細と現在の状態を提供します。
 
 parameters: []
 

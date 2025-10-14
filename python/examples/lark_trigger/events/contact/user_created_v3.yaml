@@ -7,14 +7,9 @@ identity:
     ja_JP: 新入社員入社
 
 description:
-  human:
-    en_US: Notifies when a new employee joins the organization
-    zh_Hans: 当新员工加入组织时通知
-    ja_JP: 新しい従業員が組織に参加したときに通知
-  llm:
-    en_US: This event activates when a new employee is onboarded to the organization, providing comprehensive employee information.
-    zh_Hans: 当新员工入职到组织时激活，提供全面的员工信息。
-    ja_JP: 新しい従業員が組織に入社したときにアクティブになり、包括的な従業員情報を提供します。
+  en_US: This event activates when a new employee is onboarded to the organization, providing comprehensive employee information.
+  zh_Hans: 当新员工入职到组织时激活，提供全面的员工信息。
+  ja_JP: 新しい従業員が組織に入社したときにアクティブになり、包括的な従業員情報を提供します。
 
 parameters: []
 

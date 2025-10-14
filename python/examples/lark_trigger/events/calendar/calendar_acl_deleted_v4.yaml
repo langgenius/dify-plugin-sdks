@@ -7,14 +7,9 @@ identity:
     ja_JP: カレンダー権限が削除されました
 
 description:
-  human:
-    en_US: Triggers when calendar sharing permissions are revoked.
-    zh_Hans: 当日历共享权限被移除时触发。
-    ja_JP: カレンダー共有権限が削除されたときにトリガーされます。
-  llm:
-    en_US: Fires when access to a calendar is revoked, providing the removed scope and recipients.
-    zh_Hans: 当日历访问被撤销时触发，提供被移除的范围和接收者信息。
-    ja_JP: カレンダーへのアクセスが取り消されたときに発火し、削除された対象と権限を提供します。
+  en_US: Fires when access to a calendar is revoked, providing the removed scope and recipients.
+  zh_Hans: 当日历访问被撤销时触发，提供被移除的范围和接收者信息。
+  ja_JP: カレンダーへのアクセスが取り消されたときに発火し、削除された対象と権限を提供します。
 
 parameters: []
 

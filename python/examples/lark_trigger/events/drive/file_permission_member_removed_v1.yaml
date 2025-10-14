@@ -7,14 +7,9 @@ identity:
     ja_JP: ドライブ権限削除
 
 description:
-  human:
-    en_US: Triggers when collaborators or groups are removed from a Drive file.
-    zh_Hans: 当协作者或群组从云文档共享中被移除时触发。
-    ja_JP: ドライブファイルから共同編集者やグループが削除されたときにトリガーされます。
-  llm:
-    en_US: Fires when sharing permissions are revoked on a Drive file, detailing the removed users, chats, and departments.
-    zh_Hans: 当云文档撤销共享权限时触发，提供被移除的用户、群聊和部门信息。
-    ja_JP: ドライブファイルの共有権限が削除された際に発火し、削除されたユーザー、チャット、部門の詳細を提供します。
+  en_US: Fires when sharing permissions are revoked on a Drive file, detailing the removed users, chats, and departments.
+  zh_Hans: 当云文档撤销共享权限时触发，提供被移除的用户、群聊和部门信息。
+  ja_JP: ドライブファイルの共有権限が削除された際に発火し、削除されたユーザー、チャット、部門の詳細を提供します。
 
 parameters: []
 

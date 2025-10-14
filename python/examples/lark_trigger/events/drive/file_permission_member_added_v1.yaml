@@ -7,14 +7,9 @@ identity:
     ja_JP: ドライブ権限追加
 
 description:
-  human:
-    en_US: Triggers when collaborators or groups are added to a Drive file.
-    zh_Hans: 当协作者或群组被添加到云文档共享中时触发。
-    ja_JP: ドライブファイルに共同編集者やグループが追加されたときにトリガーされます。
-  llm:
-    en_US: Fires when sharing permissions are granted on a Drive file, returning details about users, chats, and departments receiving access.
-    zh_Hans: 当云文档授予共享权限时触发，返回获得访问权限的用户、群聊和部门信息。
-    ja_JP: ドライブファイルに共有権限が付与された際に発火し、アクセス権を得たユーザー、チャット、部門の詳細を提供します。
+  en_US: Fires when sharing permissions are granted on a Drive file, returning details about users, chats, and departments receiving access.
+  zh_Hans: 当云文档授予共享权限时触发，返回获得访问权限的用户、群聊和部门信息。
+  ja_JP: ドライブファイルに共有権限が付与された際に発火し、アクセス権を得たユーザー、チャット、部門の詳細を提供します。
 
 parameters: []
 

@@ -7,14 +7,9 @@ identity:
     ja_JP: ドライブファイル削除
 
 description:
-  human:
-    en_US: Triggers when a file is deleted from a Drive folder that the app watches.
-    zh_Hans: 当监控的云文档文件被删除时触发。
-    ja_JP: 監視対象のドライブファイルが削除されたときにトリガーされます。
-  llm:
-    en_US: Fires when a monitored Drive file is removed, including the file token and operator details.
-    zh_Hans: 当监控的云文档文件被移除时触发，包含文件 Token 及操作人信息。
-    ja_JP: 監視対象のドライブファイルが削除されたときに発火し、ファイルトークンと操作ユーザーを提供します。
+  en_US: Fires when a monitored Drive file is removed, including the file token and operator details.
+  zh_Hans: 当监控的云文档文件被移除时触发，包含文件 Token 及操作人信息。
+  ja_JP: 監視対象のドライブファイルが削除されたときに発火し、ファイルトークンと操作ユーザーを提供します。
 
 parameters: []
 

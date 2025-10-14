@@ -7,14 +7,9 @@ identity:
     ja_JP: カレンダー権限が付与されました
 
 description:
-  human:
-    en_US: Triggers when new permissions are granted on a calendar.
-    zh_Hans: 当日历被授予新权限时触发。
-    ja_JP: カレンダーに新しい権限が付与されたときにトリガーされます。
-  llm:
-    en_US: Fires when users or teams gain access to a calendar, including the granted role and recipients.
-    zh_Hans: 当用户或团队获得日历访问权限时触发，包括授予的角色和接收者。
-    ja_JP: ユーザーやチームにカレンダーへのアクセス権が付与されたときに発火し、付与されたロールと対象者を提供します。
+  en_US: Fires when users or teams gain access to a calendar, including the granted role and recipients.
+  zh_Hans: 当用户或团队获得日历访问权限时触发，包括授予的角色和接收者。
+  ja_JP: ユーザーやチームにカレンダーへのアクセス権が付与されたときに発火し、付与されたロールと対象者を提供します。
 
 parameters: []
 

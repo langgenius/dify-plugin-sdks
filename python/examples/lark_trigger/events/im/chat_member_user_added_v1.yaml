@@ -7,14 +7,9 @@ identity:
     ja_JP: 新メンバー参加
 
 description:
-  human:
-    en_US: Notifies when new members join a group chat
-    zh_Hans: 当新成员加入群聊时通知
-    ja_JP: グループチャットに新メンバーが参加したときに通知
-  llm:
-    en_US: This event activates when one or more users are added to a group chat, providing information about the new members and who added them.
-    zh_Hans: 当一个或多个用户被添加到群聊时，此事件会被激活，提供新成员和添加者的信息。
-    ja_JP: 1人以上のユーザーがグループチャットに追加されたときにアクティブになり、新メンバーと追加者の情報を提供します。
+  en_US: This event activates when one or more users are added to a group chat, providing information about the new members and who added them.
+  zh_Hans: 当一个或多个用户被添加到群聊时，此事件会被激活，提供新成员和添加者的信息。
+  ja_JP: 1人以上のユーザーがグループチャットに追加されたときにアクティブになり、新メンバーと追加者の情報を提供します。
 
 parameters: []
 
@@ -27,56 +22,56 @@ output_schema:
         en_US: Group chat identifier
         zh_Hans: 群聊标识符
         ja_JP: グループチャット識別子
-    
+
     chat_name:
       type: string
       description:
         en_US: Name of the group chat
         zh_Hans: 群聊名称
         ja_JP: グループチャット名
-    
+
     is_external:
       type: string
       description:
         en_US: Whether the chat includes external users
         zh_Hans: 群聊是否包含外部用户
         ja_JP: 外部ユーザーを含むチャットかどうか
-    
+
     operator_user_id:
       type: string
       description:
         en_US: ID of the person who added members
         zh_Hans: 添加成员的人的ID
         ja_JP: メンバーを追加した人のID
-    
+
     operator_open_id:
       type: string
       description:
         en_US: Open ID of the person who added members
         zh_Hans: 添加成员的人的Open ID
         ja_JP: メンバーを追加した人のOpen ID
-    
+
     operator_union_id:
       type: string
       description:
         en_US: Union ID of the person who added members
         zh_Hans: 添加成员的人的Union ID
         ja_JP: メンバーを追加した人のUnion ID
-    
+
     operator_tenant_key:
       type: string
       description:
         en_US: Organization key of the operator
         zh_Hans: 操作者的组织密钥
         ja_JP: 操作者の組織キー
-    
+
     new_members:
       type: string
       description:
         en_US: List of newly added members (JSON format)
         zh_Hans: 新添加的成员列表（JSON格式）
         ja_JP: 新しく追加されたメンバーのリスト（JSON形式）
-    
+
     new_members_count:
       type: string
       description:
@@ -86,4 +81,4 @@ output_schema:
 
 extra:
   python:
-    source: events/chat_member_user_added_v1.py
+    source: events/im/chat_member_user_added_v1.py

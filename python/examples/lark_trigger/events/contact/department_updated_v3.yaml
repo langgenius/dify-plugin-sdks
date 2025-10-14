@@ -7,14 +7,9 @@ identity:
     ja_JP: 部門情報更新
 
 description:
-  human:
-    en_US: Triggers when a department record is updated in Lark contacts.
-    zh_Hans: 当 Lark 通讯录中的部门信息被更新时触发。
-    ja_JP: Lark 連絡先の部門情報が更新されたときにトリガーされます。
-  llm:
-    en_US: Fires when department metadata changes, providing both the new structure and the previous state for comparison.
-    zh_Hans: 当部门元数据发生变化时触发，提供新结构与之前状态以供对比。
-    ja_JP: 部門メタデータが変更された際に発火し、新旧の状態を比較できるように提供します。
+  en_US: Fires when department metadata changes, providing both the new structure and the previous state for comparison.
+  zh_Hans: 当部门元数据发生变化时触发，提供新结构与之前状态以供对比。
+  ja_JP: 部門メタデータが変更された際に発火し、新旧の状態を比較できるように提供します。
 
 parameters: []
 

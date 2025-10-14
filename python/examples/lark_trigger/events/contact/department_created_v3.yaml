@@ -7,14 +7,9 @@ identity:
     ja_JP: 新部門作成
 
 description:
-  human:
-    en_US: Notifies when a new department is created
-    zh_Hans: 当创建新部门时通知
-    ja_JP: 新しい部門が作成されたときに通知
-  llm:
-    en_US: This event activates when a new department is created in the organization structure, providing department details.
-    zh_Hans: 当在组织架构中创建新部门时激活，提供部门详细信息。
-    ja_JP: 組織構造に新しい部門が作成されたときにアクティブになり、部門の詳細を提供します。
+  en_US: This event activates when a new department is created in the organization structure, providing department details.
+  zh_Hans: 当在组织架构中创建新部门时激活，提供部门详细信息。
+  ja_JP: 組織構造に新しい部門が作成されたときにアクティブになり、部門の詳細を提供します。
 
 parameters: []
 

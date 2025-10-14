@@ -7,14 +7,9 @@ identity:
     ja_JP: 従業員情報更新
 
 description:
-  human:
-    en_US: Triggers when an employee profile is updated in Lark contacts.
-    zh_Hans: 当 Lark 通讯录中的员工资料被更新时触发。
-    ja_JP: Lark 連絡先の従業員プロフィールが更新されたときにトリガーされます。
-  llm:
-    en_US: Fires when an employee record changes, returning current and previous profile snapshots for auditing or sync.
-    zh_Hans: 当员工档案发生变更时触发，返回当前与之前的资料快照，方便审计或同步。
-    ja_JP: 従業員レコードが変更された際に発火し、監査や同期に利用できる最新と以前のプロフィールスナップショットを提供します。
+  en_US: Fires when an employee record changes, returning current and previous profile snapshots for auditing or sync.
+  zh_Hans: 当员工档案发生变更时触发，返回当前与之前的资料快照，方便审计或同步。
+  ja_JP: 従業員レコードが変更された際に発火し、監査や同期に利用できる最新と以前のプロフィールスナップショットを提供します。
 
 parameters: []
 

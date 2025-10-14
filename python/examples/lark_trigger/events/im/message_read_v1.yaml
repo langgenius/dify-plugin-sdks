@@ -7,14 +7,9 @@ identity:
     ja_JP: メッセージ既読
 
 description:
-  human:
-    en_US: Notifies when messages are marked as read
-    zh_Hans: 当消息被标记为已读时通知
-    ja_JP: メッセージが既読になったときに通知
-  llm:
-    en_US: This event activates when a user reads one or more messages, providing information about who read the messages and when.
-    zh_Hans: 当用户阅读一条或多条消息时，此事件会被激活，提供谁阅读了消息以及何时阅读的信息。
-    ja_JP: ユーザーが1つ以上のメッセージを読んだときにアクティブになり、誰がいつメッセージを読んだかの情報を提供します。
+  en_US: This event activates when a user reads one or more messages, providing information about who read the messages and when.
+  zh_Hans: 当用户阅读一条或多条消息时，此事件会被激活，提供谁阅读了消息以及何时阅读的信息。
+  ja_JP: ユーザーが1つ以上のメッセージを読んだときにアクティブになり、誰がいつメッセージを読んだかの情報を提供します。
 
 parameters: []
 
@@ -58,4 +53,4 @@ output_schema:
 
 extra:
   python:
-    source: events/message_read_v1.py
+    source: events/im/message_read_v1.py
