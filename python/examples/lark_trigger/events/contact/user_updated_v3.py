@@ -29,11 +29,11 @@ def _serialize_status(status: UserStatus | None) -> dict[str, bool]:
         }
 
     return {
-        "is_frozen": bool(status.is_frozen) if status.is_frozen is not None else False,
-        "is_resigned": bool(status.is_resigned) if status.is_resigned is not None else False,
-        "is_activated": bool(status.is_activated) if status.is_activated is not None else False,
-        "is_exited": bool(status.is_exited) if status.is_exited is not None else False,
-        "is_unjoin": bool(status.is_unjoin) if status.is_unjoin is not None else False,
+        "is_frozen": bool(status.is_frozen),
+        "is_resigned": bool(status.is_resigned),
+        "is_activated": bool(status.is_activated),
+        "is_exited": bool(status.is_exited),
+        "is_unjoin": bool(status.is_unjoin),
     }
 
 
