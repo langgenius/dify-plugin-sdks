@@ -61,7 +61,7 @@ def _serialize_orders(orders: list[UserOrder] | None) -> list[dict[str, Any]]:
                 "department_id": order.department_id or "",
                 "user_order": order.user_order if order.user_order is not None else 0,
                 "department_order": order.department_order if order.department_order is not None else 0,
-                "is_primary_dept": bool(order.is_primary_dept) if order.is_primary_dept is not None else False,
+                "is_primary_dept": bool(order.is_primary_dept),
             }
         )
     return serialized
