@@ -22,8 +22,6 @@ from lark_oapi.api.drive.v1 import (
     P2DriveFilePermissionMemberRemovedV1,
 )
 from lark_oapi.api.im.v1 import (
-    P2ImChatAccessEventBotP2pChatEnteredV1,
-    P2ImChatMemberBotAddedV1,
     P2ImChatMemberUserAddedV1,
     P2ImChatMemberUserDeletedV1,
     P2ImMessageMessageReadV1,
@@ -62,14 +60,8 @@ class LarkTrigger(Trigger):
                 verification_token,
             )
             # IM Events
-            .register_p2_im_chat_access_event_bot_p2p_chat_entered_v1(
-                self._handle_p2p_chat_entered_event,
-            )
             .register_p2_im_message_receive_v1(
                 self._handle_message_received_event,
-            )
-            .register_p2_im_chat_member_bot_added_v1(
-                self._handle_chat_member_bot_added_event,
             )
             .register_p2_im_chat_member_user_added_v1(
                 self._handle_chat_member_user_added_event,
@@ -157,14 +149,6 @@ class LarkTrigger(Trigger):
             events=events_to_dispatch,
         )
 
-    def _handle_p2p_chat_entered_event(self, event: P2ImChatAccessEventBotP2pChatEnteredV1) -> None:
-        """
-        Handle P2P chat entered event.
-
-        :param event: P2P chat entered event
-        """
-        response_cache_map[threading.get_ident()].append("p2p_chat_entered")
-
     def _handle_message_received_event(self, event: P2ImMessageReceiveV1) -> None:
         """
         Handle message received event.
@@ -172,14 +156,6 @@ class LarkTrigger(Trigger):
         :param event: Message received event
         """
         response_cache_map[threading.get_ident()].append("p2p_im_message_receive_v1")
-
-    def _handle_chat_member_bot_added_event(self, event: P2ImChatMemberBotAddedV1) -> None:
-        """
-        Handle chat member bot added event.
-
-        :param event: Chat member bot added event
-        """
-        response_cache_map[threading.get_ident()].append("p2p_im_chat_member_bot_added_v1")
 
     def _handle_chat_member_user_added_event(self, event: P2ImChatMemberUserAddedV1) -> None:
         """
@@ -219,7 +195,7 @@ class LarkTrigger(Trigger):
 
         :param event: Calendar event changed event
         """
-        response_cache_map[threading.get_ident()].append("calendar_event_changed_v4")
+        response_cache_map[threading.get_ident()].append("event_changed_v4")
 
     def _handle_calendar_acl_created_event(self, event: P2CalendarCalendarAclCreatedV4) -> None:
         """Handle calendar ACL created events."""
