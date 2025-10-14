@@ -18,45 +18,27 @@ output_schema:
   properties:
     file_token:
       type: string
-      description:
-        en_US: File identifier
-        zh_Hans: 文件标识符
-        ja_JP: ファイル識別子
+      description: File identifier
     
     file_type:
       type: string
-      description:
-        en_US: Type of file (doc, sheet, folder, etc.)
-        zh_Hans: 文件类型（文档、表格、文件夹等）
-        ja_JP: ファイルタイプ（ドキュメント、シート、フォルダなど）
+      description: Type of file (doc, sheet, folder, etc.)
     
     folder_token:
       type: string
-      description:
-        en_US: Parent folder identifier
-        zh_Hans: 父文件夹标识符
-        ja_JP: 親フォルダ識別子
+      description: Parent folder identifier
     
     creator_user_id:
       type: string
-      description:
-        en_US: ID of the file creator
-        zh_Hans: 文件创建者的ID
-        ja_JP: ファイル作成者のID
+      description: ID of the file creator
     
     creator_open_id:
       type: string
-      description:
-        en_US: Open ID of the file creator
-        zh_Hans: 文件创建者的Open ID
-        ja_JP: ファイル作成者のOpen ID
+      description: Open ID of the file creator
     
     creator_union_id:
       type: string
-      description:
-        en_US: Union ID of the file creator
-        zh_Hans: 文件创建者的Union ID
-        ja_JP: ファイル作成者のUnion ID
+      description: Union ID of the file creator
 
 extra:
   python:

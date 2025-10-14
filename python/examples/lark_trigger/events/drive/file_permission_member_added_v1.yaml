@@ -18,126 +18,75 @@ output_schema:
   properties:
     file_token:
       type: string
-      description:
-        en_US: Token of the shared file
-        zh_Hans: 被共享文件的 Token
-        ja_JP: 共有されたファイルのトークン
+      description: Token of the shared file
 
     file_type:
       type: string
-      description:
-        en_US: File type (doc, sheet, slide, etc.)
-        zh_Hans: 文件类型（文档、表格、幻灯片等）
-        ja_JP: ファイルタイプ（ドキュメント、スプレッドシートなど）
+      description: File type (doc, sheet, slide, etc.)
 
     operator_user_id:
       type: string
-      description:
-        en_US: User ID of the operator who granted access
-        zh_Hans: 授权操作的用户 ID
-        ja_JP: 権限を付与したユーザーID
+      description: User ID of the operator who granted access
 
     operator_open_id:
       type: string
-      description:
-        en_US: Open ID of the operator
-        zh_Hans: 操作用户的 Open ID
-        ja_JP: 操作ユーザーのOpen ID
+      description: Open ID of the operator
 
     operator_union_id:
       type: string
-      description:
-        en_US: Union ID of the operator
-        zh_Hans: 操作用户的 Union ID
-        ja_JP: 操作ユーザーのUnion ID
+      description: Union ID of the operator
 
     shared_users:
       type: array
-      description:
-        en_US: Users granted access
-        zh_Hans: 获得访问权限的用户列表
-        ja_JP: アクセス権が付与されたユーザー一覧
+      description: Users granted access
       items:
         type: object
         properties:
           user_id:
             type: string
-            description:
-              en_US: User ID
-              zh_Hans: 用户 ID
-              ja_JP: ユーザーID
+            description: User ID
           open_id:
             type: string
-            description:
-              en_US: Open ID
-              zh_Hans: Open ID
-              ja_JP: Open ID
+            description: Open ID
           union_id:
             type: string
-            description:
-              en_US: Union ID
-              zh_Hans: Union ID
-              ja_JP: Union ID
+            description: Union ID
 
     shared_user_count:
       type: integer
-      description:
-        en_US: Number of users who gained access
-        zh_Hans: 获得访问权限的用户数量
-        ja_JP: アクセス権を得たユーザー数
+      description: Number of users who gained access
 
     shared_chats:
       type: array
-      description:
-        en_US: Chat IDs that received access
-        zh_Hans: 获得访问权限的群聊 ID
-        ja_JP: アクセス権を得たチャットID
+      description: Chat IDs that received access
       items:
         type: string
 
     shared_departments:
       type: array
-      description:
-        en_US: Department IDs that received access
-        zh_Hans: 获得访问权限的部门 ID
-        ja_JP: アクセス権を得た部門ID
+      description: Department IDs that received access
       items:
         type: string
 
     subscriber_users:
       type: array
-      description:
-        en_US: Subscribers of the file
-        zh_Hans: 文件订阅者列表
-        ja_JP: ファイルの購読者一覧
+      description: Subscribers of the file
       items:
         type: object
         properties:
           user_id:
             type: string
-            description:
-              en_US: User ID
-              zh_Hans: 用户 ID
-              ja_JP: ユーザーID
+            description: User ID
           open_id:
             type: string
-            description:
-              en_US: Open ID
-              zh_Hans: Open ID
-              ja_JP: Open ID
+            description: Open ID
           union_id:
             type: string
-            description:
-              en_US: Union ID
-              zh_Hans: Union ID
-              ja_JP: Union ID
+            description: Union ID
 
     subscriber_count:
       type: integer
-      description:
-        en_US: Number of subscribers receiving the update
-        zh_Hans: 收到更新的订阅者数量
-        ja_JP: 更新を受け取る購読者数
+      description: Number of subscribers receiving the update
 
 extra:
   python:

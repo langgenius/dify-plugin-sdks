@@ -18,59 +18,35 @@ output_schema:
   properties:
     approval_code:
       type: string
-      description:
-        en_US: Approval template code
-        zh_Hans: 审批模板代码
-        ja_JP: 承認テンプレートコード
+      description: Approval template code
     
     approval_id:
       type: string
-      description:
-        en_US: Approval identifier
-        zh_Hans: 审批标识符
-        ja_JP: 承認識別子
+      description: Approval identifier
     
     timestamp:
       type: string
-      description:
-        en_US: Event timestamp
-        zh_Hans: 事件时间戳
-        ja_JP: イベントタイムスタンプ
+      description: Event timestamp
     
     version_id:
       type: string
-      description:
-        en_US: Approval version
-        zh_Hans: 审批版本
-        ja_JP: 承認バージョン
+      description: Approval version
     
     form_definition_id:
       type: string
-      description:
-        en_US: Form template identifier
-        zh_Hans: 表单模板标识符
-        ja_JP: フォームテンプレート識別子
+      description: Form template identifier
     
     widget_group_type:
       type: number
-      description:
-        en_US: Widget group type
-        zh_Hans: 控件组类型
-        ja_JP: ウィジェットグループタイプ
+      description: Widget group type
     
     process_obj:
       type: string
-      description:
-        en_US: Process object data (JSON string)
-        zh_Hans: 流程对象数据（JSON字符串）
-        ja_JP: プロセスオブジェクトデータ（JSON文字列）
+      description: Process object data (JSON string)
     
     extra:
       type: string
-      description:
-        en_US: Additional information
-        zh_Hans: 额外信息
-        ja_JP: 追加情報
+      description: Additional information
 
 extra:
   python:

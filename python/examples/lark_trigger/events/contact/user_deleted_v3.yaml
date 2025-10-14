@@ -18,97 +18,56 @@ output_schema:
   properties:
     user_id:
       type: string
-      description:
-        en_US: User ID of the deleted employee
-        zh_Hans: 删除员工的用户ID
-        ja_JP: 削除された従業員のユーザーID
+      description: User ID of the deleted employee
 
     open_id:
       type: string
-      description:
-        en_US: Open ID of the deleted user
-        zh_Hans: 删除用户的Open ID
-        ja_JP: 削除されたユーザーのOpen ID
+      description: Open ID of the deleted user
 
     union_id:
       type: string
-      description:
-        en_US: Union ID of the deleted user
-        zh_Hans: 删除用户的Union ID
-        ja_JP: 削除されたユーザーのUnion ID
+      description: Union ID of the deleted user
 
     name:
       type: string
-      description:
-        en_US: Name of the deleted employee
-        zh_Hans: 删除员工的姓名
-        ja_JP: 削除された従業員の名前
+      description: Name of the deleted employee
 
     en_name:
       type: string
-      description:
-        en_US: English name of the deleted employee
-        zh_Hans: 删除员工的英文名
-        ja_JP: 削除された従業員の英語名
+      description: English name of the deleted employee
 
     email:
       type: string
-      description:
-        en_US: Email of the deleted employee
-        zh_Hans: 删除员工的邮箱
-        ja_JP: 削除された従業員のメール
+      description: Email of the deleted employee
 
     mobile:
       type: string
-      description:
-        en_US: Mobile number of the deleted employee
-        zh_Hans: 删除员工的手机号
-        ja_JP: 削除された従業員の携帯番号
+      description: Mobile number of the deleted employee
 
     employee_no:
       type: string
-      description:
-        en_US: Employee number
-        zh_Hans: 员工工号
-        ja_JP: 従業員番号
+      description: Employee number
 
     employee_type:
       type: string
-      description:
-        en_US: Employee type
-        zh_Hans: 员工类型
-        ja_JP: 従業員タイプ
+      description: Employee type
 
     department_ids:
       type: array
       items:
         type: string
-      description:
-        en_US: Department IDs
-        zh_Hans: 部门ID列表
-        ja_JP: 部門IDリスト
+      description: Department IDs
 
     old_user_info:
       type: object
       properties:
         open_id:
           type: string
-          description:
-            en_US: Open ID of the deleted user
-            zh_Hans: 删除用户的Open ID
-            ja_JP: 削除されたユーザーのOpen ID
         department_ids:
           type: array
           items:
             type: string
-          description:
-            en_US: Department IDs
-            zh_Hans: 部门ID列表
-            ja_JP: 部門IDリスト
-      description:
-        en_US: User information before deletion (JSON format)
-        zh_Hans: 删除前的用户信息（JSON格式）
-        ja_JP: 削除前のユーザー情報（JSON形式）
+      description: User information before deletion
 
 extra:
   python:

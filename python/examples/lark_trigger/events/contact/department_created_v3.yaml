@@ -18,68 +18,41 @@ output_schema:
   properties:
     department_id:
       type: string
-      description:
-        en_US: Department ID
-        zh_Hans: 部门 ID
-        ja_JP: 部門 ID
+      description: Department ID
     
     open_department_id:
       type: string
-      description:
-        en_US: Open Department ID
-        zh_Hans: 部门 Open ID
-        ja_JP: 部門 Open ID
+      description: Open Department ID
     
     parent_department_id:
       type: string
-      description:
-        en_US: Parent department ID
-        zh_Hans: 上级部门 ID
-        ja_JP: 上位部門 ID
+      description: Parent department ID
     
     name:
       type: string
-      description:
-        en_US: Department name
-        zh_Hans: 部门名称
-        ja_JP: 部門名
+      description: Department name
     
     chat_id:
       type: string
-      description:
-        en_US: Department group chat ID
-        zh_Hans: 部门群聊 ID
-        ja_JP: 部門グループチャット ID
+      description: Department group chat ID
     
     leader_user_id:
       type: string
-      description:
-        en_US: Department leader ID
-        zh_Hans: 部门负责人 ID
-        ja_JP: 部門リーダー ID
+      description: Department leader ID
     
     order:
       type: number
-      description:
-        en_US: Display order
-        zh_Hans: 显示顺序
-        ja_JP: 表示順序
+      description: Display order
     
     status:
       type: string
-      description:
-        en_US: Department status
-        zh_Hans: 部门状态
-        ja_JP: 部門ステータス
+      description: Department status
     
     unit_ids:
       type: array
       items:
         type: string
-      description:
-        en_US: Unit IDs
-        zh_Hans: 单元 ID 列表
-        ja_JP: ユニット ID リスト
+      description: Unit IDs
     
     leaders:
       type: array
@@ -90,19 +63,13 @@ output_schema:
             type: number
           leader_id:
             type: string
-      description:
-        en_US: Department leaders
-        zh_Hans: 部门领导列表
-        ja_JP: 部門リーダーリスト
+      description: Department leaders
     
     hrbps:
       type: array
       items:
         type: string
-      description:
-        en_US: HR business partners
-        zh_Hans: HR业务合作伙伴列表
-        ja_JP: HRビジネスパートナーリスト
+      description: HR business partners
 
 extra:
   python:

@@ -18,99 +18,39 @@ output_schema:
   properties:
     chat_id:
       type: string
-      description:
-        en_US: ID of the updated chat
-        zh_Hans: 更新的群聊ID
-        ja_JP: 更新されたチャットID
+      description: ID of the updated chat
     
     external:
       type: string
-      description:
-        en_US: Whether the chat is external
-        zh_Hans: 是否为外部群聊
-        ja_JP: 外部チャットかどうか
+      description: Whether the chat is external
     
     operator_tenant_key:
       type: string
-      description:
-        en_US: Tenant key of the operator
-        zh_Hans: 操作者的租户密钥
-        ja_JP: 操作者のテナントキー
+      description: Tenant key of the operator
     
     operator_user_id:
       type: string
-      description:
-        en_US: User ID of the operator who updated the chat
-        zh_Hans: 更新群聊的操作者用户ID
-        ja_JP: チャットを更新した操作者のユーザーID
+      description: User ID of the operator who updated the chat
     
     operator_open_id:
       type: string
-      description:
-        en_US: Open ID of the operator
-        zh_Hans: 操作者的Open ID
-        ja_JP: 操作者のOpen ID
+      description: Open ID of the operator
     
     operator_union_id:
       type: string
-      description:
-        en_US: Union ID of the operator
-        zh_Hans: 操作者的Union ID
-        ja_JP: 操作者のUnion ID
+      description: Union ID of the operator
     
     before_change:
-      type: object
-      properties:
-        name:
-          type: string
-        description:
-          type: string
-        owner_id:
-          type: string
-      description:
-        en_US: Chat info before the change
-        zh_Hans: 更改前的群聊信息
-        ja_JP: 変更前のチャット情報
+      type: string
+      description: Chat info before the change (JSON format)
     
     after_change:
-      type: object
-      properties:
-        name:
-          type: string
-        description:
-          type: string
-        owner_id:
-          type: string
-      description:
-        en_US: Chat info after the change
-        zh_Hans: 更改后的群聊信息
-        ja_JP: 変更後のチャット情報
+      type: string
+      description: Chat info after the change (JSON format)
     
     moderator_changes:
-      type: object
-      properties:
-        added:
-          type: array
-          items:
-            type: object
-            properties:
-              user_id:
-                type: string
-              tenant_key:
-                type: string
-        removed:
-          type: array
-          items:
-            type: object
-            properties:
-              user_id:
-                type: string
-              tenant_key:
-                type: string
-      description:
-        en_US: Changes to moderator list
-        zh_Hans: 管理员列表更改
-        ja_JP: モデレーターリストの変更
+      type: string
+      description: Changes to moderator list (JSON format with added/removed)
 
 extra:
   python:

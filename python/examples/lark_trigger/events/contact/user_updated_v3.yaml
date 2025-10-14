@@ -18,316 +18,181 @@ output_schema:
   properties:
     user_id:
       type: string
-      description:
-        en_US: Employee user ID
-        zh_Hans: 员工用户 ID
-        ja_JP: 従業員のユーザーID
+      description: Employee user ID
 
     open_id:
       type: string
-      description:
-        en_US: Employee open ID
-        zh_Hans: 员工 Open ID
-        ja_JP: 従業員のOpen ID
+      description: Employee open ID
 
     union_id:
       type: string
-      description:
-        en_US: Employee union ID
-        zh_Hans: 员工 Union ID
-        ja_JP: 従業員のUnion ID
+      description: Employee union ID
 
     name:
       type: string
-      description:
-        en_US: Display name
-        zh_Hans: 显示名称
-        ja_JP: 表示名
+      description: Display name
 
     en_name:
       type: string
-      description:
-        en_US: English name
-        zh_Hans: 英文名
-        ja_JP: 英語名
+      description: English name
 
     nickname:
       type: string
-      description:
-        en_US: Nickname
-        zh_Hans: 昵称
-        ja_JP: ニックネーム
+      description: Nickname
 
     email:
       type: string
-      description:
-        en_US: Primary email address
-        zh_Hans: 主邮箱地址
-        ja_JP: メインメールアドレス
+      description: Primary email address
 
     enterprise_email:
       type: string
-      description:
-        en_US: Enterprise email address
-        zh_Hans: 企业邮箱
-        ja_JP: 企業メールアドレス
+      description: Enterprise email address
 
     job_title:
       type: string
-      description:
-        en_US: Job title
-        zh_Hans: 职位
-        ja_JP: 役職
+      description: Job title
 
     mobile:
       type: string
-      description:
-        en_US: Mobile phone number
-        zh_Hans: 手机号
-        ja_JP: 携帯電話番号
+      description: Mobile phone number
 
     mobile_visible:
       type: boolean
-      description:
-        en_US: Whether the mobile number is visible to colleagues
-        zh_Hans: 手机号是否对同事可见
-        ja_JP: 携帯番号が同僚に表示されるか
+      description: Whether the mobile number is visible to colleagues
 
     gender:
       type: integer
-      description:
-        en_US: Gender value defined in Lark (0 unknown, 1 male, 2 female)
-        zh_Hans: Lark 定义的性别值（0 未知，1 男，2 女）
-        ja_JP: Larkで定義された性別値（0 不明、1 男性、2 女性）
+      description: Gender value defined in Lark (0 unknown, 1 male, 2 female)
 
     leader_user_id:
       type: string
-      description:
-        en_US: Direct leader user ID
-        zh_Hans: 直属领导用户 ID
-        ja_JP: 直属上司のユーザーID
+      description: Direct leader user ID
 
     city:
       type: string
-      description:
-        en_US: City location
-        zh_Hans: 所在城市
-        ja_JP: 所在都市
+      description: City location
 
     country:
       type: string
-      description:
-        en_US: Country location
-        zh_Hans: 所在国家
-        ja_JP: 所在国
+      description: Country location
 
     work_station:
       type: string
-      description:
-        en_US: Workplace or desk info
-        zh_Hans: 工位信息
-        ja_JP: 勤務場所情報
+      description: Workplace or desk info
 
     join_time:
       type: integer
-      description:
-        en_US: Join timestamp (epoch milliseconds)
-        zh_Hans: 入职时间戳（毫秒）
-        ja_JP: 入社タイムスタンプ（ミリ秒）
+      description: Join timestamp (epoch milliseconds)
 
     is_tenant_manager:
       type: boolean
-      description:
-        en_US: Whether the user is a tenant administrator
-        zh_Hans: 是否为租户管理员
-        ja_JP: テナント管理者かどうか
+      description: Whether the user is a tenant administrator
 
     employee_no:
       type: string
-      description:
-        en_US: Employee number
-        zh_Hans: 员工编号
-        ja_JP: 従業員番号
+      description: Employee number
 
     employee_type:
       type: integer
-      description:
-        en_US: Employee type value
-        zh_Hans: 员工类型值
-        ja_JP: 従業員タイプ値
+      description: Employee type value
 
     time_zone:
       type: string
-      description:
-        en_US: Preferred time zone
-        zh_Hans: 首选时区
-        ja_JP: 優先タイムゾーン
+      description: Preferred time zone
 
     job_level_id:
       type: string
-      description:
-        en_US: Job level identifier
-        zh_Hans: 职级 ID
-        ja_JP: 職位レベルID
+      description: Job level identifier
 
     job_family_id:
       type: string
-      description:
-        en_US: Job family identifier
-        zh_Hans: 职族 ID
-        ja_JP: 職種ファミリーID
+      description: Job family identifier
 
     status_is_frozen:
       type: boolean
-      description:
-        en_US: Whether the account is frozen
-        zh_Hans: 账号是否冻结
-        ja_JP: アカウントが凍結されているか
+      description: Whether the account is frozen
 
     status_is_resigned:
       type: boolean
-      description:
-        en_US: Whether the employee has resigned
-        zh_Hans: 员工是否离职
-        ja_JP: 従業員が退職しているか
+      description: Whether the employee has resigned
 
     status_is_activated:
       type: boolean
-      description:
-        en_US: Whether the account is activated
-        zh_Hans: 账号是否激活
-        ja_JP: アカウントが有効化されているか
+      description: Whether the account is activated
 
     status_is_exited:
       type: boolean
-      description:
-        en_US: Whether the employee has exited
-        zh_Hans: 员工是否已经退出
-        ja_JP: 従業員が退社したか
+      description: Whether the employee has exited
 
     status_is_unjoin:
       type: boolean
-      description:
-        en_US: Whether the employee never joined
-        zh_Hans: 员工是否未入职
-        ja_JP: 従業員が入社していないか
+      description: Whether the employee never joined
 
     department_ids:
       type: array
-      description:
-        en_US: Department IDs the employee belongs to
-        zh_Hans: 员工所属部门 ID 列表
-        ja_JP: 従業員が所属する部門ID一覧
+      description: Department IDs the employee belongs to
       items:
         type: string
 
     positions:
       type: array
-      description:
-        en_US: Position assignments with department context
-        zh_Hans: 员工职位分配及部门信息
-        ja_JP: 部門情報を含む職務割り当て
+      description: Position assignments with department context
       items:
         type: object
         properties:
           position_code:
             type: string
-            description:
-              en_US: Position code
-              zh_Hans: 职位编码
-              ja_JP: 職位コード
+            description: Position code
           position_name:
             type: string
-            description:
-              en_US: Position name
-              zh_Hans: 职位名称
-              ja_JP: 職位名
+            description: Position name
           department_id:
             type: string
-            description:
-              en_US: Department ID for the position
-              zh_Hans: 职位所属部门 ID
-              ja_JP: 職位の所属部門ID
+            description: Department ID for the position
           leader_user_id:
             type: string
-            description:
-              en_US: Leader user ID for the position
-              zh_Hans: 职位对应的领导用户 ID
-              ja_JP: 職位の上司ユーザーID
+            description: Leader user ID for the position
           leader_position_code:
             type: string
-            description:
-              en_US: Leader position code
-              zh_Hans: 领导职位编码
-              ja_JP: 上司の職位コード
+            description: Leader position code
           is_major:
             type: boolean
-            description:
-              en_US: Whether this is the primary position
-              zh_Hans: 是否为主职位
-              ja_JP: 主たる職位かどうか
+            description: Whether this is the primary position
 
     orders:
       type: array
-      description:
-        en_US: Department ranking configuration
-        zh_Hans: 部门排序配置
-        ja_JP: 部門の並び順設定
+      description: Department ranking configuration
       items:
         type: object
         properties:
           department_id:
             type: string
-            description:
-              en_US: Department ID for the order
-              zh_Hans: 排序对应的部门 ID
-              ja_JP: 並び順の対象部門ID
+            description: Department ID for the order
           user_order:
             type: integer
-            description:
-              en_US: User order within the department
-              zh_Hans: 部门内的用户排序
-              ja_JP: 部門内でのユーザー順
+            description: User order within the department
           department_order:
             type: integer
-            description:
-              en_US: Department order within the tenant
-              zh_Hans: 部门在租户内的排序
-              ja_JP: テナント内での部門順
+            description: Department order within the tenant
           is_primary_dept:
             type: boolean
-            description:
-              en_US: Whether this is the primary department
-              zh_Hans: 是否为主部门
-              ja_JP: 主たる部門かどうか
+            description: Whether this is the primary department
 
     custom_attributes:
       type: array
-      description:
-        en_US: Custom attribute values
-        zh_Hans: 自定义属性值
-        ja_JP: カスタム属性の値
+      description: Custom attribute values
       items:
         type: object
         properties:
           type:
             type: string
-            description:
-              en_US: Attribute type identifier
-              zh_Hans: 属性类型标识
-              ja_JP: 属性タイプ識別子
+            description: Attribute type identifier
           id:
             type: string
-            description:
-              en_US: Attribute ID
-              zh_Hans: 属性 ID
-              ja_JP: 属性ID
+            description: Attribute ID
           value:
             type: object
-            description:
-              en_US: Attribute value payload
-              zh_Hans: 属性值载荷
-              ja_JP: 属性値のペイロード
+            description: Attribute value payload
             properties:
               text:
                 type: string
@@ -345,10 +210,7 @@ output_schema:
                 type: string
               generic_user:
                 type: object
-                description:
-                  en_US: Linked user reference if applicable
-                  zh_Hans: 如适用，关联的用户引用
-                  ja_JP: 該当する場合の関連ユーザー参照
+                description: Linked user reference if applicable
                 properties:
                   id:
                     type: string
@@ -357,26 +219,17 @@ output_schema:
 
     dotted_line_leader_user_ids:
       type: array
-      description:
-        en_US: Dotted line leader user IDs
-        zh_Hans: 虚线汇报领导用户 ID
-        ja_JP: 点線上司のユーザーID一覧
+      description: Dotted line leader user IDs
       items:
         type: string
 
     current_user_json:
       type: object
-      description:
-        en_US: Current user snapshot
-        zh_Hans: 当前用户快照
-        ja_JP: 現在のユーザースナップショット
+      description: Current user snapshot
 
     previous_user_json:
       type: object
-      description:
-        en_US: Previous user snapshot before the update
-        zh_Hans: 更新前的用户快照
-        ja_JP: 更新前のユーザースナップショット
+      description: Previous user snapshot before the update
 
 extra:
   python:

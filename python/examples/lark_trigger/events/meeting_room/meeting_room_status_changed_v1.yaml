@@ -7,9 +7,9 @@ identity:
     ja_JP: 会議室ステータス変更
 
 description:
-  en_US: This event activates when a meeting room's status is changed (e.g., enabled/disabled).
-  zh_Hans: 当会议室状态发生变化时激活（例如：启用/禁用）。
-  ja_JP: 会議室のステータスが変更されたときにアクティブになります（例：有効/無効）。
+  en_US: This event activates when a meeting room's status changes.
+  zh_Hans: 当会议室状态更改时激活。
+  ja_JP: 会議室のステータスが変更されたときにアクティブになります。
 
 parameters: []
 
@@ -18,17 +18,11 @@ output_schema:
   properties:
     room_id:
       type: string
-      description:
-        en_US: ID of the meeting room
-        zh_Hans: 会议室ID
-        ja_JP: 会議室ID
+      description: ID of the meeting room
     
     room_name:
       type: string
-      description:
-        en_US: Name of the meeting room
-        zh_Hans: 会议室名称
-        ja_JP: 会議室名
+      description: Name of the meeting room
 
 extra:
   python:

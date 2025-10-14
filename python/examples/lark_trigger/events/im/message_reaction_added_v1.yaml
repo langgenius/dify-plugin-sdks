@@ -18,59 +18,35 @@ output_schema:
   properties:
     message_id:
       type: string
-      description:
-        en_US: ID of the message that received a reaction
-        zh_Hans: 收到表情回应的消息ID
-        ja_JP: リアクションを受けたメッセージID
+      description: ID of the message that received a reaction
 
     emoji_type:
       type: string
-      description:
-        en_US: The emoji used for the reaction
-        zh_Hans: 用于回应的表情符号
-        ja_JP: リアクションに使用された絵文字
+      description: The emoji used for the reaction
 
     operator_type:
       type: string
-      description:
-        en_US: Type of operator (user or app)
-        zh_Hans: 操作者类型（用户或应用）
-        ja_JP: 操作者のタイプ（ユーザーまたはアプリ）
+      description: Type of operator (user or app)
 
     reactor_user_id:
       type: string
-      description:
-        en_US: ID of the person who added the reaction
-        zh_Hans: 添加表情回应的人的ID
-        ja_JP: リアクションを追加した人のID
+      description: ID of the person who added the reaction
 
     reactor_open_id:
       type: string
-      description:
-        en_US: Open ID of the person who added the reaction
-        zh_Hans: 添加表情回应的人的Open ID
-        ja_JP: リアクションを追加した人のOpen ID
+      description: Open ID of the person who added the reaction
 
     reactor_union_id:
       type: string
-      description:
-        en_US: Union ID of the person who added the reaction
-        zh_Hans: 添加表情回应的人的Union ID
-        ja_JP: リアクションを追加した人のUnion ID
+      description: Union ID of the person who added the reaction
 
     app_id:
       type: string
-      description:
-        en_US: App ID if reaction was added by an app
-        zh_Hans: 如果是应用添加的回应，应用的ID
-        ja_JP: アプリによるリアクションの場合のアプリID
+      description: App ID if reaction was added by an app
 
     action_time:
       type: string
-      description:
-        en_US: Time when the reaction was added
-        zh_Hans: 添加表情回应的时间
-        ja_JP: リアクションが追加された時刻
+      description: Time when the reaction was added
 
 extra:
   python:

@@ -18,31 +18,19 @@ output_schema:
   properties:
     message_id:
       type: string
-      description:
-        en_US: ID of the recalled message
-        zh_Hans: 撤回的消息ID
-        ja_JP: 撤回されたメッセージID
+      description: ID of the recalled message
     
     chat_id:
       type: string
-      description:
-        en_US: ID of the chat where the message was recalled
-        zh_Hans: 消息被撤回的聊天ID
-        ja_JP: メッセージが撤回されたチャットID
+      description: ID of the chat where the message was recalled
     
     recall_time:
       type: string
-      description:
-        en_US: Time when the message was recalled
-        zh_Hans: 消息撤回的时间
-        ja_JP: メッセージが撤回された時刻
+      description: Time when the message was recalled
     
     recall_type:
       type: string
-      description:
-        en_US: Type of recall operation
-        zh_Hans: 撤回操作类型
-        ja_JP: 撤回操作タイプ
+      description: Type of recall operation
 
 extra:
   python:

@@ -18,59 +18,35 @@ output_schema:
   properties:
     chat_id:
       type: string
-      description:
-        en_US: ID of the disbanded chat
-        zh_Hans: 解散的群聊ID
-        ja_JP: 解散したチャットID
+      description: ID of the disbanded chat
     
     name:
       type: string
-      description:
-        en_US: Name of the disbanded chat
-        zh_Hans: 解散的群聊名称
-        ja_JP: 解散したチャットの名前
+      description: Name of the disbanded chat
     
     external:
       type: string
-      description:
-        en_US: Whether the chat is external
-        zh_Hans: 是否为外部群聊
-        ja_JP: 外部チャットかどうか
+      description: Whether the chat is external
     
     operator_tenant_key:
       type: string
-      description:
-        en_US: Tenant key of the operator
-        zh_Hans: 操作者的租户密钥
-        ja_JP: 操作者のテナントキー
+      description: Tenant key of the operator
     
     operator_user_id:
       type: string
-      description:
-        en_US: User ID of the operator who disbanded the chat
-        zh_Hans: 解散群聊的操作者用户ID
-        ja_JP: チャットを解散した操作者のユーザーID
+      description: User ID of the operator who disbanded the chat
     
     operator_open_id:
       type: string
-      description:
-        en_US: Open ID of the operator
-        zh_Hans: 操作者的Open ID
-        ja_JP: 操作者のOpen ID
+      description: Open ID of the operator
     
     operator_union_id:
       type: string
-      description:
-        en_US: Union ID of the operator
-        zh_Hans: 操作者的Union ID
-        ja_JP: 操作者のUnion ID
+      description: Union ID of the operator
     
     i18n_names:
-      type: object
-      description:
-        en_US: Internationalized names
-        zh_Hans: 国际化名称
-        ja_JP: 国際化された名前
+      type: string
+      description: Internationalized names (JSON format)
 
 extra:
   python:

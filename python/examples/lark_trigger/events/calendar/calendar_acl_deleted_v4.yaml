@@ -18,73 +18,43 @@ output_schema:
   properties:
     acl_id:
       type: string
-      description:
-        en_US: ACL identifier for the revoked permission
-        zh_Hans: 被撤销权限的 ACL 标识
-        ja_JP: 削除された権限の ACL 識別子
+      description: ACL identifier for the revoked permission
 
     role:
       type: string
-      description:
-        en_US: Role that was removed from the recipients
-        zh_Hans: 从接收者移除的角色
-        ja_JP: 受信者から削除されたロール
+      description: Role that was removed from the recipients
 
     scope_type:
       type: string
-      description:
-        en_US: Scope type affected (user, chat, department)
-        zh_Hans: 受影响的权限范围类型（用户、群组、部门）
-        ja_JP: 影響を受けた対象タイプ（ユーザー、チャット、部門）
+      description: Scope type affected (user, chat, department)
 
     scope_user_id:
       type: string
-      description:
-        en_US: User ID of the revoked scope when applicable
-        zh_Hans: 撤销范围的用户 ID（如适用）
-        ja_JP: 対象ユーザーのユーザーID（該当する場合）
+      description: User ID of the revoked scope when applicable
 
     scope_open_id:
       type: string
-      description:
-        en_US: Open ID of the revoked scope when applicable
-        zh_Hans: 撤销范围的 Open ID（如适用）
-        ja_JP: 対象ユーザーのOpen ID（該当する場合）
+      description: Open ID of the revoked scope when applicable
 
     scope_union_id:
       type: string
-      description:
-        en_US: Union ID of the revoked scope when applicable
-        zh_Hans: 撤销范围的 Union ID（如适用）
-        ja_JP: 対象ユーザーのUnion ID（該当する場合）
+      description: Union ID of the revoked scope when applicable
 
     affected_users:
       type: array
-      description:
-        en_US: Users who lost access
-        zh_Hans: 失去访问权限的用户列表
-        ja_JP: アクセス権を失ったユーザー一覧
+      description: Users who lost access
       items:
         type: object
         properties:
           user_id:
             type: string
-            description:
-              en_US: User ID
-              zh_Hans: 用户 ID
-              ja_JP: ユーザーID
+            description: User ID
           open_id:
             type: string
-            description:
-              en_US: Open ID
-              zh_Hans: Open ID
-              ja_JP: Open ID
+            description: Open ID
           union_id:
             type: string
-            description:
-              en_US: Union ID
-              zh_Hans: Union ID
-              ja_JP: Union ID
+            description: Union ID
 
 extra:
   python:

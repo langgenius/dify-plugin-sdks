@@ -18,132 +18,78 @@ output_schema:
   properties:
     department_id:
       type: string
-      description:
-        en_US: Department ID of the removed department
-        zh_Hans: 被删除部门的 ID
-        ja_JP: 削除された部門のID
+      description: Department ID of the removed department
 
     open_department_id:
       type: string
-      description:
-        en_US: Open department ID
-        zh_Hans: Open 部门 ID
-        ja_JP: Open 部門ID
+      description: Open department ID
 
     name:
       type: string
-      description:
-        en_US: Department name
-        zh_Hans: 部门名称
-        ja_JP: 部門名
+      description: Department name
 
     parent_department_id:
       type: string
-      description:
-        en_US: Parent department ID
-        zh_Hans: 上级部门 ID
-        ja_JP: 上位部門ID
+      description: Parent department ID
 
     leader_user_id:
       type: string
-      description:
-        en_US: Department leader user ID
-        zh_Hans: 部门负责人用户 ID
-        ja_JP: 部門責任者のユーザーID
+      description: Department leader user ID
 
     chat_id:
       type: string
-      description:
-        en_US: Associated group chat ID
-        zh_Hans: 关联群聊 ID
-        ja_JP: 関連チャットID
+      description: Associated group chat ID
 
     order:
       type: integer
-      description:
-        en_US: Department order value
-        zh_Hans: 部门排序值
-        ja_JP: 部門の並び順値
+      description: Department order value
 
     unit_ids:
       type: array
-      description:
-        en_US: Associated unit IDs
-        zh_Hans: 关联单元 ID 列表
-        ja_JP: 関連ユニットID一覧
+      description: Associated unit IDs
       items:
         type: string
 
     is_deleted:
       type: boolean
-      description:
-        en_US: Whether the department is marked as deleted after removal
-        zh_Hans: 部门删除后是否被标记为删除
-        ja_JP: 削除後に部門が削除済みとしてマークされているか
+      description: Whether the department is marked as deleted after removal
 
     leaders:
       type: array
-      description:
-        en_US: Department leader assignments
-        zh_Hans: 部门领导配置
-        ja_JP: 部門リーダー設定
+      description: Department leader assignments
       items:
         type: object
         properties:
           leader_type:
             type: integer
-            description:
-              en_US: Leader type value
-              zh_Hans: 领导类型值
-              ja_JP: リーダータイプの値
+            description: Leader type value
           leader_id:
             type: string
-            description:
-              en_US: Leader identifier
-              zh_Hans: 领导标识
-              ja_JP: リーダー識別子
+            description: Leader identifier
 
     department_hrbps:
       type: array
-      description:
-        en_US: HRBP users for the department
-        zh_Hans: 部门 HRBP 用户列表
-        ja_JP: 部門のHRBPユーザー一覧
+      description: HRBP users for the department
       items:
         type: object
         properties:
           user_id:
             type: string
-            description:
-              en_US: User ID
-              zh_Hans: 用户 ID
-              ja_JP: ユーザーID
+            description: User ID
           open_id:
             type: string
-            description:
-              en_US: Open ID
-              zh_Hans: Open ID
-              ja_JP: Open ID
+            description: Open ID
           union_id:
             type: string
-            description:
-              en_US: Union ID
-              zh_Hans: Union ID
-              ja_JP: Union ID
+            description: Union ID
 
     current_department_json:
       type: object
-      description:
-        en_US: Department snapshot at deletion time
-        zh_Hans: 删除时的部门快照
-        ja_JP: 削除時の部門スナップショット
+      description: Department snapshot at deletion time
 
     previous_department_json:
       type: object
-      description:
-        en_US: Previous metadata before deletion
-        zh_Hans: 删除前的部门元数据
-        ja_JP: 削除前の部門メタデータ
+      description: Previous metadata before deletion
 
 extra:
   python:

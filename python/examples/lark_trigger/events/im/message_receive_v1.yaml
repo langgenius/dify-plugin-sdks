@@ -17,89 +17,60 @@ output_schema:
   type: object
   properties:
     sender_id:
-      type: string
-      description:
-        en_US: ID of the message sender
-        zh_Hans: 消息发送者ID
-        ja_JP: メッセージ送信者ID
-    
+      type: object
+      properties:
+        user_id:
+          type: string
+        open_id:
+          type: string
+        union_id:
+          type: string
+      description: ID of the message sender
+
     sender_type:
       type: string
-      description:
-        en_US: Type of sender (user or bot)
-        zh_Hans: 发送者类型（用户或机器人）
-        ja_JP: 送信者タイプ（ユーザーまたはボット）
-    
+      description: Type of sender (user or bot)
+
     tenant_key:
       type: string
-      description:
-        en_US: Tenant key of the sender
-        zh_Hans: 发送者的租户密钥
-        ja_JP: 送信者のテナントキー
-    
+      description: Tenant key of the sender
+
     message_id:
       type: string
-      description:
-        en_US: Unique message identifier
-        zh_Hans: 唯一消息标识符
-        ja_JP: 一意のメッセージ識別子
-    
+      description: Unique message identifier
+
     root_id:
       type: string
-      description:
-        en_US: Root message ID if this is a reply
-        zh_Hans: 如果是回复，则为根消息ID
-        ja_JP: 返信の場合のルートメッセージID
-    
+      description: Root message ID if this is a reply
+
     parent_id:
       type: string
-      description:
-        en_US: Parent message ID for threaded replies
-        zh_Hans: 线程回复的父消息ID
-        ja_JP: スレッド返信の親メッセージID
-    
+      description: Parent message ID for threaded replies
+
     chat_id:
       type: string
-      description:
-        en_US: Chat where message was sent
-        zh_Hans: 消息发送的群聊
-        ja_JP: メッセージが送信されたチャット
-    
+      description: Chat where message was sent
+
     chat_type:
       type: string
-      description:
-        en_US: Type of chat (group or P2P)
-        zh_Hans: 群聊类型（群组或单聊）
-        ja_JP: チャットタイプ（グループまたはP2P）
-    
+      description: Type of chat (group or P2P)
+
     message_type:
       type: string
-      description:
-        en_US: Type of message content
-        zh_Hans: 消息内容类型
-        ja_JP: メッセージコンテンツタイプ
-    
+      description: Type of message content
+
     content:
       type: string
-      description:
-        en_US: Message content
-        zh_Hans: 消息内容
-        ja_JP: メッセージ内容
-    
+      description: Message content
+
     create_time:
       type: string
-      description:
-        en_US: Message creation timestamp
-        zh_Hans: 消息创建时间戳
-        ja_JP: メッセージ作成タイムスタンプ
-    
+      description: Message creation timestamp
+
     update_time:
       type: string
-      description:
-        en_US: Message update timestamp
-        zh_Hans: 消息更新时间戳
-        ja_JP: メッセージ更新タイムスタンプ
-    
+      description: Message update timestamp
+
     mentions:
       type: array
       items:
@@ -108,17 +79,19 @@ output_schema:
           key:
             type: string
           id:
-            type: string
-          id_type:
-            type: string
+            type: object
+            properties:
+              user_id:
+                type: string
+              open_id:
+                type: string
+              union_id:
+                type: string
           name:
             type: string
           tenant_key:
             type: string
-      description:
-        en_US: List of mentioned users or bots
-        zh_Hans: 被提及的用户或机器人列表
-        ja_JP: メンションされたユーザーまたはボットのリスト
+      description: List of mentioned users or bots
 
 extra:
   python:

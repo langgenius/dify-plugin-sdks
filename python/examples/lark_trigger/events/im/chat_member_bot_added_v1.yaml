@@ -7,9 +7,9 @@ identity:
     ja_JP: ボットがチャットに追加
 
 description:
-  en_US: This event activates when a bot is added to a group chat, providing information about the chat and who added the bot.
-  zh_Hans: 当机器人被添加到群聊时激活，提供关于群聊和添加者的信息。
-  ja_JP: ボットがグループチャットに追加されたときにアクティブになり、チャットと追加者の情報を提供します。
+  en_US: This event activates when a bot is added to a group chat.
+  zh_Hans: 当机器人被添加到群聊时激活。
+  ja_JP: ボットがグループチャットに追加されたときにアクティブになります。
 
 parameters: []
 
@@ -18,52 +18,31 @@ output_schema:
   properties:
     chat_id:
       type: string
-      description:
-        en_US: Group chat identifier
-        zh_Hans: 群聊标识符
-        ja_JP: グループチャット識別子
+      description: Group chat identifier
 
     name:
       type: string
-      description:
-        en_US: Name of the group chat
-        zh_Hans: 群聊名称
-        ja_JP: グループチャット名
+      description: Name of the group chat
 
     is_external:
       type: string
-      description:
-        en_US: Whether the chat includes external users
-        zh_Hans: 群聊是否包含外部用户
-        ja_JP: 外部ユーザーを含むチャットかどうか
+      description: Whether the chat includes external users
 
     operator_tenant_key:
       type: string
-      description:
-        en_US: Organization key of the operator
-        zh_Hans: 操作者的组织密钥
-        ja_JP: 操作者の組織キー
+      description: Organization key of the operator
 
     operator_user_id:
       type: string
-      description:
-        en_US: ID of the person who added the bot
-        zh_Hans: 添加机器人的人的ID
-        ja_JP: ボットを追加した人のID
+      description: ID of the person who added the bot
 
     operator_open_id:
       type: string
-      description:
-        en_US: Open ID of the person who added the bot
-        zh_Hans: 添加机器人的人的Open ID
-        ja_JP: ボットを追加した人のOpen ID
+      description: Open ID of the person who added the bot
 
     operator_union_id:
       type: string
-      description:
-        en_US: Union ID of the person who added the bot
-        zh_Hans: 添加机器人的人的Union ID
-        ja_JP: ボットを追加した人のUnion ID
+      description: Union ID of the person who added the bot
 
     i18n_names:
       type: object
@@ -74,10 +53,7 @@ output_schema:
           type: string
         ja_jp:
           type: string
-      description:
-        en_US: Internationalized chat names
-        zh_Hans: 国际化群聊名称
-        ja_JP: 国際化されたチャット名
+      description: Internationalized chat names
 
 extra:
   python:

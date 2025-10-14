@@ -18,25 +18,16 @@ output_schema:
   properties:
     calendar_id:
       type: string
-      description:
-        en_US: Calendar identifier
-        zh_Hans: 日历标识符
-        ja_JP: カレンダー識別子
-    
+      description: Calendar identifier
+
     event_id:
       type: string
-      description:
-        en_US: Event identifier
-        zh_Hans: 事件标识符
-        ja_JP: イベント識別子
-    
+      description: Event identifier
+
     change_type:
       type: string
-      description:
-        en_US: Type of change (created, updated, deleted)
-        zh_Hans: 变更类型（创建、更新、删除）
-        ja_JP: 変更タイプ（作成、更新、削除）
-    
+      description: Type of change (created, updated, deleted)
+
     affected_users:
       type: array
       items:
@@ -48,31 +39,15 @@ output_schema:
             type: string
           union_id:
             type: string
-      description:
-        en_US: List of affected users
-        zh_Hans: 受影响的用户列表
-        ja_JP: 影響を受けるユーザーのリスト
-    
+      description: List of affected users
+
     affected_users_count:
-      type: number
-      description:
-        en_US: Number of affected users
-        zh_Hans: 受影响的用户数量
-        ja_JP: 影響を受けるユーザー数
-    
+      type: string
+      description: Number of affected users
+
     rsvp_responses:
-      type: array
-      items:
-        type: object
-        properties:
-          rsvp_status:
-            type: string
-          from_user_id:
-            type: string
-      description:
-        en_US: Attendee response details
-        zh_Hans: 参与者响应详情
-        ja_JP: 参加者の応答詳細
+      type: string
+      description: Attendee response details (JSON format)
 
 extra:
   python:

@@ -18,94 +18,55 @@ output_schema:
   properties:
     leave_reason:
       type: string
-      description:
-        en_US: Reason for leaving
-        zh_Hans: 离开原因
-        ja_JP: 退出理由
+      description: Reason for leaving
     
     leave_user_id:
       type: string
-      description:
-        en_US: Leaving user ID
-        zh_Hans: 离开用户ID
-        ja_JP: 退出ユーザーID
+      description: Leaving user ID
     
     leave_user_type:
       type: string
-      description:
-        en_US: Leaving user type
-        zh_Hans: 离开用户类型
-        ja_JP: 退出ユーザータイプ
+      description: Leaving user type
     
     meeting_id:
       type: string
-      description:
-        en_US: ID of the meeting
-        zh_Hans: 会议ID
-        ja_JP: 会議ID
+      description: ID of the meeting
     
     meeting_no:
       type: string
-      description:
-        en_US: Meeting number
-        zh_Hans: 会议号
-        ja_JP: 会議番号
+      description: Meeting number
     
     topic:
       type: string
-      description:
-        en_US: Meeting topic
-        zh_Hans: 会议主题
-        ja_JP: 会議トピック
+      description: Meeting topic
     
     start_time:
       type: string
-      description:
-        en_US: Meeting start time
-        zh_Hans: 会议开始时间
-        ja_JP: 会議開始時刻
+      description: Meeting start time
     
     meeting_source:
       type: string
-      description:
-        en_US: Meeting source
-        zh_Hans: 会议来源
-        ja_JP: 会議ソース
+      description: Meeting source
     
     calendar_event_id:
       type: string
-      description:
-        en_US: Calendar event ID
-        zh_Hans: 日历事件ID
-        ja_JP: カレンダーイベントID
+      description: Calendar event ID
     
     host_user_id:
       type: string
-      description:
-        en_US: Host user ID
-        zh_Hans: 主持人ID
-        ja_JP: ホストユーザーID
+      description: Host user ID
     
     host_user_type:
       type: string
-      description:
-        en_US: Host user type
-        zh_Hans: 主持人类型
-        ja_JP: ホストユーザータイプ
+      description: Host user type
     
     operator_id:
       type: string
-      description:
-        en_US: Operator ID
-        zh_Hans: 操作者ID
-        ja_JP: 操作者ID
+      description: Operator ID
     
     operator_user_type:
       type: string
-      description:
-        en_US: Operator user type
-        zh_Hans: 操作者类型
-        ja_JP: 操作者タイプ
+      description: Operator user type
 
 extra:
   python:

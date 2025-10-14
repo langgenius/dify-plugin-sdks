@@ -18,17 +18,11 @@ output_schema:
   properties:
     task_id:
       type: string
-      description:
-        en_US: ID of the task
-        zh_Hans: 任务ID
-        ja_JP: タスクID
+      description: ID of the task
     
     obj_type:
       type: string
-      description:
-        en_US: Type of the object
-        zh_Hans: 对象类型
-        ja_JP: オブジェクトタイプ
+      description: Type of the object
 
 extra:
   python:

@@ -8,8 +8,8 @@ identity:
 
 description:
   en_US: This event activates when contact visibility scope is updated, showing added and removed users, departments, and groups.
-  zh_Hans: 当通讯录可见范围更新时激活，显示添加和删除的用户、部门和群组。
-  ja_JP: 連絡先の可視範囲が更新されたときにアクティブになり、追加および削除されたユーザー、部門、グループを表示します。
+  zh_Hans: 当通讯录可见范围更新时激活，显示添加和移除的用户、部门和群组。
+  ja_JP: 連絡先の表示範囲が更新されたときにアクティブになり、追加および削除されたユーザー、部門、グループを表示します。
 
 parameters: []
 
@@ -38,10 +38,7 @@ output_schema:
           type: array
           items:
             type: string
-      description:
-        en_US: Scope additions
-        zh_Hans: 新增的范围
-        ja_JP: 追加されたスコープ
+      description: Scope additions
 
     removed_scope:
       type: object
@@ -65,10 +62,7 @@ output_schema:
           type: array
           items:
             type: string
-      description:
-        en_US: Scope removals
-        zh_Hans: 删除的范围
-        ja_JP: 削除されたスコープ
+      description: Scope removals
 
 extra:
   python:

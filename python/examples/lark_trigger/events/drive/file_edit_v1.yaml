@@ -18,94 +18,55 @@ output_schema:
   properties:
     file_token:
       type: string
-      description:
-        en_US: Token of the edited file
-        zh_Hans: 被编辑文件的 Token
-        ja_JP: 編集されたファイルのトークン
+      description: Token of the edited file
 
     file_type:
       type: string
-      description:
-        en_US: File type (doc, sheet, slide, etc.)
-        zh_Hans: 文件类型（文档、表格、幻灯片等）
-        ja_JP: ファイルタイプ（ドキュメント、スプレッドシートなど）
+      description: File type (doc, sheet, slide, etc.)
 
     sheet_id:
       type: string
-      description:
-        en_US: Sheet identifier when the edit targets a specific sheet
-        zh_Hans: 针对特定表格时的 Sheet ID
-        ja_JP: 特定シートが編集された場合のシートID
+      description: Sheet identifier when the edit targets a specific sheet
 
     operators:
       type: array
-      description:
-        en_US: Users who edited the file
-        zh_Hans: 编辑该文件的用户列表
-        ja_JP: ファイルを編集したユーザー一覧
+      description: Users who edited the file
       items:
         type: object
         properties:
           user_id:
             type: string
-            description:
-              en_US: User ID
-              zh_Hans: 用户 ID
-              ja_JP: ユーザーID
+            description: User ID
           open_id:
             type: string
-            description:
-              en_US: Open ID
-              zh_Hans: Open ID
-              ja_JP: Open ID
+            description: Open ID
           union_id:
             type: string
-            description:
-              en_US: Union ID
-              zh_Hans: Union ID
-              ja_JP: Union ID
+            description: Union ID
 
     operator_count:
       type: integer
-      description:
-        en_US: Number of operators involved in the edit
-        zh_Hans: 参与编辑的用户数量
-        ja_JP: 編集に関与したユーザー数
+      description: Number of operators involved in the edit
 
     subscriber_users:
       type: array
-      description:
-        en_US: Subscribers notified about the edit
-        zh_Hans: 收到编辑通知的订阅者
-        ja_JP: 編集通知を受け取る購読者一覧
+      description: Subscribers notified about the edit
       items:
         type: object
         properties:
           user_id:
             type: string
-            description:
-              en_US: User ID
-              zh_Hans: 用户 ID
-              ja_JP: ユーザーID
+            description: User ID
           open_id:
             type: string
-            description:
-              en_US: Open ID
-              zh_Hans: Open ID
-              ja_JP: Open ID
+            description: Open ID
           union_id:
             type: string
-            description:
-              en_US: Union ID
-              zh_Hans: Union ID
-              ja_JP: Union ID
+            description: Union ID
 
     subscriber_count:
       type: integer
-      description:
-        en_US: Number of subscribers informed about the change
-        zh_Hans: 获知更新的订阅者数量
-        ja_JP: 変更を通知された購読者数
+      description: Number of subscribers informed about the change
 
 extra:
   python:

@@ -8,6 +8,7 @@ from typing import Protocol, TypeVar
 import lark_oapi as lark
 from lark_oapi.event.dispatcher_handler import EventDispatcherHandlerBuilder
 from lark_oapi.core.http import RawRequest
+from lark_oapi.api.im.v1.model import UserId
 from werkzeug import Request
 
 from dify_plugin.interfaces.trigger import EventRuntime
@@ -81,6 +82,15 @@ def serialize_user_identity(user: SupportsUserIdentity | None) -> dict[str, str]
         "user_id": user.user_id or "",
         "open_id": user.open_id or "",
         "union_id": user.union_id or "",
+    }
+
+
+def serialize_user_id(user_id: UserId) -> dict[str, str]:
+    """Convert a UserId object into a dictionary of identifiers."""
+    return {
+        "user_id": user_id.user_id or "",
+        "open_id": user_id.open_id or "",
+        "union_id": user_id.union_id or "",
     }
 
 

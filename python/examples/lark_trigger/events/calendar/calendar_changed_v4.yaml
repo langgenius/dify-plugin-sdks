@@ -8,8 +8,8 @@ identity:
 
 description:
   en_US: This event activates when a calendar's properties are modified, such as name, description, or settings.
-  zh_Hans: 当日历的属性被修改时激活，例如名称、描述或设置。
-  ja_JP: カレンダーのプロパティが変更されたときにアクティブになります（名前、説明、設定など）。
+  zh_Hans: 当日历属性被修改时激活，如名称、描述或设置。
+  ja_JP: カレンダーのプロパティ（名前、説明、設定など）が変更されたときにアクティブになります。
 
 parameters: []
 
@@ -27,17 +27,11 @@ output_schema:
             type: string
           union_id:
             type: string
-      description:
-        en_US: List of users affected by the calendar change
-        zh_Hans: 受日历更改影响的用户列表
-        ja_JP: カレンダー変更の影響を受けるユーザーのリスト
+      description: List of users affected by the calendar change
     
     affected_users_count:
       type: number
-      description:
-        en_US: Number of affected users
-        zh_Hans: 受影响的用户数量
-        ja_JP: 影響を受けるユーザー数
+      description: Number of affected users
 
 extra:
   python:

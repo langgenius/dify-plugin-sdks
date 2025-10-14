@@ -18,73 +18,43 @@ output_schema:
   properties:
     file_token:
       type: string
-      description:
-        en_US: Token of the deleted file
-        zh_Hans: 被删除文件的 Token
-        ja_JP: 削除されたファイルのトークン
+      description: Token of the deleted file
 
     file_type:
       type: string
-      description:
-        en_US: File type (doc, sheet, slide, etc.)
-        zh_Hans: 文件类型（文档、表格、幻灯片等）
-        ja_JP: ファイルタイプ（ドキュメント、スプレッドシートなど）
+      description: File type (doc, sheet, slide, etc.)
 
     operator_user_id:
       type: string
-      description:
-        en_US: User ID of the operator who deleted the file
-        zh_Hans: 删除文件的用户 ID
-        ja_JP: ファイルを削除したユーザーID
+      description: User ID of the operator who deleted the file
 
     operator_open_id:
       type: string
-      description:
-        en_US: Open ID of the operator
-        zh_Hans: 操作用户的 Open ID
-        ja_JP: 操作ユーザーのOpen ID
+      description: Open ID of the operator
 
     operator_union_id:
       type: string
-      description:
-        en_US: Union ID of the operator
-        zh_Hans: 操作用户的 Union ID
-        ja_JP: 操作ユーザーのUnion ID
+      description: Union ID of the operator
 
     subscriber_users:
       type: array
-      description:
-        en_US: Users subscribed to file changes
-        zh_Hans: 订阅文件更新的用户列表
-        ja_JP: ファイル変更を購読しているユーザー一覧
+      description: Users subscribed to file changes
       items:
         type: object
         properties:
           user_id:
             type: string
-            description:
-              en_US: User ID
-              zh_Hans: 用户 ID
-              ja_JP: ユーザーID
+            description: User ID
           open_id:
             type: string
-            description:
-              en_US: Open ID
-              zh_Hans: Open ID
-              ja_JP: Open ID
+            description: Open ID
           union_id:
             type: string
-            description:
-              en_US: Union ID
-              zh_Hans: Union ID
-              ja_JP: Union ID
+            description: Union ID
 
     subscriber_count:
       type: integer
-      description:
-        en_US: Number of subscribers affected by the deletion
-        zh_Hans: 受删除影响的订阅者数量
-        ja_JP: 削除の影響を受けた購読者数
+      description: Number of subscribers affected by the deletion
 
 extra:
   python:

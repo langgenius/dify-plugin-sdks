@@ -18,54 +18,27 @@ output_schema:
   properties:
     file_token:
       type: string
-      description:
-        en_US: Token of the trashed file
-        zh_Hans: 被删除文件的令牌
-        ja_JP: 削除されたファイルのトークン
+      description: Token of the trashed file
     
     file_type:
       type: string
-      description:
-        en_US: Type of the trashed file
-        zh_Hans: 被删除文件的类型
-        ja_JP: 削除されたファイルのタイプ
+      description: Type of the trashed file
     
     operator_user_id:
       type: string
-      description:
-        en_US: User ID of who trashed the file
-        zh_Hans: 删除文件的用户ID
-        ja_JP: ファイルを削除したユーザーID
+      description: User ID of who trashed the file
     
     operator_open_id:
       type: string
-      description:
-        en_US: Open ID of the operator
-        zh_Hans: 操作者的Open ID
-        ja_JP: 操作者のOpen ID
+      description: Open ID of the operator
     
     operator_union_id:
       type: string
-      description:
-        en_US: Union ID of the operator
-        zh_Hans: 操作者的Union ID
-        ja_JP: 操作者のUnion ID
+      description: Union ID of the operator
     
     subscribers:
-      type: array
-      items:
-        type: object
-        properties:
-          user_id:
-            type: string
-          open_id:
-            type: string
-          union_id:
-            type: string
-      description:
-        en_US: List of file subscribers
-        zh_Hans: 文件订阅者列表
-        ja_JP: ファイルサブスクライバーリスト
+      type: string
+      description: List of file subscribers (JSON format)
 
 extra:
   python:

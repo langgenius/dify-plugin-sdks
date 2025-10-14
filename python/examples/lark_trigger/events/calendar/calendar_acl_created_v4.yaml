@@ -18,73 +18,43 @@ output_schema:
   properties:
     acl_id:
       type: string
-      description:
-        en_US: ACL identifier for the permission entry
-        zh_Hans: 权限条目的 ACL 标识
-        ja_JP: 権限エントリの ACL 識別子
+      description: ACL identifier for the permission entry
 
     role:
       type: string
-      description:
-        en_US: Role granted to the recipients (viewer, editor, etc.)
-        zh_Hans: 授予接收者的角色（查看者、编辑者等）
-        ja_JP: 受信者に付与されたロール（閲覧者、編集者など）
+      description: Role granted to the recipients (viewer, editor, etc.)
 
     scope_type:
       type: string
-      description:
-        en_US: Scope type of the permission (user, chat, department)
-        zh_Hans: 权限范围类型（用户、群组、部门）
-        ja_JP: 権限の対象タイプ（ユーザー、チャット、部門）
+      description: Scope type of the permission (user, chat, department)
 
     scope_user_id:
       type: string
-      description:
-        en_US: User ID of the scoped recipient when applicable
-        zh_Hans: 适用时的用户 ID
-        ja_JP: 対象ユーザーのユーザーID（該当する場合）
+      description: User ID of the scoped recipient when applicable
 
     scope_open_id:
       type: string
-      description:
-        en_US: Open ID of the scoped recipient when applicable
-        zh_Hans: 适用时的 Open ID
-        ja_JP: 対象ユーザーのOpen ID（該当する場合）
+      description: Open ID of the scoped recipient when applicable
 
     scope_union_id:
       type: string
-      description:
-        en_US: Union ID of the scoped recipient when applicable
-        zh_Hans: 适用时的 Union ID
-        ja_JP: 対象ユーザーのUnion ID（該当する場合）
+      description: Union ID of the scoped recipient when applicable
 
     shared_users:
       type: array
-      description:
-        en_US: List of users who received access
-        zh_Hans: 获得访问权限的用户列表
-        ja_JP: アクセスを付与されたユーザーの一覧
+      description: List of users who received access
       items:
         type: object
         properties:
           user_id:
             type: string
-            description:
-              en_US: User ID
-              zh_Hans: 用户 ID
-              ja_JP: ユーザーID
+            description: User ID
           open_id:
             type: string
-            description:
-              en_US: Open ID
-              zh_Hans: Open ID
-              ja_JP: Open ID
+            description: Open ID
           union_id:
             type: string
-            description:
-              en_US: Union ID
-              zh_Hans: Union ID
-              ja_JP: Union ID
+            description: Union ID
 
 extra:
   python:

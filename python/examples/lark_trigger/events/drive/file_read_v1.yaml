@@ -7,9 +7,9 @@ identity:
     ja_JP: ファイル閲覧
 
 description:
-  en_US: This event activates when a file is read or viewed, providing details about the file and who accessed it.
-  zh_Hans: 当文件被阅读或查看时激活，提供文件和访问者的详细信息。
-  ja_JP: ファイルが読み取られたり表示されたときにアクティブになり、ファイルとアクセス者の詳細を提供します。
+  en_US: This event activates when a file is accessed or viewed by users.
+  zh_Hans: 当文件被用户访问或查看时激活。
+  ja_JP: ファイルがユーザーによってアクセスまたは表示されたときにアクティブになります。
 
 parameters: []
 
@@ -18,38 +18,23 @@ output_schema:
   properties:
     file_token:
       type: string
-      description:
-        en_US: Token of the viewed file
-        zh_Hans: 被查看文件的令牌
-        ja_JP: 表示されたファイルのトークン
+      description: Token of the viewed file
     
     file_type:
       type: string
-      description:
-        en_US: Type of the viewed file
-        zh_Hans: 被查看文件的类型
-        ja_JP: 表示されたファイルのタイプ
+      description: Type of the viewed file
     
     operator_user_id:
       type: string
-      description:
-        en_US: User ID of who viewed the file
-        zh_Hans: 查看文件的用户ID
-        ja_JP: ファイルを表示したユーザーID
+      description: User ID of who viewed the file
     
     operator_open_id:
       type: string
-      description:
-        en_US: Open ID of the operator
-        zh_Hans: 操作者的Open ID
-        ja_JP: 操作者のOpen ID
+      description: Open ID of the operator
     
     operator_union_id:
       type: string
-      description:
-        en_US: Union ID of the operator
-        zh_Hans: 操作者的Union ID
-        ja_JP: 操作者のUnion ID
+      description: Union ID of the operator
     
     operators:
       type: array
@@ -62,10 +47,7 @@ output_schema:
             type: string
           union_id:
             type: string
-      description:
-        en_US: List of all users who viewed the file
-        zh_Hans: 所有查看文件的用户列表
-        ja_JP: ファイルを表示したすべてのユーザーのリスト
+      description: List of all users who viewed the file
 
 extra:
   python:

@@ -7,9 +7,9 @@ identity:
     ja_JP: メンバー退出
 
 description:
-  en_US: This event activates when a user voluntarily withdraws from a group chat, providing information about who left.
-  zh_Hans: 当用户主动退出群聊时激活，提供关于离开成员的信息。
-  ja_JP: ユーザーがグループチャットから自発的に退出したときにアクティブになり、退出したメンバーの情報を提供します。
+  en_US: This event activates when a user voluntarily leaves a group chat.
+  zh_Hans: 当用户主动退出群聊时激活。
+  ja_JP: ユーザーが自発的にグループチャットから退出したときにアクティブになります。
 
 parameters: []
 
@@ -18,24 +18,15 @@ output_schema:
   properties:
     chat_id:
       type: string
-      description:
-        en_US: Group chat identifier
-        zh_Hans: 群聊标识符
-        ja_JP: グループチャット識別子
+      description: Group chat identifier
 
     name:
       type: string
-      description:
-        en_US: Name of the group chat
-        zh_Hans: 群聊名称
-        ja_JP: グループチャット名
+      description: Name of the group chat
 
     operator_tenant_key:
       type: string
-      description:
-        en_US: Tenant key
-        zh_Hans: 租户密钥
-        ja_JP: テナントキー
+      description: Tenant key
 
     withdrawn_users:
       type: array
@@ -52,17 +43,11 @@ output_schema:
             type: string
           union_id:
             type: string
-      description:
-        en_US: List of users who withdrew
-        zh_Hans: 退出的用户列表
-        ja_JP: 退出したユーザーのリスト
+      description: List of users who withdrew
 
     withdrawn_users_count:
       type: number
-      description:
-        en_US: Number of users who withdrew
-        zh_Hans: 退出的用户数量
-        ja_JP: 退出したユーザー数
+      description: Number of users who withdrew
 
 extra:
   python:

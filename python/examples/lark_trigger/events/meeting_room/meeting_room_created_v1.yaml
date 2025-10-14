@@ -18,17 +18,11 @@ output_schema:
   properties:
     room_id:
       type: string
-      description:
-        en_US: ID of the meeting room
-        zh_Hans: 会议室ID
-        ja_JP: 会議室ID
-    
+      description: ID of the meeting room
+
     room_name:
       type: string
-      description:
-        en_US: Name of the meeting room
-        zh_Hans: 会议室名称
-        ja_JP: 会議室名
+      description: Name of the meeting room
 
 extra:
   python:

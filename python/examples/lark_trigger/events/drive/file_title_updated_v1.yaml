@@ -7,9 +7,9 @@ identity:
     ja_JP: ファイルタイトル更新
 
 description:
-  en_US: This event activates when a file's title is updated, providing details about the file and who changed it.
-  zh_Hans: 当文件标题被更新时激活，提供文件和修改者的详细信息。
-  ja_JP: ファイルのタイトルが更新されたときにアクティブになり、ファイルと変更者の詳細を提供します。
+  en_US: This event activates when a file's title is changed.
+  zh_Hans: 当文件标题被更改时激活。
+  ja_JP: ファイルのタイトルが変更されたときにアクティブになります。
 
 parameters: []
 
@@ -18,38 +18,23 @@ output_schema:
   properties:
     file_token:
       type: string
-      description:
-        en_US: Token of the updated file
-        zh_Hans: 被更新文件的令牌
-        ja_JP: 更新されたファイルのトークン
+      description: Token of the updated file
     
     file_type:
       type: string
-      description:
-        en_US: Type of the updated file
-        zh_Hans: 被更新文件的类型
-        ja_JP: 更新されたファイルのタイプ
+      description: Type of the updated file
     
     operator_user_id:
       type: string
-      description:
-        en_US: User ID of who updated the title
-        zh_Hans: 更新标题的用户ID
-        ja_JP: タイトルを更新したユーザーID
+      description: User ID of who updated the title
     
     operator_open_id:
       type: string
-      description:
-        en_US: Open ID of the operator
-        zh_Hans: 操作者的Open ID
-        ja_JP: 操作者のOpen ID
+      description: Open ID of the operator
     
     operator_union_id:
       type: string
-      description:
-        en_US: Union ID of the operator
-        zh_Hans: 操作者的Union ID
-        ja_JP: 操作者のUnion ID
+      description: Union ID of the operator
     
     subscribers:
       type: array
@@ -62,10 +47,7 @@ output_schema:
             type: string
           union_id:
             type: string
-      description:
-        en_US: List of file subscribers
-        zh_Hans: 文件订阅者列表
-        ja_JP: ファイルサブスクライバーリスト
+      description: List of file subscribers
 
 extra:
   python:

@@ -9,7 +9,7 @@ identity:
 description:
   en_US: This event activates when a field/column in a bitable is created, updated or deleted.
   zh_Hans: 当多维表格中的字段/列被创建、更新或删除时激活。
-  ja_JP: Bitableのフィールド/列が作成、更新、または削除されたときにアクティブになります。
+  ja_JP: Bitableのフィールド/カラムが作成、更新、または削除されたときにアクティブになります。
 
 parameters: []
 
@@ -18,59 +18,35 @@ output_schema:
   properties:
     file_token:
       type: string
-      description:
-        en_US: Token of the bitable file
-        zh_Hans: 多维表格文件令牌
-        ja_JP: Bitableファイルのトークン
+      description: Token of the bitable file
     
     file_type:
       type: string
-      description:
-        en_US: Type of the file
-        zh_Hans: 文件类型
-        ja_JP: ファイルタイプ
+      description: Type of the file
     
     table_id:
       type: string
-      description:
-        en_US: ID of the table
-        zh_Hans: 数据表ID
-        ja_JP: テーブルID
+      description: ID of the table
     
     revision:
       type: number
-      description:
-        en_US: Revision number
-        zh_Hans: 版本号
-        ja_JP: リビジョン番号
+      description: Revision number
     
     update_time:
       type: string
-      description:
-        en_US: Time of update
-        zh_Hans: 更新时间
-        ja_JP: 更新時刻
+      description: Time of update
     
     operator_user_id:
       type: string
-      description:
-        en_US: User ID of the operator
-        zh_Hans: 操作者的用户ID
-        ja_JP: 操作者のユーザーID
+      description: User ID of the operator
     
     operator_open_id:
       type: string
-      description:
-        en_US: Open ID of the operator
-        zh_Hans: 操作者的Open ID
-        ja_JP: 操作者のOpen ID
+      description: Open ID of the operator
     
     operator_union_id:
       type: string
-      description:
-        en_US: Union ID of the operator
-        zh_Hans: 操作者的Union ID
-        ja_JP: 操作者のUnion ID
+      description: Union ID of the operator
     
     subscribers:
       type: array
@@ -83,10 +59,7 @@ output_schema:
             type: string
           union_id:
             type: string
-      description:
-        en_US: List of subscribers
-        zh_Hans: 订阅者列表
-        ja_JP: サブスクライバーリスト
+      description: List of subscribers
     
     actions:
       type: array
@@ -101,17 +74,11 @@ output_schema:
             type: string
           after_value:
             type: string
-      description:
-        en_US: List of field actions performed
-        zh_Hans: 执行的字段操作列表
-        ja_JP: 実行されたフィールドアクションのリスト
+      description: List of field actions performed
     
     action_count:
       type: number
-      description:
-        en_US: Number of actions performed
-        zh_Hans: 执行的操作数量
-        ja_JP: 実行されたアクションの数
+      description: Number of actions performed
 
 extra:
   python:

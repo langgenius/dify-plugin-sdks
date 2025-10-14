@@ -7,9 +7,9 @@ identity:
     ja_JP: リアクション削除
 
 description:
-  en_US: This event activates when a reaction emoji is removed from a message, providing details about who removed it and which reaction.
-  zh_Hans: 当从消息中移除表情回应时激活，提供谁移除了哪个表情的详细信息。
-  ja_JP: メッセージからリアクション絵文字が削除されたときにアクティブになり、誰がどのリアクションを削除したかの詳細を提供します。
+  en_US: This event activates when a reaction emoji is removed from a message.
+  zh_Hans: 当消息的表情回应被移除时激活。
+  ja_JP: メッセージからリアクション絵文字が削除されたときにアクティブになります。
 
 parameters: []
 
@@ -18,59 +18,35 @@ output_schema:
   properties:
     message_id:
       type: string
-      description:
-        en_US: ID of the message
-        zh_Hans: 消息ID
-        ja_JP: メッセージID
+      description: ID of the message
     
     reaction_type:
       type: string
-      description:
-        en_US: Type of reaction removed
-        zh_Hans: 移除的表情类型
-        ja_JP: 削除されたリアクションタイプ
+      description: Type of reaction removed
     
     operator_type:
       type: string
-      description:
-        en_US: Type of operator (user or app)
-        zh_Hans: 操作者类型（用户或应用）
-        ja_JP: 操作者タイプ（ユーザーまたはアプリ）
+      description: Type of operator (user or app)
     
     user_open_id:
       type: string
-      description:
-        en_US: Open ID of the user who removed reaction
-        zh_Hans: 移除表情的用户Open ID
-        ja_JP: リアクションを削除したユーザーのOpen ID
+      description: Open ID of the user who removed reaction
     
     user_user_id:
       type: string
-      description:
-        en_US: User ID of who removed reaction
-        zh_Hans: 移除表情的用户ID
-        ja_JP: リアクションを削除したユーザーID
+      description: User ID of who removed reaction
     
     user_union_id:
       type: string
-      description:
-        en_US: Union ID of who removed reaction
-        zh_Hans: 移除表情的用户Union ID
-        ja_JP: リアクションを削除したユーザーのUnion ID
+      description: Union ID of who removed reaction
     
     app_id:
       type: string
-      description:
-        en_US: App ID if removed by app
-        zh_Hans: 如果由应用移除则为应用ID
-        ja_JP: アプリによって削除された場合のアプリID
+      description: App ID if removed by app
     
     action_time:
       type: string
-      description:
-        en_US: Time when reaction was removed
-        zh_Hans: 表情被移除的时间
-        ja_JP: リアクションが削除された時刻
+      description: Time when reaction was removed
 
 extra:
   python:
