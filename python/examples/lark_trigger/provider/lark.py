@@ -12,6 +12,7 @@ from lark_oapi.api.contact.v3 import (
     P2ContactDepartmentDeletedV3,
     P2ContactDepartmentUpdatedV3,
     P2ContactUserCreatedV3,
+    P2ContactUserDeletedV3,
     P2ContactUserUpdatedV3,
 )
 from lark_oapi.api.drive.v1 import (
@@ -20,6 +21,7 @@ from lark_oapi.api.drive.v1 import (
     P2DriveFileEditV1,
     P2DriveFilePermissionMemberAddedV1,
     P2DriveFilePermissionMemberRemovedV1,
+    P2DriveFileTrashedV1,
 )
 from lark_oapi.api.im.v1 import (
     P2ImChatDisbandedV1,
@@ -28,6 +30,7 @@ from lark_oapi.api.im.v1 import (
     P2ImChatUpdatedV1,
     P2ImMessageMessageReadV1,
     P2ImMessageReactionCreatedV1,
+    P2ImMessageRecalledV1,
     P2ImMessageReceiveV1,
 )
 from lark_oapi.core.http import RawRequest
@@ -80,6 +83,9 @@ class LarkTrigger(Trigger):
             .register_p2_im_message_reaction_created_v1(
                 self._handle_message_reaction_added_event,
             )
+            .register_p2_im_message_recalled_v1(
+                self._handle_message_recalled_event,
+            )
             .register_p2_im_message_message_read_v1(
                 self._handle_message_read_event,
             )
@@ -113,12 +119,18 @@ class LarkTrigger(Trigger):
             .register_p2_drive_file_permission_member_removed_v1(
                 self._handle_drive_permission_member_removed_event,
             )
+            .register_p2_drive_file_trashed_v1(
+                self._handle_drive_file_trashed_event,
+            )
             # Contact Events
             .register_p2_contact_user_created_v3(
                 self._handle_contact_user_created_event,
             )
             .register_p2_contact_user_updated_v3(
                 self._handle_contact_user_updated_event,
+            )
+            .register_p2_contact_user_deleted_v3(
+                self._handle_contact_user_deleted_event,
             )
             .register_p2_contact_department_created_v3(
                 self._handle_contact_department_created_event,
@@ -205,6 +217,14 @@ class LarkTrigger(Trigger):
         """
         response_cache_map[threading.get_ident()].append("message_reaction_added_v1")
 
+    def _handle_message_recalled_event(self, event: P2ImMessageRecalledV1) -> None:
+        """
+        Handle message recalled event.
+
+        :param event: Message recalled event
+        """
+        response_cache_map[threading.get_ident()].append("message_recalled_v1")
+
     def _handle_message_read_event(self, event: P2ImMessageMessageReadV1) -> None:
         """
         Handle message read event.
@@ -271,6 +291,11 @@ class LarkTrigger(Trigger):
 
         response_cache_map[threading.get_ident()].append("file_permission_member_removed_v1")
 
+    def _handle_drive_file_trashed_event(self, event: P2DriveFileTrashedV1) -> None:
+        """Handle drive file trashed events."""
+
+        response_cache_map[threading.get_ident()].append("file_trashed_v1")
+
     def _handle_contact_user_created_event(self, event: P2ContactUserCreatedV3) -> None:
         """
         Handle contact user created event.
@@ -283,6 +308,11 @@ class LarkTrigger(Trigger):
         """Handle contact user updated events."""
 
         response_cache_map[threading.get_ident()].append("user_updated_v3")
+
+    def _handle_contact_user_deleted_event(self, event: P2ContactUserDeletedV3) -> None:
+        """Handle contact user deleted events."""
+
+        response_cache_map[threading.get_ident()].append("user_deleted_v3")
 
     def _handle_contact_department_created_event(self, event: P2ContactDepartmentCreatedV3) -> None:
         """

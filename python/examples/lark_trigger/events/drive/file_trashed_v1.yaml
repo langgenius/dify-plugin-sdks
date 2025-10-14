@@ -1,0 +1,63 @@
+identity:
+  name: file_trashed_v1
+  author: langgenius
+  label:
+    en_US: File Trashed
+    zh_Hans: 文件移至回收站
+    ja_JP: ファイル削除
+
+description:
+  en_US: This event activates when a file is moved to the trash/recycle bin, providing details about the trashed file.
+  zh_Hans: 当文件被移至回收站时激活，提供关于被删除文件的详细信息。
+  ja_JP: ファイルがゴミ箱に移動されたときにアクティブになり、削除されたファイルの詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description:
+        en_US: Token of the trashed file
+        zh_Hans: 被删除文件的令牌
+        ja_JP: 削除されたファイルのトークン
+    
+    file_type:
+      type: string
+      description:
+        en_US: Type of the trashed file
+        zh_Hans: 被删除文件的类型
+        ja_JP: 削除されたファイルのタイプ
+    
+    operator_user_id:
+      type: string
+      description:
+        en_US: User ID of who trashed the file
+        zh_Hans: 删除文件的用户ID
+        ja_JP: ファイルを削除したユーザーID
+    
+    operator_open_id:
+      type: string
+      description:
+        en_US: Open ID of the operator
+        zh_Hans: 操作者的Open ID
+        ja_JP: 操作者のOpen ID
+    
+    operator_union_id:
+      type: string
+      description:
+        en_US: Union ID of the operator
+        zh_Hans: 操作者的Union ID
+        ja_JP: 操作者のUnion ID
+    
+    subscribers:
+      type: string
+      description:
+        en_US: List of file subscribers (JSON format)
+        zh_Hans: 文件订阅者列表（JSON格式）
+        ja_JP: ファイルサブスクライバーリスト（JSON形式）
+
+extra:
+  python:
+    source: events/drive/file_trashed_v1.py
