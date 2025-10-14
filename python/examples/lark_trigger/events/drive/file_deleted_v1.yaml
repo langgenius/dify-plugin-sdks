@@ -1,0 +1,96 @@
+identity:
+  name: file_deleted_v1
+  author: langgenius
+  label:
+    en_US: Drive File Deleted
+    zh_Hans: 云文档文件删除
+    ja_JP: ドライブファイル削除
+
+description:
+  human:
+    en_US: Triggers when a file is deleted from a Drive folder that the app watches.
+    zh_Hans: 当监控的云文档文件被删除时触发。
+    ja_JP: 監視対象のドライブファイルが削除されたときにトリガーされます。
+  llm:
+    en_US: Fires when a monitored Drive file is removed, including the file token and operator details.
+    zh_Hans: 当监控的云文档文件被移除时触发，包含文件 Token 及操作人信息。
+    ja_JP: 監視対象のドライブファイルが削除されたときに発火し、ファイルトークンと操作ユーザーを提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description:
+        en_US: Token of the deleted file
+        zh_Hans: 被删除文件的 Token
+        ja_JP: 削除されたファイルのトークン
+
+    file_type:
+      type: string
+      description:
+        en_US: File type (doc, sheet, slide, etc.)
+        zh_Hans: 文件类型（文档、表格、幻灯片等）
+        ja_JP: ファイルタイプ（ドキュメント、スプレッドシートなど）
+
+    operator_user_id:
+      type: string
+      description:
+        en_US: User ID of the operator who deleted the file
+        zh_Hans: 删除文件的用户 ID
+        ja_JP: ファイルを削除したユーザーID
+
+    operator_open_id:
+      type: string
+      description:
+        en_US: Open ID of the operator
+        zh_Hans: 操作用户的 Open ID
+        ja_JP: 操作ユーザーのOpen ID
+
+    operator_union_id:
+      type: string
+      description:
+        en_US: Union ID of the operator
+        zh_Hans: 操作用户的 Union ID
+        ja_JP: 操作ユーザーのUnion ID
+
+    subscriber_users:
+      type: array
+      description:
+        en_US: Users subscribed to file changes
+        zh_Hans: 订阅文件更新的用户列表
+        ja_JP: ファイル変更を購読しているユーザー一覧
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description:
+              en_US: User ID
+              zh_Hans: 用户 ID
+              ja_JP: ユーザーID
+          open_id:
+            type: string
+            description:
+              en_US: Open ID
+              zh_Hans: Open ID
+              ja_JP: Open ID
+          union_id:
+            type: string
+            description:
+              en_US: Union ID
+              zh_Hans: Union ID
+              ja_JP: Union ID
+
+    subscriber_count:
+      type: integer
+      description:
+        en_US: Number of subscribers affected by the deletion
+        zh_Hans: 受删除影响的订阅者数量
+        ja_JP: 削除の影響を受けた購読者数
+
+extra:
+  python:
+    source: events/drive/file_deleted_v1.py

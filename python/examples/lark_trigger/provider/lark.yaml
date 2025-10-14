@@ -69,16 +69,25 @@ events:
   
   # Calendar Events
   - events/calendar/event_changed_v4.yaml
-  
+  - events/calendar/calendar_acl_created_v4.yaml
+  - events/calendar/calendar_acl_deleted_v4.yaml
+
   # Approval Events
   - events/approval/approval_updated_v4.yaml
-  
+
   # Drive Events
   - events/drive/file_created_v1.yaml
-  
+  - events/drive/file_deleted_v1.yaml
+  - events/drive/file_edit_v1.yaml
+  - events/drive/file_permission_member_added_v1.yaml
+  - events/drive/file_permission_member_removed_v1.yaml
+
   # Contact Events
   - events/contact/user_created_v3.yaml
+  - events/contact/user_updated_v3.yaml
   - events/contact/department_created_v3.yaml
+  - events/contact/department_updated_v3.yaml
+  - events/contact/department_deleted_v3.yaml
 
 identity:
   author: langgenius

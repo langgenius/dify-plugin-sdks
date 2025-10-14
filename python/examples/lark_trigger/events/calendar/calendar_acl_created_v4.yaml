@@ -1,0 +1,96 @@
+identity:
+  name: calendar_acl_created_v4
+  author: langgenius
+  label:
+    en_US: Calendar Access Granted
+    zh_Hans: 日历权限授权
+    ja_JP: カレンダー権限が付与されました
+
+description:
+  human:
+    en_US: Triggers when new permissions are granted on a calendar.
+    zh_Hans: 当日历被授予新权限时触发。
+    ja_JP: カレンダーに新しい権限が付与されたときにトリガーされます。
+  llm:
+    en_US: Fires when users or teams gain access to a calendar, including the granted role and recipients.
+    zh_Hans: 当用户或团队获得日历访问权限时触发，包括授予的角色和接收者。
+    ja_JP: ユーザーやチームにカレンダーへのアクセス権が付与されたときに発火し、付与されたロールと対象者を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    acl_id:
+      type: string
+      description:
+        en_US: ACL identifier for the permission entry
+        zh_Hans: 权限条目的 ACL 标识
+        ja_JP: 権限エントリの ACL 識別子
+
+    role:
+      type: string
+      description:
+        en_US: Role granted to the recipients (viewer, editor, etc.)
+        zh_Hans: 授予接收者的角色（查看者、编辑者等）
+        ja_JP: 受信者に付与されたロール（閲覧者、編集者など）
+
+    scope_type:
+      type: string
+      description:
+        en_US: Scope type of the permission (user, chat, department)
+        zh_Hans: 权限范围类型（用户、群组、部门）
+        ja_JP: 権限の対象タイプ（ユーザー、チャット、部門）
+
+    scope_user_id:
+      type: string
+      description:
+        en_US: User ID of the scoped recipient when applicable
+        zh_Hans: 适用时的用户 ID
+        ja_JP: 対象ユーザーのユーザーID（該当する場合）
+
+    scope_open_id:
+      type: string
+      description:
+        en_US: Open ID of the scoped recipient when applicable
+        zh_Hans: 适用时的 Open ID
+        ja_JP: 対象ユーザーのOpen ID（該当する場合）
+
+    scope_union_id:
+      type: string
+      description:
+        en_US: Union ID of the scoped recipient when applicable
+        zh_Hans: 适用时的 Union ID
+        ja_JP: 対象ユーザーのUnion ID（該当する場合）
+
+    shared_users:
+      type: array
+      description:
+        en_US: List of users who received access
+        zh_Hans: 获得访问权限的用户列表
+        ja_JP: アクセスを付与されたユーザーの一覧
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description:
+              en_US: User ID
+              zh_Hans: 用户 ID
+              ja_JP: ユーザーID
+          open_id:
+            type: string
+            description:
+              en_US: Open ID
+              zh_Hans: Open ID
+              ja_JP: Open ID
+          union_id:
+            type: string
+            description:
+              en_US: Union ID
+              zh_Hans: Union ID
+              ja_JP: Union ID
+
+extra:
+  python:
+    source: events/calendar/calendar_acl_created_v4.py
