@@ -1,0 +1,149 @@
+identity:
+  name: file_permission_member_added_v1
+  author: langgenius
+  label:
+    en_US: Drive Access Granted
+    zh_Hans: 云文档共享权限新增
+    ja_JP: ドライブ権限追加
+
+description:
+  human:
+    en_US: Triggers when collaborators or groups are added to a Drive file.
+    zh_Hans: 当协作者或群组被添加到云文档共享中时触发。
+    ja_JP: ドライブファイルに共同編集者やグループが追加されたときにトリガーされます。
+  llm:
+    en_US: Fires when sharing permissions are granted on a Drive file, returning details about users, chats, and departments receiving access.
+    zh_Hans: 当云文档授予共享权限时触发，返回获得访问权限的用户、群聊和部门信息。
+    ja_JP: ドライブファイルに共有権限が付与された際に発火し、アクセス権を得たユーザー、チャット、部門の詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description:
+        en_US: Token of the shared file
+        zh_Hans: 被共享文件的 Token
+        ja_JP: 共有されたファイルのトークン
+
+    file_type:
+      type: string
+      description:
+        en_US: File type (doc, sheet, slide, etc.)
+        zh_Hans: 文件类型（文档、表格、幻灯片等）
+        ja_JP: ファイルタイプ（ドキュメント、スプレッドシートなど）
+
+    operator_user_id:
+      type: string
+      description:
+        en_US: User ID of the operator who granted access
+        zh_Hans: 授权操作的用户 ID
+        ja_JP: 権限を付与したユーザーID
+
+    operator_open_id:
+      type: string
+      description:
+        en_US: Open ID of the operator
+        zh_Hans: 操作用户的 Open ID
+        ja_JP: 操作ユーザーのOpen ID
+
+    operator_union_id:
+      type: string
+      description:
+        en_US: Union ID of the operator
+        zh_Hans: 操作用户的 Union ID
+        ja_JP: 操作ユーザーのUnion ID
+
+    shared_users:
+      type: array
+      description:
+        en_US: Users granted access
+        zh_Hans: 获得访问权限的用户列表
+        ja_JP: アクセス権が付与されたユーザー一覧
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description:
+              en_US: User ID
+              zh_Hans: 用户 ID
+              ja_JP: ユーザーID
+          open_id:
+            type: string
+            description:
+              en_US: Open ID
+              zh_Hans: Open ID
+              ja_JP: Open ID
+          union_id:
+            type: string
+            description:
+              en_US: Union ID
+              zh_Hans: Union ID
+              ja_JP: Union ID
+
+    shared_user_count:
+      type: integer
+      description:
+        en_US: Number of users who gained access
+        zh_Hans: 获得访问权限的用户数量
+        ja_JP: アクセス権を得たユーザー数
+
+    shared_chats:
+      type: array
+      description:
+        en_US: Chat IDs that received access
+        zh_Hans: 获得访问权限的群聊 ID
+        ja_JP: アクセス権を得たチャットID
+      items:
+        type: string
+
+    shared_departments:
+      type: array
+      description:
+        en_US: Department IDs that received access
+        zh_Hans: 获得访问权限的部门 ID
+        ja_JP: アクセス権を得た部門ID
+      items:
+        type: string
+
+    subscriber_users:
+      type: array
+      description:
+        en_US: Subscribers of the file
+        zh_Hans: 文件订阅者列表
+        ja_JP: ファイルの購読者一覧
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description:
+              en_US: User ID
+              zh_Hans: 用户 ID
+              ja_JP: ユーザーID
+          open_id:
+            type: string
+            description:
+              en_US: Open ID
+              zh_Hans: Open ID
+              ja_JP: Open ID
+          union_id:
+            type: string
+            description:
+              en_US: Union ID
+              zh_Hans: Union ID
+              ja_JP: Union ID
+
+    subscriber_count:
+      type: integer
+      description:
+        en_US: Number of subscribers receiving the update
+        zh_Hans: 收到更新的订阅者数量
+        ja_JP: 更新を受け取る購読者数
+
+extra:
+  python:
+    source: events/drive/file_permission_member_added_v1.py

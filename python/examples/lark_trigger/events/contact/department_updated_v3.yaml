@@ -1,0 +1,155 @@
+identity:
+  name: department_updated_v3
+  author: langgenius
+  label:
+    en_US: Department Updated
+    zh_Hans: 部门信息更新
+    ja_JP: 部門情報更新
+
+description:
+  human:
+    en_US: Triggers when a department record is updated in Lark contacts.
+    zh_Hans: 当 Lark 通讯录中的部门信息被更新时触发。
+    ja_JP: Lark 連絡先の部門情報が更新されたときにトリガーされます。
+  llm:
+    en_US: Fires when department metadata changes, providing both the new structure and the previous state for comparison.
+    zh_Hans: 当部门元数据发生变化时触发，提供新结构与之前状态以供对比。
+    ja_JP: 部門メタデータが変更された際に発火し、新旧の状態を比較できるように提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    department_id:
+      type: string
+      description:
+        en_US: Department ID
+        zh_Hans: 部门 ID
+        ja_JP: 部門ID
+
+    open_department_id:
+      type: string
+      description:
+        en_US: Open department ID
+        zh_Hans: Open 部门 ID
+        ja_JP: Open 部門ID
+
+    name:
+      type: string
+      description:
+        en_US: Department name
+        zh_Hans: 部门名称
+        ja_JP: 部門名
+
+    parent_department_id:
+      type: string
+      description:
+        en_US: Parent department ID
+        zh_Hans: 上级部门 ID
+        ja_JP: 上位部門ID
+
+    leader_user_id:
+      type: string
+      description:
+        en_US: Department leader user ID
+        zh_Hans: 部门负责人用户 ID
+        ja_JP: 部門責任者のユーザーID
+
+    chat_id:
+      type: string
+      description:
+        en_US: Associated group chat ID
+        zh_Hans: 关联群聊 ID
+        ja_JP: 関連チャットID
+
+    order:
+      type: integer
+      description:
+        en_US: Department order value
+        zh_Hans: 部门排序值
+        ja_JP: 部門の並び順値
+
+    unit_ids:
+      type: array
+      description:
+        en_US: Associated unit IDs
+        zh_Hans: 关联单元 ID 列表
+        ja_JP: 関連ユニットID一覧
+      items:
+        type: string
+
+    is_deleted:
+      type: boolean
+      description:
+        en_US: Whether the department is marked as deleted
+        zh_Hans: 部门是否被标记为删除
+        ja_JP: 部門が削除としてマークされているか
+
+    leaders:
+      type: array
+      description:
+        en_US: Department leader assignments
+        zh_Hans: 部门领导配置
+        ja_JP: 部門リーダー設定
+      items:
+        type: object
+        properties:
+          leader_type:
+            type: integer
+            description:
+              en_US: Leader type value
+              zh_Hans: 领导类型值
+              ja_JP: リーダータイプの値
+          leader_id:
+            type: string
+            description:
+              en_US: Leader identifier
+              zh_Hans: 领导标识
+              ja_JP: リーダー識別子
+
+    department_hrbps:
+      type: array
+      description:
+        en_US: HRBP users for the department
+        zh_Hans: 部门 HRBP 用户列表
+        ja_JP: 部門のHRBPユーザー一覧
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description:
+              en_US: User ID
+              zh_Hans: 用户 ID
+              ja_JP: ユーザーID
+          open_id:
+            type: string
+            description:
+              en_US: Open ID
+              zh_Hans: Open ID
+              ja_JP: Open ID
+          union_id:
+            type: string
+            description:
+              en_US: Union ID
+              zh_Hans: Union ID
+              ja_JP: Union ID
+
+    current_department_json:
+      type: object
+      description:
+        en_US: Current department snapshot
+        zh_Hans: 当前部门快照
+        ja_JP: 現在の部門スナップショット
+
+    previous_department_json:
+      type: object
+      description:
+        en_US: Previous department snapshot before the update
+        zh_Hans: 更新前的部门快照
+        ja_JP: 更新前の部門スナップショット
+
+extra:
+  python:
+    source: events/contact/department_updated_v3.py

@@ -1,0 +1,117 @@
+identity:
+  name: file_edit_v1
+  author: langgenius
+  label:
+    en_US: Drive File Edited
+    zh_Hans: 云文档文件编辑
+    ja_JP: ドライブファイル編集
+
+description:
+  human:
+    en_US: Triggers when a monitored Drive file is modified.
+    zh_Hans: 当监控的云文档文件被编辑时触发。
+    ja_JP: 監視対象のドライブファイルが編集されたときにトリガーされます。
+  llm:
+    en_US: Fires when a Drive file changes, returning operator and subscriber details for collaborative tracking.
+    zh_Hans: 当云文档发生更改时触发，返回协作者和订阅者详情，便于协作追踪。
+    ja_JP: ドライブファイルに変更があった際に発火し、共同編集者と購読者の詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description:
+        en_US: Token of the edited file
+        zh_Hans: 被编辑文件的 Token
+        ja_JP: 編集されたファイルのトークン
+
+    file_type:
+      type: string
+      description:
+        en_US: File type (doc, sheet, slide, etc.)
+        zh_Hans: 文件类型（文档、表格、幻灯片等）
+        ja_JP: ファイルタイプ（ドキュメント、スプレッドシートなど）
+
+    sheet_id:
+      type: string
+      description:
+        en_US: Sheet identifier when the edit targets a specific sheet
+        zh_Hans: 针对特定表格时的 Sheet ID
+        ja_JP: 特定シートが編集された場合のシートID
+
+    operators:
+      type: array
+      description:
+        en_US: Users who edited the file
+        zh_Hans: 编辑该文件的用户列表
+        ja_JP: ファイルを編集したユーザー一覧
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description:
+              en_US: User ID
+              zh_Hans: 用户 ID
+              ja_JP: ユーザーID
+          open_id:
+            type: string
+            description:
+              en_US: Open ID
+              zh_Hans: Open ID
+              ja_JP: Open ID
+          union_id:
+            type: string
+            description:
+              en_US: Union ID
+              zh_Hans: Union ID
+              ja_JP: Union ID
+
+    operator_count:
+      type: integer
+      description:
+        en_US: Number of operators involved in the edit
+        zh_Hans: 参与编辑的用户数量
+        ja_JP: 編集に関与したユーザー数
+
+    subscriber_users:
+      type: array
+      description:
+        en_US: Subscribers notified about the edit
+        zh_Hans: 收到编辑通知的订阅者
+        ja_JP: 編集通知を受け取る購読者一覧
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description:
+              en_US: User ID
+              zh_Hans: 用户 ID
+              ja_JP: ユーザーID
+          open_id:
+            type: string
+            description:
+              en_US: Open ID
+              zh_Hans: Open ID
+              ja_JP: Open ID
+          union_id:
+            type: string
+            description:
+              en_US: Union ID
+              zh_Hans: Union ID
+              ja_JP: Union ID
+
+    subscriber_count:
+      type: integer
+      description:
+        en_US: Number of subscribers informed about the change
+        zh_Hans: 获知更新的订阅者数量
+        ja_JP: 変更を通知された購読者数
+
+extra:
+  python:
+    source: events/drive/file_edit_v1.py
