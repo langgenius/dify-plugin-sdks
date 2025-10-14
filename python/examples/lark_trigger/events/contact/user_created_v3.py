@@ -2,10 +2,7 @@ from typing import Any, Mapping
 from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
-from lark_oapi.core.http import RawRequest
-from lark_oapi.api.contact.v3 import P2ContactUserCreatedV3
-
-import lark_oapi as lark
+from .._shared import dispatch_single_event
 import json
 
 
@@ -16,48 +13,19 @@ class ContactUserCreatedV3Event(Event):
         
         This event is triggered when a new employee is added to the organization.
         """
-        event: dict[str, P2ContactUserCreatedV3] = {}
-
-        def _handle_user_created_v3(on_event: P2ContactUserCreatedV3) -> None:
-            """
-            Handle the user created event.
-            """
-            event["on_event"] = on_event
-
-        encrypt_key = self.runtime.subscription.properties.get("lark_encrypt_key", "")
-        verification_token = self.runtime.subscription.properties.get("lark_verification_token", "")
-
-        if not encrypt_key or not verification_token:
-            raise ValueError("encrypt_key or verification_token is not set")
-
-        handler = (
-            lark.EventDispatcherHandler.builder(
-                encrypt_key,
-                verification_token,
-            )
-            .register_p2_contact_user_created_v3(
-                _handle_user_created_v3,
-            )
-            .build()
+        event_wrapper = dispatch_single_event(
+            request,
+            self.runtime,
+            lambda builder: builder.register_p2_contact_user_created_v3,
         )
+        if event_wrapper.event is None:
+            raise ValueError("event_wrapper.event is None")
+            
+        event_data = event_wrapper.event
+        if event_data.object is None:
+            raise ValueError("event_data.object is None")
 
-        raw_request = RawRequest()
-        raw_request.uri = request.url
-        raw_request.headers = request.headers
-        raw_request.body = request.get_data()
-
-        handler.do(raw_request)
-
-        if event["on_event"] is None:
-            raise ValueError("event is None")
-
-        if event["on_event"].event is None:
-            raise ValueError("event.event is None")
-
-        if event["on_event"].event.object is None:
-            raise ValueError("event.event.object is None")
-
-        user_data = event["on_event"].event.object
+        user_data = event_data.object
         
         # Build variables dictionary with explicit fields
         variables_dict = {

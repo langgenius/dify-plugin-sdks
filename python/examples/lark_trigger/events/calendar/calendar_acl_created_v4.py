@@ -22,10 +22,11 @@ class CalendarAclCreatedV4Event(Event):
         event_data = dispatch_single_event(
             request,
             self.runtime,
-            lambda builder, callback: builder.register_p2_calendar_calendar_acl_created_v4(
-                callback
-            ),
-        )
+            lambda builder: builder.register_p2_calendar_calendar_acl_created_v4,
+        ).event
+        if event_data is None:
+            raise ValueError("event_data is None")
+
         scope = event_data.scope
         scope_user_source = scope.user_id if scope and scope.user_id else None
         scope_user = serialize_user_identity(scope_user_source)

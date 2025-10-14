@@ -18,8 +18,11 @@ class DriveFileEditV1Event(Event):
         event_data = dispatch_single_event(
             request,
             self.runtime,
-            lambda builder, callback: builder.register_p2_drive_file_edit_v1(callback),
-        )
+            lambda builder: builder.register_p2_drive_file_edit_v1,
+        ).event
+        if event_data is None:
+            raise ValueError("event_data is None")
+        
         operators = serialize_user_list(event_data.operator_id_list or [])
         subscribers = serialize_user_list(event_data.subscriber_id_list or [])
 

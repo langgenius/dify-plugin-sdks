@@ -2,10 +2,7 @@ from typing import Any, Mapping
 from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
-from lark_oapi.core.http import RawRequest
-from lark_oapi.api.im.v1 import P2ImChatMemberUserDeletedV1
-
-import lark_oapi as lark
+from .._shared import dispatch_single_event
 import json
 
 
@@ -16,45 +13,13 @@ class ChatMemberUserRemovedV1Event(Event):
         
         This event is triggered when one or more users leave or are removed from a chat group.
         """
-        event: dict[str, P2ImChatMemberUserDeletedV1] = {}
-
-        def _handle_chat_member_user_deleted_v1(on_event: P2ImChatMemberUserDeletedV1) -> None:
-            """
-            Handle the chat member user deleted event.
-            """
-            event["on_event"] = on_event
-
-        encrypt_key = self.runtime.subscription.properties.get("lark_encrypt_key", "")
-        verification_token = self.runtime.subscription.properties.get("lark_verification_token", "")
-
-        if not encrypt_key or not verification_token:
-            raise ValueError("encrypt_key or verification_token is not set")
-
-        handler = (
-            lark.EventDispatcherHandler.builder(
-                encrypt_key,
-                verification_token,
-            )
-            .register_p2_im_chat_member_user_deleted_v1(
-                _handle_chat_member_user_deleted_v1,
-            )
-            .build()
-        )
-
-        raw_request = RawRequest()
-        raw_request.uri = request.url
-        raw_request.headers = request.headers
-        raw_request.body = request.get_data()
-
-        handler.do(raw_request)
-
-        if event["on_event"] is None:
-            raise ValueError("event is None")
-
-        if event["on_event"].event is None:
-            raise ValueError("event.event is None")
-
-        event_data = event["on_event"].event
+        event_data = dispatch_single_event(
+            request,
+            self.runtime,
+            lambda builder: builder.register_p2_im_chat_member_user_deleted_v1,
+        ).event
+        if event_data is None:
+            raise ValueError("event_data is None")
         
         # Build variables dictionary
         variables_dict = {

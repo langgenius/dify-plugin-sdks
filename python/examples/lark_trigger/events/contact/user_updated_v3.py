@@ -126,7 +126,7 @@ def _build_user_snapshot(user: UserEvent | None) -> dict[str, Any]:
         "mobile": user.mobile or "",
         "mobile_visible": bool(user.mobile_visible),
         "gender": user.gender if user.gender is not None else 0,
-        "avatar_key": user.avatar.avatar_72 if getattr(user, "avatar", None) and user.avatar.avatar_72 else "",
+        "avatar_key": user.avatar.avatar_72 if user.avatar and user.avatar.avatar_72 else "",
         "status": status,
         "department_ids": list(user.department_ids or []),
         "leader_user_id": user.leader_user_id or "",
@@ -154,8 +154,11 @@ class ContactUserUpdatedV3Event(Event):
         event_data = dispatch_single_event(
             request,
             self.runtime,
-            lambda builder, callback: builder.register_p2_contact_user_updated_v3(callback),
-        )
+            lambda builder: builder.register_p2_contact_user_updated_v3,
+        ).event
+        if event_data is None:
+            raise ValueError("event_data is None")
+
         current_snapshot = _build_user_snapshot(event_data.object)
         previous_snapshot = _build_user_snapshot(event_data.old_object)
 

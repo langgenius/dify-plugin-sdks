@@ -78,25 +78,36 @@ output_schema:
         ja_JP: 部門ステータス
     
     unit_ids:
-      type: string
+      type: array
+      items:
+        type: string
       description:
-        en_US: Unit IDs (JSON array)
-        zh_Hans: 单元 ID 列表（JSON数组）
-        ja_JP: ユニット ID リスト（JSON配列）
+        en_US: Unit IDs
+        zh_Hans: 单元 ID 列表
+        ja_JP: ユニット ID リスト
     
     leaders:
-      type: string
+      type: array
+      items:
+        type: object
+        properties:
+          leader_type:
+            type: number
+          leader_id:
+            type: string
       description:
-        en_US: Department leaders (JSON array)
-        zh_Hans: 部门领导列表（JSON数组）
-        ja_JP: 部門リーダーリスト（JSON配列）
+        en_US: Department leaders
+        zh_Hans: 部门领导列表
+        ja_JP: 部門リーダーリスト
     
     hrbps:
-      type: string
+      type: array
+      items:
+        type: string
       description:
-        en_US: HR business partners (JSON array)
-        zh_Hans: HR业务合作伙伴列表（JSON数组）
-        ja_JP: HRビジネスパートナーリスト（JSON配列）
+        en_US: HR business partners
+        zh_Hans: HR业务合作伙伴列表
+        ja_JP: HRビジネスパートナーリスト
 
 extra:
   python:

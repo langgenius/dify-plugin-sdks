@@ -27,35 +27,28 @@ output_schema:
         en_US: ID of the person who read the messages
         zh_Hans: 阅读消息的人的ID
         ja_JP: メッセージを読んだ人のID
-    
-    reader_id_type:
-      type: string
-      description:
-        en_US: Type of reader ID (user_id, open_id, union_id)
-        zh_Hans: 读者ID类型（user_id, open_id, union_id）
-        ja_JP: 読者IDタイプ（user_id、open_id、union_id）
-    
+
     read_time:
       type: string
       description:
         en_US: Time when the messages were read
         zh_Hans: 消息被阅读的时间
         ja_JP: メッセージが読まれた時刻
-    
+
     tenant_key:
       type: string
       description:
         en_US: Organization key of the reader
         zh_Hans: 读者的组织密钥
         ja_JP: 読者の組織キー
-    
+
     message_ids_read:
       type: string
       description:
         en_US: List of message IDs that were read (JSON format)
         zh_Hans: 被阅读的消息ID列表（JSON格式）
         ja_JP: 読まれたメッセージIDのリスト（JSON形式）
-    
+
     message_count:
       type: string
       description:

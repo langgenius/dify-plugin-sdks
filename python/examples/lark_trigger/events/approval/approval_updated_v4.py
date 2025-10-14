@@ -2,62 +2,30 @@ from typing import Any, Mapping
 from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
-from lark_oapi.core.http import RawRequest
-from lark_oapi.api.approval.v4 import P2ApprovalApprovalUpdatedV4
 
-import lark_oapi as lark
+
+from examples.lark_trigger.events._shared import dispatch_single_event
 
 
 class ApprovalUpdatedV4Event(Event):
     def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
         """
         Handle approval process updates.
-        
+
         This event is triggered when an approval request status changes.
         """
-        event: dict[str, P2ApprovalApprovalUpdatedV4] = {}
+        event_data = dispatch_single_event(
+            request,
+            self.runtime,
+            lambda builder: builder.register_p2_approval_approval_updated_v4,
+        ).event
+        if event_data is None:
+            raise ValueError("event_data is None")
 
-        def _handle_approval_updated_v4(on_event: P2ApprovalApprovalUpdatedV4) -> None:
-            """
-            Handle the approval updated event.
-            """
-            event["on_event"] = on_event
+        approval_data = event_data.object
+        if approval_data is None:
+            raise ValueError("approval_data is None")
 
-        encrypt_key = self.runtime.subscription.properties.get("lark_encrypt_key", "")
-        verification_token = self.runtime.subscription.properties.get("lark_verification_token", "")
-
-        if not encrypt_key or not verification_token:
-            raise ValueError("encrypt_key or verification_token is not set")
-
-        handler = (
-            lark.EventDispatcherHandler.builder(
-                encrypt_key,
-                verification_token,
-            )
-            .register_p2_approval_approval_updated_v4(
-                _handle_approval_updated_v4,
-            )
-            .build()
-        )
-
-        raw_request = RawRequest()
-        raw_request.uri = request.url
-        raw_request.headers = request.headers
-        raw_request.body = request.get_data()
-
-        handler.do(raw_request)
-
-        if event["on_event"] is None:
-            raise ValueError("event is None")
-
-        if event["on_event"].event is None:
-            raise ValueError("event.event is None")
-
-        if event["on_event"].event.object is None:
-            raise ValueError("event.event.object is None")
-
-        approval_data = event["on_event"].event.object
-        
         # Build variables dictionary
         variables_dict = {
             "approval_code": approval_data.approval_code if approval_data.approval_code else "",

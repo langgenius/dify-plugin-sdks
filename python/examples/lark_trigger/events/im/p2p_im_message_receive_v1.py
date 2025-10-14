@@ -2,10 +2,7 @@ from typing import Any, Mapping
 from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
-from lark_oapi.core.http import RawRequest
-from lark_oapi.api.im.v1 import P2ImMessageReceiveV1
-
-import lark_oapi as lark
+from .._shared import dispatch_single_event
 
 
 class P2PIMMessageReceiveV1Event(Event):
@@ -16,53 +13,25 @@ class P2PIMMessageReceiveV1Event(Event):
         The event is triggered when the Bot receives an IM message.
         The event will return the message content.
         """
-        event: dict[str, P2ImMessageReceiveV1] = {}
-
-        def _handle_p2_im_message_receive_v1(on_event: P2ImMessageReceiveV1) -> None:
-            """
-            Handle the P2P IM message receive event.
-            """
-            event["on_event"] = on_event
-
-        encrypt_key = self.runtime.subscription.properties.get("lark_encrypt_key", "")
-        verification_token = self.runtime.subscription.properties.get("lark_verification_token", "")
-
-        if not encrypt_key or not verification_token:
-            raise ValueError("encrypt_key or verification_token is not set")
-
-        handler = (
-            lark.EventDispatcherHandler.builder(
-                encrypt_key,
-                verification_token,
-            )
-            .register_p2_im_message_receive_v1(
-                _handle_p2_im_message_receive_v1,
-            )
-            .build()
+        event_wrapper = dispatch_single_event(
+            request,
+            self.runtime,
+            lambda builder: builder.register_p2_im_message_receive_v1,
         )
+        if event_wrapper.event is None:
+            raise ValueError("event_wrapper.event is None")
+            
+        event_data = event_wrapper.event
+        
+        if event_data.message is None:
+            raise ValueError("event.message is None")
 
-        raw_request = RawRequest()
-        raw_request.uri = request.url
-        raw_request.headers = request.headers
-        raw_request.body = request.get_data()
-
-        handler.do(raw_request)
-
-        if event["on_event"] is None:
-            raise ValueError("event is None")
-
-        if event["on_event"].event is None:
-            raise ValueError("event.event is None")
-
-        if event["on_event"].event.message is None:
-            raise ValueError("event.event.message is None")
-
-        if event["on_event"].event.message.content is None:
-            raise ValueError("event.event.message.content is None")
+        if event_data.message.content is None:
+            raise ValueError("event.message.content is None")
 
         # Extract message details
-        message = event["on_event"].event.message
-        sender = event["on_event"].event.sender if event["on_event"].event.sender else None
+        message = event_data.message
+        sender = event_data.sender if event_data.sender else None
 
         # Build variables dictionary with all available message fields
         variables_dict = {

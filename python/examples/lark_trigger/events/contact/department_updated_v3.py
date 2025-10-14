@@ -59,8 +59,11 @@ class ContactDepartmentUpdatedV3Event(Event):
         event_data = dispatch_single_event(
             request,
             self.runtime,
-            lambda builder, callback: builder.register_p2_contact_department_updated_v3(callback),
-        )
+            lambda builder: builder.register_p2_contact_department_updated_v3,
+        ).event
+        if event_data is None:
+            raise ValueError("event_data is None")
+        
         current_department = _serialize_department(event_data.object)
         previous_department = _serialize_department(event_data.old_object)
         status = current_department.get("status", {})

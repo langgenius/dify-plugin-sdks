@@ -1,52 +1,19 @@
 """Shared utilities for Lark trigger event handlers."""
+
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
-from typing import Protocol, TypeVar, cast
+from collections.abc import Callable, Iterable
+from typing import Protocol, TypeVar
 
 import lark_oapi as lark
+from lark_oapi.event.dispatcher_handler import EventDispatcherHandlerBuilder
 from lark_oapi.core.http import RawRequest
 from werkzeug import Request
 
+from dify_plugin.interfaces.trigger import EventRuntime
+
 EventDataT = TypeVar("EventDataT")
 
-
-class SupportsEvent(Protocol[EventDataT]):
-    """Protocol for objects exposing an ``event`` attribute."""
-
-    event: EventDataT | None
-
-
-PayloadT = TypeVar("PayloadT", bound=SupportsEvent[EventDataT])
-
-
-class Dispatcher(Protocol[PayloadT]):
-    """Protocol describing the built dispatcher."""
-
-    def do(self, request: RawRequest) -> None:
-        """Process a raw request."""
-
-
-class DispatcherBuilder(Protocol[PayloadT]):
-    """Protocol describing the dispatcher builder."""
-
-    def build(self) -> Dispatcher[PayloadT]:
-        """Produce a dispatcher capable of handling requests."""
-
-
-class SubscriptionWithProperties(Protocol):
-    """Protocol describing a subscription that exposes properties."""
-
-    properties: Mapping[str, str]
-
-
-class RuntimeWithSubscription(Protocol):
-    """Protocol describing the runtime object provided to triggers."""
-
-    subscription: SubscriptionWithProperties
-
-
-BuilderT = TypeVar("BuilderT", bound=DispatcherBuilder[PayloadT])
 
 def build_raw_request(request: Request) -> RawRequest:
     """Construct a RawRequest from a Werkzeug request."""
@@ -59,14 +26,16 @@ def build_raw_request(request: Request) -> RawRequest:
 
 def dispatch_single_event(
     request: Request,
-    runtime: RuntimeWithSubscription,
-    register_handler: Callable[[BuilderT, Callable[[PayloadT], None]], BuilderT | None],
+    runtime: EventRuntime,
+    register_handler: Callable[
+        [EventDispatcherHandlerBuilder], Callable[[Callable[[EventDataT], None]], EventDispatcherHandlerBuilder]
+    ],
 ) -> EventDataT:
     """Run the dispatcher and return the wrapped event payload."""
 
-    event: dict[str, PayloadT] = {}
+    event: dict[str, EventDataT] = {}
 
-    def _capture(on_event: PayloadT) -> None:
+    def _capture(on_event: EventDataT) -> None:
         event["payload"] = on_event
 
     encrypt_key = runtime.subscription.properties.get("lark_encrypt_key", "")
@@ -75,22 +44,20 @@ def dispatch_single_event(
     if not encrypt_key or not verification_token:
         raise ValueError("encrypt_key or verification_token is not set")
 
-    builder = cast(
-        BuilderT,
-        lark.EventDispatcherHandler.builder(
-            encrypt_key,
-            verification_token,
-        ),
+    builder = lark.EventDispatcherHandler.builder(
+        encrypt_key,
+        verification_token,
     )
-    registered_builder = register_handler(builder, _capture) or builder
-    handler = registered_builder.build()
+
+    register = register_handler(builder)
+    handler = register(_capture).build()
     handler.do(build_raw_request(request))
 
     payload = event.get("payload")
     if payload is None:
         raise ValueError("event is None")
 
-    event_data = payload.event
+    event_data = payload
     if event_data is None:
         raise ValueError("event.event is None")
 
@@ -120,5 +87,3 @@ def serialize_user_identity(user: SupportsUserIdentity | None) -> dict[str, str]
 def serialize_user_list(users: Iterable[SupportsUserIdentity | None]) -> list[dict[str, str]]:
     """Convert an iterable of UserId-like objects into serialisable dictionaries."""
     return [serialize_user_identity(user) for user in users if user is not None]
-
-
