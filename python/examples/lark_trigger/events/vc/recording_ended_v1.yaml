@@ -1,0 +1,98 @@
+identity:
+  name: recording_ended_v1
+  author: langgenius
+  label:
+    en_US: Recording Ended
+    zh_Hans: 录制结束
+    ja_JP: 録画終了
+
+description:
+  en_US: This event activates when recording ends for a video conference meeting.
+  zh_Hans: 当视频会议结束录制时激活。
+  ja_JP: ビデオ会議の録画が終了したときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    meeting_id:
+      type: string
+      description:
+        en_US: ID of the meeting
+        zh_Hans: 会议ID
+        ja_JP: 会議ID
+    
+    meeting_no:
+      type: string
+      description:
+        en_US: Meeting number
+        zh_Hans: 会议号
+        ja_JP: 会議番号
+    
+    topic:
+      type: string
+      description:
+        en_US: Meeting topic
+        zh_Hans: 会议主题
+        ja_JP: 会議トピック
+    
+    start_time:
+      type: string
+      description:
+        en_US: Meeting start time
+        zh_Hans: 会议开始时间
+        ja_JP: 会議開始時刻
+    
+    end_time:
+      type: string
+      description:
+        en_US: Meeting end time
+        zh_Hans: 会议结束时间
+        ja_JP: 会議終了時刻
+    
+    meeting_source:
+      type: string
+      description:
+        en_US: Meeting source
+        zh_Hans: 会议来源
+        ja_JP: 会議ソース
+    
+    calendar_event_id:
+      type: string
+      description:
+        en_US: Calendar event ID
+        zh_Hans: 日历事件ID
+        ja_JP: カレンダーイベントID
+    
+    host_user_id:
+      type: string
+      description:
+        en_US: Host user ID
+        zh_Hans: 主持人ID
+        ja_JP: ホストユーザーID
+    
+    host_user_type:
+      type: string
+      description:
+        en_US: Host user type
+        zh_Hans: 主持人类型
+        ja_JP: ホストユーザータイプ
+    
+    operator_id:
+      type: string
+      description:
+        en_US: User who stopped recording
+        zh_Hans: 停止录制的用户ID
+        ja_JP: 録画を停止したユーザーID
+    
+    operator_user_type:
+      type: string
+      description:
+        en_US: Operator user type
+        zh_Hans: 操作者类型
+        ja_JP: 操作者タイプ
+
+extra:
+  python:
+    source: events/vc/recording_ended_v1.py

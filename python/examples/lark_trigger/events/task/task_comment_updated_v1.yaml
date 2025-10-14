@@ -1,0 +1,49 @@
+identity:
+  name: task_comment_updated_v1
+  author: langgenius
+  label:
+    en_US: Task Comment Updated
+    zh_Hans: 任务评论更新
+    ja_JP: タスクコメント更新
+
+description:
+  en_US: This event activates when a comment on a task is added or updated.
+  zh_Hans: 当任务的评论被添加或更新时激活。
+  ja_JP: タスクのコメントが追加または更新されたときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    task_id:
+      type: string
+      description:
+        en_US: ID of the task
+        zh_Hans: 任务ID
+        ja_JP: タスクID
+    
+    comment_id:
+      type: string
+      description:
+        en_US: ID of the comment
+        zh_Hans: 评论ID
+        ja_JP: コメントID
+    
+    parent_id:
+      type: string
+      description:
+        en_US: Parent ID if reply
+        zh_Hans: 如果是回复则为父ID
+        ja_JP: 返信の場合の親ID
+    
+    obj_type:
+      type: string
+      description:
+        en_US: Type of the object
+        zh_Hans: 对象类型
+        ja_JP: オブジェクトタイプ
+
+extra:
+  python:
+    source: events/task/task_comment_updated_v1.py

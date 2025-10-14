@@ -75,6 +75,7 @@ events:
   - events/im/message_read_v1.yaml
 
   # Calendar Events
+  - events/calendar/calendar_changed_v4.yaml
   - events/calendar/event_changed_v4.yaml
   - events/calendar/calendar_acl_created_v4.yaml
   - events/calendar/calendar_acl_deleted_v4.yaml
@@ -91,6 +92,8 @@ events:
   - events/drive/file_read_v1.yaml
   - events/drive/file_title_updated_v1.yaml
   - events/drive/file_trashed_v1.yaml
+  - events/drive/file_bitable_record_changed_v1.yaml
+  - events/drive/file_bitable_field_changed_v1.yaml
 
   # Contact Events
   - events/contact/user_created_v3.yaml
@@ -99,6 +102,24 @@ events:
   - events/contact/department_created_v3.yaml
   - events/contact/department_updated_v3.yaml
   - events/contact/department_deleted_v3.yaml
+  - events/contact/scope_updated_v3.yaml
+
+  # Task Events
+  - events/task/task_updated_v1.yaml
+  - events/task/task_comment_updated_v1.yaml
+
+  # Meeting Room Events
+  - events/meeting_room/meeting_room_created_v1.yaml
+  - events/meeting_room/meeting_room_status_changed_v1.yaml
+
+  # VC Events
+  - events/vc/meeting_started_v1.yaml
+  - events/vc/meeting_ended_v1.yaml
+  - events/vc/join_meeting_v1.yaml
+  - events/vc/leave_meeting_v1.yaml
+  - events/vc/recording_started_v1.yaml
+  - events/vc/recording_ended_v1.yaml
+  - events/vc/recording_ready_v1.yaml
 
 identity:
   author: langgenius

@@ -1,0 +1,84 @@
+identity:
+  name: recording_ready_v1
+  author: langgenius
+  label:
+    en_US: Recording Ready
+    zh_Hans: 录制准备就绪
+    ja_JP: 録画準備完了
+
+description:
+  en_US: This event activates when a meeting recording is ready for download.
+  zh_Hans: 当会议录制准备好下载时激活。
+  ja_JP: 会議の録画がダウンロード可能になったときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    recording_url:
+      type: string
+      description:
+        en_US: URL to download the recording
+        zh_Hans: 录制下载链接
+        ja_JP: 録画ダウンロードURL
+    
+    duration:
+      type: number
+      description:
+        en_US: Recording duration in seconds
+        zh_Hans: 录制时长（秒）
+        ja_JP: 録画時間（秒）
+    
+    meeting_id:
+      type: string
+      description:
+        en_US: ID of the meeting
+        zh_Hans: 会议ID
+        ja_JP: 会議ID
+    
+    meeting_no:
+      type: string
+      description:
+        en_US: Meeting number
+        zh_Hans: 会议号
+        ja_JP: 会議番号
+    
+    topic:
+      type: string
+      description:
+        en_US: Meeting topic
+        zh_Hans: 会议主题
+        ja_JP: 会議トピック
+    
+    start_time:
+      type: string
+      description:
+        en_US: Meeting start time
+        zh_Hans: 会议开始时间
+        ja_JP: 会議開始時刻
+    
+    end_time:
+      type: string
+      description:
+        en_US: Meeting end time
+        zh_Hans: 会议结束时间
+        ja_JP: 会議終了時刻
+    
+    host_user_id:
+      type: string
+      description:
+        en_US: Host user ID
+        zh_Hans: 主持人ID
+        ja_JP: ホストユーザーID
+    
+    host_user_type:
+      type: string
+      description:
+        en_US: Host user type
+        zh_Hans: 主持人类型
+        ja_JP: ホストユーザータイプ
+
+extra:
+  python:
+    source: events/vc/recording_ready_v1.py

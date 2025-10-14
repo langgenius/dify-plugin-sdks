@@ -1,0 +1,112 @@
+identity:
+  name: leave_meeting_v1
+  author: langgenius
+  label:
+    en_US: User Left Meeting
+    zh_Hans: 用户离开会议
+    ja_JP: ユーザーが会議から退出
+
+description:
+  en_US: This event activates when a user leaves a video conference meeting.
+  zh_Hans: 当用户离开视频会议时激活。
+  ja_JP: ユーザーがビデオ会議から退出したときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    leave_reason:
+      type: string
+      description:
+        en_US: Reason for leaving
+        zh_Hans: 离开原因
+        ja_JP: 退出理由
+    
+    leave_user_id:
+      type: string
+      description:
+        en_US: Leaving user ID
+        zh_Hans: 离开用户ID
+        ja_JP: 退出ユーザーID
+    
+    leave_user_type:
+      type: string
+      description:
+        en_US: Leaving user type
+        zh_Hans: 离开用户类型
+        ja_JP: 退出ユーザータイプ
+    
+    meeting_id:
+      type: string
+      description:
+        en_US: ID of the meeting
+        zh_Hans: 会议ID
+        ja_JP: 会議ID
+    
+    meeting_no:
+      type: string
+      description:
+        en_US: Meeting number
+        zh_Hans: 会议号
+        ja_JP: 会議番号
+    
+    topic:
+      type: string
+      description:
+        en_US: Meeting topic
+        zh_Hans: 会议主题
+        ja_JP: 会議トピック
+    
+    start_time:
+      type: string
+      description:
+        en_US: Meeting start time
+        zh_Hans: 会议开始时间
+        ja_JP: 会議開始時刻
+    
+    meeting_source:
+      type: string
+      description:
+        en_US: Meeting source
+        zh_Hans: 会议来源
+        ja_JP: 会議ソース
+    
+    calendar_event_id:
+      type: string
+      description:
+        en_US: Calendar event ID
+        zh_Hans: 日历事件ID
+        ja_JP: カレンダーイベントID
+    
+    host_user_id:
+      type: string
+      description:
+        en_US: Host user ID
+        zh_Hans: 主持人ID
+        ja_JP: ホストユーザーID
+    
+    host_user_type:
+      type: string
+      description:
+        en_US: Host user type
+        zh_Hans: 主持人类型
+        ja_JP: ホストユーザータイプ
+    
+    operator_id:
+      type: string
+      description:
+        en_US: Operator ID
+        zh_Hans: 操作者ID
+        ja_JP: 操作者ID
+    
+    operator_user_type:
+      type: string
+      description:
+        en_US: Operator user type
+        zh_Hans: 操作者类型
+        ja_JP: 操作者タイプ
+
+extra:
+  python:
+    source: events/vc/leave_meeting_v1.py

@@ -1,0 +1,118 @@
+identity:
+  name: file_bitable_record_changed_v1
+  author: langgenius
+  label:
+    en_US: Bitable Record Changed
+    zh_Hans: 多维表格记录更改
+    ja_JP: Bitableレコード変更
+
+description:
+  en_US: This event activates when a record in a bitable (database table) is created, updated or deleted.
+  zh_Hans: 当多维表格中的记录被创建、更新或删除时激活。
+  ja_JP: Bitable（データベーステーブル）のレコードが作成、更新、または削除されたときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description:
+        en_US: Token of the bitable file
+        zh_Hans: 多维表格文件令牌
+        ja_JP: Bitableファイルのトークン
+    
+    file_type:
+      type: string
+      description:
+        en_US: Type of the file
+        zh_Hans: 文件类型
+        ja_JP: ファイルタイプ
+    
+    table_id:
+      type: string
+      description:
+        en_US: ID of the table
+        zh_Hans: 数据表ID
+        ja_JP: テーブルID
+    
+    revision:
+      type: number
+      description:
+        en_US: Revision number
+        zh_Hans: 版本号
+        ja_JP: リビジョン番号
+    
+    update_time:
+      type: string
+      description:
+        en_US: Time of update
+        zh_Hans: 更新时间
+        ja_JP: 更新時刻
+    
+    operator_user_id:
+      type: string
+      description:
+        en_US: User ID of the operator
+        zh_Hans: 操作者的用户ID
+        ja_JP: 操作者のユーザーID
+    
+    operator_open_id:
+      type: string
+      description:
+        en_US: Open ID of the operator
+        zh_Hans: 操作者的Open ID
+        ja_JP: 操作者のOpen ID
+    
+    operator_union_id:
+      type: string
+      description:
+        en_US: Union ID of the operator
+        zh_Hans: 操作者的Union ID
+        ja_JP: 操作者のUnion ID
+    
+    subscribers:
+      type: array
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+          open_id:
+            type: string
+          union_id:
+            type: string
+      description:
+        en_US: List of subscribers
+        zh_Hans: 订阅者列表
+        ja_JP: サブスクライバーリスト
+    
+    actions:
+      type: array
+      items:
+        type: object
+        properties:
+          action:
+            type: string
+          record_id:
+            type: string
+          before_value:
+            type: string
+          after_value:
+            type: string
+      description:
+        en_US: List of record actions performed
+        zh_Hans: 执行的记录操作列表
+        ja_JP: 実行されたレコードアクションのリスト
+    
+    action_count:
+      type: number
+      description:
+        en_US: Number of actions performed
+        zh_Hans: 执行的操作数量
+        ja_JP: 実行されたアクションの数
+
+extra:
+  python:
+    source: events/drive/file_bitable_record_changed_v1.py

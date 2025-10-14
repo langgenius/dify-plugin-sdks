@@ -2,20 +2,28 @@ import threading
 
 import lark_oapi as lark
 from lark_oapi.api.approval.v4 import P2ApprovalApprovalUpdatedV4
+from lark_oapi.api.task.v1 import (
+    P2TaskTaskCommentUpdatedV1,
+    P2TaskTaskUpdatedV1,
+)
 from lark_oapi.api.calendar.v4 import (
     P2CalendarCalendarAclCreatedV4,
     P2CalendarCalendarAclDeletedV4,
+    P2CalendarCalendarChangedV4,
     P2CalendarCalendarEventChangedV4,
 )
 from lark_oapi.api.contact.v3 import (
     P2ContactDepartmentCreatedV3,
     P2ContactDepartmentDeletedV3,
     P2ContactDepartmentUpdatedV3,
+    P2ContactScopeUpdatedV3,
     P2ContactUserCreatedV3,
     P2ContactUserDeletedV3,
     P2ContactUserUpdatedV3,
 )
 from lark_oapi.api.drive.v1 import (
+    P2DriveFileBitableFieldChangedV1,
+    P2DriveFileBitableRecordChangedV1,
     P2DriveFileCreatedInFolderV1,
     P2DriveFileDeletedV1,
     P2DriveFileEditV1,
@@ -38,6 +46,19 @@ from lark_oapi.api.im.v1 import (
     P2ImMessageReactionDeletedV1,
     P2ImMessageRecalledV1,
     P2ImMessageReceiveV1,
+)
+from lark_oapi.api.meeting_room.v1 import (
+    P2MeetingRoomMeetingRoomCreatedV1,
+    P2MeetingRoomMeetingRoomStatusChangedV1,
+)
+from lark_oapi.api.vc.v1 import (
+    P2VcMeetingJoinMeetingV1,
+    P2VcMeetingLeaveMeetingV1,
+    P2VcMeetingMeetingEndedV1,
+    P2VcMeetingMeetingStartedV1,
+    P2VcMeetingRecordingEndedV1,
+    P2VcMeetingRecordingReadyV1,
+    P2VcMeetingRecordingStartedV1,
 )
 from lark_oapi.core.http import RawRequest
 from werkzeug import Request, Response
@@ -108,6 +129,9 @@ class LarkTrigger(Trigger):
                 self._handle_message_read_event,
             )
             # Calendar Events
+            .register_p2_calendar_calendar_changed_v4(
+                self._handle_calendar_changed_event,
+            )
             .register_p2_calendar_calendar_event_changed_v4(
                 self._handle_calendar_event_changed_event,
             )
@@ -146,6 +170,19 @@ class LarkTrigger(Trigger):
             .register_p2_drive_file_trashed_v1(
                 self._handle_drive_file_trashed_event,
             )
+            .register_p2_drive_file_bitable_record_changed_v1(
+                self._handle_drive_file_bitable_record_changed_event,
+            )
+            .register_p2_drive_file_bitable_field_changed_v1(
+                self._handle_drive_file_bitable_field_changed_event,
+            )
+            # Task Events
+            .register_p2_task_task_updated_v1(
+                self._handle_task_updated_event,
+            )
+            .register_p2_task_task_comment_updated_v1(
+                self._handle_task_comment_updated_event,
+            )
             # Contact Events
             .register_p2_contact_user_created_v3(
                 self._handle_contact_user_created_event,
@@ -164,6 +201,38 @@ class LarkTrigger(Trigger):
             )
             .register_p2_contact_department_deleted_v3(
                 self._handle_contact_department_deleted_event,
+            )
+            .register_p2_contact_scope_updated_v3(
+                self._handle_contact_scope_updated_event,
+            )
+            # Meeting Room Events
+            .register_p2_meeting_room_meeting_room_created_v1(
+                self._handle_meeting_room_created_event,
+            )
+            .register_p2_meeting_room_meeting_room_status_changed_v1(
+                self._handle_meeting_room_status_changed_event,
+            )
+            # VC Events
+            .register_p2_vc_meeting_meeting_started_v1(
+                self._handle_vc_meeting_started_event,
+            )
+            .register_p2_vc_meeting_meeting_ended_v1(
+                self._handle_vc_meeting_ended_event,
+            )
+            .register_p2_vc_meeting_join_meeting_v1(
+                self._handle_vc_join_meeting_event,
+            )
+            .register_p2_vc_meeting_leave_meeting_v1(
+                self._handle_vc_leave_meeting_event,
+            )
+            .register_p2_vc_meeting_recording_started_v1(
+                self._handle_vc_recording_started_event,
+            )
+            .register_p2_vc_meeting_recording_ended_v1(
+                self._handle_vc_recording_ended_event,
+            )
+            .register_p2_vc_meeting_recording_ready_v1(
+                self._handle_vc_recording_ready_event,
             )
             .build()
         )
@@ -403,3 +472,123 @@ class LarkTrigger(Trigger):
         :param event: Drive file title updated event
         """
         response_cache_map[threading.get_ident()].append("file_title_updated_v1")
+
+    def _handle_calendar_changed_event(self, event: P2CalendarCalendarChangedV4) -> None:
+        """
+        Handle calendar changed event.
+
+        :param event: Calendar changed event
+        """
+        response_cache_map[threading.get_ident()].append("calendar_changed_v4")
+
+    def _handle_contact_scope_updated_event(self, event: P2ContactScopeUpdatedV3) -> None:
+        """
+        Handle contact scope updated event.
+
+        :param event: Contact scope updated event
+        """
+        response_cache_map[threading.get_ident()].append("scope_updated_v3")
+
+    def _handle_drive_file_bitable_record_changed_event(self, event: P2DriveFileBitableRecordChangedV1) -> None:
+        """
+        Handle drive file bitable record changed event.
+
+        :param event: Bitable record changed event
+        """
+        response_cache_map[threading.get_ident()].append("file_bitable_record_changed_v1")
+
+    def _handle_drive_file_bitable_field_changed_event(self, event: P2DriveFileBitableFieldChangedV1) -> None:
+        """
+        Handle drive file bitable field changed event.
+
+        :param event: Bitable field changed event
+        """
+        response_cache_map[threading.get_ident()].append("file_bitable_field_changed_v1")
+
+    def _handle_task_updated_event(self, event: P2TaskTaskUpdatedV1) -> None:
+        """
+        Handle task updated event.
+
+        :param event: Task updated event
+        """
+        response_cache_map[threading.get_ident()].append("task_updated_v1")
+
+    def _handle_task_comment_updated_event(self, event: P2TaskTaskCommentUpdatedV1) -> None:
+        """
+        Handle task comment updated event.
+
+        :param event: Task comment updated event
+        """
+        response_cache_map[threading.get_ident()].append("task_comment_updated_v1")
+
+    def _handle_meeting_room_created_event(self, event: P2MeetingRoomMeetingRoomCreatedV1) -> None:
+        """
+        Handle meeting room created event.
+
+        :param event: Meeting room created event
+        """
+        response_cache_map[threading.get_ident()].append("meeting_room_created_v1")
+
+    def _handle_meeting_room_status_changed_event(self, event: P2MeetingRoomMeetingRoomStatusChangedV1) -> None:
+        """
+        Handle meeting room status changed event.
+
+        :param event: Meeting room status changed event
+        """
+        response_cache_map[threading.get_ident()].append("meeting_room_status_changed_v1")
+
+    def _handle_vc_meeting_started_event(self, event: P2VcMeetingMeetingStartedV1) -> None:
+        """
+        Handle VC meeting started event.
+
+        :param event: VC meeting started event
+        """
+        response_cache_map[threading.get_ident()].append("meeting_started_v1")
+
+    def _handle_vc_meeting_ended_event(self, event: P2VcMeetingMeetingEndedV1) -> None:
+        """
+        Handle VC meeting ended event.
+
+        :param event: VC meeting ended event
+        """
+        response_cache_map[threading.get_ident()].append("meeting_ended_v1")
+
+    def _handle_vc_recording_ready_event(self, event: P2VcMeetingRecordingReadyV1) -> None:
+        """
+        Handle VC recording ready event.
+
+        :param event: VC recording ready event
+        """
+        response_cache_map[threading.get_ident()].append("recording_ready_v1")
+
+    def _handle_vc_join_meeting_event(self, event: P2VcMeetingJoinMeetingV1) -> None:
+        """
+        Handle VC join meeting event.
+
+        :param event: VC join meeting event
+        """
+        response_cache_map[threading.get_ident()].append("join_meeting_v1")
+
+    def _handle_vc_leave_meeting_event(self, event: P2VcMeetingLeaveMeetingV1) -> None:
+        """
+        Handle VC leave meeting event.
+
+        :param event: VC leave meeting event
+        """
+        response_cache_map[threading.get_ident()].append("leave_meeting_v1")
+
+    def _handle_vc_recording_started_event(self, event: P2VcMeetingRecordingStartedV1) -> None:
+        """
+        Handle VC recording started event.
+
+        :param event: VC recording started event
+        """
+        response_cache_map[threading.get_ident()].append("recording_started_v1")
+
+    def _handle_vc_recording_ended_event(self, event: P2VcMeetingRecordingEndedV1) -> None:
+        """
+        Handle VC recording ended event.
+
+        :param event: VC recording ended event
+        """
+        response_cache_map[threading.get_ident()].append("recording_ended_v1")
