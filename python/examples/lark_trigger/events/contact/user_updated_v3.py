@@ -29,11 +29,11 @@ def _serialize_status(status: UserStatus | None) -> dict[str, bool]:
         }
 
     return {
-        "is_frozen": bool(status.is_frozen) if status.is_frozen is not None else False,
-        "is_resigned": bool(status.is_resigned) if status.is_resigned is not None else False,
-        "is_activated": bool(status.is_activated) if status.is_activated is not None else False,
-        "is_exited": bool(status.is_exited) if status.is_exited is not None else False,
-        "is_unjoin": bool(status.is_unjoin) if status.is_unjoin is not None else False,
+        "is_frozen": bool(status.is_frozen),
+        "is_resigned": bool(status.is_resigned),
+        "is_activated": bool(status.is_activated),
+        "is_exited": bool(status.is_exited),
+        "is_unjoin": bool(status.is_unjoin),
     }
 
 
@@ -47,7 +47,7 @@ def _serialize_positions(positions: list[UserPosition] | None) -> list[dict[str,
                 "department_id": position.department_id or "",
                 "leader_user_id": position.leader_user_id or "",
                 "leader_position_code": position.leader_position_code or "",
-                "is_major": bool(position.is_major) if position.is_major is not None else False,
+                "is_major": bool(position.is_major),
             }
         )
     return serialized
@@ -61,7 +61,7 @@ def _serialize_orders(orders: list[UserOrder] | None) -> list[dict[str, Any]]:
                 "department_id": order.department_id or "",
                 "user_order": order.user_order if order.user_order is not None else 0,
                 "department_order": order.department_order if order.department_order is not None else 0,
-                "is_primary_dept": bool(order.is_primary_dept) if order.is_primary_dept is not None else False,
+                "is_primary_dept": bool(order.is_primary_dept),
             }
         )
     return serialized
@@ -124,7 +124,7 @@ def _build_user_snapshot(user: UserEvent | None) -> dict[str, Any]:
         "enterprise_email": user.enterprise_email or "",
         "job_title": user.job_title or "",
         "mobile": user.mobile or "",
-        "mobile_visible": bool(user.mobile_visible) if user.mobile_visible is not None else False,
+        "mobile_visible": bool(user.mobile_visible),
         "gender": user.gender if user.gender is not None else 0,
         "avatar_key": user.avatar.avatar_72 if getattr(user, "avatar", None) and user.avatar.avatar_72 else "",
         "status": status,
@@ -134,7 +134,7 @@ def _build_user_snapshot(user: UserEvent | None) -> dict[str, Any]:
         "country": user.country or "",
         "work_station": user.work_station or "",
         "join_time": user.join_time if user.join_time is not None else 0,
-        "is_tenant_manager": bool(user.is_tenant_manager) if user.is_tenant_manager is not None else False,
+        "is_tenant_manager": bool(user.is_tenant_manager),
         "employee_no": user.employee_no or "",
         "employee_type": user.employee_type if user.employee_type is not None else 0,
         "positions": positions,

@@ -7,14 +7,9 @@ identity:
     ja_JP: Issue ラベル追加
 
 description:
-  human:
-    en_US: Triggers when a label is added to an issue
-    zh_Hans: 当给 issue 添加标签时触发
-    ja_JP: issue にラベルが追加されたときにトリガーがアクティブになります。
-  llm:
-    en_US: This trigger activates when a label is added to an issue on a GitHub repository, providing information about the issue, the label that was added, repository, and user who added it.
-    zh_Hans: 当在 GitHub 仓库中给 issue 添加标签时，此触发器会被激活，提供有关 issue、添加的标签、仓库和添加它的用户的信息。
-    ja_JP: issue に GitHub リポジトリでラベルが追加されたときにトリガーがアクティブになり、issue、追加されたラベル、リポジトリ、およびラベルを追加したユーザーに関する情報を提供します。
+  en_US: Triggers when a label is added to an issue
+  zh_Hans: 当给 issue 添加标签时触发
+  ja_JP: issue にラベルが追加されたときにトリガーがアクティブになります。
 parameters:
 - name: added_label
   label:

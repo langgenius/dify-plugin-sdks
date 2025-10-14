@@ -7,14 +7,9 @@ identity:
     ja_JP: Issue コメント作成
 
 description:
-  human:
-    en_US: Triggers when a comment is created on an issue or pull request
-    zh_Hans: 当在 issue 或 pull request 上创建评论时触发
-    ja_JP: issue または pull request にコメントが作成されたときにトリガーがアクティブになります。
-  llm:
-    en_US: This trigger activates when a new comment is created on an issue or pull request in a GitHub repository, providing information about the comment, the issue/PR, repository, and user who created it.
-    zh_Hans: 当在 GitHub 仓库的 issue 或 pull request 上创建新评论时，此触发器会被激活，提供有关评论、issue/PR、仓库和创建评论的用户的信息。
-    ja_JP: GitHub リポジトリの issue または pull request に新しいコメントが作成されたときにトリガーがアクティブになり、コメント、issue/PR、リポジトリ、およびコメントを作成したユーザーに関する情報を提供します。
+  en_US: Triggers when a comment is created on an issue or pull request
+  zh_Hans: 当在 issue 或 pull request 上创建评论时触发
+  ja_JP: issue または pull request にコメントが作成されたときにトリガーがアクティブになります。
 parameters:
 - name: comment_body_contains
   label:

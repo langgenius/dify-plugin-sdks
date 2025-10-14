@@ -12,7 +12,6 @@ from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import (
     EventConfiguration,
     EventConfigurationExtra,
-    EventDescription,
     EventDispatch,
     EventIdentity,
     EventParameter,
@@ -147,10 +146,7 @@ def test_trigger_factory_register_and_get_provider():
                 type=EventParameter.EventParameterType.STRING,
             )
         ],
-        description=EventDescription(
-            human=I18nObject(en_US="Human description"),
-            llm=I18nObject(en_US="LLM description"),
-        ),
+        description=I18nObject(en_US="Human description"),
         extra=EventConfigurationExtra(python=EventConfigurationExtra.Python(source="test_event.py")),
         output_schema={"test_variable": {"type": "string"}},
     )
@@ -254,10 +250,7 @@ def test_trigger_factory_trigger_events():
             label=I18nObject(en_US="Test Event"),
         ),
         parameters=[],
-        description=EventDescription(
-            human=I18nObject(en_US="Human description"),
-            llm=I18nObject(en_US="LLM description"),
-        ),
+        description=I18nObject(en_US="Human description"),
         extra=EventConfigurationExtra(python=EventConfigurationExtra.Python(source="test_event.py")),
     )
 

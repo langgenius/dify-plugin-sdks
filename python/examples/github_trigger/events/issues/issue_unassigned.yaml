@@ -7,14 +7,9 @@ identity:
     ja_JP: Issue 割り当て解除
 
 description:
-  human:
-    en_US: Triggers when an issue is unassigned from a user
-    zh_Hans: 当 issue 的分配被取消时触发
-    ja_JP: issue のユーザーへの割り当てが解除されたときにトリガーがアクティブになります。
-  llm:
-    en_US: This trigger activates when an issue is unassigned from a user on a GitHub repository, providing information about the issue, the user who was unassigned, repository, and user who removed the assignment.
-    zh_Hans: 当在 GitHub 仓库中取消 issue 的用户分配时，此触发器会被激活，提供有关 issue、被取消分配的用户、仓库和移除分配的用户的信息。
-    ja_JP: issue の GitHub リポジトリでのユーザーへの割り当てが解除されたときにトリガーがアクティブになり、issue、割り当てが解除されたユーザー、リポジトリ、および割り当てを解除したユーザーに関する情報を提供します。
+  en_US: Triggers when an issue is unassigned from a user
+  zh_Hans: 当 issue 的分配被取消时触发
+  ja_JP: issue のユーザーへの割り当てが解除されたときにトリガーがアクティブになります。
 parameters:
 - name: unassigned_from
   label:

@@ -48,7 +48,6 @@ class RuntimeWithSubscription(Protocol):
 
 BuilderT = TypeVar("BuilderT", bound=DispatcherBuilder[PayloadT])
 
-
 def build_raw_request(request: Request) -> RawRequest:
     """Construct a RawRequest from a Werkzeug request."""
     raw_request = RawRequest()

@@ -7,14 +7,9 @@ identity:
     ja_JP: Issue 割り当て
 
 description:
-  human:
-    en_US: Triggers when an issue is assigned to a user
-    zh_Hans: 当 issue 被分配给用户时触发
-    ja_JP: issue がユーザーに割り当てられたときにトリガーがアクティブになります。
-  llm:
-    en_US: This trigger activates when an issue is assigned to a user on a GitHub repository, providing information about the issue, the assignee, repository, and user who made the assignment.
-    zh_Hans: 当在 GitHub 仓库中将 issue 分配给用户时，此触发器会被激活，提供有关 issue、被分配者、仓库和进行分配的用户的信息。
-    ja_JP: issue が GitHub リポジトリでユーザーに割り当てられたときにトリガーがアクティブになり、issue、担当者、リポジトリ、および割り当てを行ったユーザーに関する情報を提供します。
+  en_US: Triggers when an issue is assigned to a user
+  zh_Hans: 当 issue 被分配给用户时触发
+  ja_JP: issue がユーザーに割り当てられたときにトリガーがアクティブになります。
 parameters:
 - name: assigned_to
   label:
