@@ -124,7 +124,7 @@ def _build_user_snapshot(user: UserEvent | None) -> dict[str, Any]:
         "enterprise_email": user.enterprise_email or "",
         "job_title": user.job_title or "",
         "mobile": user.mobile or "",
-        "mobile_visible": bool(user.mobile_visible) if user.mobile_visible is not None else False,
+        "mobile_visible": bool(user.mobile_visible),
         "gender": user.gender if user.gender is not None else 0,
         "avatar_key": user.avatar.avatar_72 if getattr(user, "avatar", None) and user.avatar.avatar_72 else "",
         "status": status,
