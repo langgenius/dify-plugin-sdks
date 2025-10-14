@@ -134,7 +134,7 @@ def _build_user_snapshot(user: UserEvent | None) -> dict[str, Any]:
         "country": user.country or "",
         "work_station": user.work_station or "",
         "join_time": user.join_time if user.join_time is not None else 0,
-        "is_tenant_manager": bool(user.is_tenant_manager) if user.is_tenant_manager is not None else False,
+        "is_tenant_manager": bool(user.is_tenant_manager),
         "employee_no": user.employee_no or "",
         "employee_type": user.employee_type if user.employee_type is not None else 0,
         "positions": positions,
