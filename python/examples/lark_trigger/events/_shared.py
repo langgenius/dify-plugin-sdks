@@ -1,7 +1,6 @@
 """Shared utilities for Lark trigger event handlers."""
 from __future__ import annotations
 
-import json
 from collections.abc import Callable, Iterable
 from typing import Any
 
@@ -73,6 +72,3 @@ def serialize_user_list(users: Iterable[Any]) -> list[dict[str, str]]:
     return [serialize_user_identity(user) for user in users if user is not None]
 
 
-def dumps_json(data: Any) -> str:
-    """Serialize data to JSON with UTF-8 support."""
-    return json.dumps(data, ensure_ascii=False)

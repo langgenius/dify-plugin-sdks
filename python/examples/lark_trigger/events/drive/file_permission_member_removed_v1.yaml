@@ -57,11 +57,32 @@ output_schema:
         ja_JP: 操作ユーザーのUnion ID
 
     removed_users:
-      type: string
+      type: array
       description:
-        en_US: Users who lost access (JSON array)
-        zh_Hans: 失去访问权限的用户列表（JSON 数组）
-        ja_JP: アクセス権を失ったユーザー一覧（JSON 配列）
+        en_US: Users who lost access
+        zh_Hans: 失去访问权限的用户列表
+        ja_JP: アクセス権を失ったユーザー一覧
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description:
+              en_US: User ID
+              zh_Hans: 用户 ID
+              ja_JP: ユーザーID
+          open_id:
+            type: string
+            description:
+              en_US: Open ID
+              zh_Hans: Open ID
+              ja_JP: Open ID
+          union_id:
+            type: string
+            description:
+              en_US: Union ID
+              zh_Hans: Union ID
+              ja_JP: Union ID
 
     removed_user_count:
       type: integer
@@ -71,25 +92,50 @@ output_schema:
         ja_JP: アクセス権を失ったユーザー数
 
     removed_chats:
-      type: string
+      type: array
       description:
-        en_US: Chat IDs removed from access (JSON array)
-        zh_Hans: 被移除访问权限的群聊 ID（JSON 数组）
-        ja_JP: アクセス権が削除されたチャットID（JSON 配列）
+        en_US: Chat IDs removed from access
+        zh_Hans: 被移除访问权限的群聊 ID
+        ja_JP: アクセス権が削除されたチャットID
+      items:
+        type: string
 
     removed_departments:
-      type: string
+      type: array
       description:
-        en_US: Department IDs removed from access (JSON array)
-        zh_Hans: 被移除访问权限的部门 ID（JSON 数组）
-        ja_JP: アクセス権が削除された部門ID（JSON 配列）
+        en_US: Department IDs removed from access
+        zh_Hans: 被移除访问权限的部门 ID
+        ja_JP: アクセス権が削除された部門ID
+      items:
+        type: string
 
     subscriber_users:
-      type: string
+      type: array
       description:
-        en_US: Subscribers of the file (JSON array)
-        zh_Hans: 文件订阅者列表（JSON 数组）
-        ja_JP: ファイルの購読者一覧（JSON 配列）
+        en_US: Subscribers of the file
+        zh_Hans: 文件订阅者列表
+        ja_JP: ファイルの購読者一覧
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description:
+              en_US: User ID
+              zh_Hans: 用户 ID
+              ja_JP: ユーザーID
+          open_id:
+            type: string
+            description:
+              en_US: Open ID
+              zh_Hans: Open ID
+              ja_JP: Open ID
+          union_id:
+            type: string
+            description:
+              en_US: Union ID
+              zh_Hans: Union ID
+              ja_JP: Union ID
 
     subscriber_count:
       type: integer

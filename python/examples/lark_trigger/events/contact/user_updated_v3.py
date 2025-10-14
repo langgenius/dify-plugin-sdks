@@ -15,7 +15,7 @@ from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
 
-from .._shared import dispatch_single_event, dumps_json
+from .._shared import dispatch_single_event
 
 
 def _serialize_status(status: UserStatus | None) -> dict[str, bool]:
@@ -190,13 +190,13 @@ class ContactUserUpdatedV3Event(Event):
             "status_is_activated": status.get("is_activated", False),
             "status_is_exited": status.get("is_exited", False),
             "status_is_unjoin": status.get("is_unjoin", False),
-            "department_ids": dumps_json(current_snapshot.get("department_ids", [])),
-            "positions": dumps_json(current_snapshot.get("positions", [])),
-            "orders": dumps_json(current_snapshot.get("orders", [])),
-            "custom_attributes": dumps_json(current_snapshot.get("custom_attrs", [])),
-            "dotted_line_leader_user_ids": dumps_json(current_snapshot.get("dotted_line_leader_user_ids", [])),
-            "current_user_json": dumps_json(current_snapshot),
-            "previous_user_json": dumps_json(previous_snapshot),
+            "department_ids": current_snapshot.get("department_ids", []),
+            "positions": current_snapshot.get("positions", []),
+            "orders": current_snapshot.get("orders", []),
+            "custom_attributes": current_snapshot.get("custom_attrs", []),
+            "dotted_line_leader_user_ids": current_snapshot.get("dotted_line_leader_user_ids", []),
+            "current_user_json": current_snapshot,
+            "previous_user_json": previous_snapshot,
         }
 
         return Variables(

@@ -12,7 +12,7 @@ from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
 
-from .._shared import dispatch_single_event, dumps_json, serialize_user_list
+from .._shared import dispatch_single_event, serialize_user_list
 
 
 def _serialize_status(status: DepartmentStatus | None) -> dict[str, bool]:
@@ -84,12 +84,12 @@ class ContactDepartmentDeletedV3Event(Event):
             "leader_user_id": current_department.get("leader_user_id", ""),
             "chat_id": current_department.get("chat_id", ""),
             "order": current_department.get("order", 0),
-            "unit_ids": dumps_json(current_department.get("unit_ids", [])),
+            "unit_ids": current_department.get("unit_ids", []),
             "is_deleted": status.get("is_deleted", False),
-            "leaders": dumps_json(current_department.get("leaders", [])),
-            "department_hrbps": dumps_json(current_department.get("department_hrbps", [])),
-            "previous_department_json": dumps_json(previous_department),
-            "current_department_json": dumps_json(current_department),
+            "leaders": current_department.get("leaders", []),
+            "department_hrbps": current_department.get("department_hrbps", []),
+            "previous_department_json": previous_department,
+            "current_department_json": current_department,
         }
 
         return Variables(

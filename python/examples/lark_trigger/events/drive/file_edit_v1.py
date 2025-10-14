@@ -8,7 +8,7 @@ from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
 
-from .._shared import dispatch_single_event, dumps_json, serialize_user_list
+from .._shared import dispatch_single_event, serialize_user_list
 
 
 class DriveFileEditV1Event(Event):
@@ -27,9 +27,9 @@ class DriveFileEditV1Event(Event):
             "file_token": event_data.file_token or "",
             "file_type": event_data.file_type or "",
             "sheet_id": event_data.sheet_id or "",
-            "operators": dumps_json(operators),
+            "operators": operators,
             "operator_count": len(operators),
-            "subscriber_users": dumps_json(subscribers),
+            "subscriber_users": subscribers,
             "subscriber_count": len(subscribers),
         }
 

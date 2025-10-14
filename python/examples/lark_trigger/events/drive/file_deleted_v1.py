@@ -10,7 +10,6 @@ from dify_plugin.interfaces.trigger import Event
 
 from .._shared import (
     dispatch_single_event,
-    dumps_json,
     serialize_user_identity,
     serialize_user_list,
 )
@@ -34,7 +33,7 @@ class DriveFileDeletedV1Event(Event):
             "operator_user_id": operator["user_id"],
             "operator_open_id": operator["open_id"],
             "operator_union_id": operator["union_id"],
-            "subscriber_users": dumps_json(subscribers),
+            "subscriber_users": subscribers,
             "subscriber_count": len(subscribers),
         }
 

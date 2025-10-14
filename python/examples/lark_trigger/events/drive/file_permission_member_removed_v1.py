@@ -10,7 +10,6 @@ from dify_plugin.interfaces.trigger import Event
 
 from .._shared import (
     dispatch_single_event,
-    dumps_json,
     serialize_user_identity,
     serialize_user_list,
 )
@@ -37,11 +36,11 @@ class DriveFilePermissionMemberRemovedV1Event(Event):
             "operator_user_id": operator["user_id"],
             "operator_open_id": operator["open_id"],
             "operator_union_id": operator["union_id"],
-            "removed_users": dumps_json(users),
+            "removed_users": users,
             "removed_user_count": len(users),
-            "removed_chats": dumps_json(event_data.chat_list or []),
-            "removed_departments": dumps_json(event_data.open_department_id_list or []),
-            "subscriber_users": dumps_json(subscribers),
+            "removed_chats": list(event_data.chat_list or []),
+            "removed_departments": list(event_data.open_department_id_list or []),
+            "subscriber_users": subscribers,
             "subscriber_count": len(subscribers),
         }
 

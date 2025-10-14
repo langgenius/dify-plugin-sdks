@@ -71,11 +71,13 @@ output_schema:
         ja_JP: 部門の並び順値
 
     unit_ids:
-      type: string
+      type: array
       description:
-        en_US: Associated unit IDs (JSON array)
-        zh_Hans: 关联单元 ID 列表（JSON 数组）
-        ja_JP: 関連ユニットID一覧（JSON 配列）
+        en_US: Associated unit IDs
+        zh_Hans: 关联单元 ID 列表
+        ja_JP: 関連ユニットID一覧
+      items:
+        type: string
 
     is_deleted:
       type: boolean
@@ -85,32 +87,68 @@ output_schema:
         ja_JP: 削除後に部門が削除済みとしてマークされているか
 
     leaders:
-      type: string
+      type: array
       description:
-        en_US: Department leader assignments (JSON array)
-        zh_Hans: 部门领导配置（JSON 数组）
-        ja_JP: 部門リーダー設定（JSON 配列）
+        en_US: Department leader assignments
+        zh_Hans: 部门领导配置
+        ja_JP: 部門リーダー設定
+      items:
+        type: object
+        properties:
+          leader_type:
+            type: integer
+            description:
+              en_US: Leader type value
+              zh_Hans: 领导类型值
+              ja_JP: リーダータイプの値
+          leader_id:
+            type: string
+            description:
+              en_US: Leader identifier
+              zh_Hans: 领导标识
+              ja_JP: リーダー識別子
 
     department_hrbps:
-      type: string
+      type: array
       description:
-        en_US: HRBP users for the department (JSON array)
-        zh_Hans: 部门 HRBP 用户列表（JSON 数组）
-        ja_JP: 部門のHRBPユーザー一覧（JSON 配列）
+        en_US: HRBP users for the department
+        zh_Hans: 部门 HRBP 用户列表
+        ja_JP: 部門のHRBPユーザー一覧
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description:
+              en_US: User ID
+              zh_Hans: 用户 ID
+              ja_JP: ユーザーID
+          open_id:
+            type: string
+            description:
+              en_US: Open ID
+              zh_Hans: Open ID
+              ja_JP: Open ID
+          union_id:
+            type: string
+            description:
+              en_US: Union ID
+              zh_Hans: Union ID
+              ja_JP: Union ID
 
     current_department_json:
-      type: string
+      type: object
       description:
-        en_US: Department snapshot at deletion time (JSON object)
-        zh_Hans: 删除时的部门快照（JSON 对象）
-        ja_JP: 削除時の部門スナップショット（JSON オブジェクト）
+        en_US: Department snapshot at deletion time
+        zh_Hans: 删除时的部门快照
+        ja_JP: 削除時の部門スナップショット
 
     previous_department_json:
-      type: string
+      type: object
       description:
-        en_US: Previous metadata before deletion (JSON object)
-        zh_Hans: 删除前的部门元数据（JSON 对象）
-        ja_JP: 削除前の部門メタデータ（JSON オブジェクト）
+        en_US: Previous metadata before deletion
+        zh_Hans: 删除前的部门元数据
+        ja_JP: 削除前の部門メタデータ
 
 extra:
   python:

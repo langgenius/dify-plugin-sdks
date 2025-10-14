@@ -10,7 +10,6 @@ from dify_plugin.interfaces.trigger import Event
 
 from .._shared import (
     dispatch_single_event,
-    dumps_json,
     serialize_user_identity,
     serialize_user_list,
 )
@@ -38,7 +37,7 @@ class CalendarAclCreatedV4Event(Event):
             "scope_user_id": scope_user["user_id"],
             "scope_open_id": scope_user["open_id"],
             "scope_union_id": scope_user["union_id"],
-            "shared_users": dumps_json(serialize_user_list(event_data.user_id_list or [])),
+            "shared_users": serialize_user_list(event_data.user_id_list or []),
         }
 
         return Variables(
