@@ -47,7 +47,7 @@ def _serialize_positions(positions: list[UserPosition] | None) -> list[dict[str,
                 "department_id": position.department_id or "",
                 "leader_user_id": position.leader_user_id or "",
                 "leader_position_code": position.leader_position_code or "",
-                "is_major": bool(position.is_major) if position.is_major is not None else False,
+                "is_major": bool(position.is_major),
             }
         )
     return serialized
