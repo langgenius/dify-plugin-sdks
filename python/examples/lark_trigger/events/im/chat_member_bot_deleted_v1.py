@@ -5,17 +5,17 @@ from dify_plugin.interfaces.trigger import Event
 from .._shared import dispatch_single_event
 
 
-class ChatMemberUserRemovedV1Event(Event):
+class ChatMemberBotDeletedV1Event(Event):
     def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
         """
-        Handle the event when members leave or are removed from a chat group.
+        Handle the event when a bot is removed from a chat group.
 
-        This event is triggered when one or more users leave or are removed from a chat group.
+        This event is triggered when a bot is removed from a group chat.
         """
         event_data = dispatch_single_event(
             request,
             self.runtime,
-            lambda builder: builder.register_p2_im_chat_member_user_deleted_v1,
+            lambda builder: builder.register_p2_im_chat_member_bot_deleted_v1,
         ).event
         if event_data is None:
             raise ValueError("event_data is None")
@@ -23,7 +23,7 @@ class ChatMemberUserRemovedV1Event(Event):
         # Build variables dictionary
         variables_dict: dict[str, Any] = {
             "chat_id": event_data.chat_id if event_data.chat_id else "",
-            "chat_name": event_data.name if event_data.name else "",
+            "name": event_data.name if event_data.name else "",
             "is_external": str(event_data.external) if event_data.external is not None else "false",
             "operator_tenant_key": event_data.operator_tenant_key if event_data.operator_tenant_key else "",
         }
@@ -39,28 +39,20 @@ class ChatMemberUserRemovedV1Event(Event):
             variables_dict["operator_union_id"] = (
                 event_data.operator_id.union_id if event_data.operator_id.union_id else ""
             )
-
-        # Add removed members information
-        if event_data.users:
-            members_list = []
-            for user in event_data.users:
-                if user:
-                    member_info = {
-                        "name": user.name if user.name else "",
-                        "tenant_key": user.tenant_key if user.tenant_key else "",
-                    }
-                    if user.user_id:
-                        member_info["user_id"] = user.user_id.user_id if user.user_id.user_id else ""
-                        member_info["open_id"] = user.user_id.open_id if user.user_id.open_id else ""
-                        member_info["union_id"] = user.user_id.union_id if user.user_id.union_id else ""
-                    members_list.append(member_info)
-
-            # Store list directly
-            variables_dict["removed_members"] = members_list
-            variables_dict["removed_members_count"] = len(members_list)
         else:
-            variables_dict["removed_members"] = []
-            variables_dict["removed_members_count"] = 0
+            variables_dict["operator_user_id"] = ""
+            variables_dict["operator_open_id"] = ""
+            variables_dict["operator_union_id"] = ""
+
+        # Add i18n names if available
+        if event_data.i18n_names:
+            variables_dict["i18n_names"] = {
+                "zh_cn": event_data.i18n_names.zh_cn if event_data.i18n_names.zh_cn else "",
+                "en_us": event_data.i18n_names.en_us if event_data.i18n_names.en_us else "",
+                "ja_jp": event_data.i18n_names.ja_jp if event_data.i18n_names.ja_jp else "",
+            }
+        else:
+            variables_dict["i18n_names"] = {}
 
         return Variables(
             variables=variables_dict,

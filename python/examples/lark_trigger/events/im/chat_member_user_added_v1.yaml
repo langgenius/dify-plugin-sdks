@@ -66,14 +66,27 @@ output_schema:
         ja_JP: 操作者の組織キー
 
     new_members:
-      type: string
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+          tenant_key:
+            type: string
+          user_id:
+            type: string
+          open_id:
+            type: string
+          union_id:
+            type: string
       description:
-        en_US: List of newly added members (JSON format)
-        zh_Hans: 新添加的成员列表（JSON格式）
-        ja_JP: 新しく追加されたメンバーのリスト（JSON形式）
+        en_US: List of newly added members
+        zh_Hans: 新添加的成员列表
+        ja_JP: 新しく追加されたメンバーのリスト
 
     new_members_count:
-      type: string
+      type: number
       description:
         en_US: Number of members added
         zh_Hans: 添加的成员数量

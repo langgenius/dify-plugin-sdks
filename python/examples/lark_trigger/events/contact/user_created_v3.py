@@ -3,7 +3,6 @@ from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
 from .._shared import dispatch_single_event
-import json
 
 
 class ContactUserCreatedV3Event(Event):
@@ -65,11 +64,11 @@ class ContactUserCreatedV3Event(Event):
             "is_tenant_manager": user_data.is_tenant_manager if user_data.is_tenant_manager is not None else False,
         }
         
-        # Add department IDs as JSON array
+        # Add department IDs as array
         if user_data.department_ids:
-            variables_dict["department_ids"] = json.dumps(user_data.department_ids, ensure_ascii=False)
+            variables_dict["department_ids"] = list(user_data.department_ids)
         else:
-            variables_dict["department_ids"] = "[]"
+            variables_dict["department_ids"] = []
         
         # Add status information
         if user_data.status:

@@ -66,14 +66,27 @@ output_schema:
         ja_JP: 操作者の組織キー
 
     removed_members:
-      type: string
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+          tenant_key:
+            type: string
+          user_id:
+            type: string
+          open_id:
+            type: string
+          union_id:
+            type: string
       description:
-        en_US: List of members who left (JSON format)
-        zh_Hans: 离开的成员列表（JSON格式）
-        ja_JP: 退出したメンバーのリスト（JSON形式）
+        en_US: List of members who left
+        zh_Hans: 离开的成员列表
+        ja_JP: 退出したメンバーのリスト
 
     removed_members_count:
-      type: string
+      type: number
       description:
         en_US: Number of members removed
         zh_Hans: 移除的成员数量

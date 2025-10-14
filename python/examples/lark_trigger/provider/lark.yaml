@@ -61,15 +61,19 @@ subscription_schema:
 
 events:
   # IM Events
-  - events/im/p2p_im_message_receive_v1.yaml
+  - events/im/message_receive_v1.yaml
   - events/im/chat_disbanded_v1.yaml
   - events/im/chat_updated_v1.yaml
   - events/im/chat_member_user_added_v1.yaml
   - events/im/chat_member_user_removed_v1.yaml
+  - events/im/chat_member_user_withdrawn_v1.yaml
+  - events/im/chat_member_bot_added_v1.yaml
+  - events/im/chat_member_bot_deleted_v1.yaml
   - events/im/message_reaction_added_v1.yaml
+  - events/im/message_reaction_deleted_v1.yaml
   - events/im/message_recalled_v1.yaml
   - events/im/message_read_v1.yaml
-  
+
   # Calendar Events
   - events/calendar/event_changed_v4.yaml
   - events/calendar/calendar_acl_created_v4.yaml
@@ -84,6 +88,8 @@ events:
   - events/drive/file_edit_v1.yaml
   - events/drive/file_permission_member_added_v1.yaml
   - events/drive/file_permission_member_removed_v1.yaml
+  - events/drive/file_read_v1.yaml
+  - events/drive/file_title_updated_v1.yaml
   - events/drive/file_trashed_v1.yaml
 
   # Contact Events

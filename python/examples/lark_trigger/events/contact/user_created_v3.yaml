@@ -115,11 +115,13 @@ output_schema:
         ja_JP: 直属上司ID
     
     department_ids:
-      type: string
+      type: array
+      items:
+        type: string
       description:
-        en_US: Department IDs (JSON array)
-        zh_Hans: 部门ID列表（JSON数组）
-        ja_JP: 部門IDリスト（JSON配列）
+        en_US: Department IDs
+        zh_Hans: 部门ID列表
+        ja_JP: 部門IDリスト
     
     city:
       type: string

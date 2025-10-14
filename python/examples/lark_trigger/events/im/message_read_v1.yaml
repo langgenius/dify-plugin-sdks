@@ -38,14 +38,16 @@ output_schema:
         ja_JP: 読者の組織キー
 
     message_ids_read:
-      type: string
+      type: array
+      items:
+        type: string
       description:
-        en_US: List of message IDs that were read (JSON format)
-        zh_Hans: 被阅读的消息ID列表（JSON格式）
-        ja_JP: 読まれたメッセージIDのリスト（JSON形式）
+        en_US: List of message IDs that were read
+        zh_Hans: 被阅读的消息ID列表
+        ja_JP: 読まれたメッセージIDのリスト
 
     message_count:
-      type: string
+      type: number
       description:
         en_US: Number of messages read
         zh_Hans: 阅读的消息数量

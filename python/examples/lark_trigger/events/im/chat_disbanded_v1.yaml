@@ -66,11 +66,11 @@ output_schema:
         ja_JP: 操作者のUnion ID
     
     i18n_names:
-      type: string
+      type: object
       description:
-        en_US: Internationalized names (JSON format)
-        zh_Hans: 国际化名称（JSON格式）
-        ja_JP: 国際化された名前（JSON形式）
+        en_US: Internationalized names
+        zh_Hans: 国际化名称
+        ja_JP: 国際化された名前
 
 extra:
   python:

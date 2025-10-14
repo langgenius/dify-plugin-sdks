@@ -1,0 +1,69 @@
+identity:
+  name: chat_member_user_withdrawn_v1
+  author: langgenius
+  label:
+    en_US: Member Withdrew
+    zh_Hans: 成员退出
+    ja_JP: メンバー退出
+
+description:
+  en_US: This event activates when a user voluntarily withdraws from a group chat, providing information about who left.
+  zh_Hans: 当用户主动退出群聊时激活，提供关于离开成员的信息。
+  ja_JP: ユーザーがグループチャットから自発的に退出したときにアクティブになり、退出したメンバーの情報を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    chat_id:
+      type: string
+      description:
+        en_US: Group chat identifier
+        zh_Hans: 群聊标识符
+        ja_JP: グループチャット識別子
+
+    name:
+      type: string
+      description:
+        en_US: Name of the group chat
+        zh_Hans: 群聊名称
+        ja_JP: グループチャット名
+
+    operator_tenant_key:
+      type: string
+      description:
+        en_US: Tenant key
+        zh_Hans: 租户密钥
+        ja_JP: テナントキー
+
+    withdrawn_users:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+          tenant_key:
+            type: string
+          user_id:
+            type: string
+          open_id:
+            type: string
+          union_id:
+            type: string
+      description:
+        en_US: List of users who withdrew
+        zh_Hans: 退出的用户列表
+        ja_JP: 退出したユーザーのリスト
+
+    withdrawn_users_count:
+      type: number
+      description:
+        en_US: Number of users who withdrew
+        zh_Hans: 退出的用户数量
+        ja_JP: 退出したユーザー数
+
+extra:
+  python:
+    source: events/im/chat_member_user_withdrawn_v1.py

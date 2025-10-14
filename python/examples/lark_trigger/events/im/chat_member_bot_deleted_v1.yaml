@@ -1,0 +1,84 @@
+identity:
+  name: chat_member_bot_deleted_v1
+  author: langgenius
+  label:
+    en_US: Bot Removed from Chat
+    zh_Hans: 机器人移出群聊
+    ja_JP: ボットがチャットから削除
+
+description:
+  en_US: This event activates when a bot is removed from a group chat, providing information about the chat and who removed the bot.
+  zh_Hans: 当机器人被移出群聊时激活，提供关于群聊和移除者的信息。
+  ja_JP: ボットがグループチャットから削除されたときにアクティブになり、チャットと削除者の情報を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    chat_id:
+      type: string
+      description:
+        en_US: Group chat identifier
+        zh_Hans: 群聊标识符
+        ja_JP: グループチャット識別子
+
+    name:
+      type: string
+      description:
+        en_US: Name of the group chat
+        zh_Hans: 群聊名称
+        ja_JP: グループチャット名
+
+    is_external:
+      type: string
+      description:
+        en_US: Whether the chat includes external users
+        zh_Hans: 群聊是否包含外部用户
+        ja_JP: 外部ユーザーを含むチャットかどうか
+
+    operator_tenant_key:
+      type: string
+      description:
+        en_US: Organization key of the operator
+        zh_Hans: 操作者的组织密钥
+        ja_JP: 操作者の組織キー
+
+    operator_user_id:
+      type: string
+      description:
+        en_US: ID of the person who removed the bot
+        zh_Hans: 移除机器人的人的ID
+        ja_JP: ボットを削除した人のID
+
+    operator_open_id:
+      type: string
+      description:
+        en_US: Open ID of the person who removed the bot
+        zh_Hans: 移除机器人的人的Open ID
+        ja_JP: ボットを削除した人のOpen ID
+
+    operator_union_id:
+      type: string
+      description:
+        en_US: Union ID of the person who removed the bot
+        zh_Hans: 移除机器人的人的Union ID
+        ja_JP: ボットを削除した人のUnion ID
+
+    i18n_names:
+      type: object
+      properties:
+        zh_cn:
+          type: string
+        en_us:
+          type: string
+        ja_jp:
+          type: string
+      description:
+        en_US: Internationalized chat names
+        zh_Hans: 国际化群聊名称
+        ja_JP: 国際化されたチャット名
+
+extra:
+  python:
+    source: events/im/chat_member_bot_deleted_v1.py

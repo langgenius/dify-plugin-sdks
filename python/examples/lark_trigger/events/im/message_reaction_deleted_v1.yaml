@@ -1,0 +1,77 @@
+identity:
+  name: message_reaction_deleted_v1
+  author: langgenius
+  label:
+    en_US: Reaction Removed
+    zh_Hans: 表情回应移除
+    ja_JP: リアクション削除
+
+description:
+  en_US: This event activates when a reaction emoji is removed from a message, providing details about who removed it and which reaction.
+  zh_Hans: 当从消息中移除表情回应时激活，提供谁移除了哪个表情的详细信息。
+  ja_JP: メッセージからリアクション絵文字が削除されたときにアクティブになり、誰がどのリアクションを削除したかの詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    message_id:
+      type: string
+      description:
+        en_US: ID of the message
+        zh_Hans: 消息ID
+        ja_JP: メッセージID
+    
+    reaction_type:
+      type: string
+      description:
+        en_US: Type of reaction removed
+        zh_Hans: 移除的表情类型
+        ja_JP: 削除されたリアクションタイプ
+    
+    operator_type:
+      type: string
+      description:
+        en_US: Type of operator (user or app)
+        zh_Hans: 操作者类型（用户或应用）
+        ja_JP: 操作者タイプ（ユーザーまたはアプリ）
+    
+    user_open_id:
+      type: string
+      description:
+        en_US: Open ID of the user who removed reaction
+        zh_Hans: 移除表情的用户Open ID
+        ja_JP: リアクションを削除したユーザーのOpen ID
+    
+    user_user_id:
+      type: string
+      description:
+        en_US: User ID of who removed reaction
+        zh_Hans: 移除表情的用户ID
+        ja_JP: リアクションを削除したユーザーID
+    
+    user_union_id:
+      type: string
+      description:
+        en_US: Union ID of who removed reaction
+        zh_Hans: 移除表情的用户Union ID
+        ja_JP: リアクションを削除したユーザーのUnion ID
+    
+    app_id:
+      type: string
+      description:
+        en_US: App ID if removed by app
+        zh_Hans: 如果由应用移除则为应用ID
+        ja_JP: アプリによって削除された場合のアプリID
+    
+    action_time:
+      type: string
+      description:
+        en_US: Time when reaction was removed
+        zh_Hans: 表情被移除的时间
+        ja_JP: リアクションが削除された時刻
+
+extra:
+  python:
+    source: events/im/message_reaction_deleted_v1.py

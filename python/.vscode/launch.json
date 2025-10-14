@@ -85,5 +85,17 @@
                 "GEVENT_SUPPORT": "True"
             }
         },
+        {
+            "name": "LarkTrigger",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/lark_trigger/main.py",
+            "cwd": "${workspaceFolder}/examples/lark_trigger",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "GEVENT_SUPPORT": "True"
+            }
+        },
     ]
 }

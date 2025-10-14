@@ -31,13 +31,11 @@ class MessageReadV1Event(Event):
 
         # Add message IDs that were read
         if event_data.message_id_list:
-            import json
-
-            variables_dict["message_ids_read"] = json.dumps(event_data.message_id_list, ensure_ascii=False)
-            variables_dict["message_count"] = str(len(event_data.message_id_list))
+            variables_dict["message_ids_read"] = list(event_data.message_id_list)
+            variables_dict["message_count"] = len(event_data.message_id_list)
         else:
-            variables_dict["message_ids_read"] = "[]"
-            variables_dict["message_count"] = "0"
+            variables_dict["message_ids_read"] = []
+            variables_dict["message_count"] = 0
 
         return Variables(
             variables=variables_dict,

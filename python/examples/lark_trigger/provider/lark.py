@@ -21,15 +21,21 @@ from lark_oapi.api.drive.v1 import (
     P2DriveFileEditV1,
     P2DriveFilePermissionMemberAddedV1,
     P2DriveFilePermissionMemberRemovedV1,
+    P2DriveFileReadV1,
+    P2DriveFileTitleUpdatedV1,
     P2DriveFileTrashedV1,
 )
 from lark_oapi.api.im.v1 import (
     P2ImChatDisbandedV1,
+    P2ImChatMemberBotAddedV1,
+    P2ImChatMemberBotDeletedV1,
     P2ImChatMemberUserAddedV1,
     P2ImChatMemberUserDeletedV1,
+    P2ImChatMemberUserWithdrawnV1,
     P2ImChatUpdatedV1,
     P2ImMessageMessageReadV1,
     P2ImMessageReactionCreatedV1,
+    P2ImMessageReactionDeletedV1,
     P2ImMessageRecalledV1,
     P2ImMessageReceiveV1,
 )
@@ -80,8 +86,20 @@ class LarkTrigger(Trigger):
             .register_p2_im_chat_member_user_deleted_v1(
                 self._handle_chat_member_user_removed_event,
             )
+            .register_p2_im_chat_member_user_withdrawn_v1(
+                self._handle_chat_member_user_withdrawn_event,
+            )
+            .register_p2_im_chat_member_bot_added_v1(
+                self._handle_chat_member_bot_added_event,
+            )
+            .register_p2_im_chat_member_bot_deleted_v1(
+                self._handle_chat_member_bot_deleted_event,
+            )
             .register_p2_im_message_reaction_created_v1(
                 self._handle_message_reaction_added_event,
+            )
+            .register_p2_im_message_reaction_deleted_v1(
+                self._handle_message_reaction_deleted_event,
             )
             .register_p2_im_message_recalled_v1(
                 self._handle_message_recalled_event,
@@ -118,6 +136,12 @@ class LarkTrigger(Trigger):
             )
             .register_p2_drive_file_permission_member_removed_v1(
                 self._handle_drive_permission_member_removed_event,
+            )
+            .register_p2_drive_file_read_v1(
+                self._handle_drive_file_read_event,
+            )
+            .register_p2_drive_file_title_updated_v1(
+                self._handle_drive_file_title_updated_event,
             )
             .register_p2_drive_file_trashed_v1(
                 self._handle_drive_file_trashed_event,
@@ -175,7 +199,7 @@ class LarkTrigger(Trigger):
 
         :param event: Message received event
         """
-        response_cache_map[threading.get_ident()].append("p2p_im_message_receive_v1")
+        response_cache_map[threading.get_ident()].append("message_receive_v1")
 
     def _handle_chat_disbanded_event(self, event: P2ImChatDisbandedV1) -> None:
         """
@@ -331,3 +355,51 @@ class LarkTrigger(Trigger):
         """Handle contact department deleted events."""
 
         response_cache_map[threading.get_ident()].append("department_deleted_v3")
+
+    def _handle_chat_member_user_withdrawn_event(self, event: P2ImChatMemberUserWithdrawnV1) -> None:
+        """
+        Handle chat member user withdrawn event.
+
+        :param event: Chat member user withdrawn event
+        """
+        response_cache_map[threading.get_ident()].append("chat_member_user_withdrawn_v1")
+
+    def _handle_chat_member_bot_added_event(self, event: P2ImChatMemberBotAddedV1) -> None:
+        """
+        Handle chat member bot added event.
+
+        :param event: Chat member bot added event
+        """
+        response_cache_map[threading.get_ident()].append("chat_member_bot_added_v1")
+
+    def _handle_chat_member_bot_deleted_event(self, event: P2ImChatMemberBotDeletedV1) -> None:
+        """
+        Handle chat member bot deleted event.
+
+        :param event: Chat member bot deleted event
+        """
+        response_cache_map[threading.get_ident()].append("chat_member_bot_deleted_v1")
+
+    def _handle_message_reaction_deleted_event(self, event: P2ImMessageReactionDeletedV1) -> None:
+        """
+        Handle message reaction deleted event.
+
+        :param event: Message reaction deleted event
+        """
+        response_cache_map[threading.get_ident()].append("message_reaction_deleted_v1")
+
+    def _handle_drive_file_read_event(self, event: P2DriveFileReadV1) -> None:
+        """
+        Handle drive file read event.
+
+        :param event: Drive file read event
+        """
+        response_cache_map[threading.get_ident()].append("file_read_v1")
+
+    def _handle_drive_file_title_updated_event(self, event: P2DriveFileTitleUpdatedV1) -> None:
+        """
+        Handle drive file title updated event.
+
+        :param event: Drive file title updated event
+        """
+        response_cache_map[threading.get_ident()].append("file_title_updated_v1")

@@ -3,7 +3,6 @@ from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
 from .._shared import dispatch_single_event
-import json
 
 
 class ContactUserDeletedV3Event(Event):
@@ -54,9 +53,9 @@ class ContactUserDeletedV3Event(Event):
                 "open_id": old_data.open_id if old_data.open_id else "",
                 "department_ids": list(old_data.department_ids) if old_data.department_ids else [],
             }
-            variables_dict["old_user_info"] = json.dumps(old_user_info, ensure_ascii=False)
+            variables_dict["old_user_info"] = old_user_info
         else:
-            variables_dict["old_user_info"] = "{}"
+            variables_dict["old_user_info"] = {}
 
         return Variables(
             variables=variables_dict,

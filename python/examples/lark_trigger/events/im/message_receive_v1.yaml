@@ -1,0 +1,125 @@
+identity:
+  name: message_receive_v1
+  author: langgenius
+  label:
+    en_US: Message Received
+    zh_Hans: 收到消息
+    ja_JP: メッセージ受信
+
+description:
+  en_US: This event activates when a message is received in a group chat where the bot is a member, providing the message content and sender information.
+  zh_Hans: 当机器人所在的群聊收到消息时激活，提供消息内容和发送者信息。
+  ja_JP: ボットがメンバーになっているグループチャットでメッセージを受信したときにアクティブになり、メッセージの内容と送信者情報を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    sender_id:
+      type: string
+      description:
+        en_US: ID of the message sender
+        zh_Hans: 消息发送者ID
+        ja_JP: メッセージ送信者ID
+    
+    sender_type:
+      type: string
+      description:
+        en_US: Type of sender (user or bot)
+        zh_Hans: 发送者类型（用户或机器人）
+        ja_JP: 送信者タイプ（ユーザーまたはボット）
+    
+    tenant_key:
+      type: string
+      description:
+        en_US: Tenant key of the sender
+        zh_Hans: 发送者的租户密钥
+        ja_JP: 送信者のテナントキー
+    
+    message_id:
+      type: string
+      description:
+        en_US: Unique message identifier
+        zh_Hans: 唯一消息标识符
+        ja_JP: 一意のメッセージ識別子
+    
+    root_id:
+      type: string
+      description:
+        en_US: Root message ID if this is a reply
+        zh_Hans: 如果是回复，则为根消息ID
+        ja_JP: 返信の場合のルートメッセージID
+    
+    parent_id:
+      type: string
+      description:
+        en_US: Parent message ID for threaded replies
+        zh_Hans: 线程回复的父消息ID
+        ja_JP: スレッド返信の親メッセージID
+    
+    chat_id:
+      type: string
+      description:
+        en_US: Chat where message was sent
+        zh_Hans: 消息发送的群聊
+        ja_JP: メッセージが送信されたチャット
+    
+    chat_type:
+      type: string
+      description:
+        en_US: Type of chat (group or P2P)
+        zh_Hans: 群聊类型（群组或单聊）
+        ja_JP: チャットタイプ（グループまたはP2P）
+    
+    message_type:
+      type: string
+      description:
+        en_US: Type of message content
+        zh_Hans: 消息内容类型
+        ja_JP: メッセージコンテンツタイプ
+    
+    content:
+      type: string
+      description:
+        en_US: Message content
+        zh_Hans: 消息内容
+        ja_JP: メッセージ内容
+    
+    create_time:
+      type: string
+      description:
+        en_US: Message creation timestamp
+        zh_Hans: 消息创建时间戳
+        ja_JP: メッセージ作成タイムスタンプ
+    
+    update_time:
+      type: string
+      description:
+        en_US: Message update timestamp
+        zh_Hans: 消息更新时间戳
+        ja_JP: メッセージ更新タイムスタンプ
+    
+    mentions:
+      type: array
+      items:
+        type: object
+        properties:
+          key:
+            type: string
+          id:
+            type: string
+          id_type:
+            type: string
+          name:
+            type: string
+          tenant_key:
+            type: string
+      description:
+        en_US: List of mentioned users or bots
+        zh_Hans: 被提及的用户或机器人列表
+        ja_JP: メンションされたユーザーまたはボットのリスト
+
+extra:
+  python:
+    source: events/im/message_receive_v1.py

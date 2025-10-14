@@ -59,25 +59,58 @@ output_schema:
         ja_JP: 操作者のUnion ID
     
     before_change:
-      type: string
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        owner_id:
+          type: string
       description:
-        en_US: Chat info before the change (JSON format)
-        zh_Hans: 更改前的群聊信息（JSON格式）
-        ja_JP: 変更前のチャット情報（JSON形式）
+        en_US: Chat info before the change
+        zh_Hans: 更改前的群聊信息
+        ja_JP: 変更前のチャット情報
     
     after_change:
-      type: string
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        owner_id:
+          type: string
       description:
-        en_US: Chat info after the change (JSON format)
-        zh_Hans: 更改后的群聊信息（JSON格式）
-        ja_JP: 変更後のチャット情報（JSON形式）
+        en_US: Chat info after the change
+        zh_Hans: 更改后的群聊信息
+        ja_JP: 変更後のチャット情報
     
     moderator_changes:
-      type: string
+      type: object
+      properties:
+        added:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+              tenant_key:
+                type: string
+        removed:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+              tenant_key:
+                type: string
       description:
-        en_US: Changes to moderator list (JSON format with added/removed)
-        zh_Hans: 管理员列表更改（JSON格式包含添加/删除）
-        ja_JP: モデレーターリストの変更（追加/削除を含むJSON形式）
+        en_US: Changes to moderator list
+        zh_Hans: 管理员列表更改
+        ja_JP: モデレーターリストの変更
 
 extra:
   python:

@@ -1,15 +1,15 @@
 identity:
-  name: file_trashed_v1
+  name: file_title_updated_v1
   author: langgenius
   label:
-    en_US: File Trashed
-    zh_Hans: 文件移至回收站
-    ja_JP: ファイル削除
+    en_US: File Title Updated
+    zh_Hans: 文件标题更新
+    ja_JP: ファイルタイトル更新
 
 description:
-  en_US: This event activates when a file is moved to the trash/recycle bin, providing details about the trashed file.
-  zh_Hans: 当文件被移至回收站时激活，提供关于被删除文件的详细信息。
-  ja_JP: ファイルがゴミ箱に移動されたときにアクティブになり、削除されたファイルの詳細を提供します。
+  en_US: This event activates when a file's title is updated, providing details about the file and who changed it.
+  zh_Hans: 当文件标题被更新时激活，提供文件和修改者的详细信息。
+  ja_JP: ファイルのタイトルが更新されたときにアクティブになり、ファイルと変更者の詳細を提供します。
 
 parameters: []
 
@@ -19,23 +19,23 @@ output_schema:
     file_token:
       type: string
       description:
-        en_US: Token of the trashed file
-        zh_Hans: 被删除文件的令牌
-        ja_JP: 削除されたファイルのトークン
+        en_US: Token of the updated file
+        zh_Hans: 被更新文件的令牌
+        ja_JP: 更新されたファイルのトークン
     
     file_type:
       type: string
       description:
-        en_US: Type of the trashed file
-        zh_Hans: 被删除文件的类型
-        ja_JP: 削除されたファイルのタイプ
+        en_US: Type of the updated file
+        zh_Hans: 被更新文件的类型
+        ja_JP: 更新されたファイルのタイプ
     
     operator_user_id:
       type: string
       description:
-        en_US: User ID of who trashed the file
-        zh_Hans: 删除文件的用户ID
-        ja_JP: ファイルを削除したユーザーID
+        en_US: User ID of who updated the title
+        zh_Hans: 更新标题的用户ID
+        ja_JP: タイトルを更新したユーザーID
     
     operator_open_id:
       type: string
@@ -69,4 +69,4 @@ output_schema:
 
 extra:
   python:
-    source: events/drive/file_trashed_v1.py
+    source: events/drive/file_title_updated_v1.py

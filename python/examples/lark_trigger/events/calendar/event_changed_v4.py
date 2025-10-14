@@ -2,8 +2,6 @@ from typing import Any, Mapping
 from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
-
-import json
 from examples.lark_trigger.events._shared import dispatch_single_event
 
 
@@ -23,7 +21,7 @@ class CalendarEventChangedV4Event(Event):
             raise ValueError("event_data is None")
 
         # Build variables dictionary
-        variables_dict = {
+        variables_dict: dict[str, Any] = {
             "calendar_id": event_data.calendar_id if event_data.calendar_id else "",
             "event_id": event_data.calendar_event_id if event_data.calendar_event_id else "",
             "change_type": event_data.change_type if event_data.change_type else "",
@@ -43,11 +41,11 @@ class CalendarEventChangedV4Event(Event):
                         user_info["union_id"] = user.union_id
                     users_list.append(user_info)
 
-            variables_dict["affected_users"] = json.dumps(users_list, ensure_ascii=False)
-            variables_dict["affected_users_count"] = str(len(users_list))
+            variables_dict["affected_users"] = users_list
+            variables_dict["affected_users_count"] = len(users_list)
         else:
-            variables_dict["affected_users"] = "[]"
-            variables_dict["affected_users_count"] = "0"
+            variables_dict["affected_users"] = []
+            variables_dict["affected_users_count"] = 0
 
         # Add RSVP information
         if event_data.rsvp_infos:
@@ -60,9 +58,9 @@ class CalendarEventChangedV4Event(Event):
                     }
                     rsvp_list.append(rsvp_info)
 
-            variables_dict["rsvp_responses"] = json.dumps(rsvp_list, ensure_ascii=False)
+            variables_dict["rsvp_responses"] = rsvp_list
         else:
-            variables_dict["rsvp_responses"] = "[]"
+            variables_dict["rsvp_responses"] = []
 
         return Variables(
             variables=variables_dict,
