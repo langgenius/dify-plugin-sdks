@@ -1,0 +1,77 @@
+identity:
+  name: chat_disbanded_v1
+  author: langgenius
+  label:
+    en_US: Chat Disbanded
+    zh_Hans: 群聊解散
+    ja_JP: チャット解散
+
+description:
+  en_US: This event activates when a chat group is permanently disbanded or dissolved, providing details about the disbanded chat.
+  zh_Hans: 当群聊被永久解散或解除时激活，提供解散的群聊详细信息。
+  ja_JP: チャットグループが永久に解散または解除されたときにアクティブになり、解散したチャットの詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    chat_id:
+      type: string
+      description:
+        en_US: ID of the disbanded chat
+        zh_Hans: 解散的群聊ID
+        ja_JP: 解散したチャットID
+    
+    name:
+      type: string
+      description:
+        en_US: Name of the disbanded chat
+        zh_Hans: 解散的群聊名称
+        ja_JP: 解散したチャットの名前
+    
+    external:
+      type: string
+      description:
+        en_US: Whether the chat is external
+        zh_Hans: 是否为外部群聊
+        ja_JP: 外部チャットかどうか
+    
+    operator_tenant_key:
+      type: string
+      description:
+        en_US: Tenant key of the operator
+        zh_Hans: 操作者的租户密钥
+        ja_JP: 操作者のテナントキー
+    
+    operator_user_id:
+      type: string
+      description:
+        en_US: User ID of the operator who disbanded the chat
+        zh_Hans: 解散群聊的操作者用户ID
+        ja_JP: チャットを解散した操作者のユーザーID
+    
+    operator_open_id:
+      type: string
+      description:
+        en_US: Open ID of the operator
+        zh_Hans: 操作者的Open ID
+        ja_JP: 操作者のOpen ID
+    
+    operator_union_id:
+      type: string
+      description:
+        en_US: Union ID of the operator
+        zh_Hans: 操作者的Union ID
+        ja_JP: 操作者のUnion ID
+    
+    i18n_names:
+      type: string
+      description:
+        en_US: Internationalized names (JSON format)
+        zh_Hans: 国际化名称（JSON格式）
+        ja_JP: 国際化された名前（JSON形式）
+
+extra:
+  python:
+    source: events/im/chat_disbanded_v1.py

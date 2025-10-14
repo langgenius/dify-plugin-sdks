@@ -62,6 +62,8 @@ subscription_schema:
 events:
   # IM Events
   - events/im/p2p_im_message_receive_v1.yaml
+  - events/im/chat_disbanded_v1.yaml
+  - events/im/chat_updated_v1.yaml
   - events/im/chat_member_user_added_v1.yaml
   - events/im/chat_member_user_removed_v1.yaml
   - events/im/message_reaction_added_v1.yaml

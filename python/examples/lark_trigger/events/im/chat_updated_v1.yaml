@@ -1,0 +1,84 @@
+identity:
+  name: chat_updated_v1
+  author: langgenius
+  label:
+    en_US: Chat Updated
+    zh_Hans: 群聊更新
+    ja_JP: チャット更新
+
+description:
+  en_US: This event activates when a chat group's information is modified, providing details about the changes made.
+  zh_Hans: 当群聊信息被修改时激活，提供所做更改的详细信息。
+  ja_JP: チャットグループの情報が変更されたときにアクティブになり、変更内容の詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    chat_id:
+      type: string
+      description:
+        en_US: ID of the updated chat
+        zh_Hans: 更新的群聊ID
+        ja_JP: 更新されたチャットID
+    
+    external:
+      type: string
+      description:
+        en_US: Whether the chat is external
+        zh_Hans: 是否为外部群聊
+        ja_JP: 外部チャットかどうか
+    
+    operator_tenant_key:
+      type: string
+      description:
+        en_US: Tenant key of the operator
+        zh_Hans: 操作者的租户密钥
+        ja_JP: 操作者のテナントキー
+    
+    operator_user_id:
+      type: string
+      description:
+        en_US: User ID of the operator who updated the chat
+        zh_Hans: 更新群聊的操作者用户ID
+        ja_JP: チャットを更新した操作者のユーザーID
+    
+    operator_open_id:
+      type: string
+      description:
+        en_US: Open ID of the operator
+        zh_Hans: 操作者的Open ID
+        ja_JP: 操作者のOpen ID
+    
+    operator_union_id:
+      type: string
+      description:
+        en_US: Union ID of the operator
+        zh_Hans: 操作者的Union ID
+        ja_JP: 操作者のUnion ID
+    
+    before_change:
+      type: string
+      description:
+        en_US: Chat info before the change (JSON format)
+        zh_Hans: 更改前的群聊信息（JSON格式）
+        ja_JP: 変更前のチャット情報（JSON形式）
+    
+    after_change:
+      type: string
+      description:
+        en_US: Chat info after the change (JSON format)
+        zh_Hans: 更改后的群聊信息（JSON格式）
+        ja_JP: 変更後のチャット情報（JSON形式）
+    
+    moderator_changes:
+      type: string
+      description:
+        en_US: Changes to moderator list (JSON format with added/removed)
+        zh_Hans: 管理员列表更改（JSON格式包含添加/删除）
+        ja_JP: モデレーターリストの変更（追加/削除を含むJSON形式）
+
+extra:
+  python:
+    source: events/im/chat_updated_v1.py

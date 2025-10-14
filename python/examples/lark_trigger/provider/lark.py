@@ -22,8 +22,10 @@ from lark_oapi.api.drive.v1 import (
     P2DriveFilePermissionMemberRemovedV1,
 )
 from lark_oapi.api.im.v1 import (
+    P2ImChatDisbandedV1,
     P2ImChatMemberUserAddedV1,
     P2ImChatMemberUserDeletedV1,
+    P2ImChatUpdatedV1,
     P2ImMessageMessageReadV1,
     P2ImMessageReactionCreatedV1,
     P2ImMessageReceiveV1,
@@ -62,6 +64,12 @@ class LarkTrigger(Trigger):
             # IM Events
             .register_p2_im_message_receive_v1(
                 self._handle_message_received_event,
+            )
+            .register_p2_im_chat_disbanded_v1(
+                self._handle_chat_disbanded_event,
+            )
+            .register_p2_im_chat_updated_v1(
+                self._handle_chat_updated_event,
             )
             .register_p2_im_chat_member_user_added_v1(
                 self._handle_chat_member_user_added_event,
@@ -156,6 +164,22 @@ class LarkTrigger(Trigger):
         :param event: Message received event
         """
         response_cache_map[threading.get_ident()].append("p2p_im_message_receive_v1")
+
+    def _handle_chat_disbanded_event(self, event: P2ImChatDisbandedV1) -> None:
+        """
+        Handle chat disbanded event.
+
+        :param event: Chat disbanded event
+        """
+        response_cache_map[threading.get_ident()].append("chat_disbanded_v1")
+
+    def _handle_chat_updated_event(self, event: P2ImChatUpdatedV1) -> None:
+        """
+        Handle chat updated event.
+
+        :param event: Chat updated event
+        """
+        response_cache_map[threading.get_ident()].append("chat_updated_v1")
 
     def _handle_chat_member_user_added_event(self, event: P2ImChatMemberUserAddedV1) -> None:
         """
