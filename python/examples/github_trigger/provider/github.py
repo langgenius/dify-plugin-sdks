@@ -55,7 +55,7 @@ class GithubTrigger(Trigger):
             return f"issue_comment_{action}"
 
         if event_type == "star":
-            return f"star_{action}"
+            return "star"
 
         return ""
 

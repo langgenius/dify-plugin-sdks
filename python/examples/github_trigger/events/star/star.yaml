@@ -1,27 +1,54 @@
 identity:
-  name: star_created
+  name: star
   author: langgenius
   label:
-    en_US: Star Created
-    zh_Hans: 仓库被 Star
-    ja_JP: Star 追加
+    en_US: Star Event
+    zh_Hans: 仓库 Star 事件
+    ja_JP: Star イベント
 
 description:
   en_US: Triggers when someone stars the repository
   zh_Hans: 当有人给仓库添加 star 时触发
   ja_JP: 誰かがリポジトリにスターを付けたときにトリガーされます
 parameters:
-- name: time_range
+- name: "events"
   label:
-    en_US: Time Range
-    zh_Hans: 时间范围
-    ja_JP: 時間範囲
-  type: string
+    en_US: "Events your interested in"
+    zh_Hans: "你感兴趣的事件"
+    ja_JP: "あなたが興味のあるイベント"
+  type: "select"
   required: false
-  description:
-    en_US: "Only trigger for stars in the last time range (e.g., 1h, 1d, 1w, 1m, 1y)"
-    zh_Hans: "仅对过去一段时间内的 star 操作触发（例如：1h, 1d, 1w, 1m, 1y）"
-    ja_JP: "過去の時間範囲内のスターのみトリガー（例: 1h, 1d, 1w, 1m, 1y）"
+  multiple: true
+  default:
+  - "star_created"
+  - "star_deleted"
+  options:
+  - value: "star_created"
+    label:
+      en_US: "Starred"
+      zh_Hans: "星标"
+      ja_JP: "スター"
+  - value: "star_deleted"
+    label:
+      en_US: "Unstarred"
+      zh_Hans: "取消星标"
+      ja_JP: "スター解除"
+
+- name: "repository"
+  label:
+    en_US: "Repository(test for dynamic-select)"
+    zh_Hans: "仓库(测试用)"
+    ja_JP: "リポジトリ"
+  type: "dynamic-select"
+  required: false
+  placeholder:
+    en_US: "owner/repo"
+    zh_Hans: "owner/repo"
+    ja_JP: "owner/repo"
+  help:
+    en_US: "GitHub repository in format owner/repo (e.g., microsoft/vscode)"
+    zh_Hans: "GitHub 仓库，格式为 owner/repo（例如：microsoft/vscode）"
+    ja_JP: "GitHubリポジトリは owner/repo 形式で入力してください（例: microsoft/vscode）"
 
 output_schema:
   type: object
@@ -200,4 +227,4 @@ output_schema:
 
 extra:
   python:
-    source: events/star/star_created.py
+    source: events/star/star.py
