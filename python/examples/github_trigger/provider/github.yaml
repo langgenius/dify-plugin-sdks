@@ -7,9 +7,10 @@ subscription_schema:
     en_US: "Webhook Secret"
     ja_JP: "Webhookシークレット"
   help:
-    en_US: "Optional webhook secret for validating GitHub webhook requests"
-    ja_JP: "GitHub Webhookリクエストの検証用のオプションのWebhookシークレット"
-    zh_Hans: "可选的用于验证 GitHub webhook 请求的 webhook 密钥"
+    en_US: "Optional secret used to validate incoming GitHub webhook requests. If Dify creates the webhook for you, a random secret is generated automatically and stored with the subscription. If you configure the webhook manually under Repository Settings → Webhooks, set the same secret there and paste it here to enable signature verification."
+    ja_JP: "受信する GitHub Webhook リクエストの検証に使用する任意のシークレット。Dify が Webhook を作成する場合はランダムなシークレットが自動生成されサブスクリプションに保存されます。リポジトリの Settings → Webhooks で手動設定する場合は同じシークレットを設定し、ここに貼り付けて署名検証を有効化してください。"
+    zh_Hans: "用于验证 GitHub Webhook 请求的可选密钥。若由 Dify 代为创建 Webhook，将自动生成并保存随机密钥。若你在仓库 设置 → Webhooks 中手动配置，请在 GitHub 中设置同样的密钥并粘贴到此处以启用签名校验。"
+  url: https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
 
 subscription_constructor:
   parameters:
@@ -426,18 +427,56 @@ subscription_constructor:
       source: provider/github.py
 
 events:
-- events/issues/issue_opened.yaml
-- events/issues/issue_closed.yaml
-- events/issues/issue_reopened.yaml
-- events/issues/issue_edited.yaml
-- events/issues/issue_labeled.yaml
-- events/issues/issue_unlabeled.yaml
-- events/issues/issue_assigned.yaml
-- events/issues/issue_unassigned.yaml
-- events/issue_comment/issue_comment_created.yaml
-- events/issue_comment/issue_comment_edited.yaml
-- events/issue_comment/issue_comment_deleted.yaml
+- events/issues/issues.yaml
+- events/issue_comment/issue_comment.yaml
+- events/pull_request/pull_request.yaml
 - events/star/star.yaml
+- events/pull_request_review/pull_request_review.yaml
+- events/pull_request_review_comment/pull_request_review_comment.yaml
+- events/push/push.yaml
+- events/check_suite/check_suite.yaml
+- events/check_run/check_run.yaml
+- events/workflow_run/workflow_run.yaml
+- events/workflow_job/workflow_job.yaml
+- events/deployment/deployment.yaml
+- events/deployment_status/deployment_status_created.yaml
+- events/release/release_published.yaml
+- events/ref_change/ref_change.yaml
+- events/commit_comment/commit_comment.yaml
+- events/code_scanning_alert/code_scanning_alert.yaml
+- events/secret_scanning/secret_scanning.yaml
+- events/dependabot_alert/dependabot_alert.yaml
+- events/repository_vulnerability_alert/repository_vulnerability_alert.yaml
+- events/branch_protection_configuration/branch_protection_configuration.yaml
+- events/branch_protection_rule/branch_protection_rule.yaml
+- events/repository_ruleset/repository_ruleset.yaml
+- events/watch/watch.yaml
+- events/fork/fork.yaml
+- events/label/label.yaml
+- events/milestone/milestone.yaml
+- events/discussion/discussion.yaml
+- events/discussion_comment/discussion_comment.yaml
+- events/project/project.yaml
+- events/project_column/project_column.yaml
+- events/project_card/project_card.yaml
+- events/member/member.yaml
+- events/merge_group/merge_group.yaml
+- events/meta/meta.yaml
+- events/repository/repository.yaml
+- events/repository_import/repository_import.yaml
+- events/public/public.yaml
+- events/pull_request_review_thread/pull_request_review_thread.yaml
+- events/package/package.yaml
+- events/registry_package/registry_package.yaml
+- events/page_build/page_build.yaml
+- events/ping/ping.yaml
+- events/gollum/gollum.yaml
+- events/issue_dependencies/issue_dependencies.yaml
+- events/sub_issues/sub_issues.yaml
+- events/deploy_key/deploy_key.yaml
+- events/custom_property_values/custom_property_values.yaml
+- events/security_and_analysis/security_and_analysis.yaml
+- events/repository_advisory/repository_advisory.yaml
 
 identity:
   author: langgenius
