@@ -30,7 +30,8 @@ changes, files, user groups, and more.
 4. When you configure the trigger inside Dify, provide:
    - The Slack workspace/team ID (e.g. `T0123456789`).
    - The signing secret you copied above.
-   - The list of Slack event types you enabled for the app.
+
+   Event subscriptions remain managed inside the Slack app configuration, so Dify only needs the workspace identifier and signing secret.
 
 ## Available Events
 

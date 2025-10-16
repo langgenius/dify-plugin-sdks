@@ -66,14 +66,9 @@ class SlackTrigger(Trigger):
 
         payload, response = self._parse_request(signing_secret=signing_secret, request=request)
         dispatch_event = self._determine_event(subscription=subscription, payload=payload)
-        allowed_events: set[str] = set(
-            subscription.properties.get("events", [])
-            or subscription.parameters.get("events", [])
-            or []
-        )
 
         events: list[str] = []
-        if dispatch_event and (not allowed_events or dispatch_event in allowed_events):
+        if dispatch_event:
             events.append(dispatch_event)
 
         return EventDispatch(events=events, response=response)
