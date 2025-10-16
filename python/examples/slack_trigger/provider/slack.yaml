@@ -1,0 +1,720 @@
+subscription_constructor:
+  parameters:
+    - name: "team_id"
+      type: "text-input"
+      required: true
+      label:
+        en_US: "Team ID"
+        ja_JP: "チームID"
+        zh_Hans: "团队 ID"
+      placeholder:
+        en_US: "e.g. T0123456789"
+        ja_JP: "例: T0123456789"
+        zh_Hans: "例如：T0123456789"
+      help:
+        en_US: "Find it under Slack App > Basic Information > App Credentials."
+        ja_JP: "Slack アプリ > Basic Information > App Credentials に記載されています。"
+        zh_Hans: "在 Slack 应用 > Basic Information > App Credentials 中可以找到。"
+    - name: "signing_secret"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Signing Secret"
+        ja_JP: "Signing Secret"
+        zh_Hans: "签名密钥"
+      placeholder:
+        en_US: "Paste your Slack signing secret"
+        ja_JP: "Slack の signing secret を貼り付けてください"
+        zh_Hans: "粘贴你的 Slack signing secret"
+      help:
+        en_US: "Slack uses the signing secret to verify webhook authenticity."
+        ja_JP: "Slack は signing secret を使用して Webhook の正当性を検証します。"
+        zh_Hans: "Slack 使用 signing secret 验证 webhook 的有效性。"
+    - name: "events"
+      type: "checkbox"
+      required: true
+      multiple: true
+      default:
+        - "app_mention"
+        - "message_channels"
+      label:
+        en_US: "Subscribed Events"
+        ja_JP: "購読するイベント"
+        zh_Hans: "订阅的事件"
+      help:
+        en_US: "Select the Slack events that should trigger your workflow."
+        ja_JP: "ワークフローを起動する Slack イベントを選択してください。"
+        zh_Hans: "选择应触发工作流的 Slack 事件。"
+      options:
+        - value: "app_mention"
+          label:
+            en_US: "App Mention"
+            ja_JP: "App Mention"
+            zh_Hans: "App Mention"
+          description:
+            en_US: "Subscribe to only the message events that mention your app or bot"
+            ja_JP: "Subscribe to only the message events that mention your app or bot"
+            zh_Hans: "Subscribe to only the message events that mention your app or bot"
+        - value: "app_rate_limited"
+          label:
+            en_US: "App Rate Limited"
+            ja_JP: "App Rate Limited"
+            zh_Hans: "App Rate Limited"
+          description:
+            en_US: "Indicates your app's event subscriptions are being rate limited"
+            ja_JP: "Indicates your app's event subscriptions are being rate limited"
+            zh_Hans: "Indicates your app's event subscriptions are being rate limited"
+        - value: "app_uninstalled"
+          label:
+            en_US: "App Uninstalled"
+            ja_JP: "App Uninstalled"
+            zh_Hans: "App Uninstalled"
+          description:
+            en_US: "Your Slack app was uninstalled."
+            ja_JP: "Your Slack app was uninstalled."
+            zh_Hans: "Your Slack app was uninstalled."
+        - value: "channel_archive"
+          label:
+            en_US: "Channel Archive"
+            ja_JP: "Channel Archive"
+            zh_Hans: "Channel Archive"
+          description:
+            en_US: "A channel was archived"
+            ja_JP: "A channel was archived"
+            zh_Hans: "A channel was archived"
+        - value: "channel_created"
+          label:
+            en_US: "Channel Created"
+            ja_JP: "Channel Created"
+            zh_Hans: "Channel Created"
+          description:
+            en_US: "A channel was created"
+            ja_JP: "A channel was created"
+            zh_Hans: "A channel was created"
+        - value: "channel_deleted"
+          label:
+            en_US: "Channel Deleted"
+            ja_JP: "Channel Deleted"
+            zh_Hans: "Channel Deleted"
+          description:
+            en_US: "A channel was deleted"
+            ja_JP: "A channel was deleted"
+            zh_Hans: "A channel was deleted"
+        - value: "channel_history_changed"
+          label:
+            en_US: "Channel History Changed"
+            ja_JP: "Channel History Changed"
+            zh_Hans: "Channel History Changed"
+          description:
+            en_US: "Bulk updates were made to a channel's history"
+            ja_JP: "Bulk updates were made to a channel's history"
+            zh_Hans: "Bulk updates were made to a channel's history"
+        - value: "channel_left"
+          label:
+            en_US: "Channel Left"
+            ja_JP: "Channel Left"
+            zh_Hans: "Channel Left"
+          description:
+            en_US: "You left a channel"
+            ja_JP: "You left a channel"
+            zh_Hans: "You left a channel"
+        - value: "channel_rename"
+          label:
+            en_US: "Channel Rename"
+            ja_JP: "Channel Rename"
+            zh_Hans: "Channel Rename"
+          description:
+            en_US: "A channel was renamed"
+            ja_JP: "A channel was renamed"
+            zh_Hans: "A channel was renamed"
+        - value: "channel_unarchive"
+          label:
+            en_US: "Channel Unarchive"
+            ja_JP: "Channel Unarchive"
+            zh_Hans: "Channel Unarchive"
+          description:
+            en_US: "A channel was unarchived"
+            ja_JP: "A channel was unarchived"
+            zh_Hans: "A channel was unarchived"
+        - value: "dnd_updated"
+          label:
+            en_US: "DND Updated"
+            ja_JP: "DND Updated"
+            zh_Hans: "DND Updated"
+          description:
+            en_US: "Do not Disturb settings changed for the current user"
+            ja_JP: "Do not Disturb settings changed for the current user"
+            zh_Hans: "Do not Disturb settings changed for the current user"
+        - value: "dnd_updated_user"
+          label:
+            en_US: "DND Updated User"
+            ja_JP: "DND Updated User"
+            zh_Hans: "DND Updated User"
+          description:
+            en_US: "Do not Disturb settings changed for a member"
+            ja_JP: "Do not Disturb settings changed for a member"
+            zh_Hans: "Do not Disturb settings changed for a member"
+        - value: "email_domain_changed"
+          label:
+            en_US: "Email Domain Changed"
+            ja_JP: "Email Domain Changed"
+            zh_Hans: "Email Domain Changed"
+          description:
+            en_US: "The workspace email domain has changed"
+            ja_JP: "The workspace email domain has changed"
+            zh_Hans: "The workspace email domain has changed"
+        - value: "emoji_changed"
+          label:
+            en_US: "Emoji Changed"
+            ja_JP: "Emoji Changed"
+            zh_Hans: "Emoji Changed"
+          description:
+            en_US: "A custom emoji has been added or changed"
+            ja_JP: "A custom emoji has been added or changed"
+            zh_Hans: "A custom emoji has been added or changed"
+        - value: "file_change"
+          label:
+            en_US: "File Change"
+            ja_JP: "File Change"
+            zh_Hans: "File Change"
+          description:
+            en_US: "An existing file was changed"
+            ja_JP: "An existing file was changed"
+            zh_Hans: "An existing file was changed"
+        - value: "file_comment_added"
+          label:
+            en_US: "File Comment Added"
+            ja_JP: "File Comment Added"
+            zh_Hans: "File Comment Added"
+          description:
+            en_US: "A comment was added to a file"
+            ja_JP: "A comment was added to a file"
+            zh_Hans: "A comment was added to a file"
+        - value: "file_comment_deleted"
+          label:
+            en_US: "File Comment Deleted"
+            ja_JP: "File Comment Deleted"
+            zh_Hans: "File Comment Deleted"
+          description:
+            en_US: "A comment on a file was deleted"
+            ja_JP: "A comment on a file was deleted"
+            zh_Hans: "A comment on a file was deleted"
+        - value: "file_comment_edited"
+          label:
+            en_US: "File Comment Edited"
+            ja_JP: "File Comment Edited"
+            zh_Hans: "File Comment Edited"
+          description:
+            en_US: "A comment on a file was edited"
+            ja_JP: "A comment on a file was edited"
+            zh_Hans: "A comment on a file was edited"
+        - value: "file_created"
+          label:
+            en_US: "File Created"
+            ja_JP: "File Created"
+            zh_Hans: "File Created"
+          description:
+            en_US: "A file was created"
+            ja_JP: "A file was created"
+            zh_Hans: "A file was created"
+        - value: "file_deleted"
+          label:
+            en_US: "File Deleted"
+            ja_JP: "File Deleted"
+            zh_Hans: "File Deleted"
+          description:
+            en_US: "A file was deleted"
+            ja_JP: "A file was deleted"
+            zh_Hans: "A file was deleted"
+        - value: "file_public"
+          label:
+            en_US: "File Public"
+            ja_JP: "File Public"
+            zh_Hans: "File Public"
+          description:
+            en_US: "A file was made public"
+            ja_JP: "A file was made public"
+            zh_Hans: "A file was made public"
+        - value: "file_shared"
+          label:
+            en_US: "File Shared"
+            ja_JP: "File Shared"
+            zh_Hans: "File Shared"
+          description:
+            en_US: "A file was shared"
+            ja_JP: "A file was shared"
+            zh_Hans: "A file was shared"
+        - value: "file_unshared"
+          label:
+            en_US: "File Unshared"
+            ja_JP: "File Unshared"
+            zh_Hans: "File Unshared"
+          description:
+            en_US: "A shared file was unshared"
+            ja_JP: "A shared file was unshared"
+            zh_Hans: "A shared file was unshared"
+        - value: "grid_migration_finished"
+          label:
+            en_US: "Grid Migration Finished"
+            ja_JP: "Grid Migration Finished"
+            zh_Hans: "Grid Migration Finished"
+          description:
+            en_US: "Slack Grid migration has completed"
+            ja_JP: "Slack Grid migration has completed"
+            zh_Hans: "Slack Grid migration has completed"
+        - value: "grid_migration_started"
+          label:
+            en_US: "Grid Migration Started"
+            ja_JP: "Grid Migration Started"
+            zh_Hans: "Grid Migration Started"
+          description:
+            en_US: "Slack Grid migration has started"
+            ja_JP: "Slack Grid migration has started"
+            zh_Hans: "Slack Grid migration has started"
+        - value: "group_archive"
+          label:
+            en_US: "Group Archive"
+            ja_JP: "Group Archive"
+            zh_Hans: "Group Archive"
+          description:
+            en_US: "A private channel was archived"
+            ja_JP: "A private channel was archived"
+            zh_Hans: "A private channel was archived"
+        - value: "group_close"
+          label:
+            en_US: "Group Close"
+            ja_JP: "Group Close"
+            zh_Hans: "Group Close"
+          description:
+            en_US: "The current user closed a private channel"
+            ja_JP: "The current user closed a private channel"
+            zh_Hans: "The current user closed a private channel"
+        - value: "group_history_changed"
+          label:
+            en_US: "Group History Changed"
+            ja_JP: "Group History Changed"
+            zh_Hans: "Group History Changed"
+          description:
+            en_US: "Bulk updates were made to a private channel's history"
+            ja_JP: "Bulk updates were made to a private channel's history"
+            zh_Hans: "Bulk updates were made to a private channel's history"
+        - value: "group_left"
+          label:
+            en_US: "Group Left"
+            ja_JP: "Group Left"
+            zh_Hans: "Group Left"
+          description:
+            en_US: "You left a private channel"
+            ja_JP: "You left a private channel"
+            zh_Hans: "You left a private channel"
+        - value: "group_open"
+          label:
+            en_US: "Group Open"
+            ja_JP: "Group Open"
+            zh_Hans: "Group Open"
+          description:
+            en_US: "The current user opened a private channel"
+            ja_JP: "The current user opened a private channel"
+            zh_Hans: "The current user opened a private channel"
+        - value: "group_rename"
+          label:
+            en_US: "Group Rename"
+            ja_JP: "Group Rename"
+            zh_Hans: "Group Rename"
+          description:
+            en_US: "A private channel was renamed"
+            ja_JP: "A private channel was renamed"
+            zh_Hans: "A private channel was renamed"
+        - value: "group_unarchive"
+          label:
+            en_US: "Group Unarchive"
+            ja_JP: "Group Unarchive"
+            zh_Hans: "Group Unarchive"
+          description:
+            en_US: "A private channel was unarchived"
+            ja_JP: "A private channel was unarchived"
+            zh_Hans: "A private channel was unarchived"
+        - value: "im_close"
+          label:
+            en_US: "IM Close"
+            ja_JP: "IM Close"
+            zh_Hans: "IM Close"
+          description:
+            en_US: "The current user closed a DM"
+            ja_JP: "The current user closed a DM"
+            zh_Hans: "The current user closed a DM"
+        - value: "im_created"
+          label:
+            en_US: "IM Created"
+            ja_JP: "IM Created"
+            zh_Hans: "IM Created"
+          description:
+            en_US: "A DM channel was created"
+            ja_JP: "A DM channel was created"
+            zh_Hans: "A DM channel was created"
+        - value: "im_history_changed"
+          label:
+            en_US: "IM History Changed"
+            ja_JP: "IM History Changed"
+            zh_Hans: "IM History Changed"
+          description:
+            en_US: "Bulk updates were made to a DM history"
+            ja_JP: "Bulk updates were made to a DM history"
+            zh_Hans: "Bulk updates were made to a DM history"
+        - value: "im_open"
+          label:
+            en_US: "IM Open"
+            ja_JP: "IM Open"
+            zh_Hans: "IM Open"
+          description:
+            en_US: "The current user opened a DM"
+            ja_JP: "The current user opened a DM"
+            zh_Hans: "The current user opened a DM"
+        - value: "link_shared"
+          label:
+            en_US: "Link Shared"
+            ja_JP: "Link Shared"
+            zh_Hans: "Link Shared"
+          description:
+            en_US: "A message contained a URL that matched your app's domain"
+            ja_JP: "A message contained a URL that matched your app's domain"
+            zh_Hans: "A message contained a URL that matched your app's domain"
+        - value: "member_joined_channel"
+          label:
+            en_US: "Member Joined Channel"
+            ja_JP: "Member Joined Channel"
+            zh_Hans: "Member Joined Channel"
+          description:
+            en_US: "A user joined a channel"
+            ja_JP: "A user joined a channel"
+            zh_Hans: "A user joined a channel"
+        - value: "member_left_channel"
+          label:
+            en_US: "Member Left Channel"
+            ja_JP: "Member Left Channel"
+            zh_Hans: "Member Left Channel"
+          description:
+            en_US: "A user left a channel"
+            ja_JP: "A user left a channel"
+            zh_Hans: "A user left a channel"
+        - value: "message"
+          label:
+            en_US: "Message"
+            ja_JP: "Message"
+            zh_Hans: "Message"
+          description:
+            en_US: "A message was sent"
+            ja_JP: "A message was sent"
+            zh_Hans: "A message was sent"
+        - value: "message_app_home"
+          label:
+            en_US: "Message App Home"
+            ja_JP: "Message App Home"
+            zh_Hans: "Message App Home"
+          description:
+            en_US: "A message was sent to your app home"
+            ja_JP: "A message was sent to your app home"
+            zh_Hans: "A message was sent to your app home"
+        - value: "message_channels"
+          label:
+            en_US: "Message Channels"
+            ja_JP: "Message Channels"
+            zh_Hans: "Message Channels"
+          description:
+            en_US: "A message was sent to a public channel"
+            ja_JP: "A message was sent to a public channel"
+            zh_Hans: "A message was sent to a public channel"
+        - value: "message_groups"
+          label:
+            en_US: "Message Groups"
+            ja_JP: "Message Groups"
+            zh_Hans: "Message Groups"
+          description:
+            en_US: "A message was sent to a private channel"
+            ja_JP: "A message was sent to a private channel"
+            zh_Hans: "A message was sent to a private channel"
+        - value: "message_im"
+          label:
+            en_US: "Message IM"
+            ja_JP: "Message IM"
+            zh_Hans: "Message IM"
+          description:
+            en_US: "A direct message was sent"
+            ja_JP: "A direct message was sent"
+            zh_Hans: "A direct message was sent"
+        - value: "message_mpim"
+          label:
+            en_US: "Message MPIM"
+            ja_JP: "Message MPIM"
+            zh_Hans: "Message MPIM"
+          description:
+            en_US: "A multiparty direct message was sent"
+            ja_JP: "A multiparty direct message was sent"
+            zh_Hans: "A multiparty direct message was sent"
+        - value: "pin_added"
+          label:
+            en_US: "Pin Added"
+            ja_JP: "Pin Added"
+            zh_Hans: "Pin Added"
+          description:
+            en_US: "A message was pinned"
+            ja_JP: "A message was pinned"
+            zh_Hans: "A message was pinned"
+        - value: "pin_removed"
+          label:
+            en_US: "Pin Removed"
+            ja_JP: "Pin Removed"
+            zh_Hans: "Pin Removed"
+          description:
+            en_US: "A message was unpinned"
+            ja_JP: "A message was unpinned"
+            zh_Hans: "A message was unpinned"
+        - value: "reaction_added"
+          label:
+            en_US: "Reaction Added"
+            ja_JP: "Reaction Added"
+            zh_Hans: "Reaction Added"
+          description:
+            en_US: "A member added a reaction"
+            ja_JP: "A member added a reaction"
+            zh_Hans: "A member added a reaction"
+        - value: "reaction_removed"
+          label:
+            en_US: "Reaction Removed"
+            ja_JP: "Reaction Removed"
+            zh_Hans: "Reaction Removed"
+          description:
+            en_US: "A member removed a reaction"
+            ja_JP: "A member removed a reaction"
+            zh_Hans: "A member removed a reaction"
+        - value: "resources_added"
+          label:
+            en_US: "Resources Added"
+            ja_JP: "Resources Added"
+            zh_Hans: "Resources Added"
+          description:
+            en_US: "Workspace resources were shared with your app"
+            ja_JP: "Workspace resources were shared with your app"
+            zh_Hans: "Workspace resources were shared with your app"
+        - value: "resources_removed"
+          label:
+            en_US: "Resources Removed"
+            ja_JP: "Resources Removed"
+            zh_Hans: "Resources Removed"
+          description:
+            en_US: "Workspace resources were unshared from your app"
+            ja_JP: "Workspace resources were unshared from your app"
+            zh_Hans: "Workspace resources were unshared from your app"
+        - value: "scope_denied"
+          label:
+            en_US: "Scope Denied"
+            ja_JP: "Scope Denied"
+            zh_Hans: "Scope Denied"
+          description:
+            en_US: "OAuth scopes were denied to your app"
+            ja_JP: "OAuth scopes were denied to your app"
+            zh_Hans: "OAuth scopes were denied to your app"
+        - value: "scope_granted"
+          label:
+            en_US: "Scope Granted"
+            ja_JP: "Scope Granted"
+            zh_Hans: "Scope Granted"
+          description:
+            en_US: "OAuth scopes were granted to your app"
+            ja_JP: "OAuth scopes were granted to your app"
+            zh_Hans: "OAuth scopes were granted to your app"
+        - value: "star_added"
+          label:
+            en_US: "Star Added"
+            ja_JP: "Star Added"
+            zh_Hans: "Star Added"
+          description:
+            en_US: "A member has starred an item"
+            ja_JP: "A member has starred an item"
+            zh_Hans: "A member has starred an item"
+        - value: "star_removed"
+          label:
+            en_US: "Star Removed"
+            ja_JP: "Star Removed"
+            zh_Hans: "Star Removed"
+          description:
+            en_US: "A member removed a star"
+            ja_JP: "A member removed a star"
+            zh_Hans: "A member removed a star"
+        - value: "subteam_created"
+          label:
+            en_US: "Subteam Created"
+            ja_JP: "Subteam Created"
+            zh_Hans: "Subteam Created"
+          description:
+            en_US: "A User Group has been added to the workspace"
+            ja_JP: "A User Group has been added to the workspace"
+            zh_Hans: "A User Group has been added to the workspace"
+        - value: "subteam_members_changed"
+          label:
+            en_US: "Subteam Members Changed"
+            ja_JP: "Subteam Members Changed"
+            zh_Hans: "Subteam Members Changed"
+          description:
+            en_US: "The membership of an existing User Group has changed"
+            ja_JP: "The membership of an existing User Group has changed"
+            zh_Hans: "The membership of an existing User Group has changed"
+        - value: "subteam_self_added"
+          label:
+            en_US: "Subteam Self Added"
+            ja_JP: "Subteam Self Added"
+            zh_Hans: "Subteam Self Added"
+          description:
+            en_US: "You have been added to a User Group"
+            ja_JP: "You have been added to a User Group"
+            zh_Hans: "You have been added to a User Group"
+        - value: "subteam_self_removed"
+          label:
+            en_US: "Subteam Self Removed"
+            ja_JP: "Subteam Self Removed"
+            zh_Hans: "Subteam Self Removed"
+          description:
+            en_US: "You have been removed from a User Group"
+            ja_JP: "You have been removed from a User Group"
+            zh_Hans: "You have been removed from a User Group"
+        - value: "subteam_updated"
+          label:
+            en_US: "Subteam Updated"
+            ja_JP: "Subteam Updated"
+            zh_Hans: "Subteam Updated"
+          description:
+            en_US: "An existing User Group has been updated or its members changed"
+            ja_JP: "An existing User Group has been updated or its members changed"
+            zh_Hans: "An existing User Group has been updated or its members changed"
+        - value: "team_domain_change"
+          label:
+            en_US: "Team Domain Change"
+            ja_JP: "Team Domain Change"
+            zh_Hans: "Team Domain Change"
+          description:
+            en_US: "The workspace domain has changed"
+            ja_JP: "The workspace domain has changed"
+            zh_Hans: "The workspace domain has changed"
+        - value: "team_join"
+          label:
+            en_US: "Team Join"
+            ja_JP: "Team Join"
+            zh_Hans: "Team Join"
+          description:
+            en_US: "A new member has joined"
+            ja_JP: "A new member has joined"
+            zh_Hans: "A new member has joined"
+        - value: "team_rename"
+          label:
+            en_US: "Team Rename"
+            ja_JP: "Team Rename"
+            zh_Hans: "Team Rename"
+          description:
+            en_US: "The workspace name has changed"
+            ja_JP: "The workspace name has changed"
+            zh_Hans: "The workspace name has changed"
+        - value: "tokens_revoked"
+          label:
+            en_US: "Tokens Revoked"
+            ja_JP: "Tokens Revoked"
+            zh_Hans: "Tokens Revoked"
+          description:
+            en_US: "API tokens for your app were revoked."
+            ja_JP: "API tokens for your app were revoked."
+            zh_Hans: "API tokens for your app were revoked."
+        - value: "user_change"
+          label:
+            en_US: "User Change"
+            ja_JP: "User Change"
+            zh_Hans: "User Change"
+          description:
+            en_US: "A member's data has changed"
+            ja_JP: "A member's data has changed"
+            zh_Hans: "A member's data has changed"
+  extra:
+    python:
+      source: provider/slack.py
+
+identity:
+  author: langgenius
+  name: slack
+  label:
+    en_US: Slack
+    ja_JP: Slack
+    zh_Hans: Slack
+  description:
+    en_US: Slack trigger provider covering the Events API catalog including messages, workspace administration changes, files, reactions, and more.
+    ja_JP: メッセージ、ワークスペース管理の変更、ファイル、リアクションなど Events API カタログ全体をカバーする Slack トリガープロバイダーです。
+    zh_Hans: 覆盖消息、工作区管理变更、文件、表情等 Events API 全部目录的 Slack 触发器提供方。
+  icon: icon.svg
+
+extra:
+  python:
+    source: provider/slack.py
+
+events:
+  - events/app/app_mention.yaml
+  - events/app/app_rate_limited.yaml
+  - events/app/app_uninstalled.yaml
+  - events/channel/channel_archive.yaml
+  - events/channel/channel_created.yaml
+  - events/channel/channel_deleted.yaml
+  - events/channel/channel_history_changed.yaml
+  - events/channel/channel_left.yaml
+  - events/channel/channel_rename.yaml
+  - events/channel/channel_unarchive.yaml
+  - events/dnd/dnd_updated.yaml
+  - events/dnd/dnd_updated_user.yaml
+  - events/email/email_domain_changed.yaml
+  - events/emoji/emoji_changed.yaml
+  - events/file/file_change.yaml
+  - events/file/file_comment_added.yaml
+  - events/file/file_comment_deleted.yaml
+  - events/file/file_comment_edited.yaml
+  - events/file/file_created.yaml
+  - events/file/file_deleted.yaml
+  - events/file/file_public.yaml
+  - events/file/file_shared.yaml
+  - events/file/file_unshared.yaml
+  - events/grid/grid_migration_finished.yaml
+  - events/grid/grid_migration_started.yaml
+  - events/group/group_archive.yaml
+  - events/group/group_close.yaml
+  - events/group/group_history_changed.yaml
+  - events/group/group_left.yaml
+  - events/group/group_open.yaml
+  - events/group/group_rename.yaml
+  - events/group/group_unarchive.yaml
+  - events/im/im_close.yaml
+  - events/im/im_created.yaml
+  - events/im/im_history_changed.yaml
+  - events/im/im_open.yaml
+  - events/link/link_shared.yaml
+  - events/member/member_joined_channel.yaml
+  - events/member/member_left_channel.yaml
+  - events/message/message.yaml
+  - events/message/message_app_home.yaml
+  - events/message/message_channels.yaml
+  - events/message/message_groups.yaml
+  - events/message/message_im.yaml
+  - events/message/message_mpim.yaml
+  - events/pin/pin_added.yaml
+  - events/pin/pin_removed.yaml
+  - events/reaction/reaction_added.yaml
+  - events/reaction/reaction_removed.yaml
+  - events/resources/resources_added.yaml
+  - events/resources/resources_removed.yaml
+  - events/scope/scope_denied.yaml
+  - events/scope/scope_granted.yaml
+  - events/star/star_added.yaml
+  - events/star/star_removed.yaml
+  - events/subteam/subteam_created.yaml
+  - events/subteam/subteam_members_changed.yaml
+  - events/subteam/subteam_self_added.yaml
+  - events/subteam/subteam_self_removed.yaml
+  - events/subteam/subteam_updated.yaml
+  - events/team/team_domain_change.yaml
+  - events/team/team_join.yaml
+  - events/team/team_rename.yaml
+  - events/tokens/tokens_revoked.yaml
+  - events/user/user_change.yaml
