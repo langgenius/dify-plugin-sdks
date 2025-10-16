@@ -1,0 +1,144 @@
+subscription_schema:
+- name: "verification_token"
+  type: "secret-input"
+  required: false
+  label:
+    en_US: "Verification Token"
+    zh_Hans: "验证令牌"
+    ja_JP: "検証トークン"
+  help:
+    en_US: "Optional token used to validate Google Pub/Sub push requests."
+    zh_Hans: "用于验证来自 Google Pub/Sub 推送请求的可选令牌。"
+    ja_JP: "Google Pub/Sub プッシュリクエストを検証するための任意のトークンです。"
+
+subscription_constructor:
+  parameters:
+  - name: "topic_name"
+    label:
+      en_US: "Pub/Sub Topic"
+      zh_Hans: "Pub/Sub 主题"
+      ja_JP: "Pub/Sub トピック"
+    type: "text-input"
+    required: true
+    placeholder:
+      en_US: "projects/{project}/topics/{topic}"
+      zh_Hans: "projects/{project}/topics/{topic}"
+      ja_JP: "projects/{project}/topics/{topic}"
+    help:
+      en_US: "Existing Google Cloud Pub/Sub topic that pushes notifications to the Dify callback URL."
+      zh_Hans: "已经配置为向 Dify 回调地址推送通知的 Google Cloud Pub/Sub 主题。"
+      ja_JP: "Dify のコールバック URL へ通知をプッシュするように設定された Google Cloud Pub/Sub トピック。"
+  - name: "label_ids"
+    label:
+      en_US: "Label Filters"
+      zh_Hans: "标签过滤"
+      ja_JP: "ラベルフィルター"
+    type: "text-input"
+    required: false
+    placeholder:
+      en_US: "INBOX,UNREAD"
+      zh_Hans: "INBOX,UNREAD"
+      ja_JP: "INBOX,UNREAD"
+    help:
+      en_US: "Optional comma separated Gmail label IDs to monitor (e.g. INBOX,UNREAD)."
+      zh_Hans: "可选的逗号分隔 Gmail 标签 ID（例如 INBOX,UNREAD）。"
+      ja_JP: "監視する Gmail ラベル ID をカンマ区切りで指定します (例: INBOX,UNREAD)。"
+  - name: "label_filter_action"
+    label:
+      en_US: "Label Filter Action"
+      zh_Hans: "标签过滤动作"
+      ja_JP: "ラベルフィルターの動作"
+    type: "select"
+    required: false
+    default: "include"
+    options:
+    - value: "include"
+      label:
+        en_US: "Include only these labels"
+        zh_Hans: "仅包含这些标签"
+        ja_JP: "これらのラベルのみ含める"
+    - value: "exclude"
+      label:
+        en_US: "Exclude these labels"
+        zh_Hans: "排除这些标签"
+        ja_JP: "これらのラベルを除外"
+  - name: "verification_token"
+    label:
+      en_US: "Verification Token"
+      zh_Hans: "验证令牌"
+      ja_JP: "検証トークン"
+    type: "secret-input"
+    required: false
+    help:
+      en_US: "Must match the token configured on the Pub/Sub push subscription."
+      zh_Hans: "需要与 Pub/Sub 推送订阅中配置的 token 保持一致。"
+      ja_JP: "Pub/Sub プッシュサブスクリプションに設定したトークンと一致させてください。"
+  credentials_schema: {}
+  oauth_schema:
+    client_schema:
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      placeholder:
+        en_US: "OAuth Client ID"
+        zh_Hans: "OAuth Client ID"
+        ja_JP: "OAuth クライアント ID"
+      help:
+        en_US: "Create a Web application credential in Google Cloud Console and paste the Client ID."
+        zh_Hans: "在 Google Cloud Console 中创建 Web 应用凭据并填写 Client ID。"
+        ja_JP: "Google Cloud Console で Web アプリケーションの資格情報を作成し、クライアント ID を入力してください。"
+      label:
+        en_US: "Client ID"
+        zh_Hans: "Client ID"
+        ja_JP: "クライアント ID"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      placeholder:
+        en_US: "OAuth Client Secret"
+        zh_Hans: "OAuth Client Secret"
+        ja_JP: "OAuth クライアント シークレット"
+      help:
+        en_US: "Client Secret from the same Google Cloud OAuth credential."
+        zh_Hans: "来自同一个 Google Cloud OAuth 凭据的 Client Secret。"
+        ja_JP: "同じ Google Cloud OAuth 資格情報のクライアント シークレット。"
+      label:
+        en_US: "Client Secret"
+        zh_Hans: "Client Secret"
+        ja_JP: "クライアント シークレット"
+    credentials_schema:
+    - name: "access_token"
+      type: "secret-input"
+      label:
+        en_US: "Access Token"
+        zh_Hans: "访问令牌"
+        ja_JP: "アクセストークン"
+    - name: "refresh_token"
+      type: "secret-input"
+      label:
+        en_US: "Refresh Token"
+        zh_Hans: "刷新令牌"
+        ja_JP: "リフレッシュトークン"
+  extra:
+    python:
+      source: provider/gmail.py
+
+events:
+- events/new_email/new_email.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: Gmail trigger that automatically creates and manages watch subscriptions.
+    zh_Hans: 自动创建并管理 Gmail Watch 订阅的触发器。
+    ja_JP: Gmail のウォッチサブスクリプションを自動的に作成・管理するトリガーです。
+  icon: icon.svg
+  label:
+    en_US: Gmail Trigger
+    zh_Hans: Gmail 触发器
+    ja_JP: Gmail トリガー
+  name: gmail_trigger
+
+extra:
+  python:
+    source: provider/gmail.py
