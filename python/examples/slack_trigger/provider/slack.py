@@ -9,14 +9,12 @@ from typing import Any
 
 from werkzeug import Request, Response
 
-from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
+from dify_plugin.entities.trigger import EventDispatch, Subscription
 from dify_plugin.errors.trigger import (
-    SubscriptionError,
     TriggerDispatchError,
     TriggerValidationError,
 )
-from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
-from dify_plugin.entities.provider_config import CredentialType
+from dify_plugin.interfaces.trigger import Trigger
 
 from ..events.catalog_data import EVENT_CATALOG
 
@@ -52,7 +50,11 @@ class SlackTrigger(Trigger):
     _MAX_SIGNATURE_AGE = 60 * 5  # five minutes
 
     def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
-        signing_secret = subscription.properties.get("signing_secret")
+        signing_secret = str(
+            subscription.properties.get("signing_secret")
+            or subscription.parameters.get("signing_secret")
+            or ""
+        )
         if not signing_secret:
             raise TriggerDispatchError("Slack signing secret is missing from subscription properties")
 
@@ -64,7 +66,11 @@ class SlackTrigger(Trigger):
 
         payload, response = self._parse_request(signing_secret=signing_secret, request=request)
         dispatch_event = self._determine_event(subscription=subscription, payload=payload)
-        allowed_events: set[str] = set(subscription.properties.get("events", []) or [])
+        allowed_events: set[str] = set(
+            subscription.properties.get("events", [])
+            or subscription.parameters.get("events", [])
+            or []
+        )
 
         events: list[str] = []
         if dispatch_event and (not allowed_events or dispatch_event in allowed_events):
@@ -147,79 +153,3 @@ class SlackTrigger(Trigger):
         sig_basestring = f"{self._VERSION}:{timestamp}:{body}"
         digest = hmac.new(signing_secret.encode("utf-8"), sig_basestring.encode("utf-8"), hashlib.sha256)
         return f"{self._VERSION}={digest.hexdigest()}"
-
-
-class SlackSubscriptionConstructor(TriggerSubscriptionConstructor):
-    """Subscription constructor for Slack triggers.
-
-    Slack currently requires configuring event subscriptions directly in the Slack app UI.
-    The constructor stores the relevant metadata so that the trigger can validate requests
-    and filter events at runtime.
-    """
-
-    def _create_subscription(
-        self,
-        endpoint: str,
-        parameters: Mapping[str, Any],
-        credentials: Mapping[str, Any],
-        credential_type: CredentialType,
-    ) -> Subscription:
-        signing_secret = parameters.get("signing_secret")
-        if not signing_secret:
-            raise SubscriptionError("Slack signing secret is required.")
-
-        events_param = parameters.get("events") or []
-        if not isinstance(events_param, list):
-            raise SubscriptionError("Events must be provided as a list.")
-
-        events: list[str] = []
-        for event_key in events_param:
-            if event_key in EVENT_CATALOG and event_key not in events:
-                events.append(event_key)
-
-        if not events:
-            raise SubscriptionError("Select at least one Slack event to subscribe to.")
-
-        properties = {
-            "team_id": str(parameters.get("team_id") or ""),
-            "events": events,
-            "signing_secret": signing_secret,
-        }
-
-        public_parameters = {
-            key: value for key, value in parameters.items() if key != "signing_secret"
-        }
-
-        return Subscription(
-            expires_at=-1,
-            endpoint=endpoint,
-            parameters=public_parameters,
-            properties=properties,
-        )
-
-    def _delete_subscription(
-        self,
-        subscription: Subscription,
-        credentials: Mapping[str, Any],
-        credential_type: CredentialType,
-    ) -> UnsubscribeResult:
-        return UnsubscribeResult(
-            success=True,
-            message=(
-                "Slack webhooks are managed in the Slack App configuration. "
-                "Remove the event subscription there if it is no longer needed."
-            ),
-        )
-
-    def _refresh_subscription(
-        self,
-        subscription: Subscription,
-        credentials: Mapping[str, Any],
-        credential_type: CredentialType,
-    ) -> Subscription:
-        return Subscription(
-            expires_at=-1,
-            endpoint=subscription.endpoint,
-            parameters=subscription.parameters,
-            properties=subscription.properties,
-        )

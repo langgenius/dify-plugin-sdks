@@ -1,5 +1,4 @@
-subscription_constructor:
-  parameters:
+subscription_schema:
     - name: "team_id"
       type: "text-input"
       required: true
