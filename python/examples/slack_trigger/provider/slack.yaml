@@ -10,7 +10,6 @@ identity:
     zh_Hans: Slack 触发器
     ja_JP: Slack トリガー
   name: slack_trigger
-
 subscription_schema:
   - name: "signing_secret"
     type: "secret-input"

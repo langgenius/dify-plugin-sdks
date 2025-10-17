@@ -42,22 +42,95 @@ class GithubTrigger(Trigger):
 
         payload: Mapping[str, Any] = self._validate_payload(request)
         response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
-        event: str = self._dispatch_trigger_event(event_type=event_type, payload=payload)
-        return EventDispatch(events=[event] if event else [], response=response)
+        events: list[str] = self._dispatch_trigger_events(event_type=event_type, payload=payload)
+        return EventDispatch(events=events, response=response)
 
-    def _dispatch_trigger_event(self, event_type: str, payload: Mapping[str, Any]) -> str:
+    def _dispatch_trigger_events(self, event_type: str, payload: Mapping[str, Any]) -> list[str]:
         event_type = event_type.lower()
         action: str | None = payload.get("action")
-        if event_type == "issues":
-            return f"issue_{action}"
+        # Unified core events (breaking change): issues / issue_comment / pull_request
+        if event_type in {"issues", "issue_comment", "pull_request"}:
+            return [event_type]
 
-        if event_type == "issue_comments":
-            return f"issue_comment_{action}"
+        # Unified review & CI events (breaking change)
+        if event_type in {"pull_request_review", "pull_request_review_comment", "check_suite", "check_run", "workflow_run", "workflow_job"}:
+            return [event_type]
+
+        if event_type in {"deployment_status", "release"}:
+            if not action:
+                raise TriggerDispatchError(f"GitHub event '{event_type}' missing action in payload")
+            return [f"{event_type}_{action}"]
+
+        if event_type == "push":
+            return ["push"]
 
         if event_type == "star":
-            return f"star_{action}"
+            return ["star"]
 
-        return ""
+        # Unified events without action splitting
+        if event_type == "code_scanning_alert":
+            return ["code_scanning_alert"]
+
+        if event_type in {"secret_scanning_alert", "secret_scanning_alert_location", "secret_scanning_scan"}:
+            return ["secret_scanning"]
+
+        if event_type in {"create", "delete"}:
+            return ["ref_change"]
+
+        if event_type == "commit_comment":
+            return ["commit_comment"]
+
+        if event_type == "status":
+            return ["status"]
+
+        if event_type == "deployment":
+            return ["deployment"]
+
+        if event_type == "dependabot_alert":
+            return ["dependabot_alert"]
+
+        if event_type == "repository_vulnerability_alert":
+            return ["repository_vulnerability_alert"]
+
+        if event_type in {"branch_protection_configuration", "branch_protection_rule"}:
+            return [event_type]
+
+        if event_type == "repository_ruleset":
+            return ["repository_ruleset"]
+
+        # Additional unified GitHub events (breaking change by design)
+        if event_type in {
+            "discussion",
+            "discussion_comment",
+            "fork",
+            "gollum",
+            "issue_dependencies",
+            "sub_issues",
+            "label",
+            "member",
+            "merge_group",
+            "meta",
+            "milestone",
+            "package",
+            "registry_package",
+            "page_build",
+            "ping",
+            "project",
+            "project_column",
+            "project_card",
+            "public",
+            "pull_request_review_thread",
+            "repository",
+            "repository_import",
+            "repository_advisory",
+            "security_and_analysis",
+            "custom_property_values",
+            "deploy_key",
+            "watch",
+        }:
+            return [event_type]
+
+        return []
 
     def _validate_payload(self, request: Request) -> Mapping[str, Any]:
         try:

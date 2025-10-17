@@ -9,16 +9,7 @@ description:
   en_US: "Subscribe to only the message events that mention your app or bot. See https://api.slack.com/events/app_mention for details."
   ja_JP: "Subscribe to only the message events that mention your app or bot. See https://api.slack.com/events/app_mention for details."
   zh_Hans: "Subscribe to only the message events that mention your app or bot. See https://api.slack.com/events/app_mention for details."
-parameters:
-  - label:
-      en_US: Channel
-      pt_BR: Canal
-      zh_Hans: 频道
-    llm_description: The channel to subscribe to.
-    name: channel
-    required: false
-    type: dynamic-select
-    multiple: true
+parameters: []
 output_schema:
   type: "object"
   properties:

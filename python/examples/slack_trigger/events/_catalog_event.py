@@ -29,7 +29,7 @@ _MESSAGE_IGNORE_SUBTYPES = {
 }
 
 
-class CatalogSlackEvent:
+class CatalogSlackEvent(z):
     """Generic Slack event transformer backed by the generated catalog."""
 
     EVENT_KEY: str = ""
