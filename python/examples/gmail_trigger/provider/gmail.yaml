@@ -1,0 +1,196 @@
+subscription_schema:
+- name: "require_oidc"
+  type: "boolean"
+  required: false
+  label:
+    en_US: "Require OIDC Verification"
+    zh_Hans: "强制 OIDC 验证"
+    ja_JP: "OIDC 検証を必須にする"
+  help:
+    en_US: "Verify the Pub/Sub push bearer token via Google OIDC. If enabled, the plugin verifies the JWT against audience and issuer."
+    zh_Hans: "通过 Google OIDC 校验 Pub/Sub push 的 Bearer Token。开启后将校验 JWT 的受众和发行者。"
+    ja_JP: "Google OIDC によって Pub/Sub Push の Bearer トークンを検証します。オンにすると JWT の aud/iss を検証します。"
+  url: https://cloud.google.com/pubsub/docs/push#authentication_and_authorization
+
+- name: "oidc_audience"
+  type: "secret-input"
+  required: false
+  label:
+    en_US: "OIDC Audience"
+    zh_Hans: "OIDC 受众"
+    ja_JP: "OIDC オーディエンス"
+  help:
+    en_US: "Expected audience (aud) for the OIDC token used by Pub/Sub push. Set this to the exact webhook endpoint URL used by the push subscription. If empty, defaults to the webhook endpoint URL."
+    zh_Hans: "用于 Pub/Sub Push 的 OIDC Token 的受众 (aud)。请设置为 Push 订阅使用的 webhook endpoint 的完整 URL。留空则默认使用 webhook endpoint URL。"
+    ja_JP: "Pub/Sub Push が使用する OIDC トークンの aud。Push サブスクリプションで使用する Webhook エンドポイントの完全な URL に設定してください。未設定の場合は Webhook エンドポイント URL を使用します。"
+  placeholder:
+    en_US: "https://<your-dify-host>/api/plugin/triggers/<subscription-id>"
+    zh_Hans: "https://<你的Dify域名>/api/plugin/triggers/<订阅ID>"
+    ja_JP: "https://<あなたのDifyホスト>/api/plugin/triggers/<サブスクリプションID>"
+  url: https://cloud.google.com/pubsub/docs/reference/rest/v1/projects.subscriptions#oidctoken
+
+- name: "oidc_service_account_email"
+  type: "secret-input"
+  required: false
+  label:
+    en_US: "Service Account Email"
+    zh_Hans: "服务账号邮箱"
+    ja_JP: "サービスアカウントメール"
+  help:
+    en_US: "Optional. Expected service account email in OIDC token (email claim)."
+    zh_Hans: "可选。用于 OIDC Token 的 email 声明校验。"
+    ja_JP: "任意。OIDC トークン email クレームの検証に使用します。"
+  placeholder:
+    en_US: "my-svc@my-project.iam.gserviceaccount.com"
+    zh_Hans: "my-svc@my-project.iam.gserviceaccount.com"
+    ja_JP: "my-svc@my-project.iam.gserviceaccount.com"
+  url: https://console.cloud.google.com/iam-admin/serviceaccounts
+
+subscription_constructor:
+  parameters:
+  - name: "watch_email"
+    type: "string"
+    required: false
+    label:
+      en_US: "Watch Email (userId)"
+      zh_Hans: "监听邮箱 (userId)"
+      ja_JP: "監視メール (userId)"
+    placeholder:
+      en_US: "me"
+      zh_Hans: "me"
+      ja_JP: "me"
+    help:
+      en_US: "Gmail API userId. Use 'me' for the authorized account or provide the full Gmail address."
+      zh_Hans: "Gmail API 的 userId。使用 'me' 表示当前授权用户，或填写完整邮箱地址。"
+      ja_JP: "Gmail API の userId。認証済みユーザーは 'me'、または完全なメールアドレスを指定します。"
+    url: https://developers.google.com/gmail/api/reference/rest/v1/users/watch
+
+  - name: "topic_name"
+    type: "string"
+    required: true
+    label:
+      en_US: "Pub/Sub Topic"
+      zh_Hans: "Pub/Sub 主题"
+      ja_JP: "Pub/Sub トピック"
+    placeholder:
+      en_US: "projects/<project>/topics/<topic>"
+      zh_Hans: "projects/<project>/topics/<topic>"
+      ja_JP: "projects/<project>/topics/<topic>"
+    help:
+      en_US: "Cloud Pub/Sub topic for Gmail to publish notifications to."
+      zh_Hans: "Gmail 将向该 Cloud Pub/Sub 主题发布通知。"
+      ja_JP: "Gmail が通知を発行する Cloud Pub/Sub トピック。"
+    url: https://cloud.google.com/pubsub/docs/create-topic
+
+  - name: "label_ids"
+    type: "dynamic-select"
+    required: false
+    multiple: true
+    label:
+      en_US: "Label IDs"
+      zh_Hans: "标签 ID"
+      ja_JP: "ラベル ID"
+    help:
+      en_US: "Optional Gmail label IDs to scope notifications (e.g., INBOX, UNREAD). Loaded from Gmail dynamically."
+      zh_Hans: "可选，用于限定通知范围的 Gmail 标签 ID（如 INBOX、UNREAD）。选项将从 Gmail 动态加载。"
+      ja_JP: "任意。通知範囲を限定する Gmail ラベル ID（例: INBOX, UNREAD）。Gmail から動的に取得します。"
+    url: https://developers.google.com/gmail/api/reference/rest/v1/users.labels/list
+
+  - name: "label_filter_action"
+    type: "select"
+    required: false
+    label:
+      en_US: "Label Filter Action"
+      zh_Hans: "标签过滤动作"
+      ja_JP: "ラベルフィルター動作"
+    options:
+    - value: "include"
+      label:
+        en_US: "Include only these labels"
+        zh_Hans: "仅包含这些标签"
+        ja_JP: "これらのラベルのみを含む"
+    - value: "exclude"
+      label:
+        en_US: "Exclude these labels"
+        zh_Hans: "排除这些标签"
+        ja_JP: "これらのラベルを除外"
+    help:
+      en_US: "How to apply labelIds to filter notifications when calling users.watch (include/exclude)."
+      zh_Hans: "调用 users.watch 时如何应用 labelIds 来过滤通知（包含/排除）。"
+      ja_JP: "users.watch 呼び出し時に labelIds をどのように適用するか（含む/除外）。"
+    url: https://developers.google.com/gmail/api/reference/rest/v1/users/watch#request-body
+  oauth_schema:
+    client_schema:
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      url: https://console.cloud.google.com/apis/credentials
+      placeholder:
+        en_US: "Google OAuth Client ID"
+        zh_Hans: "Google OAuth Client ID"
+        ja_JP: "Google OAuth Client ID"
+      help:
+        en_US: "Create an OAuth 2.0 Client ID in Google Cloud Console (Web application). Add the redirect URI provided by Dify."
+        zh_Hans: "在 Google Cloud Console 创建 OAuth 2.0 Client ID（Web 应用），并添加 Dify 提供的重定向 URI。"
+        ja_JP: "Google Cloud Console で OAuth 2.0 クライアント ID（Web アプリ）を作成し、Dify が提供するリダイレクト URI を追加してください。"
+      label:
+        en_US: "Client ID"
+        zh_Hans: "Client ID"
+        ja_JP: "Client ID"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      url: https://console.cloud.google.com/apis/credentials
+      placeholder:
+        en_US: "Google OAuth Client Secret"
+        zh_Hans: "Google OAuth Client Secret"
+        ja_JP: "Google OAuth Client Secret"
+      help:
+        en_US: "The client secret generated along with your OAuth 2.0 Client ID. Keep it secure."
+        zh_Hans: "与你的 OAuth 2.0 Client ID 一起生成的 Client Secret，请妥善保管。"
+        ja_JP: "OAuth 2.0 クライアント ID と共に生成されたクライアントシークレット。安全に保管してください。"
+      label:
+        en_US: "Client Secret"
+        zh_Hans: "Client Secret"
+        ja_JP: "Client Secret"
+    credentials_schema:
+    - name: "access_token"
+      type: "secret-input"
+      help:
+        en_US: "Filled automatically after OAuth authorization. You usually do not need to enter it manually."
+        zh_Hans: "完成 OAuth 授权后自动填充，通常无需手动输入。"
+        ja_JP: "OAuth 認可後に自動入力されます。通常は手動入力の必要はありません。"
+      placeholder:
+        en_US: "Will be populated after OAuth"
+        zh_Hans: "OAuth 完成后自动填充"
+        ja_JP: "OAuth 完了後に自動入力"
+      label:
+        zh_Hans: "Access Token"
+        en_US: "Access Token"
+        ja_JP: "アクセストークン"
+  extra:
+    python:
+      source: provider/gmail.py
+
+events:
+- events/gmail_message_added/gmail_message_added.yaml
+- events/gmail_message_deleted/gmail_message_deleted.yaml
+- events/gmail_label_added/gmail_label_added.yaml
+- events/gmail_label_removed/gmail_label_removed.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: Gmail push trigger provider with unified message event.
+    zh_Hans: 支持统一消息事件的 Gmail 推送触发器。
+    ja_JP: 統合メッセージイベント対応の Gmail プッシュトリガー。
+  icon: icon.svg
+  label:
+    en_US: Gmail Triggers
+    zh_Hans: Gmail 触发器
+    ja_JP: Gmail トリガー
+  name: gmail_trigger
+
+extra:
+  python:
+    source: provider/gmail.py

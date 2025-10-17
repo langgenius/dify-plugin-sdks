@@ -416,6 +416,7 @@ class TriggerDispatchEventRequest(BaseModel):
 
 
 class TriggerDispatchResponse(BaseModel):
+    user_id: str
     events: list[str]
     raw_http_response: str
 

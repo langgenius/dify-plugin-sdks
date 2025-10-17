@@ -44,6 +44,7 @@ class EventDispatch(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    user_id: str = Field(default="", description="The user who triggered the event (e.g. google user ID)")
     events: list[str] = Field(default_factory=list, description="List of Event names that should be invoked.")
     response: Response = Field(
         ...,

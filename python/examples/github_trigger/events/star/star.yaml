@@ -20,15 +20,15 @@ parameters:
   required: false
   multiple: true
   default:
-  - "star_created"
-  - "star_deleted"
+  - "created"
+  - "deleted"
   options:
-  - value: "star_created"
+  - value: "created"
     label:
       en_US: "Starred"
       zh_Hans: "星标"
       ja_JP: "スター"
-  - value: "star_deleted"
+  - value: "deleted"
     label:
       en_US: "Unstarred"
       zh_Hans: "取消星标"
