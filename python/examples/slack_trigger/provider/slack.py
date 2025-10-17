@@ -50,11 +50,7 @@ class SlackTrigger(Trigger):
     _MAX_SIGNATURE_AGE = 60 * 5  # five minutes
 
     def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
-        signing_secret = str(
-            subscription.properties.get("signing_secret")
-            or subscription.parameters.get("signing_secret")
-            or ""
-        )
+        signing_secret = str(subscription.properties.get("signing_secret") or "")
         if not signing_secret:
             raise TriggerDispatchError("Slack signing secret is missing from subscription properties")
 
