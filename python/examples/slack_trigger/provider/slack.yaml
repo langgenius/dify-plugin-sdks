@@ -1,3 +1,16 @@
+identity:
+  author: langgenius
+  description:
+    en_US: Trigger plugin for Slack, connect Slack events to Dify AI workflows
+    ja_JP: Slack トリガープラグイン、Slack イベントを Dify AI ワークフローに接続
+    zh_Hans: 为 Slack App 设计的触发器插件，将 Slack 中的各类事件与 Dify 的 AI 工作流连接起来
+  icon: icon.svg
+  label:
+    en_US: Slack Triggers
+    zh_Hans: Slack 触发器
+    ja_JP: Slack トリガー
+  name: slack_trigger
+
 subscription_schema:
   - name: "signing_secret"
     type: "secret-input"
@@ -11,9 +24,74 @@ subscription_schema:
       ja_JP: "Slack の signing secret を貼り付けてください"
       zh_Hans: "粘贴你的 Slack signing secret"
     help:
-      en_US: "Slack uses the signing secret to verify webhook authenticity."
-      ja_JP: "Slack は signing secret を使用して Webhook の正当性を検証します。"
-      zh_Hans: "Slack 使用 signing secret 验证 webhook 的有效性。"
+      en_US: "Get your signing secret from your Slack app."
+      ja_JP: "Slack の signing secret を取得してください。"
+      zh_Hans: "从你的 Slack app 获取 signing secret。"
+    url: https://api.slack.com/apps/
+  - name: "app_id"
+    type: "text-input"
+    required: true
+    label:
+      en_US: "App ID"
+      ja_JP: "App ID"
+      zh_Hans: "App ID"
+    placeholder:
+      en_US: "Paste your Slack app ID"
+      ja_JP: "Slack の app ID を貼り付けてください"
+      zh_Hans: "粘贴你的 Slack app ID"
+    help:
+      en_US: "Get your app ID from your Slack app."
+      ja_JP: "Slack の app ID を取得してください。"
+      zh_Hans: "从你的 Slack app 获取 app ID。"
+    url: https://api.slack.com/apps/
+  - name: "client_id"
+    type: "text-input"
+    required: true
+    label:
+      en_US: "Client ID"
+      ja_JP: "Client ID"
+      zh_Hans: "Client ID"
+    placeholder:
+      en_US: "Paste your Slack client ID"
+      ja_JP: "Slack の client ID を貼り付けてください"
+      zh_Hans: "粘贴你的 Slack client ID"
+    help:
+      en_US: "Get your client ID from your Slack app."
+      ja_JP: "Slack の client ID を取得してください。"
+      zh_Hans: "从你的 Slack app 获取 client ID。"
+    url: https://api.slack.com/apps/
+  - name: "client_secret"
+    type: "secret-input"
+    required: true
+    label:
+      en_US: "Client Secret"
+      ja_JP: "Client Secret"
+      zh_Hans: "Client Secret"
+    placeholder:
+      en_US: "Paste your Slack client secret"
+      ja_JP: "Slack の client secret を貼り付けてください"
+      zh_Hans: "粘贴你的 Slack client secret"
+    help:
+      en_US: "Get your client secret from your Slack app."
+      ja_JP: "Slack の client secret を取得してください。"
+      zh_Hans: "从你的 Slack app 获取 client secret。"
+    url: https://api.slack.com/apps/
+  - name: "verification_token"
+    type: "secret-input"
+    required: true
+    label:
+      en_US: "Verification Token"
+      ja_JP: "Verification Token"
+      zh_Hans: "Verification Token"
+    placeholder:
+      en_US: "Paste your Slack verification token"
+      ja_JP: "Slack の verification token を貼り付けてください"
+      zh_Hans: "粘贴你的 Slack verification token"
+    help:
+      en_US: "Get your verification token from your Slack app."
+      ja_JP: "Slack の verification token を取得してください。"
+      zh_Hans: "从你的 Slack app 获取 verification token。"
+    url: https://api.slack.com/apps/
 events:
   - events/app/app_mention.yaml
   - events/app/app_rate_limited.yaml
@@ -80,3 +158,6 @@ events:
   - events/team/team_rename.yaml
   - events/tokens/tokens_revoked.yaml
   - events/user/user_change.yaml
+extra:
+  python:
+    source: provider/slack.py

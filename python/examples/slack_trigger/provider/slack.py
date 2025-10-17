@@ -16,7 +16,7 @@ from dify_plugin.errors.trigger import (
 )
 from dify_plugin.interfaces.trigger import Trigger
 
-from ..events.catalog_data import EVENT_CATALOG
+from events.catalog_data import EVENT_CATALOG
 
 
 MESSAGE_CHANNEL_EVENT_KEYS: dict[str, str] = {

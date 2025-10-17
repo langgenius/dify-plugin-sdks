@@ -7,7 +7,6 @@ from werkzeug import Request
 
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
-from dify_plugin.interfaces.trigger import Event
 
 from .catalog_data import EVENT_CATALOG
 
@@ -30,7 +29,7 @@ _MESSAGE_IGNORE_SUBTYPES = {
 }
 
 
-class CatalogSlackEvent(Event):
+class CatalogSlackEvent:
     """Generic Slack event transformer backed by the generated catalog."""
 
     EVENT_KEY: str = ""
