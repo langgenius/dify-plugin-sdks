@@ -66,4 +66,3 @@ class MilestoneUnifiedEvent(Event):
         creator = (payload.get("sender") or {}).get("login")
         if users and creator not in users:
             raise EventIgnoreError()
-

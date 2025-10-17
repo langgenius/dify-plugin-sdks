@@ -6,9 +6,9 @@ from collections.abc import Callable, Iterable
 from typing import Protocol, TypeVar
 
 import lark_oapi as lark
-from lark_oapi.event.dispatcher_handler import EventDispatcherHandlerBuilder
-from lark_oapi.core.http import RawRequest
 from lark_oapi.api.im.v1.model import UserId
+from lark_oapi.core.http import RawRequest
+from lark_oapi.event.dispatcher_handler import EventDispatcherHandlerBuilder
 from werkzeug import Request
 
 from dify_plugin.interfaces.trigger import EventRuntime

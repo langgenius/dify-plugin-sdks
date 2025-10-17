@@ -95,4 +95,3 @@ class CheckRunUnifiedEvent(Event):
         actor_login = (payload.get("sender") or {}).get("login")
         if actor_login not in users:
             raise EventIgnoreError()
-

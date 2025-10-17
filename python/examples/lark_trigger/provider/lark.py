@@ -2,10 +2,6 @@ import threading
 
 import lark_oapi as lark
 from lark_oapi.api.approval.v4 import P2ApprovalApprovalUpdatedV4
-from lark_oapi.api.task.v1 import (
-    P2TaskTaskCommentUpdatedV1,
-    P2TaskTaskUpdatedV1,
-)
 from lark_oapi.api.calendar.v4 import (
     P2CalendarCalendarAclCreatedV4,
     P2CalendarCalendarAclDeletedV4,
@@ -50,6 +46,10 @@ from lark_oapi.api.im.v1 import (
 from lark_oapi.api.meeting_room.v1 import (
     P2MeetingRoomMeetingRoomCreatedV1,
     P2MeetingRoomMeetingRoomStatusChangedV1,
+)
+from lark_oapi.api.task.v1 import (
+    P2TaskTaskCommentUpdatedV1,
+    P2TaskTaskUpdatedV1,
 )
 from lark_oapi.api.vc.v1 import (
     P2VcMeetingJoinMeetingV1,
@@ -370,16 +370,12 @@ class LarkTrigger(Trigger):
 
         response_cache_map[threading.get_ident()].append("file_edit_v1")
 
-    def _handle_drive_permission_member_added_event(
-        self, event: P2DriveFilePermissionMemberAddedV1
-    ) -> None:
+    def _handle_drive_permission_member_added_event(self, event: P2DriveFilePermissionMemberAddedV1) -> None:
         """Handle drive file permission member added events."""
 
         response_cache_map[threading.get_ident()].append("file_permission_member_added_v1")
 
-    def _handle_drive_permission_member_removed_event(
-        self, event: P2DriveFilePermissionMemberRemovedV1
-    ) -> None:
+    def _handle_drive_permission_member_removed_event(self, event: P2DriveFilePermissionMemberRemovedV1) -> None:
         """Handle drive file permission member removed events."""
 
         response_cache_map[threading.get_ident()].append("file_permission_member_removed_v1")

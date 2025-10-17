@@ -62,4 +62,3 @@ class StatusEvent(Event):
         url = (payload.get("target_url") or "").lower()
         if not any(s in url for s in substrings):
             raise EventIgnoreError()
-

@@ -30,4 +30,3 @@ class SecurityAndAnalysisUnifiedEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

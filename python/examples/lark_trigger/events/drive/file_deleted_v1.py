@@ -26,7 +26,7 @@ class DriveFileDeletedV1Event(Event):
         ).event
         if event_data is None:
             raise ValueError("event_data is None")
-        
+
         operator = serialize_user_identity(event_data.operator_id)
         subscribers = serialize_user_list(event_data.subscriber_id_list or [])
 

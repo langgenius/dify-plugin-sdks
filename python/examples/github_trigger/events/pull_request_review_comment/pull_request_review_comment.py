@@ -32,4 +32,3 @@ class PullRequestReviewCommentUnifiedEvent(Event):
             check_comment_deleter(payload, parameters.get("deleter"))
 
         return Variables(variables={**payload})
-

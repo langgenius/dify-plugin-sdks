@@ -38,4 +38,3 @@ class IssuesUnifiedEvent(Event):
         isu.check_state(issue, parameters.get("state"))
 
         return Variables(variables={**payload})
-

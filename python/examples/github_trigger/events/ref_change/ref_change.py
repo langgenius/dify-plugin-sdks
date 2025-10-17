@@ -39,4 +39,3 @@ class RefChangeEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={"action": action, **payload})
-

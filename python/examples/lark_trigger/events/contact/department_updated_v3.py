@@ -63,7 +63,7 @@ class ContactDepartmentUpdatedV3Event(Event):
         ).event
         if event_data is None:
             raise ValueError("event_data is None")
-        
+
         current_department = _serialize_department(event_data.object)
         previous_department = _serialize_department(event_data.old_object)
         status = current_department.get("status", {})

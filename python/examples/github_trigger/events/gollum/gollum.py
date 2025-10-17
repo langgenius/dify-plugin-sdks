@@ -26,9 +26,8 @@ class GollumEvent(Event):
         title_filter = parameters.get("title")
 
         def match_page(page: Mapping[str, Any]) -> bool:
-            if actions_filter:
-                if (page.get("action") or "") not in actions_filter:
-                    return False
+            if actions_filter and (page.get("action") or "") not in actions_filter:
+                return False
             if title_filter:
                 titles = {v.strip() for v in str(title_filter).split(",") if v.strip()}
                 if titles and (page.get("title") or "") not in titles:
@@ -36,9 +35,7 @@ class GollumEvent(Event):
             return True
 
         any_match = any(isinstance(p, Mapping) and match_page(p) for p in pages)
-        if actions_filter or title_filter:
-            if not any_match:
-                raise EventIgnoreError()
+        if (actions_filter or title_filter) and not any_match:
+            raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

@@ -40,4 +40,3 @@ class ProjectUnifiedEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

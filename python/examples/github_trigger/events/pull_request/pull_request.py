@@ -37,4 +37,3 @@ class PullRequestUnifiedEvent(Event):
             check_merged_state(pr, parameters.get("merged"))
 
         return Variables(variables={**payload})
-

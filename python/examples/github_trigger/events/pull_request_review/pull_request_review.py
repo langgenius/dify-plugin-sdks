@@ -34,4 +34,3 @@ class PullRequestReviewUnifiedEvent(Event):
             check_dismissal_message(payload, parameters.get("dismissal_message_contains"))
 
         return Variables(variables={**payload})
-

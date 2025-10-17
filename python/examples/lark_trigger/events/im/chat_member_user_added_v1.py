@@ -1,7 +1,11 @@
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
+
 from werkzeug import Request
+
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
+
 from .._shared import dispatch_single_event
 
 
@@ -43,7 +47,7 @@ class ChatMemberUserAddedV1Event(Event):
         # Add new members information
         if event_data.users:
             members_list = []
-            for idx, user in enumerate(event_data.users):
+            for user in event_data.users:
                 if user:
                     member_info = {
                         "name": user.name if user.name else "",

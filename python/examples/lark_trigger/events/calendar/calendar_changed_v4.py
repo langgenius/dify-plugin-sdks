@@ -1,7 +1,11 @@
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
+
 from werkzeug import Request
+
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
+
 from .._shared import dispatch_single_event, serialize_user_list
 
 
@@ -22,7 +26,7 @@ class CalendarChangedV4Event(Event):
 
         # Build variables dictionary with affected users
         affected_users = serialize_user_list(event_data.user_id_list or [])
-        
+
         variables_dict: dict[str, Any] = {
             "affected_users": affected_users,
             "affected_users_count": len(affected_users),

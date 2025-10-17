@@ -46,4 +46,3 @@ class LabelUnifiedEvent(Event):
         color = (label.get("color") or "").lower()
         if colors and color not in colors:
             raise EventIgnoreError()
-

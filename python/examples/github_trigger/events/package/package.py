@@ -41,4 +41,3 @@ class PackageUnifiedEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

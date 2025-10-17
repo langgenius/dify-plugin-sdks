@@ -85,4 +85,3 @@ class CheckRunCreatedEvent(Event):
         actor_login = payload.get("sender", {}).get("login")
         if actor_login not in users:
             raise EventIgnoreError()
-

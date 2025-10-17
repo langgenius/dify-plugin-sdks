@@ -61,4 +61,3 @@ class CheckSuiteCompletedEvent(Event):
         slug = (app.get("slug") if isinstance(app, Mapping) else None) or ""
         if slug not in slugs:
             raise EventIgnoreError()
-

@@ -80,4 +80,3 @@ class SecretScanningEvent(Event):
         branch = ref.split("/", 2)[-1] if ref.startswith("refs/heads/") else ref
         if branch and branch not in branches:
             raise EventIgnoreError()
-

@@ -26,4 +26,3 @@ class MetaUnifiedEvent(Event):
         # meta events often include hook_id and hook object
         # Be permissive if absent and just forward payload
         return Variables(variables={**payload})
-

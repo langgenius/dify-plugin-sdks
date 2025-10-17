@@ -1,6 +1,4 @@
-from typing import Any, Optional
-
-from slack_bolt import App
+from typing import Any
 
 from dify_plugin.entities import ModelInvokeCompletionChunk
 from dify_plugin.entities.trigger import TriggerEntity
@@ -24,7 +22,7 @@ class SlackTriggerSubscription(TriggerSubscription):
         trigger_entity: TriggerEntity,
         credentials: dict[str, Any],
         subscription: dict[str, Any],
-    ) -> Optional[str]:
+    ) -> str | None:
         """Clean up Slack webhook subscription."""
         return "unsubscribed"
 

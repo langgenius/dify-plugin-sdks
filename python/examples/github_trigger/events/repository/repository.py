@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, ClassVar
 
 from werkzeug import Request
 
@@ -11,9 +11,13 @@ from dify_plugin.interfaces.trigger import Event
 
 
 class RepositoryUnifiedEvent(Event):
-    """Unified Repository event (created/deleted/archived/unarchived/publicized/privatized/renamed/transferred/edited)."""
+    """
+    Unified Repository event (
+        created/deleted/archived/unarchived/publicized/privatized/renamed/transferred/edited
+    ).
+    """
 
-    _KNOWN_ACTIONS = {
+    _KNOWN_ACTIONS: ClassVar[set[str]] = {
         "created",
         "deleted",
         "archived",
@@ -59,4 +63,3 @@ class RepositoryUnifiedEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

@@ -34,4 +34,3 @@ class RepositoryImportUnifiedEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

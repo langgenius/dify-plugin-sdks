@@ -72,4 +72,3 @@ class DeploymentStatusCreatedEvent(Event):
         creator = payload.get("sender", {}).get("login")
         if creator not in users:
             raise EventIgnoreError()
-

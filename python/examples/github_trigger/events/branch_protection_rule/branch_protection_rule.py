@@ -32,4 +32,3 @@ class BranchProtectionRuleEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

@@ -47,4 +47,3 @@ class DiscussionCommentUnifiedEvent(Event):
         login = ((comment.get("user") or {}).get("login") or "").strip()
         if allowed and login not in allowed:
             raise EventIgnoreError()
-

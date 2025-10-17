@@ -76,4 +76,3 @@ class DependabotAlertEvent(Event):
         targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
         if targets and manifest not in targets:
             raise EventIgnoreError()
-

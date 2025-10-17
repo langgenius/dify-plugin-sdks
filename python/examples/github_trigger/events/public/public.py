@@ -31,4 +31,3 @@ class PublicEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

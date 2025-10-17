@@ -17,4 +17,3 @@ class PingEvent(Event):
         if not payload:
             raise ValueError("No payload received")
         return Variables(variables={**payload})
-

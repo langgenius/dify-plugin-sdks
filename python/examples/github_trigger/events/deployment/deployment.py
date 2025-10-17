@@ -55,4 +55,3 @@ class DeploymentEvent(Event):
         targets = {s.strip() for s in str(value).split(",") if s.strip()}
         if targets and creator not in targets:
             raise EventIgnoreError()
-

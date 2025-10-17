@@ -37,4 +37,3 @@ class IssueCommentUnifiedEvent(Event):
         icu.check_is_pull_request(issue, parameters.get("is_pull_request"))
 
         return Variables(variables={**payload})
-

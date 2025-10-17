@@ -60,4 +60,3 @@ class DiscussionUnifiedEvent(Event):
             body = (discussion.get("body") or "").lower()
             if kws and not any(k in body for k in kws):
                 raise EventIgnoreError()
-

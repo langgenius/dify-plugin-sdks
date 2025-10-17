@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import fnmatch
 from collections.abc import Mapping
 from typing import Any
-import fnmatch
 
 from werkzeug import Request
 

@@ -50,15 +50,13 @@ class PullRequestReviewThreadUnifiedEvent(Event):
         if path_filter:
             paths = {v.strip() for v in str(path_filter).split(",") if v.strip()}
             comments = thread.get("comments") or []
+
             def any_path_match() -> bool:
                 if not isinstance(comments, list):
                     return False
-                for c in comments:
-                    if (c or {}).get("path") in paths:
-                        return True
-                return False
+                return any((c or {}).get("path") in paths for c in comments)
+
             if paths and not any_path_match():
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

@@ -65,4 +65,3 @@ class CommitCommentEvent(Event):
         targets = {s.strip() for s in str(value).split(",") if s.strip()}
         if targets and path not in targets:
             raise EventIgnoreError()
-

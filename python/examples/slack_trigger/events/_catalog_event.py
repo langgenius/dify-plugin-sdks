@@ -7,9 +7,9 @@ from werkzeug import Request
 
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
+from dify_plugin.interfaces.trigger import Event
 
 from .catalog_data import EVENT_CATALOG
-
 
 _MESSAGE_TOPIC_TO_CHANNEL_TYPE: dict[str, str] = {
     "message.app.home": "app_home",
@@ -29,7 +29,7 @@ _MESSAGE_IGNORE_SUBTYPES = {
 }
 
 
-class CatalogSlackEvent(z):
+class CatalogSlackEvent(Event):
     """Generic Slack event transformer backed by the generated catalog."""
 
     EVENT_KEY: str = ""

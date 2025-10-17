@@ -30,4 +30,3 @@ class PageBuildEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

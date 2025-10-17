@@ -75,13 +75,8 @@ class CodeScanningAlertEvent(Event):
         branches = {s.strip() for s in str(value).split(",") if s.strip()}
         if not branches:
             return
-        ref = (
-            (alert.get("most_recent_instance") or {}).get("ref")
-            or alert.get("ref")
-            or ""
-        )
+        ref = (alert.get("most_recent_instance") or {}).get("ref") or alert.get("ref") or ""
         # Convert refs/heads/main -> main
         branch = ref.split("/", 2)[-1] if ref.startswith("refs/heads/") else ref
         if branch not in branches:
             raise EventIgnoreError()
-

@@ -41,4 +41,3 @@ class RegistryPackageUnifiedEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

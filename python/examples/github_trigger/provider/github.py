@@ -53,7 +53,14 @@ class GithubTrigger(Trigger):
             return [event_type]
 
         # Unified review & CI events (breaking change)
-        if event_type in {"pull_request_review", "pull_request_review_comment", "check_suite", "check_run", "workflow_run", "workflow_job"}:
+        if event_type in {
+            "pull_request_review",
+            "pull_request_review_comment",
+            "check_suite",
+            "check_run",
+            "workflow_run",
+            "workflow_job",
+        }:
             return [event_type]
 
         if event_type in {"deployment_status", "release"}:

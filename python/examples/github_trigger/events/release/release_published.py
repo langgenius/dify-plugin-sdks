@@ -76,4 +76,3 @@ class ReleasePublishedEvent(Event):
         actor = payload.get("sender", {}).get("login")
         if actor not in users:
             raise EventIgnoreError()
-
