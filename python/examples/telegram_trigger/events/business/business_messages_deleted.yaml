@@ -5,20 +5,18 @@ identity:
     en_US: Business Messages Deleted
     zh_Hans: 商业消息被删除
     ja_JP: ビジネスメッセージ削除
-
 description:
-  en_US: Triggers when Telegram reports that previously sent business messages were deleted.
+  en_US: Triggers when Telegram reports that previously sent business messages were
+    deleted.
   zh_Hans: 当 Telegram 报告先前发送的商业消息被删除时触发。
   ja_JP: 以前に送信されたビジネスメッセージが削除されたことを Telegram が通知したときにトリガーします。
-
 parameters: []
-
 output_schema:
   type: object
   additionalProperties: false
   required:
-    - update_id
-    - deleted_business_messages
+  - update_id
+  - deleted_business_messages
   properties:
     update_id:
       type: integer
@@ -28,15 +26,131 @@ output_schema:
       additionalProperties: false
       description: Information about deleted Telegram Business messages.
       required:
-        - business_connection_id
-        - chat
-        - message_ids
+      - business_connection_id
+      - chat
+      - message_ids
       properties:
         business_connection_id:
           type: string
           description: Unique identifier of the affected business connection.
         chat:
-          $ref: "#/$defs/Chat"
+          type: object
+          description: Telegram Chat object as defined in the Bot API.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this chat.
+            type:
+              type: string
+              description: Type of chat, such as private, group, supergroup, or channel.
+            title:
+              type: string
+              description: Chat title for supergroups, channels, and group chats.
+            username:
+              type: string
+              description: Username of the chat if available.
+            first_name:
+              type: string
+              description: First name of the other party in a private chat.
+            last_name:
+              type: string
+              description: Last name of the other party in a private chat.
+            is_forum:
+              type: boolean
+              description: True if the supergroup chat is a forum.
+            photo:
+              type: object
+              description: Chat photo information.
+            active_usernames:
+              type: array
+              items:
+                type: string
+              description: List of all active chat usernames.
+            emoji_status_custom_emoji_id:
+              type: string
+              description: Custom emoji identifier of the chat emoji status.
+            bio:
+              type: string
+              description: Bio of the other party in a private chat.
+            has_private_forwards:
+              type: boolean
+              description: True if privacy settings allow private forwards.
+            has_restricted_voice_and_video_messages:
+              type: boolean
+              description: True if voice and video messages are restricted.
+            join_to_send_messages:
+              type: boolean
+              description: True if all users must join before they can send messages.
+            join_by_request:
+              type: boolean
+              description: True if only users invited by administrators can join.
+            description:
+              type: string
+              description: Chat description for supergroups and channels.
+            invite_link:
+              type: string
+              description: Primary invite link for the chat.
+            pinned_message:
+              type: object
+              description: Last pinned message in the chat.
+            permissions:
+              type: object
+              description: Default chat member permissions.
+            slow_mode_delay:
+              type: integer
+              description: Allowed delay between consecutive messages for non-administrators.
+            message_auto_delete_time:
+              type: integer
+              description: Time after which messages are automatically deleted.
+            has_protected_content:
+              type: boolean
+              description: True if content protection is enabled.
+            sticker_set_name:
+              type: string
+              description: Name of the group sticker set.
+            can_set_sticker_set:
+              type: boolean
+              description: True if the bot can change the group sticker set.
+            linked_chat_id:
+              type: integer
+              description: Identifier of the linked channel for supergroups.
+            location:
+              type: object
+              description: Location to which the supergroup is connected.
+            has_hidden_members:
+              type: boolean
+              description: True if members are hidden in the chat.
+            has_aggressive_anti_spam_enabled:
+              type: boolean
+              description: True if aggressive anti-spam is enabled.
+            has_hidden_participants:
+              type: boolean
+              description: True if only admins can see other participants.
+            has_visible_history:
+              type: boolean
+              description: True if new members can see message history.
+            boost_level:
+              type: integer
+              description: Current boost level of the chat.
+            emoji_status_expiration_date:
+              type: integer
+              description: Expiration date of the emoji status in Unix time.
+            custom_emoji_sticker_set_name:
+              type: string
+              description: Name of the custom emoji sticker set used in the chat.
+            business_intro:
+              type: object
+              description: Business intro information for the chat.
+            business_location:
+              type: object
+              description: Business location information for the chat.
+            business_opening_hours:
+              type: object
+              description: Business opening hours for the chat.
+            personal_chat:
+              type: object
+              description: Personal chat information if applicable.
         message_ids:
           type: array
           description: Identifiers of deleted messages in the chat.
@@ -45,127 +159,6 @@ output_schema:
         media_group_id:
           type: string
           description: Media group identifier for deleted album messages.
-
-$defs:
-  Chat:
-    type: object
-    description: Telegram Chat object as defined in the Bot API.
-    additionalProperties: true
-    properties:
-      id:
-        type: integer
-        description: Unique identifier for this chat.
-      type:
-        type: string
-        description: Type of chat, such as private, group, supergroup, or channel.
-      title:
-        type: string
-        description: Chat title for supergroups, channels, and group chats.
-      username:
-        type: string
-        description: Username of the chat if available.
-      first_name:
-        type: string
-        description: First name of the other party in a private chat.
-      last_name:
-        type: string
-        description: Last name of the other party in a private chat.
-      is_forum:
-        type: boolean
-        description: True if the supergroup chat is a forum.
-      photo:
-        type: object
-        description: Chat photo information.
-      active_usernames:
-        type: array
-        items:
-          type: string
-        description: List of all active chat usernames.
-      emoji_status_custom_emoji_id:
-        type: string
-        description: Custom emoji identifier of the chat emoji status.
-      bio:
-        type: string
-        description: Bio of the other party in a private chat.
-      has_private_forwards:
-        type: boolean
-        description: True if privacy settings allow private forwards.
-      has_restricted_voice_and_video_messages:
-        type: boolean
-        description: True if voice and video messages are restricted.
-      join_to_send_messages:
-        type: boolean
-        description: True if all users must join before they can send messages.
-      join_by_request:
-        type: boolean
-        description: True if only users invited by administrators can join.
-      description:
-        type: string
-        description: Chat description for supergroups and channels.
-      invite_link:
-        type: string
-        description: Primary invite link for the chat.
-      pinned_message:
-        type: object
-        description: Last pinned message in the chat.
-      permissions:
-        type: object
-        description: Default chat member permissions.
-      slow_mode_delay:
-        type: integer
-        description: Allowed delay between consecutive messages for non-administrators.
-      message_auto_delete_time:
-        type: integer
-        description: Time after which messages are automatically deleted.
-      has_protected_content:
-        type: boolean
-        description: True if content protection is enabled.
-      sticker_set_name:
-        type: string
-        description: Name of the group sticker set.
-      can_set_sticker_set:
-        type: boolean
-        description: True if the bot can change the group sticker set.
-      linked_chat_id:
-        type: integer
-        description: Identifier of the linked channel for supergroups.
-      location:
-        type: object
-        description: Location to which the supergroup is connected.
-      has_hidden_members:
-        type: boolean
-        description: True if members are hidden in the chat.
-      has_aggressive_anti_spam_enabled:
-        type: boolean
-        description: True if aggressive anti-spam is enabled.
-      has_hidden_participants:
-        type: boolean
-        description: True if only admins can see other participants.
-      has_visible_history:
-        type: boolean
-        description: True if new members can see message history.
-      boost_level:
-        type: integer
-        description: Current boost level of the chat.
-      emoji_status_expiration_date:
-        type: integer
-        description: Expiration date of the emoji status in Unix time.
-      custom_emoji_sticker_set_name:
-        type: string
-        description: Name of the custom emoji sticker set used in the chat.
-      business_intro:
-        type: object
-        description: Business intro information for the chat.
-      business_location:
-        type: object
-        description: Business location information for the chat.
-      business_opening_hours:
-        type: object
-        description: Business opening hours for the chat.
-      personal_chat:
-        type: object
-        description: Personal chat information if applicable.
-
 extra:
   python:
     source: events/business/business_messages_deleted.py
