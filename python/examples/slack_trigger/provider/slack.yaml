@@ -1,34 +1,19 @@
 subscription_schema:
-    - name: "team_id"
-      type: "text-input"
-      required: true
-      label:
-        en_US: "Team ID"
-        ja_JP: "チームID"
-        zh_Hans: "团队 ID"
-      placeholder:
-        en_US: "e.g. T0123456789"
-        ja_JP: "例: T0123456789"
-        zh_Hans: "例如：T0123456789"
-      help:
-        en_US: "Find it under Slack App > Basic Information > App Credentials."
-        ja_JP: "Slack アプリ > Basic Information > App Credentials に記載されています。"
-        zh_Hans: "在 Slack 应用 > Basic Information > App Credentials 中可以找到。"
-    - name: "signing_secret"
-      type: "secret-input"
-      required: true
-      label:
-        en_US: "Signing Secret"
-        ja_JP: "Signing Secret"
-        zh_Hans: "签名密钥"
-      placeholder:
-        en_US: "Paste your Slack signing secret"
-        ja_JP: "Slack の signing secret を貼り付けてください"
-        zh_Hans: "粘贴你的 Slack signing secret"
-      help:
-        en_US: "Slack uses the signing secret to verify webhook authenticity."
-        ja_JP: "Slack は signing secret を使用して Webhook の正当性を検証します。"
-        zh_Hans: "Slack 使用 signing secret 验证 webhook 的有效性。"
+  - name: "signing_secret"
+    type: "secret-input"
+    required: true
+    label:
+      en_US: "Signing Secret"
+      ja_JP: "Signing Secret"
+      zh_Hans: "签名密钥"
+    placeholder:
+      en_US: "Paste your Slack signing secret"
+      ja_JP: "Slack の signing secret を貼り付けてください"
+      zh_Hans: "粘贴你的 Slack signing secret"
+    help:
+      en_US: "Slack uses the signing secret to verify webhook authenticity."
+      ja_JP: "Slack は signing secret を使用して Webhook の正当性を検証します。"
+      zh_Hans: "Slack 使用 signing secret 验证 webhook 的有效性。"
 events:
   - events/app/app_mention.yaml
   - events/app/app_rate_limited.yaml
