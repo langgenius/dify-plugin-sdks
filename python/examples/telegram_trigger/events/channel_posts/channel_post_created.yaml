@@ -2,9 +2,9 @@ identity:
   name: channel_post_created
   author: langgenius
   label:
-    en_US: Message Received
-    zh_Hans: 收到消息
-    ja_JP: メッセージ受信
+    en_US: Channel Post Created
+    zh_Hans: 频道帖子已创建
+    ja_JP: チャンネル投稿作成
 description:
   en_US: Triggers when a new channel post is published.
   zh_Hans: 当频道发布新帖子时触发。

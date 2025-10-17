@@ -2,9 +2,9 @@ identity:
   name: business_message_received
   author: langgenius
   label:
-    en_US: Message Received
-    zh_Hans: 收到消息
-    ja_JP: メッセージ受信
+    en_US: Business Message Received
+    zh_Hans: 收到商业消息
+    ja_JP: ビジネスメッセージ受信
 description:
   en_US: Triggers when your bot receives a message through a Telegram Business connection.
   zh_Hans: 当通过 Telegram 商业连接收到消息时触发。

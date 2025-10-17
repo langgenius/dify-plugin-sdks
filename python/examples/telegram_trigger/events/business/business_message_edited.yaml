@@ -2,9 +2,9 @@ identity:
   name: business_message_edited
   author: langgenius
   label:
-    en_US: Message Received
-    zh_Hans: 收到消息
-    ja_JP: メッセージ受信
+    en_US: Business Message Edited
+    zh_Hans: 商业消息已编辑
+    ja_JP: ビジネスメッセージ編集
 description:
   en_US: Triggers when a Telegram Business message is edited.
   zh_Hans: 当 Telegram 商业消息被编辑时触发。

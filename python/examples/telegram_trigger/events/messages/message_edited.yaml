@@ -2,9 +2,9 @@ identity:
   name: message_edited
   author: langgenius
   label:
-    en_US: Message Received
-    zh_Hans: 收到消息
-    ja_JP: メッセージ受信
+    en_US: Message Edited
+    zh_Hans: 消息已编辑
+    ja_JP: メッセージ編集
 description:
   en_US: Triggers when a previously sent message is edited.
   zh_Hans: 当已发送的消息被编辑时触发。
