@@ -1,0 +1,116 @@
+identity:
+  name: drive_change_detected
+  author: langgenius
+  label:
+    en_US: Google Drive Change Detected
+    ja_JP: Google Drive 変更検出
+    zh_Hans: Google 云端硬盘检测到更改
+description:
+  en_US: Fetches Drive change feed entries when Google Drive sends a webhook notification.
+  ja_JP: Google Drive からの Webhook 通知を受け取った際に変更フィードを取得します。
+  zh_Hans: 在收到 Google 云端硬盘的 Webhook 通知时抓取更改列表。
+parameters:
+- name: max_changes
+  type: number-input
+  required: false
+  default: 100
+  label:
+    en_US: Maximum changes to fetch
+    ja_JP: 取得する変更の最大数
+    zh_Hans: 获取的最大更改数量
+  help:
+    en_US: Limits the number of change entries requested from the Drive API (1-1000).
+    ja_JP: Drive API から取得する変更件数の上限を設定します (1-1000)。
+    zh_Hans: 限制从 Drive API 请求的更改条目数量 (1-1000)。
+- name: include_removed
+  type: switch
+  required: false
+  default: false
+  label:
+    en_US: Include removed items
+    ja_JP: 削除済みアイテムを含める
+    zh_Hans: 包含已删除的项目
+  help:
+    en_US: If enabled, removed files will be included in the result set.
+    ja_JP: 有効にすると削除されたファイルも結果に含めます。
+    zh_Hans: 启用后，结果中会包含已删除的文件。
+- name: restrict_to_my_drive
+  type: switch
+  required: false
+  default: false
+  label:
+    en_US: Restrict to files owned by me
+    ja_JP: 自分が所有するファイルのみに制限
+    zh_Hans: 仅限我拥有的文件
+  help:
+    en_US: Only emit changes for files owned by the authenticated user.
+    ja_JP: 認証ユーザーが所有するファイルに対する変更のみを返します。
+    zh_Hans: 仅返回认证用户拥有的文件的更改。
+- name: include_items_from_all_drives
+  type: switch
+  required: false
+  default: true
+  label:
+    en_US: Include items from all drives
+    ja_JP: すべてのドライブのアイテムを含める
+    zh_Hans: 包含所有云端硬盘的项目
+  help:
+    en_US: When enabled, shared drives and other spaces included in the subscription are queried.
+    ja_JP: 有効にすると、サブスクリプションに含まれる共有ドライブなども対象になります。
+    zh_Hans: 启用后会查询订阅中包含的共享云端硬盘等空间。
+- name: supports_all_drives
+  type: switch
+  required: false
+  default: true
+  label:
+    en_US: Supports all drives
+    ja_JP: すべてのドライブをサポート
+    zh_Hans: 支持所有云端硬盘
+  help:
+    en_US: Enables the Drive API flags required for shared drives access.
+    ja_JP: 共有ドライブへのアクセスに必要な Drive API フラグを有効化します。
+    zh_Hans: 启用访问共享云端硬盘所需的 Drive API 参数。
+output_schema:
+  type: object
+  properties:
+    changes:
+      type: array
+      description: List of Drive change entries returned by the API.
+      items:
+        type: object
+        properties:
+          change_type:
+            type: string
+          removed:
+            type: boolean
+          file_id:
+            type: string
+          file:
+            type: object
+            description: The latest metadata for the changed file.
+    current_page_token:
+      type: string
+      description: The page token that was used for the API request.
+    next_page_token:
+      type: string
+      description: If present, indicates additional changes available with another request.
+    new_start_page_token:
+      type: string
+      description: Token that should be used for future incremental syncs.
+    headers:
+      type: object
+      description: Google-signed webhook headers forwarded from the trigger.
+    body:
+      type: object
+      description: Raw webhook payload body (if provided by Google Drive).
+    spaces:
+      type: array
+      items:
+        type: string
+      description: Drive spaces that were queried for changes.
+    subscription:
+      type: object
+      description: Metadata captured when the watch channel was created.
+extra:
+  python:
+    source: events/change_detected/change_detected.py

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="driveGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F9D58" />
+      <stop offset="50%" stop-color="#4285F4" />
+      <stop offset="100%" stop-color="#F4B400" />
+    </linearGradient>
+  </defs>
+  <polygon points="12,48 28,16 52,48" fill="url(#driveGradient)" stroke="#0C4A6E" stroke-width="2"/>
+  <polygon points="28,16 36,16 20,48 12,48" fill="#34A853" opacity="0.85"/>
+  <polygon points="36,16 52,48 44,48 28,16" fill="#4285F4" opacity="0.85"/>
+  <polygon points="20,48 44,48 36,32 28,32" fill="#F4B400" opacity="0.85"/>
+</svg>

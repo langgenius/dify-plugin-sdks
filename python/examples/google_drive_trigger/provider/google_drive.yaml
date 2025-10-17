@@ -1,0 +1,85 @@
+identity:
+  name: google_drive
+  author: langgenius
+  label:
+    en_US: Google Drive
+    ja_JP: Google Drive
+    zh_Hans: Google 云端硬盘
+  description:
+    en_US: Receive Google Drive change notifications via webhook channels.
+    ja_JP: Webhook チャンネルを介して Google Drive の変更通知を受信します。
+    zh_Hans: 通过 Webhook 通道接收 Google 云端硬盘的更改通知。
+channel:
+  type: trigger
+oauth_schema:
+  client_id:
+    type: text-input
+    required: true
+    label:
+      en_US: OAuth Client ID
+      ja_JP: OAuth クライアント ID
+      zh_Hans: OAuth 客户端 ID
+  client_secret:
+    type: secret-input
+    required: true
+    label:
+      en_US: OAuth Client Secret
+      ja_JP: OAuth クライアント シークレット
+      zh_Hans: OAuth 客户端密钥
+  scope:
+    type: text-input
+    required: false
+    default: https://www.googleapis.com/auth/drive.metadata.readonly
+    label:
+      en_US: OAuth Scope
+      ja_JP: OAuth スコープ
+      zh_Hans: OAuth 范围
+    help:
+      en_US: Overrides the default Google Drive scope if provided.
+      ja_JP: 指定した場合、デフォルトの Google Drive スコープを上書きします。
+      zh_Hans: 如填写，将覆盖默认的 Google 云端硬盘权限范围。
+subscription_constructor:
+  parameters:
+  - name: spaces
+    type: multi-select
+    required: true
+    default:
+    - drive
+    options:
+    - label:
+        en_US: My Drive
+        ja_JP: マイドライブ
+        zh_Hans: 我的云端硬盘
+      value: drive
+    - label:
+        en_US: Application data folder
+        ja_JP: アプリケーション データ フォルダ
+        zh_Hans: 应用数据文件夹
+      value: appDataFolder
+    - label:
+        en_US: Google Photos
+        ja_JP: Google フォト
+        zh_Hans: Google 相册
+      value: photos
+    label:
+      en_US: Spaces
+      ja_JP: スペース
+      zh_Hans: 空间
+    help:
+      en_US: Choose Drive spaces to monitor. "My Drive" is required for standard file changes.
+      ja_JP: 監視する Drive スペースを選択します。通常のファイル変更には「マイドライブ」が必要です。
+      zh_Hans: 选择需要监控的云端硬盘空间。监控常规文件变化需选择“我的云端硬盘”。
+  - name: lifetime_seconds
+    type: number-input
+    required: false
+    label:
+      en_US: Channel Lifetime (seconds)
+      ja_JP: チャンネル存続期間 (秒)
+      zh_Hans: 通道有效期（秒）
+    help:
+      en_US: Optional lifetime for the webhook channel (max 7 days). Leave empty for provider default.
+      ja_JP: Webhook チャンネルの任意の存続期間 (最大 7 日)。未入力の場合はプロバイダ既定値を使用します。
+      zh_Hans: 可选的 Webhook 通道有效期（最长 7 天）。留空使用默认值。
+extra:
+  python:
+    source: provider/google_drive.py
