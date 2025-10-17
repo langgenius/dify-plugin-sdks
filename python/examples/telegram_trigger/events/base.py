@@ -7,10 +7,9 @@ from werkzeug import Request
 
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
-from dify_plugin.interfaces.trigger import Event
 
 
-class TelegramUpdateEvent(Event):
+class TelegramUpdateEvent:
     """Base class for Telegram webhook update events."""
 
     update_key: str = ""

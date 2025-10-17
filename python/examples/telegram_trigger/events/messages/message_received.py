@@ -5,10 +5,12 @@ from typing import Any
 
 from dify_plugin.errors.trigger import EventIgnoreError
 
+from dify_plugin.interfaces.trigger import Event
+
 from ..base import TelegramUpdateEvent
 
 
-class MessageReceivedEvent(TelegramUpdateEvent):
+class MessageReceivedEvent(TelegramUpdateEvent, Event):
     """Transform Telegram message updates into workflow variables."""
 
     update_key = "message"
