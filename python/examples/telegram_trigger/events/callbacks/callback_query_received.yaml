@@ -129,6 +129,94 @@ output_schema:
             reply_markup:
               type: object
               description: Inline keyboard attached to the message.
+              additionalProperties: false
+              properties:
+                inline_keyboard:
+                  type: array
+                  description: Rows of inline keyboard buttons.
+                  items:
+                    type: array
+                    description: Single row of inline keyboard buttons.
+                    items:
+                      type: object
+                      description: Inline keyboard button definition.
+                      additionalProperties: false
+                      properties:
+                        text:
+                          type: string
+                          description: Label text on the button.
+                        url:
+                          type: string
+                          description: HTTP URL opened when the button is pressed.
+                        callback_data:
+                          type: string
+                          description: Data sent in a callback query to the bot when
+                            button pressed.
+                        web_app:
+                          type: object
+                          description: Description of the Web App launched when the
+                            button is pressed.
+                          additionalProperties: false
+                          properties:
+                            url:
+                              type: string
+                              description: HTTPS URL of the Web App to open.
+                        login_url:
+                          type: object
+                          description: Login URL for authorization.
+                          additionalProperties: false
+                          properties:
+                            url:
+                              type: string
+                              description: HTTP URL used for user authorization.
+                            forward_text:
+                              type: string
+                              description: New text of the button in forwarded messages.
+                            bot_username:
+                              type: string
+                              description: Username of a bot for user authorization.
+                            request_write_access:
+                              type: boolean
+                              description: True if the bot may send messages to the
+                                user.
+                        switch_inline_query:
+                          type: string
+                          description: Inline query inserted in the input field when
+                            the button is pressed.
+                        switch_inline_query_current_chat:
+                          type: string
+                          description: Inline query inserted in the current chat when
+                            the button is pressed.
+                        switch_inline_query_chosen_chat:
+                          type: object
+                          description: Inline query switching to a chosen chat.
+                          additionalProperties: false
+                          properties:
+                            query:
+                              type: string
+                              description: Default inline query to use.
+                            allow_user_chats:
+                              type: boolean
+                              description: True to allow selection of private chats.
+                            allow_bot_chats:
+                              type: boolean
+                              description: True to allow selection of bot chats.
+                            allow_group_chats:
+                              type: boolean
+                              description: True to allow selection of group chats.
+                            allow_channel_chats:
+                              type: boolean
+                              description: True to allow selection of channel chats.
+                        callback_game:
+                          type: object
+                          description: Description of a game launched when the user
+                            presses the button.
+                          additionalProperties: false
+                          properties: {}
+                        pay:
+                          type: boolean
+                          description: True if a Pay button that displays the invoice
+                            is pressed.
         inline_message_id:
           type: string
           description: Identifier of the inline message if the query originates from
