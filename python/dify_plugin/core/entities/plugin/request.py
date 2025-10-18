@@ -423,6 +423,7 @@ class TriggerDispatchResponse(BaseModel):
     user_id: str
     events: list[str]
     raw_http_response: str
+    payload: Mapping[str, Any]
 
     model_config = ConfigDict(protected_namespaces=())
 
