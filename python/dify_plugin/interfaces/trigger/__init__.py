@@ -114,6 +114,7 @@ class Trigger(ABC):
                     - Extract event type from headers
                     - Parse event payload from body
 
+
         Returns:
             EventDispatch: Contains:
                           - events: List of Event names to invoke (each triggers its workflow)
@@ -696,7 +697,7 @@ class Event(ABC):
     ############################################################
 
     @abstractmethod
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         """
         Transform the incoming webhook request into structured Variables.
 
@@ -712,7 +713,8 @@ class Event(ABC):
             parameters: User-configured parameters for filtering and transformation
                        (e.g., label filters, regex patterns, threshold values).
                        These come from the subscription configuration.
-
+            payload: The decoded payload from previous step `Trigger.dispatch_event`.
+                     It will be delivered into `_on_event` method.
         Returns:
             Variables: Structured variables matching the output_schema
                       defined in the event's YAML configuration.
@@ -753,11 +755,11 @@ class Event(ABC):
     #                 For executor use only                    #
     ############################################################
 
-    def on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         """
         Process the event with the given request.
         """
-        return self._on_event(request=request, parameters=parameters)
+        return self._on_event(request=request, parameters=parameters, payload=payload)
 
     def fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
         """

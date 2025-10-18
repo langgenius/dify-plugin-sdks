@@ -493,6 +493,7 @@ class PluginExecutor:
         variables: Variables = event.on_event(
             request=deserialize_request(raw_data=binascii.unhexlify(request.raw_http_request)),
             parameters=request.parameters,
+            payload=request.payload,
         )
         return TriggerInvokeEventResponse(
             variables=variables.variables,

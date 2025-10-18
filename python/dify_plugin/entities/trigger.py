@@ -51,6 +51,11 @@ class EventDispatch(BaseModel):
         description="The HTTP Response object returned to third-party calls. For example, webhook calls, etc.",
     )
 
+    payload: Mapping[str, Any] = Field(
+        default_factory=dict,
+        description="Decoded payload from the webhook request, which will be delivered into `_on_event` method.",
+    )
+
 
 @docs(
     description="The structured output variables from an event",

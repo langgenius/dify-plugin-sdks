@@ -380,6 +380,10 @@ class TriggerInvokeEventRequest(BaseModel):
     user_id: str
     raw_http_request: str
     parameters: Mapping[str, Any]
+    payload: Mapping[str, Any] = Field(
+        default_factory=dict,
+        description="The decoded payload from the webhook request, which will be delivered into `_on_event` method.",
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
