@@ -543,7 +543,7 @@ if you are not sure about the structure.
                 is_reasoning = True
             else:
                 content = reasoning_content
-        elif is_reasoning and content:
+        elif is_reasoning and (content or delta.get("tool_calls")):
             content = "\n</think>" + content
             is_reasoning = False
         return content, is_reasoning
