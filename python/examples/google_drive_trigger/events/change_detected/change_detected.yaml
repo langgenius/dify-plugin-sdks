@@ -29,21 +29,21 @@ parameters:
       en_US: Change types
       ja_JP: 変更タイプ
       zh_Hans: 更改类型
-    help:
+    description:
       en_US: Only include Drive changes whose type matches the selected values.
       ja_JP: 選択した種類に一致する Drive の変更のみを含めます。
       zh_Hans: 仅包含类型与所选值匹配的云端硬盘更改。
   - name: file_name_pattern
-    type: text-input
+    type: string
     required: false
     label:
       en_US: File name pattern
       ja_JP: ファイル名パターン
       zh_Hans: 文件名模式
-    help:
+    description:
       en_US: Filter results to file names matching the pattern. Supports * and ? wildcards and multiple patterns separated by commas or new lines.
       ja_JP: パターンに一致するファイル名のみを含めます。*, ? のワイルドカードやカンマ・改行区切りの複数指定をサポートします。
-      zh_Hans: 仅保留匹配该模式的文件名。支持 * 和 ? 通配符，可使用逗号或换行分隔多个模式。
+      zh_Hans: 仅保留匹配该模式的文件名。支持 * 和 ? 通配符，可使用 "," 或换行分隔多个模式。
     placeholder:
       en_US: "*.pdf"
       ja_JP: "*.pdf"
