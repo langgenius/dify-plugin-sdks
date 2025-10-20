@@ -97,9 +97,6 @@ class GoogleDriveTrigger(Trigger):
             subscription=subscription,
         )
 
-        for change in changes:
-            print(change["file"]["name"])
-
         return EventDispatch(events=[event_name], response=self._ok_response(), payload={"changes": changes})
 
     def _fetch_changes(
