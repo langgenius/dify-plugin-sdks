@@ -11,8 +11,8 @@ label:
   zh_Hans: Google 云端硬盘
 meta:
   arch:
-  - amd64
-  - arm64
+    - amd64
+    - arm64
   runner:
     entrypoint: main
     language: python
@@ -22,17 +22,16 @@ meta:
 name: google_drive_trigger
 plugins:
   triggers:
-  - provider/google_drive.yaml
+    - provider/google_drive.yaml
 resource:
   memory: 1048576
   permission:
-    model:
-      enabled: false
-    tool:
-      enabled: false
+    storage:
+      size: 1048576
+      enabled: true
 tags:
-- storage
-- google
-- webhook
+  - storage
+  - google
+  - webhook
 type: plugin
 version: 1.3.0

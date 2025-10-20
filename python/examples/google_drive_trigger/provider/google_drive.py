@@ -29,6 +29,8 @@ class GoogleDriveTrigger(Trigger):
     """Validate Google Drive webhook headers and dispatch change events."""
 
     _EVENT_NAME = "drive_change_detected"
+    _STORAGE_KEY = "google-drive-trigger:last-page-token"
+    _CHANGES_ENDPOINT = "https://www.googleapis.com/drive/v3/changes"
 
     def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
         if request.method not in {"POST", "GET"}:
@@ -77,7 +79,126 @@ class GoogleDriveTrigger(Trigger):
             return EventDispatch(events=[], response=self._ok_response())
 
         event_name = subscription.properties.get("event_name", self._EVENT_NAME)
-        return EventDispatch(events=[event_name], response=self._ok_response())
+
+        if not self.runtime.credentials:
+            raise TriggerDispatchError("Missing Google Drive OAuth access token in runtime credentials")
+
+        if not subscription.parameters:
+            raise TriggerDispatchError("Missing Google Drive parameters in subscription")
+
+        # fetch changes
+        changes = self._fetch_changes(
+            access_token=self.runtime.credentials.get("access_token") or "",
+            spaces=subscription.properties.get("spaces") or [],
+            include_removed=subscription.parameters.get("include_removed", False),
+            restrict_to_my_drive=subscription.parameters.get("restrict_to_my_drive", False),
+            include_items_from_all_drives=subscription.parameters.get("include_items_from_all_drives", False),
+            supports_all_drives=subscription.parameters.get("supports_all_drives", False),
+            subscription=subscription,
+        )
+
+        for change in changes:
+            print(change["file"]["name"])
+
+        return EventDispatch(events=[event_name], response=self._ok_response(), payload={"changes": changes})
+
+    def _fetch_changes(
+        self,
+        access_token: str,
+        spaces: Sequence[str],
+        include_removed: bool,
+        restrict_to_my_drive: bool,
+        include_items_from_all_drives: bool,
+        supports_all_drives: bool,
+        subscription: Subscription,
+    ):
+        """
+        Fetch changes from Google Drive.
+
+        This method will fetch changes from Google Drive until the nextPageToken is not found.
+        It will also set the max_page_token to the storage.
+
+        Args:
+            access_token: The access token for Google Drive.
+            spaces: The spaces to fetch changes from.
+            include_removed: Whether to include removed items.
+            restrict_to_my_drive: Whether to restrict to my drive.
+            include_items_from_all_drives: Whether to include items from all drives.
+            supports_all_drives: Whether to support all drives.
+            subscription: The subscription to fetch changes from.
+        """
+        headers = {"Authorization": f"Bearer {access_token}"}
+        changes: list[dict[str, Any]] = []
+
+        while True:
+            # (FIXME) it may lead some duplicates if frequency is too high
+            page_token = self._get_max_page_token(subscription)
+            params: dict[str, Any] = {
+                "pageToken": page_token,
+                "spaces": ",".join(spaces),
+                "includeRemoved": str(include_removed).lower(),
+                "restrictToMyDrive": str(restrict_to_my_drive).lower(),
+                "includeItemsFromAllDrives": str(include_items_from_all_drives).lower(),
+                "supportsAllDrives": str(supports_all_drives).lower(),
+                "fields": "changes(changeType,removed,fileId,"
+                "file(name,id,mimeType,owners,parents,driveId,teamDriveId,trashed,ownedByMe,"
+                "modifiedTime,createdTime,webViewLink,iconLink,lastModifyingUser,capabilities)),"
+                "newStartPageToken,nextPageToken",
+            }
+
+            try:
+                response = requests.get(self._CHANGES_ENDPOINT, headers=headers, params=params, timeout=10)
+            except requests.RequestException as exc:
+                raise ValueError(f"Failed to fetch Google Drive changes: {exc}") from exc
+
+            payload = response.json() if response.content else {}
+            if response.status_code != 200:
+                raise ValueError(f"Google Drive changes API error: {payload}")
+
+            next_page_token = payload.get("nextPageToken")
+            new_start_page_token = payload.get("newStartPageToken")
+
+            current_page_token = self._get_max_page_token(subscription)
+            if current_page_token == next_page_token:
+                # duplicate changes detected, skip the rest of the changes
+                break
+
+            raw_changes = payload.get("changes") or []
+            if isinstance(raw_changes, Sequence):
+                for change in raw_changes:
+                    if isinstance(change, Mapping):
+                        changes.append(dict(change))
+
+            if next_page_token:
+                self._set_max_page_token(next_page_token)
+
+            if new_start_page_token:
+                self._set_max_page_token(new_start_page_token)
+                break
+
+        return changes
+
+    def _set_max_page_token(self, token: str) -> None:
+        """
+        Set the maximum page token to the storage.
+
+        If the storage is not found, do nothing.
+        """
+        try:
+            self.runtime.session.storage.set(self._STORAGE_KEY, token.encode())
+        except Exception:
+            pass
+
+    def _get_max_page_token(self, subscription: Subscription) -> str:
+        """
+        Get the maximum page token from the storage.
+
+        If the storage is not found, return 0.
+        """
+        try:
+            return self.runtime.session.storage.get(self._STORAGE_KEY).decode() or "0"
+        except Exception:
+            return subscription.properties.get("start_page_token") or "0"
 
     @staticmethod
     def _ok_response() -> Response:
@@ -93,7 +214,9 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
     _START_PAGE_TOKEN_URL = "https://www.googleapis.com/drive/v3/changes/startPageToken"
     _WATCH_URL = "https://www.googleapis.com/drive/v3/changes/watch"
     _STOP_URL = "https://www.googleapis.com/drive/v3/channels/stop"
-    _DEFAULT_SCOPE = "https://www.googleapis.com/auth/drive.metadata.readonly"
+    _DEFAULT_SCOPE = (
+        "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.appdata"
+    )
 
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
         raise TriggerProviderCredentialValidationError("Google Drive trigger only supports OAuth credentials.")
@@ -160,7 +283,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
             "refresh_token": refresh_token,
             "scope": payload.get("scope", self._DEFAULT_SCOPE),
             "token_type": payload.get("token_type", "Bearer"),
-            "user": profile.get("user", {}),
+            "user": json.dumps(profile.get("user", {})),
         }
 
         return TriggerOAuthCredentials(credentials=credentials, expires_at=expires_at)
@@ -228,8 +351,10 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         if not spaces:
             raise SubscriptionError("At least one Drive space must be selected", error_code="SPACES_REQUIRED")
 
-        lifetime = self._safe_lifetime(parameters.get("lifetime_seconds"))
         start_page_token = self._fetch_start_page_token(access_token, spaces)
+
+        # set the start_page_token to the storage
+        self.runtime.session.storage.set(GoogleDriveTrigger._STORAGE_KEY, str(start_page_token).encode("utf-8"))
 
         channel_id = str(uuid.uuid4())
         channel_token = secrets.token_urlsafe(24)
@@ -240,9 +365,9 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
             "address": endpoint,
             "token": channel_token,
             "payload": True,
+            "expiration": int(time.time() * 1000) + (24 * 60 * 60 - 1800) * 1000,
+            # add a 1800 seconds buffer to the expiration time to avoid race conditions
         }
-        if lifetime:
-            watch_body["params"] = {"ttl": str(lifetime)}
 
         headers = {
             "Authorization": f"Bearer {access_token}",
@@ -282,11 +407,8 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
             "start_page_token": start_page_token,
             "spaces": spaces,
             "event_name": GoogleDriveTrigger._EVENT_NAME,
-            "user": credentials.get("user"),
+            "user": json.loads(credentials.get("user", "{}")),
         }
-
-        if lifetime:
-            properties["channel_ttl"] = lifetime
 
         return Subscription(
             expires_at=expires_at,
@@ -299,7 +421,9 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
     ) -> UnsubscribeResult:
         if credential_type != CredentialType.OAUTH:
-            raise UnsubscribeError("Google Drive trigger requires OAuth credentials to unsubscribe", error_code="OAUTH_REQUIRED")
+            raise UnsubscribeError(
+                "Google Drive trigger requires OAuth credentials to unsubscribe", error_code="OAUTH_REQUIRED"
+            )
 
         access_token = credentials.get("access_token")
         if not access_token:
@@ -358,9 +482,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         payload = response.json() if response.content else {}
         if response.status_code != 200:
-            raise TriggerProviderOAuthError(
-                f"Unable to fetch Google Drive profile: {payload.get('error', payload)}"
-            )
+            raise TriggerProviderOAuthError(f"Unable to fetch Google Drive profile: {payload.get('error', payload)}")
         return payload
 
     def _fetch_start_page_token(self, access_token: str, spaces: Sequence[str]) -> str:
@@ -399,16 +521,3 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
                     normalized.append(item.strip())
             return normalized
         raise SubscriptionError("spaces must be a string or list of strings", error_code="INVALID_SPACES")
-
-    @staticmethod
-    def _safe_lifetime(value: Any) -> int | None:
-        if value is None or value == "":
-            return None
-        try:
-            lifetime = int(value)
-        except (TypeError, ValueError):
-            raise SubscriptionError("lifetime_seconds must be a number", error_code="INVALID_LIFETIME")
-        if lifetime <= 0:
-            raise SubscriptionError("lifetime_seconds must be positive", error_code="INVALID_LIFETIME")
-        # Drive API enforces max ~7 days (604800 seconds)
-        return min(lifetime, 604800)

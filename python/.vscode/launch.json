@@ -97,5 +97,41 @@
                 "GEVENT_SUPPORT": "True"
             }
         },
+        {
+            "name": "SlackTrigger",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/slack_trigger/main.py",
+            "cwd": "${workspaceFolder}/examples/slack_trigger",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "GEVENT_SUPPORT": "True"
+            }
+        },
+        {
+            "name": "TelegramTrigger",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/telegram_trigger/main.py",
+            "cwd": "${workspaceFolder}/examples/telegram_trigger",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "GEVENT_SUPPORT": "True"
+            }
+        },
+        {
+            "name": "GoogleDriveTrigger",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/google_drive_trigger/main.py",
+            "cwd": "${workspaceFolder}/examples/google_drive_trigger",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "GEVENT_SUPPORT": "True"
+            }
+        },
     ]
 }

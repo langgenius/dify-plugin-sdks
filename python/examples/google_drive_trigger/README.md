@@ -34,3 +34,7 @@ Compile-time validation ensures the module imports cleanly:
 ```bash
 python -m compileall python/examples/google_drive_trigger
 ```
+
+### Attention
+
+- Enable the **Google Drive API** in the Google Cloud Console.
