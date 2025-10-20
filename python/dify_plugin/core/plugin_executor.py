@@ -535,7 +535,7 @@ class PluginExecutor:
         return TriggerDispatchResponse(
             user_id=dispatch_result.user_id,
             events=dispatch_result.events,
-            raw_http_response=binascii.hexlify(data=serialize_response(response=dispatch_result.response)).decode(),
+            response=binascii.hexlify(data=serialize_response(response=dispatch_result.response)).decode(),
             payload=dispatch_result.payload,
         )
 

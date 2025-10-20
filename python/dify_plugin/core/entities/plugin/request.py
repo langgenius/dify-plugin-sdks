@@ -420,10 +420,15 @@ class TriggerDispatchEventRequest(BaseModel):
 
 
 class TriggerDispatchResponse(BaseModel):
-    user_id: str
-    events: list[str]
-    raw_http_response: str
-    payload: Mapping[str, Any]
+    user_id: str = Field(description="The user who triggered the event (e.g. google user ID)")
+    events: list[str] = Field(description="List of Event names that should be invoked.")
+    response: str = Field(
+        description="The HTTP Response object returned to third-party calls. For example, webhook calls, etc."
+    )
+    payload: Mapping[str, Any] = Field(
+        default_factory=dict,
+        description="Decoded payload from the webhook request, which will be delivered into `_on_event` method.",
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
