@@ -8,13 +8,16 @@
 
 ## Step 1: Connect Your Google Account with OAuth
 
-1. Open the Google Drive Trigger subscription dialog in Dify and click **Connect Google Drive**.
+![Google Drive Trigger Plugin](./_assets/94938e90f2484db2762e14f8960991f3.png)
+
+1. Open the Google Drive Trigger Plugin in Dify and click **New Subscription** → **Create with OAuth**.
 2. Sign in with the Google account you want to monitor and approve the consent screen. Dify’s managed OAuth client (hosted in the Dify Cloud service) handles the redirect and token storage for you.
-3. When the dialog shows “Connected”, the plugin securely stores the access token and you can proceed to configure parameters.
 
 > Tip: The default scopes already cover change notifications (`https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.appdata`). Only change them if you know you need broader access.
 
 ### Optional: Bring Your Own OAuth Client
+
+![Google Drive Trigger Plugin](./_assets/da494b82c5a2dd73db3709295fd7a383.png)
 
 If your organization requires using its own Google OAuth credentials:
 
@@ -52,9 +55,3 @@ The trigger returns a list of change objects from the Google Drive Change API, i
 - `headers` & `body`: the raw webhook package signed by Google if you need to validate or log it.
 
 You can pass these fields directly to tools, models, or other workflow steps to build validations, notifications, or sync jobs.
-
-## Testing & Maintenance Tips
-
-- Add a test workflow branch that writes the incoming payload to a log or database so you can inspect the data structure.
-- Google watch channels expire after a while; Dify renews them automatically, but if you revoke OAuth access, remember to reconnect in Step 1.
-- If you add new shared drives later, revisit Step 2 to enable “Include items from all drives”.
