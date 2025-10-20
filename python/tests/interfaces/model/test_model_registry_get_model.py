@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock
 
+from dify_plugin.core.model_factory import ModelFactory
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.provider import ProviderEntity
-from dify_plugin.core.model_factory import ModelFactory
 from dify_plugin.interfaces.model import ModelProvider
 
 
@@ -33,4 +33,3 @@ def test_model_provider_get_model_instance_delegates_to_factory():
     result = provider.get_model_instance(ModelType.LLM)
     assert result is expected_instance
     model_factory.get_instance.assert_called_once_with(ModelType.LLM)
-

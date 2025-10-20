@@ -31,4 +31,3 @@ def test_construct_model_provider():
     assert provider is not None
     assert provider.get_provider_schema() == provider_schema
     assert provider.model_factory is model_factory
-
