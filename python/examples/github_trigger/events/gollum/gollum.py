@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class GollumEvent(Event):
     """Gollum (Wiki) event for page created/edited."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")

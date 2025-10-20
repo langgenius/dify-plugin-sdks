@@ -14,7 +14,7 @@ from dify_plugin.interfaces.trigger import Event
 class GmailMessageAddedEvent(Event):
     _GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1"
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         # Read pending batch from storage (set by trigger dispatch)
         sub_key = (self.runtime.subscription.properties or {}).get("subscription_key") or ""
         pending_key = f"gmail:{sub_key}:pending:message_added"
@@ -55,7 +55,7 @@ class GmailMessageAddedEvent(Event):
             if mresp.status_code != 200:
                 continue
             m = mresp.json() or {}
-            headers_list = ((m.get("payload") or {}).get("headers") or [])
+            headers_list = (m.get("payload") or {}).get("headers") or []
             headers_map = {h.get("name"): h.get("value") for h in headers_list if h.get("name")}
 
             has_attachments = False

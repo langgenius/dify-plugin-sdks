@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class WorkflowRunUnifiedEvent(Event):
     """Unified Workflow Run event (requested/in_progress/completed)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")

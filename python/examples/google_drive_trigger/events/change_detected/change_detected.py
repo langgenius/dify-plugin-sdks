@@ -16,7 +16,7 @@ class GoogleDriveChangeDetectedEvent(Event):
 
     _CHANGES_ENDPOINT = "https://www.googleapis.com/drive/v3/changes"
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         headers = self._get_headers(request)
         body = self._get_body(request)
 
@@ -30,9 +30,7 @@ class GoogleDriveChangeDetectedEvent(Event):
         max_changes = self._safe_int(parameters.get("max_changes"), default=100, minimum=1, maximum=1000)
         include_removed = self._to_bool(parameters.get("include_removed"), default=False)
         restrict_to_my_drive = self._to_bool(parameters.get("restrict_to_my_drive"), default=False)
-        include_items_from_all_drives = self._to_bool(
-            parameters.get("include_items_from_all_drives"), default=True
-        )
+        include_items_from_all_drives = self._to_bool(parameters.get("include_items_from_all_drives"), default=True)
         supports_all_drives = self._to_bool(parameters.get("supports_all_drives"), default=True)
 
         changes, next_page_token, new_start_page_token = self._fetch_changes(

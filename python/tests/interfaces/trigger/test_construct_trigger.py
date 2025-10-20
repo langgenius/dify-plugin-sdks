@@ -8,7 +8,7 @@ from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 from dify_plugin.entities.provider_config import CredentialType
-from dify_plugin.entities.trigger import Variables
+from dify_plugin.entities.trigger import Subscription, Variables
 from dify_plugin.interfaces.trigger import Event, EventRuntime
 
 
@@ -22,7 +22,7 @@ def test_construct_trigger():
     """
 
     class TriggerEventImpl(Event):
-        def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+        def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
             return Variables(variables={})
 
     session = Session(
@@ -32,5 +32,12 @@ def test_construct_trigger():
         writer=StdioResponseWriter(),
     )
 
-    trigger = TriggerEventImpl(runtime=EventRuntime(session=session, credential_type=CredentialType.UNAUTHORIZED))
+    trigger = TriggerEventImpl(
+        runtime=EventRuntime(
+            session=session,
+            credential_type=CredentialType.UNAUTHORIZED,
+            subscription=Subscription(expires_at=0, endpoint="test", parameters={}, properties={}),
+            credentials={},
+        )
+    )
     assert trigger is not None

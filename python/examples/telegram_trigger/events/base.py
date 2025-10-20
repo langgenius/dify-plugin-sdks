@@ -14,7 +14,7 @@ class TelegramUpdateEvent:
 
     update_key: str = ""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = self._parse_payload(request)
         update = self._extract_update(payload)
         variables = self._build_variables(payload, update, parameters)

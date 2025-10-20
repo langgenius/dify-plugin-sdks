@@ -24,7 +24,7 @@ class GmailMessageEvent(Event):
 
     _GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1"
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         envelope: Mapping[str, Any] = request.get_json()
         if not isinstance(envelope, Mapping) or "message" not in envelope:
             raise ValueError("Invalid Pub/Sub push envelope: missing message")
@@ -61,11 +61,13 @@ class GmailMessageEvent(Event):
         # First-time initialization: store current history id and return empty messages
         if not session.storage.exist(store_key):
             session.storage.set(store_key, history_id.encode("utf-8"))
-            return Variables(variables={
-                "email_address": email_address,
-                "history_id": history_id,
-                "messages": [],
-            })
+            return Variables(
+                variables={
+                    "email_address": email_address,
+                    "history_id": history_id,
+                    "messages": [],
+                }
+            )
 
         last_history_id: str = session.storage.get(store_key).decode("utf-8")
 
@@ -88,16 +90,17 @@ class GmailMessageEvent(Event):
                     # If historyId is invalid/out of date, reset to current and ignore
                     try:
                         err: dict[str, Any] = resp.json()
-                        reason = (
-                            (err.get("error", {}).get("errors", [{}])[0].get("reason"))
-                            or err.get("error", {}).get("status")
-                        )
+                        reason = (err.get("error", {}).get("errors", [{}])[0].get("reason")) or err.get(
+                            "error", {}
+                        ).get("status")
                     except Exception:
                         reason = ""
                     if reason and "history" in reason.lower():
                         # reset position and swallow this batch
                         session.storage.set(store_key, history_id.encode("utf-8"))
-                        return Variables(variables={"email_address": email_address, "history_id": history_id, "messages": []})
+                        return Variables(
+                            variables={"email_address": email_address, "history_id": history_id, "messages": []}
+                        )
                     raise ValueError(f"Gmail history.list failed: {resp.text}")
 
                 data: dict[str, Any] = resp.json() or {}
@@ -127,12 +130,13 @@ class GmailMessageEvent(Event):
                 if mresp.status_code != 200:
                     continue
                 m: dict[str, Any] = mresp.json() or {}
-                headers_list: list[dict[str, Any]] = ((m.get("payload") or {}).get("headers") or [])
+                headers_list: list[dict[str, Any]] = (m.get("payload") or {}).get("headers") or []
                 headers_map = {h.get("name"): h.get("value") for h in headers_list if h.get("name")}
 
                 # attachments detection: any part with filename
                 has_attachments = False
                 attachments_meta: list[dict[str, Any]] = []
+
                 def _walk_parts(part: Mapping[str, Any] | None):
                     nonlocal has_attachments, attachments_meta
                     if not part:
@@ -140,33 +144,37 @@ class GmailMessageEvent(Event):
                     filename = part.get("filename")
                     if filename:
                         has_attachments = True
-                        attachments_meta.append({
-                            "filename": filename,
-                            "mimeType": part.get("mimeType"),
-                            "size": ((part.get("body") or {}).get("size")),
-                        })
+                        attachments_meta.append(
+                            {
+                                "filename": filename,
+                                "mimeType": part.get("mimeType"),
+                                "size": ((part.get("body") or {}).get("size")),
+                            }
+                        )
                     for p in (part.get("parts") or []) or []:
                         _walk_parts(p)
 
                 _walk_parts((m.get("payload") or {}))
 
-                messages.append({
-                    "id": m.get("id"),
-                    "threadId": m.get("threadId"),
-                    "internalDate": m.get("internalDate"),
-                    "snippet": m.get("snippet"),
-                    "sizeEstimate": m.get("sizeEstimate"),
-                    "labelIds": m.get("labelIds") or [],
-                    "headers": {
-                        "From": headers_map.get("From"),
-                        "To": headers_map.get("To"),
-                        "Subject": headers_map.get("Subject"),
-                        "Date": headers_map.get("Date"),
-                        "Message-Id": headers_map.get("Message-Id"),
-                    },
-                    "has_attachments": has_attachments,
-                    "attachments": attachments_meta,
-                })
+                messages.append(
+                    {
+                        "id": m.get("id"),
+                        "threadId": m.get("threadId"),
+                        "internalDate": m.get("internalDate"),
+                        "snippet": m.get("snippet"),
+                        "sizeEstimate": m.get("sizeEstimate"),
+                        "labelIds": m.get("labelIds") or [],
+                        "headers": {
+                            "From": headers_map.get("From"),
+                            "To": headers_map.get("To"),
+                            "Subject": headers_map.get("Subject"),
+                            "Date": headers_map.get("Date"),
+                            "Message-Id": headers_map.get("Message-Id"),
+                        },
+                        "has_attachments": has_attachments,
+                        "attachments": attachments_meta,
+                    }
+                )
 
         # Apply filters
         def _contains_any(val: str | None, cond: str | None) -> bool:
@@ -200,8 +208,10 @@ class GmailMessageEvent(Event):
             # If no messages match, ignore event to avoid triggering downstream flows
             raise EventIgnoreError()
 
-        return Variables(variables={
-            "email_address": email_address,
-            "history_id": history_id,
-            "messages": filtered,
-        })
+        return Variables(
+            variables={
+                "email_address": email_address,
+                "history_id": history_id,
+                "messages": filtered,
+            }
+        )

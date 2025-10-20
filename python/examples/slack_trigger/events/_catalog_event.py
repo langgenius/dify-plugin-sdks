@@ -59,7 +59,7 @@ class CatalogSlackEvent(Event):
             return []
         return [value]
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         metadata = self._get_metadata()
 
         payload = request.get_json(silent=True) or {}

@@ -11,7 +11,7 @@ from dify_plugin.interfaces.trigger import Event
 
 
 class GmailMessageDeletedEvent(Event):
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         sub_key = (self.runtime.subscription.properties or {}).get("subscription_key") or ""
         pending_key = f"gmail:{sub_key}:pending:message_deleted"
 

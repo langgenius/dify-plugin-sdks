@@ -98,7 +98,7 @@ class MockEventHandler(Event):
     Mock Event
     """
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         """
         Transform the webhook request into Variables
         """

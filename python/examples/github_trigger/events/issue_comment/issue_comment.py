@@ -15,7 +15,7 @@ from ..utils import issue_comment as icu
 class IssueCommentUnifiedEvent(Event):
     """Unified Issue Comment event (created/edited/deleted)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
