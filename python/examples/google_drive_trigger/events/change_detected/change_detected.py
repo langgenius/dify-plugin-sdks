@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from fnmatch import fnmatchcase
 from typing import Any
 
 from werkzeug import Request
@@ -22,6 +23,8 @@ class GoogleDriveChangeDetectedEvent(Event):
         spaces = self._resolve_spaces()
         include_removed = self._to_bool(parameters.get("include_removed"), default=False)
         restrict_to_my_drive = self._to_bool(parameters.get("restrict_to_my_drive"), default=False)
+        change_types = self._normalize_string_list(parameters.get("change_types"))
+        file_name_patterns = self._normalize_string_list(parameters.get("file_name_pattern"))
 
         changes = payload.get("changes", [])
         if not changes:
@@ -31,6 +34,8 @@ class GoogleDriveChangeDetectedEvent(Event):
             changes=changes,
             include_removed=include_removed,
             restrict_to_my_drive=restrict_to_my_drive,
+            change_types=change_types,
+            file_name_patterns=file_name_patterns,
         )
 
         if not filtered_changes:
@@ -59,7 +64,12 @@ class GoogleDriveChangeDetectedEvent(Event):
         changes: Sequence[Mapping[str, Any]],
         include_removed: bool,
         restrict_to_my_drive: bool,
+        change_types: Sequence[str],
+        file_name_patterns: Sequence[str],
     ) -> list[dict[str, Any]]:
+        allowed_change_types = {change_type.lower() for change_type in change_types if change_type}
+        normalized_patterns = [pattern for pattern in file_name_patterns if pattern]
+
         results: list[dict[str, Any]] = []
         for change in changes:
             removed = bool(change.get("removed"))
@@ -69,6 +79,15 @@ class GoogleDriveChangeDetectedEvent(Event):
             file_info = change.get("file") or {}
             if not isinstance(file_info, Mapping):
                 file_info = {}
+
+            change_type_value = change.get("changeType")
+            normalized_change_type = str(change_type_value).lower() if change_type_value is not None else ""
+            if allowed_change_types and normalized_change_type not in allowed_change_types:
+                continue
+
+            file_name = str(file_info.get("name") or "")
+            if normalized_patterns and (not file_name or not any(fnmatchcase(file_name, pattern) for pattern in normalized_patterns)):
+                continue
 
             if restrict_to_my_drive and not file_info.get("ownedByMe"):
                 continue
@@ -113,3 +132,22 @@ class GoogleDriveChangeDetectedEvent(Event):
             if normalized in {"false", "0", "no", "off"}:
                 return False
         return default if value == "" else bool(value)
+
+    @staticmethod
+    def _normalize_string_list(value: Any) -> list[str]:
+        if value is None:
+            return []
+        if isinstance(value, str):
+            parts = [part.strip() for part in value.replace("\n", ",").split(",")]
+            return [part for part in parts if part]
+        if isinstance(value, Sequence) and not isinstance(value, (bytes, bytearray, str)):
+            results: list[str] = []
+            for item in value:
+                if item is None:
+                    continue
+                text = str(item).strip()
+                if text:
+                    results.append(text)
+            return results
+        text = str(value).strip()
+        return [text] if text else []

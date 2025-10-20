@@ -9,7 +9,45 @@ description:
   en_US: Fetches Drive change feed entries when Google Drive sends a webhook notification.
   ja_JP: Google Drive からの Webhook 通知を受け取った際に変更フィードを取得します。
   zh_Hans: 在收到 Google 云端硬盘的 Webhook 通知时抓取更改列表。
-parameters: []
+parameters:
+  - name: change_types
+    type: checkbox
+    multiple: true
+    required: false
+    options:
+      - label:
+          en_US: File change
+          ja_JP: ファイルの変更
+          zh_Hans: 文件更改
+        value: file
+      - label:
+          en_US: Drive change
+          ja_JP: ドライブの変更
+          zh_Hans: 云端硬盘更改
+        value: drive
+    label:
+      en_US: Change types
+      ja_JP: 変更タイプ
+      zh_Hans: 更改类型
+    help:
+      en_US: Only include Drive changes whose type matches the selected values.
+      ja_JP: 選択した種類に一致する Drive の変更のみを含めます。
+      zh_Hans: 仅包含类型与所选值匹配的云端硬盘更改。
+  - name: file_name_pattern
+    type: text-input
+    required: false
+    label:
+      en_US: File name pattern
+      ja_JP: ファイル名パターン
+      zh_Hans: 文件名模式
+    help:
+      en_US: Filter results to file names matching the pattern. Supports * and ? wildcards and multiple patterns separated by commas or new lines.
+      ja_JP: パターンに一致するファイル名のみを含めます。*, ? のワイルドカードやカンマ・改行区切りの複数指定をサポートします。
+      zh_Hans: 仅保留匹配该模式的文件名。支持 * 和 ? 通配符，可使用逗号或换行分隔多个模式。
+    placeholder:
+      en_US: "*.pdf"
+      ja_JP: "*.pdf"
+      zh_Hans: "*.pdf"
 output_schema:
   type: object
   properties:
