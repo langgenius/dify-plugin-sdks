@@ -320,7 +320,7 @@ class PluginRegistration:
                         models[model_cls.model_type] = model_cls
 
             model_factory = ModelFactory(provider, models)
-            provider_instance = cls(provider, models)  # type: ignore
+            provider_instance = cls(provider, model_factory)  # type: ignore
             self.models_mapping[provider.provider] = (
                 provider,
                 provider_instance,

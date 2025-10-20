@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+from typing import final
 
+from dify_plugin.core.model_factory import ModelFactory
 from dify_plugin.entities.model import AIModelEntity, ModelType
 from dify_plugin.entities.model.provider import ProviderEntity
 from dify_plugin.interfaces.model.ai_model import AIModel
@@ -7,21 +9,22 @@ from dify_plugin.interfaces.model.ai_model import AIModel
 
 class ModelProvider(ABC):
     provider_schema: ProviderEntity
-    model_instance_map: dict[ModelType, AIModel]
+    model_factory: ModelFactory
 
+    @final
     def __init__(
         self,
         provider_schemas: ProviderEntity,
-        model_instance_map: dict[ModelType, AIModel],
+        model_factory: ModelFactory,
     ):
         """
         Initialize model provider
 
         :param provider_schemas: provider schemas
-        :param model_instance_map: model instance map
+        :param model_factory: model factory
         """
         self.provider_schema = provider_schemas
-        self.model_instance_map = model_instance_map
+        self.model_factory = model_factory
 
     @abstractmethod
     def validate_provider_credentials(self, credentials: dict) -> None:
@@ -71,7 +74,4 @@ class ModelProvider(ABC):
         :param model_type: model type defined in `ModelType`
         :return:
         """
-        if model_type in self.model_instance_map:
-            return self.model_instance_map[model_type]
-
-        raise ValueError(f"Model instance not found for model type: {model_type}")
+        return self.model_factory.get_instance(model_type)
