@@ -12,3 +12,5 @@
 **/*.difypkg
 
 .vscode/
+
+**/.DS_Store

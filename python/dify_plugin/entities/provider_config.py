@@ -29,6 +29,7 @@ class CommonParameterType(Enum):
     FILE = "file"
     FILES = "files"
     BOOLEAN = "boolean"
+    CHECKBOX = "checkbox"
     APP_SELECTOR = "app-selector"
     MODEL_SELECTOR = "model-selector"
     # TOOL_SELECTOR = "tool-selector"
@@ -112,8 +113,9 @@ class ProviderConfig(BaseModel):
     type: Config = Field(..., description="The type of the credentials")
     scope: str | None = None
     required: bool = False
-    default: Union[int, float, str, bool] | None = None
+    default: Union[int, float, str, bool, list] | None = None
     options: list[ConfigOption] | None = None
+    multiple: bool | None = False
     label: I18nObject
     help: I18nObject | None = None
     url: str | None = None
@@ -123,3 +125,4 @@ class ProviderConfig(BaseModel):
 class CredentialType(Enum):
     API_KEY = "api-key"
     OAUTH = "oauth2"
+    UNAUTHORIZED = "unauthorized"
