@@ -148,7 +148,10 @@ def test_model_registry_get_model(monkeypatch):
                         supported_model_types=[ModelType.LLM],
                         configurate_methods=[],
                     ),
-                    model_instance_map={},
+                    model_factory=ModelFactory(
+                        provider=provider_configuration,
+                        models={ModelType.LLM: MockLLM},
+                    ),
                 ),
                 ModelFactory(
                     provider=provider_configuration,
