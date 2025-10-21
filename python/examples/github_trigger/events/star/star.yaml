@@ -16,7 +16,7 @@ parameters:
     en_US: "Events your interested in"
     zh_Hans: "你感兴趣的事件"
     ja_JP: "あなたが興味のあるイベント"
-  type: "select"
+  type: "checkbox"
   required: false
   multiple: true
   default:
