@@ -19,7 +19,7 @@ parameters:
     ja_JP: 差出人に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Comma-separated keywords. Any match in the From header passes.
     zh_Hans: 逗号分隔关键字。任一命中发件人 From 头即通过。
     ja_JP: カンマ区切りキーワード。From ヘッダ内にいずれかが含まれれば通過。
@@ -31,7 +31,7 @@ parameters:
     ja_JP: 宛先に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Comma-separated keywords. Any match in the To header passes.
     zh_Hans: 逗号分隔关键字。任一命中收件人 To 头即通过。
     ja_JP: カンマ区切りキーワード。To ヘッダ内にいずれかが含まれれば通過。
@@ -43,7 +43,7 @@ parameters:
     ja_JP: 件名に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Comma-separated keywords. Any match in Subject passes.
     zh_Hans: 逗号分隔关键字。任一命中主题即通过。
     ja_JP: カンマ区切りキーワード。件名にいずれかが含まれれば通過。
@@ -55,7 +55,7 @@ parameters:
     ja_JP: 添付あり
   type: boolean
   required: false
-  help:
+  description:
     en_US: If true, only messages with attachments pass. If false, only messages without attachments pass. If unset, no filter.
     zh_Hans: 为 true 仅保留有附件的邮件，为 false 仅保留无附件邮件，不设置则不过滤。
     ja_JP: true の場合は添付ありのみ、false の場合は添付なしのみ。未設定ならフィルタしません。

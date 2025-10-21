@@ -93,7 +93,7 @@ subscription_constructor:
         en_US: Spaces
         ja_JP: スペース
         zh_Hans: 空间
-      help:
+      description:
         en_US: Choose Drive spaces to monitor. "My Drive" is required for standard file changes.
         ja_JP: 監視する Drive スペースを選択します。通常のファイル変更には「マイドライブ」が必要です。
         zh_Hans: 选择需要监控的云端硬盘空间。监控常规文件变化需选择“我的云端硬盘”。
@@ -105,7 +105,7 @@ subscription_constructor:
         en_US: Include removed items
         ja_JP: 削除済みアイテムを含める
         zh_Hans: 包含已删除的项目
-      help:
+      description:
         en_US: If enabled, removed files will be included in the result set.
         ja_JP: 有効にすると削除されたファイルも結果に含めます。
         zh_Hans: 启用后，结果中会包含已删除的文件。
@@ -117,7 +117,7 @@ subscription_constructor:
         en_US: Restrict to my drive
         ja_JP: マイドライブのみを監視
         zh_Hans: 仅监控我的云端硬盘
-      help:
+      description:
         en_US: If enabled, only changes in your My Drive will be monitored.
         ja_JP: 有効にすると、マイドライブのみが監視対象となります。
         zh_Hans: 启用后，仅监控我的云端硬盘。
@@ -129,7 +129,7 @@ subscription_constructor:
         en_US: Include items from all drives
         ja_JP: すべてのドライブからのアイテムを含める
         zh_Hans: 包含所有云端硬盘中的项目
-      help:
+      description:
         en_US: If enabled, changes from all drives will be monitored.
         ja_JP: 有効にすると、すべてのドライブからの変更が監視対象となります。
         zh_Hans: 启用后，监控所有云端硬盘中的项目。
@@ -141,7 +141,7 @@ subscription_constructor:
         en_US: Supports all drives
         ja_JP: すべてのドライブをサポート
         zh_Hans: 支持所有云端硬盘
-      help:
+      description:
         en_US: If enabled, the changes from all drives will be monitored.
         ja_JP: 有効にすると、すべてのドライブからの変更が監視対象となります。
         zh_Hans: 启用后，监控所有云端硬盘中的项目。

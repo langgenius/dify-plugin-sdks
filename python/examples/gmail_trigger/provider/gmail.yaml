@@ -59,7 +59,7 @@ subscription_constructor:
       en_US: "me"
       zh_Hans: "me"
       ja_JP: "me"
-    help:
+    description:
       en_US: "Gmail API userId. Use 'me' for the authorized account or provide the full Gmail address."
       zh_Hans: "Gmail API 的 userId。使用 'me' 表示当前授权用户，或填写完整邮箱地址。"
       ja_JP: "Gmail API の userId。認証済みユーザーは 'me'、または完全なメールアドレスを指定します。"
@@ -76,7 +76,7 @@ subscription_constructor:
       en_US: "projects/<project>/topics/<topic>"
       zh_Hans: "projects/<project>/topics/<topic>"
       ja_JP: "projects/<project>/topics/<topic>"
-    help:
+    description:
       en_US: "Cloud Pub/Sub topic for Gmail to publish notifications to."
       zh_Hans: "Gmail 将向该 Cloud Pub/Sub 主题发布通知。"
       ja_JP: "Gmail が通知を発行する Cloud Pub/Sub トピック。"
@@ -90,7 +90,7 @@ subscription_constructor:
       en_US: "Label IDs"
       zh_Hans: "标签 ID"
       ja_JP: "ラベル ID"
-    help:
+    description:
       en_US: "Optional Gmail label IDs to scope notifications (e.g., INBOX, UNREAD). Loaded from Gmail dynamically."
       zh_Hans: "可选，用于限定通知范围的 Gmail 标签 ID（如 INBOX、UNREAD）。选项将从 Gmail 动态加载。"
       ja_JP: "任意。通知範囲を限定する Gmail ラベル ID（例: INBOX, UNREAD）。Gmail から動的に取得します。"
@@ -114,7 +114,7 @@ subscription_constructor:
         en_US: "Exclude these labels"
         zh_Hans: "排除这些标签"
         ja_JP: "これらのラベルを除外"
-    help:
+    description:
       en_US: "How to apply labelIds to filter notifications when calling users.watch (include/exclude)."
       zh_Hans: "调用 users.watch 时如何应用 labelIds 来过滤通知（包含/排除）。"
       ja_JP: "users.watch 呼び出し時に labelIds をどのように適用するか（含む/除外）。"
