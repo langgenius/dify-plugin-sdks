@@ -118,9 +118,9 @@ subscription_constructor:
         ja_JP: マイドライブのみを監視
         zh_Hans: 仅监控我的云端硬盘
       description:
-        en_US: If enabled, only changes in your My Drive will be monitored.
-        ja_JP: 有効にすると、マイドライブのみが監視対象となります。
-        zh_Hans: 启用后，仅监控我的云端硬盘。
+        en_US: If enabled, only changes in your My Drive will be monitored. the restrict_to_my_drive parameter is only applicable for the 'drive' and 'photos' spaces.
+        ja_JP: 有効にすると、マイドライブのみが監視対象となります。 restrict_to_my_drive パラメータは 'drive' と 'photos' スペースにのみ適用されます。
+        zh_Hans: 启用后，仅监控我的云端硬盘。restrict_to_my_drive 参数仅适用于 'drive' 和 'photos' 空间。
     - name: include_items_from_all_drives
       type: boolean
       required: false

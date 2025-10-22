@@ -33,6 +33,9 @@ parameters:
       en_US: Only include Drive changes whose type matches the selected values.
       ja_JP: 選択した種類に一致する Drive の変更のみを含めます。
       zh_Hans: 仅包含类型与所选值匹配的云端硬盘更改。
+    default:
+      - file
+      - drive
   - name: file_name_pattern
     type: string
     required: false
@@ -114,6 +117,15 @@ output_schema:
                     emailAddress:
                       type: string
                       description: The email address of the user.
+                    kind:
+                      type: string
+                      description: Identifies what kind of resource this is (e.g., "drive#user").
+                    me:
+                      type: boolean
+                      description: Whether this user is the same as the authenticated user.
+                    permissionId:
+                      type: string
+                      description: The user's ID as visible in Permission resources.
                     photoLink:
                       type: string
                       description: A link to the user's profile photo.
@@ -127,12 +139,88 @@ output_schema:
                   emailAddress:
                     type: string
                     description: The email address of the user.
+                  kind:
+                    type: string
+                    description: Identifies what kind of resource this is (e.g., "drive#user").
+                  me:
+                    type: boolean
+                    description: Whether this user is the same as the authenticated user.
+                  permissionId:
+                    type: string
+                    description: The user's ID as visible in Permission resources.
                   photoLink:
                     type: string
                     description: A link to the user's profile photo.
               capabilities:
                 type: object
                 description: Capabilities the current user has on the file.
+                properties:
+                  canAcceptOwnership:
+                    type: boolean
+                  canAddChildren:
+                    type: boolean
+                  canAddMyDriveParent:
+                    type: boolean
+                  canChangeCopyRequiresWriterPermission:
+                    type: boolean
+                  canChangeItemDownloadRestriction:
+                    type: boolean
+                  canChangeSecurityUpdateEnabled:
+                    type: boolean
+                  canChangeViewersCanCopyContent:
+                    type: boolean
+                  canComment:
+                    type: boolean
+                  canCopy:
+                    type: boolean
+                  canDelete:
+                    type: boolean
+                  canDisableInheritedPermissions:
+                    type: boolean
+                  canDownload:
+                    type: boolean
+                  canEdit:
+                    type: boolean
+                  canEnableInheritedPermissions:
+                    type: boolean
+                  canListChildren:
+                    type: boolean
+                  canModifyContent:
+                    type: boolean
+                  canModifyContentRestriction:
+                    type: boolean
+                  canModifyEditorContentRestriction:
+                    type: boolean
+                  canModifyLabels:
+                    type: boolean
+                  canModifyOwnerContentRestriction:
+                    type: boolean
+                  canMoveChildrenWithinDrive:
+                    type: boolean
+                  canMoveItemIntoTeamDrive:
+                    type: boolean
+                  canMoveItemOutOfDrive:
+                    type: boolean
+                  canMoveItemWithinDrive:
+                    type: boolean
+                  canReadLabels:
+                    type: boolean
+                  canReadRevisions:
+                    type: boolean
+                  canRemoveChildren:
+                    type: boolean
+                  canRemoveContentRestriction:
+                    type: boolean
+                  canRemoveMyDriveParent:
+                    type: boolean
+                  canRename:
+                    type: boolean
+                  canShare:
+                    type: boolean
+                  canTrash:
+                    type: boolean
+                  canUntrash:
+                    type: boolean
     current_page_token:
       type: string
       description: The page token that was used for the API request.

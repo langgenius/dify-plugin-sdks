@@ -21,8 +21,6 @@ class GoogleDriveChangeDetectedEvent(Event):
             raise ValueError("Missing Google Drive OAuth access token in runtime credentials")
 
         spaces = self._resolve_spaces()
-        include_removed = self._to_bool(parameters.get("include_removed"), default=False)
-        restrict_to_my_drive = self._to_bool(parameters.get("restrict_to_my_drive"), default=False)
         change_types = self._normalize_string_list(parameters.get("change_types"))
         file_name_patterns = self._normalize_string_list(parameters.get("file_name_pattern"))
 
@@ -32,8 +30,6 @@ class GoogleDriveChangeDetectedEvent(Event):
 
         filtered_changes = self._filter_changes(
             changes=changes,
-            include_removed=include_removed,
-            restrict_to_my_drive=restrict_to_my_drive,
             change_types=change_types,
             file_name_patterns=file_name_patterns,
         )
@@ -62,8 +58,6 @@ class GoogleDriveChangeDetectedEvent(Event):
         self,
         *,
         changes: Sequence[Mapping[str, Any]],
-        include_removed: bool,
-        restrict_to_my_drive: bool,
         change_types: Sequence[str],
         file_name_patterns: Sequence[str],
     ) -> list[dict[str, Any]]:
@@ -73,29 +67,26 @@ class GoogleDriveChangeDetectedEvent(Event):
         results: list[dict[str, Any]] = []
         for change in changes:
             removed = bool(change.get("removed"))
-            if removed and not include_removed:
-                continue
 
             file_info = change.get("file") or {}
             if not isinstance(file_info, Mapping):
                 file_info = {}
 
-            change_type_value = change.get("changeType")
+            change_type_value = change.get("change_type") or change.get("changeType")
             normalized_change_type = str(change_type_value).lower() if change_type_value is not None else ""
             if allowed_change_types and normalized_change_type not in allowed_change_types:
                 continue
 
             file_name = str(file_info.get("name") or "")
-            if normalized_patterns and (not file_name or not any(fnmatchcase(file_name, pattern) for pattern in normalized_patterns)):
-                continue
-
-            if restrict_to_my_drive and not file_info.get("ownedByMe"):
+            if normalized_patterns and (
+                not file_name or not any(fnmatchcase(file_name, pattern) for pattern in normalized_patterns)
+            ):
                 continue
 
             normalized = {
-                "change_type": change.get("changeType"),
+                "change_type": change.get("change_type") or change.get("changeType"),
                 "removed": removed,
-                "file_id": change.get("fileId"),
+                "file_id": change.get("file_id") or change.get("fileId"),
                 "file": dict(file_info),
             }
             results.append(normalized)
