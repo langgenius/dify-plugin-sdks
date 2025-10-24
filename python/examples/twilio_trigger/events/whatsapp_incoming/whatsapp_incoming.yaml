@@ -1,0 +1,125 @@
+identity:
+  name: whatsapp_incoming
+  author: langgenius
+  label:
+    en_US: WhatsApp Message Received
+    zh_Hans: 接收 WhatsApp 消息
+    ja_JP: WhatsAppメッセージ受信
+
+description:
+  en_US: Triggered when a WhatsApp message is received on your Twilio WhatsApp number
+  zh_Hans: 当 Twilio WhatsApp 号码收到消息时触发
+  ja_JP: Twilio WhatsApp番号でメッセージを受信したときにトリガーされます
+
+parameters:
+  - name: from_number
+    label:
+      en_US: From Number (WhatsApp)
+      zh_Hans: 发送者号码（WhatsApp）
+      ja_JP: 送信者番号（WhatsApp）
+    type: string
+    required: false
+    placeholder:
+      en_US: "whatsapp:+1234567890"
+      zh_Hans: "whatsapp:+1234567890"
+      ja_JP: "whatsapp:+1234567890"
+    description:
+      en_US: Filter by sender WhatsApp number (format whatsapp:+1234567890). Leave empty to accept all.
+      zh_Hans: 按发送者 WhatsApp 号码过滤（格式 whatsapp:+1234567890）。留空表示接受所有。
+      ja_JP: 送信者のWhatsApp番号でフィルタリング（形式 whatsapp:+1234567890）。空の場合はすべて受け入れます。
+
+  - name: body_contains
+    label:
+      en_US: Message Contains Keywords
+      zh_Hans: 消息包含关键词
+      ja_JP: メッセージにキーワードを含む
+    type: string
+    required: false
+    placeholder:
+      en_US: "order, support, help"
+      zh_Hans: "order, support, help"
+      ja_JP: "order, support, help"
+    description:
+      en_US: Comma-separated keywords (case-insensitive). Trigger only if message contains any keyword.
+      zh_Hans: 逗号分隔的关键词（不区分大小写）。仅当消息包含任一关键词时触发。
+      ja_JP: カンマ区切りのキーワード（大文字小文字を区別しない）。メッセージにいずれかのキーワードが含まれている場合のみトリガーされます。
+
+  - name: has_media
+    label:
+      en_US: Has Media Attachments
+      zh_Hans: 包含媒体附件
+      ja_JP: メディア添付ファイルを含む
+    type: boolean
+    required: false
+    default: null
+    description:
+      en_US: Filter by media presence. True = must have media, False = must not have media, leave unset to accept all.
+      zh_Hans: 按媒体附件过滤。True = 必须有媒体，False = 不能有媒体，不设置则接受所有。
+      ja_JP: メディアの有無でフィルタリング。True = メディア必須、False = メディアなし、未設定の場合はすべて受け入れます。
+
+output_schema:
+  type: object
+  required:
+    - MessageSid
+    - From
+    - To
+    - Body
+  properties:
+    MessageSid:
+      type: string
+      description: Unique identifier for the message
+      example: "SM1234567890abcdef1234567890abcdef"
+
+    AccountSid:
+      type: string
+      description: Your Twilio Account SID
+
+    From:
+      type: string
+      description: Sender's WhatsApp number (format whatsapp:+15551234567)
+      example: "whatsapp:+15551234567"
+
+    To:
+      type: string
+      description: Recipient's WhatsApp number (your Twilio number)
+      example: "whatsapp:+15559876543"
+
+    Body:
+      type: string
+      description: Message text content
+      example: "Hello, I need support"
+
+    NumMedia:
+      type: string
+      description: Number of media files attached
+      example: "0"
+
+    ProfileName:
+      type: string
+      description: Sender's WhatsApp profile name
+      example: "John Doe"
+
+    WaId:
+      type: string
+      description: WhatsApp ID of the sender
+      example: "15551234567"
+
+    SmsStatus:
+      type: string
+      description: Status of the message
+      enum: [received, sent, delivered, read, failed]
+      example: "received"
+
+    NumSegments:
+      type: string
+      description: Number of segments in the message
+      example: "1"
+
+    ApiVersion:
+      type: string
+      description: Twilio API version used
+      example: "2010-04-01"
+
+extra:
+  python:
+    source: events/whatsapp_incoming/whatsapp_incoming.py

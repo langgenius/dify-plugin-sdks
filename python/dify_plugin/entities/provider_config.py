@@ -117,6 +117,7 @@ class ProviderConfig(BaseModel):
     options: list[ConfigOption] | None = None
     multiple: bool | None = False
     label: I18nObject
+    description: I18nObject | None = None
     help: I18nObject | None = None
     url: str | None = None
     placeholder: I18nObject | None = None

@@ -1,0 +1,162 @@
+identity:
+  name: call_answered
+  author: langgenius
+  label:
+    en_US: Call Answered
+    zh_Hans: 通话已接听
+    ja_JP: 通話応答済み
+
+description:
+  en_US: Triggered when a voice call is answered (call status becomes 'in-progress')
+  zh_Hans: 当语音通话被接听时触发（通话状态变为 'in-progress'）
+  ja_JP: 音声通話が応答されたときにトリガーされます（通話ステータスが 'in-progress' になる）
+
+parameters:
+  - name: from_number
+    label:
+      en_US: From Number
+      zh_Hans: 主叫号码
+      ja_JP: 発信者番号
+    type: string
+    required: false
+    placeholder:
+      en_US: "+1234567890"
+      zh_Hans: "+1234567890"
+      ja_JP: "+1234567890"
+    description:
+      en_US: Filter by caller phone number.
+      zh_Hans: 按主叫电话号码过滤。
+      ja_JP: 発信者の電話番号でフィルタリング。
+
+  - name: to_number
+    label:
+      en_US: To Number
+      zh_Hans: 被叫号码
+      ja_JP: 着信番号
+    type: string
+    required: false
+    placeholder:
+      en_US: "+1234567890"
+      zh_Hans: "+1234567890"
+      ja_JP: "+1234567890"
+    description:
+      en_US: Filter by called phone number.
+      zh_Hans: 按被叫电话号码过滤。
+      ja_JP: 着信者の電話番号でフィルタリング。
+
+  - name: direction_filter
+    label:
+      en_US: Call Direction
+      zh_Hans: 通话方向
+      ja_JP: 通話方向
+    type: select
+    required: false
+    multiple: true
+    options:
+      - value: inbound
+        label:
+          en_US: Inbound
+          zh_Hans: 呼入
+          ja_JP: 着信
+      - value: outbound-api
+        label:
+          en_US: Outbound (API)
+          zh_Hans: 呼出（API）
+          ja_JP: 発信（API）
+      - value: outbound-dial
+        label:
+          en_US: Outbound (Dial)
+          zh_Hans: 呼出（拨号）
+          ja_JP: 発信（ダイヤル）
+    description:
+      en_US: Filter by call direction.
+      zh_Hans: 按通话方向过滤。
+      ja_JP: 通話方向でフィルタリング。
+
+output_schema:
+  type: object
+  required:
+    - CallSid
+    - CallStatus
+  properties:
+    CallSid:
+      type: string
+      description: Unique identifier for the call
+      example: "CA1234567890abcdef1234567890abcdef"
+
+    AccountSid:
+      type: string
+      description: Your Twilio Account SID
+
+    From:
+      type: string
+      description: Caller's phone number
+      example: "+15551234567"
+
+    To:
+      type: string
+      description: Called phone number
+      example: "+15559876543"
+
+    CallStatus:
+      type: string
+      description: Current status (should be 'in-progress' for answered calls)
+      example: "in-progress"
+
+    Direction:
+      type: string
+      description: Direction of the call
+      enum: [inbound, outbound-api, outbound-dial]
+      example: "inbound"
+
+    Timestamp:
+      type: string
+      description: Timestamp when call was answered
+      format: date-time
+
+    CallbackSource:
+      type: string
+      description: Source of the callback
+      example: "call-progress-events"
+
+    SequenceNumber:
+      type: string
+      description: Sequence number for ordering callbacks
+
+    FromCity:
+      type: string
+      description: Caller's city
+
+    FromState:
+      type: string
+      description: Caller's state
+
+    FromCountry:
+      type: string
+      description: Caller's country code
+      example: "US"
+
+    ToCity:
+      type: string
+      description: Called party's city
+
+    ToState:
+      type: string
+      description: Called party's state
+
+    ToCountry:
+      type: string
+      description: Called party's country code
+
+    CallerName:
+      type: string
+      description: Caller ID name
+
+    ApiVersion:
+      type: string
+      description: Twilio API version used
+      example: "2010-04-01"
+
+extra:
+  python:
+    source: events/call_answered/call_answered.py

@@ -1,0 +1,120 @@
+identity:
+  name: voice_incoming
+  author: langgenius
+  label:
+    en_US: Incoming Voice Call
+    zh_Hans: 来电
+    ja_JP: 着信電話
+
+description:
+  en_US: Triggered when receiving an incoming voice call
+  zh_Hans: 当接收到来电时触发
+  ja_JP: 着信電話を受信したときにトリガーされます
+
+parameters:
+  - name: from_number
+    label:
+      en_US: From Number
+      zh_Hans: 主叫号码
+      ja_JP: 発信者番号
+    type: string
+    required: false
+    placeholder:
+      en_US: "+1234567890 or comma-separated list"
+      zh_Hans: "+1234567890 或逗号分隔的号码列表"
+      ja_JP: "+1234567890 またはカンマ区切りのリスト"
+    description:
+      en_US: Filter by caller phone number(s). Leave empty to accept all callers.
+      zh_Hans: 按主叫电话号码过滤。留空表示接受所有主叫。
+      ja_JP: 発信者の電話番号でフィルタリング。空の場合はすべての発信者を受け入れます。
+
+  - name: to_number
+    label:
+      en_US: To Number
+      zh_Hans: 被叫号码
+      ja_JP: 着信番号
+    type: string
+    required: false
+    placeholder:
+      en_US: "+1234567890 or comma-separated list"
+      zh_Hans: "+1234567890 或逗号分隔的号码列表"
+      ja_JP: "+1234567890 またはカンマ区切りのリスト"
+    description:
+      en_US: Filter by recipient phone number(s). Leave empty to accept all recipients.
+      zh_Hans: 按被叫电话号码过滤。留空表示接受所有被叫。
+      ja_JP: 着信者の電話番号でフィルタリング。空の場合はすべての着信者を受け入れます。
+
+output_schema:
+  type: object
+  required:
+    - CallSid
+    - From
+    - To
+  properties:
+    CallSid:
+      type: string
+      description: Unique identifier for the call
+
+    AccountSid:
+      type: string
+      description: Your Twilio Account SID
+
+    From:
+      type: string
+      description: Caller's phone number
+
+    To:
+      type: string
+      description: Called phone number
+
+    Direction:
+      type: string
+      description: Direction of the call (always 'inbound' for incoming calls)
+
+    FromCity:
+      type: string
+      description: Caller's city (if available)
+
+    FromState:
+      type: string
+      description: Caller's state (if available)
+
+    FromZip:
+      type: string
+      description: Caller's ZIP code (if available)
+
+    FromCountry:
+      type: string
+      description: Caller's country code
+
+    ToCity:
+      type: string
+      description: Called party's city
+
+    ToState:
+      type: string
+      description: Called party's state
+
+    ToZip:
+      type: string
+      description: Called party's ZIP code
+
+    ToCountry:
+      type: string
+      description: Called party's country code
+
+    CallerName:
+      type: string
+      description: Caller ID name (if available)
+
+    ApiVersion:
+      type: string
+      description: Twilio API version used
+
+    ForwardedFrom:
+      type: string
+      description: Original number if call was forwarded
+
+extra:
+  python:
+    source: events/voice_incoming/voice_incoming.py

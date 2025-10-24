@@ -1,0 +1,172 @@
+identity:
+  name: sms_status
+  author: langgenius
+  label:
+    en_US: SMS Status Callback
+    zh_Hans: 短信状态回调
+    ja_JP: SMSステータスコールバック
+
+description:
+  en_US: Triggered when an SMS message status changes (queued, sent, delivered, failed, etc.)
+  zh_Hans: 当短信状态变化时触发（排队、已发送、已送达、失败等）
+  ja_JP: SMSメッセージのステータスが変更されたときにトリガーされます（キューイング、送信、配信、失敗など）
+
+parameters:
+  - name: status_filter
+    label:
+      en_US: Status Filter
+      zh_Hans: 状态过滤
+      ja_JP: ステータスフィルター
+    type: select
+    required: false
+    multiple: true
+    options:
+      - value: queued
+        label:
+          en_US: Queued
+          zh_Hans: 排队中
+          ja_JP: キューイング中
+      - value: sending
+        label:
+          en_US: Sending
+          zh_Hans: 发送中
+          ja_JP: 送信中
+      - value: sent
+        label:
+          en_US: Sent
+          zh_Hans: 已发送
+          ja_JP: 送信済み
+      - value: delivered
+        label:
+          en_US: Delivered
+          zh_Hans: 已送达
+          ja_JP: 配信済み
+      - value: undelivered
+        label:
+          en_US: Undelivered
+          zh_Hans: 未送达
+          ja_JP: 未配信
+      - value: failed
+        label:
+          en_US: Failed
+          zh_Hans: 失败
+          ja_JP: 失敗
+    description:
+      en_US: Filter by message status. Leave empty to accept all status changes.
+      zh_Hans: 按消息状态过滤。留空表示接受所有状态变化。
+      ja_JP: メッセージステータスでフィルタリング。空の場合はすべてのステータス変更を受け入れます。
+
+  - name: to_number
+    label:
+      en_US: To Number
+      zh_Hans: 接收者号码
+      ja_JP: 受信者番号
+    type: string
+    required: false
+    placeholder:
+      en_US: "+1234567890 or comma-separated list"
+      zh_Hans: "+1234567890 或逗号分隔的号码列表"
+      ja_JP: "+1234567890 またはカンマ区切りのリスト"
+    description:
+      en_US: Filter by recipient phone number(s). Leave empty to accept all recipients.
+      zh_Hans: 按接收者电话号码过滤。留空表示接受所有接收者。
+      ja_JP: 受信者の電話番号でフィルタリング。空の場合はすべての受信者を受け入れます。
+
+  - name: error_code_filter
+    label:
+      en_US: Include Error Codes Only
+      zh_Hans: 仅包含错误代码
+      ja_JP: エラーコードのみを含める
+    type: boolean
+    required: false
+    default: false
+    description:
+      en_US: If true, only trigger when ErrorCode is present (failed messages).
+      zh_Hans: 如果为 true，仅在存在 ErrorCode 时触发（失败的消息）。
+      ja_JP: trueの場合、ErrorCodeが存在する場合のみトリガーします（失敗したメッセージ）。
+
+output_schema:
+  type: object
+  required:
+    - MessageSid
+    - MessageStatus
+  properties:
+    MessageSid:
+      type: string
+      description: Unique identifier for the message
+
+    AccountSid:
+      type: string
+      description: Your Twilio Account SID
+
+    MessagingServiceSid:
+      type: string
+      description: Messaging Service SID (if applicable)
+
+    From:
+      type: string
+      description: Sender's phone number
+
+    To:
+      type: string
+      description: Recipient's phone number
+
+    MessageStatus:
+      type: string
+      description: Current status of the message
+      enum: [queued, sending, sent, delivered, undelivered, failed]
+
+    ErrorCode:
+      type: string
+      description: Twilio error code (if message failed)
+
+    ErrorMessage:
+      type: string
+      description: Human-readable error message
+
+    Body:
+      type: string
+      description: Message text content
+
+    NumMedia:
+      type: string
+      description: Number of media files attached
+
+    NumSegments:
+      type: string
+      description: Number of segments in the message
+
+    Price:
+      type: string
+      description: Cost of the message (negative for outbound)
+
+    PriceUnit:
+      type: string
+      description: Currency of the price
+
+    ApiVersion:
+      type: string
+      description: Twilio API version used
+
+    Uri:
+      type: string
+      description: URI of the Message resource
+
+    DateCreated:
+      type: string
+      description: Date the message was created
+      format: date-time
+
+    DateSent:
+      type: string
+      description: Date the message was sent
+      format: date-time
+
+    DateUpdated:
+      type: string
+      description: Date the message status was updated
+      format: date-time
+
+extra:
+  python:
+    source: events/sms_status/sms_status.py

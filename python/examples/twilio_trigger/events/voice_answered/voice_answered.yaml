@@ -1,0 +1,123 @@
+identity:
+  name: voice_answered
+  author: langgenius
+  label:
+    en_US: Voice Call Answered
+    zh_Hans: 呼叫已接听
+    ja_JP: 通話応答済み
+
+description:
+  en_US: Triggered when a voice call is answered
+  zh_Hans: 当语音通话被接听时触发
+  ja_JP: 音声通話が応答されたときにトリガーされます
+
+parameters:
+  - name: from_number
+    label:
+      en_US: From Number
+      zh_Hans: 主叫号码
+      ja_JP: 発信者番号
+    type: string
+    required: false
+    placeholder:
+      en_US: "+1234567890 or comma-separated list"
+      zh_Hans: "+1234567890 或逗号分隔的号码列表"
+      ja_JP: "+1234567890 またはカンマ区切りのリスト"
+    description:
+      en_US: Filter by caller phone number(s). Leave empty to accept all callers.
+      zh_Hans: 按主叫电话号码过滤。留空表示接受所有主叫。
+      ja_JP: 発信者の電話番号でフィルタリング。空の場合はすべての発信者を受け入れます。
+
+  - name: to_number
+    label:
+      en_US: To Number
+      zh_Hans: 被叫号码
+      ja_JP: 着信番号
+    type: string
+    required: false
+    placeholder:
+      en_US: "+1234567890 or comma-separated list"
+      zh_Hans: "+1234567890 或逗号分隔的号码列表"
+      ja_JP: "+1234567890 またはカンマ区切りのリスト"
+    description:
+      en_US: Filter by recipient phone number(s). Leave empty to accept all recipients.
+      zh_Hans: 按被叫电话号码过滤。留空表示接受所有被叫。
+      ja_JP: 着信者の電話番号でフィルタリング。空の場合はすべての着信者を受け入れます。
+
+  - name: direction_filter
+    label:
+      en_US: Call Direction
+      zh_Hans: 通话方向
+      ja_JP: 通話方向
+    type: select
+    required: false
+    multiple: true
+    options:
+      - value: inbound
+        label:
+          en_US: Inbound
+          zh_Hans: 呼入
+          ja_JP: 着信
+      - value: outbound-api
+        label:
+          en_US: Outbound (API)
+          zh_Hans: 呼出（API）
+          ja_JP: 発信（API）
+      - value: outbound-dial
+        label:
+          en_US: Outbound (Dial)
+          zh_Hans: 呼出（拨号）
+          ja_JP: 発信（ダイヤル）
+    description:
+      en_US: Filter by call direction. Leave empty to accept all directions.
+      zh_Hans: 按通话方向过滤。留空表示接受所有方向。
+      ja_JP: 通話方向でフィルタリング。空の場合はすべての方向を受け入れます。
+
+output_schema:
+  type: object
+  required:
+    - CallSid
+    - CallStatus
+  properties:
+    CallSid:
+      type: string
+      description: Unique identifier for the call
+
+    AccountSid:
+      type: string
+      description: Your Twilio Account SID
+
+    From:
+      type: string
+      description: Caller's phone number
+
+    To:
+      type: string
+      description: Called phone number
+
+    CallStatus:
+      type: string
+      description: Current status of the call
+      enum: [in-progress, answered]
+
+    Direction:
+      type: string
+      description: Direction of the call
+      enum: [inbound, outbound-api, outbound-dial]
+
+    Timestamp:
+      type: string
+      description: Timestamp of the status change
+      format: date-time
+
+    CallbackSource:
+      type: string
+      description: Source of the callback
+
+    SequenceNumber:
+      type: string
+      description: Sequence number for ordering callbacks
+
+extra:
+  python:
+    source: events/voice_answered/voice_answered.py

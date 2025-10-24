@@ -1,0 +1,146 @@
+identity:
+  name: recording_completed
+  author: langgenius
+  label:
+    en_US: Recording Completed
+    zh_Hans: 录音完成
+    ja_JP: 録音完了
+
+description:
+  en_US: Triggered when a call recording is completed and the audio file is ready
+  zh_Hans: 当通话录音完成且音频文件准备就绪时触发
+  ja_JP: 通話録音が完了し、音声ファイルが準備できたときにトリガーされます
+
+parameters:
+  - name: recording_status_filter
+    label:
+      en_US: Recording Status Filter
+      zh_Hans: 录音状态过滤
+      ja_JP: 録音ステータスフィルター
+    type: select
+    required: false
+    multiple: true
+    options:
+      - value: completed
+        label:
+          en_US: Completed
+          zh_Hans: 已完成
+          ja_JP: 完了
+      - value: absent
+        label:
+          en_US: Absent
+          zh_Hans: 不存在
+          ja_JP: 不在
+      - value: failed
+        label:
+          en_US: Failed
+          zh_Hans: 失败
+          ja_JP: 失敗
+    default:
+      - completed
+    description:
+      en_US: Filter by recording status. Default is 'completed' only.
+      zh_Hans: 按录音状态过滤。默认仅 'completed'。
+      ja_JP: 録音ステータスでフィルタリング。デフォルトは 'completed' のみ。
+
+  - name: min_duration
+    label:
+      en_US: Minimum Duration (seconds)
+      zh_Hans: 最小时长（秒）
+      ja_JP: 最小時間（秒）
+    type: number
+    required: false
+    placeholder:
+      en_US: "5"
+      zh_Hans: "5"
+      ja_JP: "5"
+    description:
+      en_US: Only trigger if recording is at least this many seconds long.
+      zh_Hans: 仅当录音至少为此秒数时触发。
+      ja_JP: 録音が少なくともこの秒数の場合にのみトリガーします。
+
+  - name: from_number
+    label:
+      en_US: From Number
+      zh_Hans: 主叫号码
+      ja_JP: 発信者番号
+    type: string
+    required: false
+    placeholder:
+      en_US: "+1234567890"
+      zh_Hans: "+1234567890"
+      ja_JP: "+1234567890"
+    description:
+      en_US: Filter recordings by caller phone number.
+      zh_Hans: 按主叫电话号码过滤录音。
+      ja_JP: 発信者の電話番号で録音をフィルタリング。
+
+output_schema:
+  type: object
+  required:
+    - RecordingSid
+    - RecordingStatus
+  properties:
+    RecordingSid:
+      type: string
+      description: Unique identifier for the recording
+
+    AccountSid:
+      type: string
+      description: Your Twilio Account SID
+
+    CallSid:
+      type: string
+      description: SID of the call that was recorded
+
+    RecordingStatus:
+      type: string
+      description: Status of the recording
+      enum: [in-progress, completed, absent, failed]
+
+    RecordingUrl:
+      type: string
+      description: URL to access the recording audio file
+      format: uri
+
+    RecordingDuration:
+      type: string
+      description: Duration of the recording in seconds
+
+    RecordingChannels:
+      type: string
+      description: Number of audio channels (1 for mono, 2 for dual-channel)
+
+    RecordingSource:
+      type: string
+      description: Source of the recording
+      enum: [DialVerb, Conference, OutboundAPI, Trunking, RecordVerb, StartCallRecording]
+
+    RecordingStartTime:
+      type: string
+      description: Timestamp when recording started
+      format: date-time
+
+    From:
+      type: string
+      description: Phone number of the caller
+
+    To:
+      type: string
+      description: Phone number that was called
+
+    CallDuration:
+      type: string
+      description: Total duration of the call
+
+    ErrorCode:
+      type: string
+      description: Error code if recording failed
+
+    ApiVersion:
+      type: string
+      description: Twilio API version used
+
+extra:
+  python:
+    source: events/recording_completed/recording_completed.py

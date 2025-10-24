@@ -1,0 +1,241 @@
+identity:
+  name: call_completed
+  author: langgenius
+  label:
+    en_US: Call Completed
+    zh_Hans: 通话已完成
+    ja_JP: 通話完了
+
+description:
+  en_US: Triggered when a voice call ends normally (completed, busy, no-answer, etc.)
+  zh_Hans: 当语音通话正常结束时触发（已完成、忙线、无应答等）
+  ja_JP: 音声通話が正常に終了したときにトリガーされます（完了、話中、応答なしなど）
+
+parameters:
+  - name: call_status_filter
+    label:
+      en_US: Call End Status
+      zh_Hans: 通话结束状态
+      ja_JP: 通話終了ステータス
+    type: select
+    required: false
+    multiple: true
+    options:
+      - value: completed
+        label:
+          en_US: Completed
+          zh_Hans: 已完成
+          ja_JP: 完了
+      - value: busy
+        label:
+          en_US: Busy
+          zh_Hans: 忙线
+          ja_JP: 話中
+      - value: no-answer
+        label:
+          en_US: No Answer
+          zh_Hans: 无应答
+          ja_JP: 応答なし
+      - value: canceled
+        label:
+          en_US: Canceled
+          zh_Hans: 已取消
+          ja_JP: キャンセル済み
+      - value: failed
+        label:
+          en_US: Failed
+          zh_Hans: 失败
+          ja_JP: 失敗
+    default:
+      - completed
+    description:
+      en_US: Filter by call end status. Default is 'completed' only.
+      zh_Hans: 按通话结束状态过滤。默认仅 'completed'。
+      ja_JP: 通話終了ステータスでフィルタリング。デフォルトは 'completed' のみ。
+
+  - name: min_duration
+    label:
+      en_US: Minimum Duration (seconds)
+      zh_Hans: 最小通话时长（秒）
+      ja_JP: 最小通話時間（秒）
+    type: number
+    required: false
+    placeholder:
+      en_US: "30"
+      zh_Hans: "30"
+      ja_JP: "30"
+    description:
+      en_US: Only trigger if call lasted at least this many seconds (for completed calls).
+      zh_Hans: 仅当通话至少持续此秒数时触发（仅对已完成的通话）。
+      ja_JP: 通話が少なくともこの秒数続いた場合にのみトリガーします（完了した通話の場合）。
+
+  - name: max_duration
+    label:
+      en_US: Maximum Duration (seconds)
+      zh_Hans: 最大通话时长（秒）
+      ja_JP: 最大通話時間（秒）
+    type: number
+    required: false
+    placeholder:
+      en_US: "600"
+      zh_Hans: "600"
+      ja_JP: "600"
+    description:
+      en_US: Only trigger if call lasted at most this many seconds (for completed calls).
+      zh_Hans: 仅当通话最多持续此秒数时触发（仅对已完成的通话）。
+      ja_JP: 通話が最大でこの秒数続いた場合にのみトリガーします（完了した通話の場合）。
+
+  - name: from_number
+    label:
+      en_US: From Number
+      zh_Hans: 主叫号码
+      ja_JP: 発信者番号
+    type: string
+    required: false
+    description:
+      en_US: Filter by caller phone number.
+      zh_Hans: 按主叫电话号码过滤。
+      ja_JP: 発信者の電話番号でフィルタリング。
+
+  - name: to_number
+    label:
+      en_US: To Number
+      zh_Hans: 被叫号码
+      ja_JP: 着信番号
+    type: string
+    required: false
+    description:
+      en_US: Filter by called phone number.
+      zh_Hans: 按被叫电话号码过滤。
+      ja_JP: 着信者の電話番号でフィルタリング。
+
+  - name: direction_filter
+    label:
+      en_US: Call Direction
+      zh_Hans: 通话方向
+      ja_JP: 通話方向
+    type: select
+    required: false
+    multiple: true
+    options:
+      - value: inbound
+        label:
+          en_US: Inbound
+          zh_Hans: 呼入
+          ja_JP: 着信
+      - value: outbound-api
+        label:
+          en_US: Outbound (API)
+          zh_Hans: 呼出（API）
+          ja_JP: 発信（API）
+      - value: outbound-dial
+        label:
+          en_US: Outbound (Dial)
+          zh_Hans: 呼出（拨号）
+          ja_JP: 発信（ダイヤル）
+    description:
+      en_US: Filter by call direction.
+      zh_Hans: 按通话方向过滤。
+      ja_JP: 通話方向でフィルタリング。
+
+output_schema:
+  type: object
+  required:
+    - CallSid
+    - CallStatus
+  properties:
+    CallSid:
+      type: string
+      description: Unique identifier for the call
+      example: "CA1234567890abcdef1234567890abcdef"
+
+    AccountSid:
+      type: string
+      description: Your Twilio Account SID
+
+    From:
+      type: string
+      description: Caller's phone number
+      example: "+15551234567"
+
+    To:
+      type: string
+      description: Called phone number
+      example: "+15559876543"
+
+    CallStatus:
+      type: string
+      description: Final call status
+      enum: [completed, busy, no-answer, canceled, failed]
+      example: "completed"
+
+    Direction:
+      type: string
+      description: Direction of the call
+      enum: [inbound, outbound-api, outbound-dial]
+
+    Duration:
+      type: string
+      description: Call duration in seconds (for completed calls)
+      example: "120"
+
+    CallDuration:
+      type: string
+      description: Total call duration including ringing time
+      example: "125"
+
+    Timestamp:
+      type: string
+      description: Timestamp when call ended
+      format: date-time
+
+    Price:
+      type: string
+      description: Cost of the call
+      example: "-0.0150"
+
+    PriceUnit:
+      type: string
+      description: Currency of the price
+      example: "USD"
+
+    FromCity:
+      type: string
+      description: Caller's city
+
+    FromState:
+      type: string
+      description: Caller's state
+
+    FromCountry:
+      type: string
+      description: Caller's country code
+
+    ToCity:
+      type: string
+      description: Called party's city
+
+    ToState:
+      type: string
+      description: Called party's state
+
+    ToCountry:
+      type: string
+      description: Called party's country code
+
+    ErrorCode:
+      type: string
+      description: Twilio error code (if call failed)
+
+    ErrorMessage:
+      type: string
+      description: Human-readable error message
+
+    ApiVersion:
+      type: string
+      description: Twilio API version used
+      example: "2010-04-01"
+
+extra:
+  python:
+    source: events/call_completed/call_completed.py

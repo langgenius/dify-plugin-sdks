@@ -1,0 +1,298 @@
+subscription_schema:
+  - name: "auth_token"
+    type: "secret-input"
+    required: false
+    label:
+      en_US: "Auth Token (for signature validation)"
+      zh_Hans: "Auth Token（用于签名验证）"
+      ja_JP: "Auth Token（署名検証用）"
+    help:
+      en_US: "Your Twilio Auth Token used to validate webhook signatures. This is automatically filled when creating a subscription."
+      zh_Hans: "用于验证 Webhook 签名的 Twilio Auth Token。创建订阅时自动填充。"
+      ja_JP: "Webhook署名の検証に使用するTwilio Auth Token。サブスクリプション作成時に自動入力されます。"
+    url: https://www.twilio.com/docs/usage/webhooks/webhooks-security
+
+subscription_constructor:
+  parameters:
+    - name: "phone_number_sid"
+      label:
+        en_US: "Phone Number"
+        zh_Hans: "电话号码"
+        ja_JP: "電話番号"
+      type: "dynamic-select"
+      required: true
+      placeholder:
+        en_US: "Select a Twilio phone number"
+        zh_Hans: "选择 Twilio 电话号码"
+        ja_JP: "Twilio電話番号を選択"
+      description:
+        en_US: "Twilio phone number to configure webhooks for"
+        zh_Hans: "要配置 Webhook 的 Twilio 电话号码"
+        ja_JP: "Webhookを設定するTwilio電話番号"
+
+    - name: "events"
+      label:
+        en_US: "Events"
+        zh_Hans: "事件类型"
+        ja_JP: "イベントタイプ"
+      type: "checkbox"
+      required: true
+      multiple: true
+      default:
+        - "sms_incoming"
+        - "sms_status"
+        - "voice_incoming"
+      options:
+        - value: "sms_incoming"
+          label:
+            en_US: "SMS Incoming"
+            zh_Hans: "接收短信"
+            ja_JP: "SMS受信"
+        - value: "sms_status"
+          label:
+            en_US: "SMS Status Callback"
+            zh_Hans: "短信状态回调"
+            ja_JP: "SMSステータスコールバック"
+        - value: "voice_incoming"
+          label:
+            en_US: "Incoming Voice Call"
+            zh_Hans: "来电"
+            ja_JP: "着信電話"
+        - value: "voice_initiated"
+          label:
+            en_US: "Voice Call Initiated"
+            zh_Hans: "呼叫已发起"
+            ja_JP: "通話開始"
+        - value: "voice_ringing"
+          label:
+            en_US: "Voice Call Ringing"
+            zh_Hans: "呼叫响铃中"
+            ja_JP: "通話呼び出し中"
+        - value: "voice_answered"
+          label:
+            en_US: "Voice Call Answered"
+            zh_Hans: "呼叫已接听"
+            ja_JP: "通話応答済み"
+        - value: "voice_completed"
+          label:
+            en_US: "Voice Call Completed"
+            zh_Hans: "呼叫已结束"
+            ja_JP: "通話完了"
+        - value: "recording_completed"
+          label:
+            en_US: "Recording Completed"
+            zh_Hans: "录音完成"
+            ja_JP: "録音完了"
+        - value: "whatsapp_incoming"
+          label:
+            en_US: "WhatsApp Incoming"
+            zh_Hans: "接收 WhatsApp 消息"
+            ja_JP: "WhatsApp受信"
+        - value: "whatsapp_status"
+          label:
+            en_US: "WhatsApp Status Callback"
+            zh_Hans: "WhatsApp 状态回调"
+            ja_JP: "WhatsAppステータスコールバック"
+      description:
+        en_US: "Select which event types to trigger on"
+        zh_Hans: "选择要触发的事件类型"
+        ja_JP: "トリガーするイベントタイプを選択"
+
+  credentials_schema:
+    - name: "account_sid"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Account SID"
+        zh_Hans: "账户 SID"
+        ja_JP: "アカウントSID"
+      placeholder:
+        en_US: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        zh_Hans: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ja_JP: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      description:
+        en_US: "Required for both Auth Token and API Key authentication methods."
+        zh_Hans: "认证令牌和 API 密钥两种认证方式都需要此字段。"
+        ja_JP: "認証トークンとAPIキーの両方の認証方法に必要です。"
+      help:
+        en_US: "Get your Account SID from Twilio Console Dashboard."
+        zh_Hans: "在 Twilio 控制台仪表板获取您的账户 SID。"
+        ja_JP: "Twilio コンソールダッシュボードからアカウントSIDを取得してください。"
+      url: https://console.twilio.com
+
+    - name: "auth_token"
+      type: "secret-input"
+      required: false
+      label:
+        en_US: "Auth Token (Option 1)"
+        zh_Hans: "认证令牌（选项 1）"
+        ja_JP: "認証トークン（オプション1）"
+      placeholder:
+        en_US: "Your auth token"
+        zh_Hans: "您的认证令牌"
+        ja_JP: "認証トークン"
+      description:
+        en_US: "For development. Use with Account SID above OR use API Keys below for production."
+        zh_Hans: "用于开发环境。与上面的账户 SID 一起使用，或使用下面的 API 密钥用于生产环境。"
+        ja_JP: "開発環境用。上のアカウントSIDと一緒に使用するか、本番環境では下のAPIキーを使用。"
+      help:
+        en_US: "Get your Auth Token from Twilio Console Dashboard."
+        zh_Hans: "在 Twilio 控制台仪表板获取您的认证令牌。"
+        ja_JP: "Twilio コンソールダッシュボードから認証トークンを取得してください。"
+      url: https://console.twilio.com
+
+    - name: "api_key_sid"
+      type: "secret-input"
+      required: false
+      label:
+        en_US: "API Key SID (Option 2)"
+        zh_Hans: "API 密钥 SID（选项 2）"
+        ja_JP: "APIキーSID（オプション2）"
+      placeholder:
+        en_US: "SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        zh_Hans: "SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ja_JP: "SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      description:
+        en_US: "Recommended for production. Use with API Key Secret below. IMPORTANT: Must be 'Main' type API Key (not 'Standard' or 'Restricted')."
+        zh_Hans: "推荐用于生产环境。与下面的 API 密钥密文一起使用。重要：必须使用「Main」类型的 API 密钥（不能使用「Standard」或「Restricted」类型）。"
+        ja_JP: "本番環境推奨。下のAPIキーシークレットと一緒に使用します。重要：「Main」タイプのAPIキーが必須です（「Standard」や「Restricted」は使用不可）。"
+      help:
+        en_US: "Create a 'Main' type API Key in Twilio Console. Standard/Restricted types will not work."
+        zh_Hans: "在 Twilio 控制台创建「Main」类型的 API 密钥。Standard/Restricted 类型无法使用。"
+        ja_JP: "Twilio コンソールで「Main」タイプのAPIキーを作成してください。Standard/Restricted タイプは使用できません。"
+      url: https://www.twilio.com/console/project/api-keys
+
+    - name: "api_key_secret"
+      type: "secret-input"
+      required: false
+      label:
+        en_US: "API Key Secret (Option 2)"
+        zh_Hans: "API 密钥密文（选项 2）"
+        ja_JP: "APIキーシークレット（オプション2）"
+      placeholder:
+        en_US: "Your API Key Secret"
+        zh_Hans: "您的 API 密钥密文"
+        ja_JP: "APIキーシークレット"
+      description:
+        en_US: "Use with 'Main' type API Key SID above. Save it securely - shown only once when created."
+        zh_Hans: "与上面「Main」类型的 API 密钥 SID 一起使用。请妥善保存 - 创建时仅显示一次。"
+        ja_JP: "上の「Main」タイプのAPIキーSIDと一緒に使用します。安全に保存してください - 作成時に一度だけ表示されます。"
+      help:
+        en_US: "Get API Key Secret when creating a 'Main' type API Key in Twilio Console. Cannot be retrieved again after creation."
+        zh_Hans: "在 Twilio 控制台创建「Main」类型 API 密钥时获取密钥密文。创建后无法再次获取。"
+        ja_JP: "Twilio コンソールで「Main」タイプAPIキー作成時にシークレットを取得してください。作成後は再取得できません。"
+      url: https://www.twilio.com/console/project/api-keys
+
+  oauth_schema:
+    client_schema:
+      - name: "client_id"
+        type: "secret-input"
+        required: true
+        label:
+          en_US: "Client ID"
+          zh_Hans: "客户端 ID"
+          ja_JP: "クライアントID"
+        placeholder:
+          en_US: "Your Twilio OAuth Client ID"
+          zh_Hans: "您的 Twilio OAuth 客户端 ID"
+          ja_JP: "Twilio OAuth クライアントID"
+        help:
+          en_US: "OAuth Client ID from your Twilio OAuth App configuration"
+          zh_Hans: "从 Twilio OAuth 应用配置中获取的客户端 ID"
+          ja_JP: "Twilio OAuth アプリ設定からのクライアントID"
+        url: https://www.twilio.com/console/oauth/apps
+
+      - name: "client_secret"
+        type: "secret-input"
+        required: true
+        label:
+          en_US: "Client Secret"
+          zh_Hans: "客户端密钥"
+          ja_JP: "クライアントシークレット"
+        placeholder:
+          en_US: "Your Twilio OAuth Client Secret"
+          zh_Hans: "您的 Twilio OAuth 客户端密钥"
+          ja_JP: "Twilio OAuth クライアントシークレット"
+        help:
+          en_US: "OAuth Client Secret from your Twilio OAuth App configuration"
+          zh_Hans: "从 Twilio OAuth 应用配置中获取的客户端密钥"
+          ja_JP: "Twilio OAuth アプリ設定からのクライアントシークレット"
+        url: https://www.twilio.com/console/oauth/apps
+
+      - name: "scope"
+        type: "text-input"
+        required: false
+        default: "openid profile email"
+        label:
+          en_US: "OAuth Scopes"
+          zh_Hans: "OAuth 作用域"
+          ja_JP: "OAuth スコープ"
+        placeholder:
+          en_US: "openid profile email"
+          zh_Hans: "openid profile email"
+          ja_JP: "openid profile email"
+        help:
+          en_US: "OAuth scopes for Twilio API access. Default: openid profile email"
+          zh_Hans: "Twilio API 访问的 OAuth 作用域。默认：openid profile email"
+          ja_JP: "Twilio API アクセスの OAuth スコープ。デフォルト：openid profile email"
+        url: https://www.twilio.com/docs/iam/oauth-apps/scopes
+
+    credentials_schema:
+      - name: "access_token"
+        type: "secret-input"
+        label:
+          en_US: "Access Token"
+          zh_Hans: "访问令牌"
+          ja_JP: "アクセストークン"
+        placeholder:
+          en_US: "Will be populated after OAuth authorization"
+          zh_Hans: "OAuth 授权后自动填充"
+          ja_JP: "OAuth 認可後に自動入力"
+        help:
+          en_US: "Filled automatically after OAuth authorization. You usually do not need to enter it manually."
+          zh_Hans: "完成 OAuth 授权后自动填充，通常无需手动输入。"
+          ja_JP: "OAuth 認可後に自動入力されます。通常は手動入力の必要はありません。"
+
+      - name: "refresh_token"
+        type: "secret-input"
+        label:
+          en_US: "Refresh Token"
+          zh_Hans: "刷新令牌"
+          ja_JP: "リフレッシュトークン"
+        placeholder:
+          en_US: "Will be populated after OAuth authorization"
+          zh_Hans: "OAuth 授权后自动填充"
+          ja_JP: "OAuth 認可後に自動入力"
+        help:
+          en_US: "Used to refresh the access token when it expires."
+          zh_Hans: "用于在访问令牌过期时刷新。"
+          ja_JP: "アクセストークンの有効期限が切れた際に更新するために使用されます。"
+
+events:
+  - events/sms_incoming/sms_incoming.yaml
+  - events/sms_status/sms_status.yaml
+  - events/voice_incoming/voice_incoming.yaml
+  - events/voice_initiated/voice_initiated.yaml
+  - events/voice_ringing/voice_ringing.yaml
+  - events/voice_answered/voice_answered.yaml
+  - events/voice_completed/voice_completed.yaml
+  - events/recording_completed/recording_completed.yaml
+  - events/whatsapp_incoming/whatsapp_incoming.yaml
+  - events/whatsapp_status/whatsapp_status.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: Twilio trigger plugin for receiving SMS, voice calls, and WhatsApp messages
+    zh_Hans: 用于接收短信、语音通话和 WhatsApp 消息
+    ja_JP: SMS、音声通話、WhatsAppメッセージを受信するためのTwilioトリガープラグイン
+  icon: icon.svg
+  label:
+    en_US: Twilio Trigger
+    zh_Hans: Twilio 触发器
+    ja_JP: Twilioトリガー
+  name: twilio_trigger
+
+extra:
+  python:
+    source: provider/twilio.py

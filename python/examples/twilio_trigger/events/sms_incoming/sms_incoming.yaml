@@ -1,0 +1,163 @@
+identity:
+  name: sms_incoming
+  author: langgenius
+  label:
+    en_US: SMS Received
+    zh_Hans: 接收短信
+    ja_JP: SMS受信
+
+description:
+  en_US: Triggered when an SMS message is received on your Twilio phone number
+  zh_Hans: 当 Twilio 电话号码收到短信时触发
+  ja_JP: Twilio電話番号でSMSメッセージを受信したときにトリガーされます
+
+parameters:
+  - name: from_number
+    label:
+      en_US: From Number
+      zh_Hans: 发送者号码
+      ja_JP: 送信者番号
+    type: string
+    required: false
+    placeholder:
+      en_US: "+1234567890 or comma-separated list"
+      zh_Hans: "+1234567890 或逗号分隔的号码列表"
+      ja_JP: "+1234567890 またはカンマ区切りのリスト"
+    description:
+      en_US: Filter by sender phone number(s). Leave empty to accept all senders.
+      zh_Hans: 按发送者电话号码过滤。留空表示接受所有发送者。
+      ja_JP: 送信者の電話番号でフィルタリング。空の場合はすべての送信者を受け入れます。
+
+  - name: to_number
+    label:
+      en_US: To Number
+      zh_Hans: 接收者号码
+      ja_JP: 受信者番号
+    type: string
+    required: false
+    placeholder:
+      en_US: "+1234567890 or comma-separated list"
+      zh_Hans: "+1234567890 或逗号分隔的号码列表"
+      ja_JP: "+1234567890 またはカンマ区切りのリスト"
+    description:
+      en_US: Filter by recipient phone number(s). Leave empty to accept all recipients.
+      zh_Hans: 按接收者电话号码过滤。留空表示接受所有接收者。
+      ja_JP: 受信者の電話番号でフィルタリング。空の場合はすべての受信者を受け入れます。
+
+  - name: body_contains
+    label:
+      en_US: Message Contains Keywords
+      zh_Hans: 消息包含关键词
+      ja_JP: メッセージにキーワードを含む
+    type: string
+    required: false
+    placeholder:
+      en_US: "urgent, help, support"
+      zh_Hans: "urgent, help, support"
+      ja_JP: "urgent, help, support"
+    description:
+      en_US: Comma-separated keywords (case-insensitive). Trigger only if message contains any keyword.
+      zh_Hans: 逗号分隔的关键词（不区分大小写）。仅当消息包含任一关键词时触发。
+      ja_JP: カンマ区切りのキーワード（大文字小文字を区別しない）。メッセージにいずれかのキーワードが含まれている場合のみトリガーされます。
+
+  - name: has_media
+    label:
+      en_US: Has Media Attachments
+      zh_Hans: 包含媒体附件
+      ja_JP: メディア添付ファイルを含む
+    type: boolean
+    required: false
+    default: null
+    description:
+      en_US: Filter by media presence. True = must have media, False = must not have media, leave unset to accept all.
+      zh_Hans: 按媒体附件过滤。True = 必须有媒体，False = 不能有媒体，不设置则接受所有。
+      ja_JP: メディアの有無でフィルタリング。True = メディア必須、False = メディアなし、未設定の場合はすべて受け入れます。
+
+output_schema:
+  type: object
+  required:
+    - MessageSid
+    - From
+    - To
+    - Body
+  properties:
+    MessageSid:
+      type: string
+      description: Unique identifier for the message
+
+    AccountSid:
+      type: string
+      description: Your Twilio Account SID
+
+    MessagingServiceSid:
+      type: string
+      description: Messaging Service SID (if applicable)
+
+    From:
+      type: string
+      description: Sender's phone number
+
+    To:
+      type: string
+      description: Recipient's phone number (your Twilio number)
+
+    Body:
+      type: string
+      description: Message text content
+
+    NumMedia:
+      type: string
+      description: Number of media files attached (as string)
+
+    NumSegments:
+      type: string
+      description: Number of segments in the message
+
+    SmsStatus:
+      type: string
+      description: Status of the SMS
+      enum: [received, sending, sent, failed, delivered, undelivered, queued]
+
+    FromCity:
+      type: string
+      description: Sender's city (if available)
+
+    FromState:
+      type: string
+      description: Sender's state (if available)
+
+    FromZip:
+      type: string
+      description: Sender's ZIP code (if available)
+
+    FromCountry:
+      type: string
+      description: Sender's country code
+
+    ToCity:
+      type: string
+      description: Recipient's city
+
+    ToState:
+      type: string
+      description: Recipient's state
+
+    ToZip:
+      type: string
+      description: Recipient's ZIP code
+
+    ToCountry:
+      type: string
+      description: Recipient's country code
+
+    AddOns:
+      type: string
+      description: Add-ons data (JSON string)
+
+    ApiVersion:
+      type: string
+      description: Twilio API version used
+
+extra:
+  python:
+    source: events/sms_incoming/sms_incoming.py

@@ -1,0 +1,257 @@
+identity:
+  name: voice_call_status
+  author: langgenius
+  label:
+    en_US: Voice Call Status
+    zh_Hans: 语音通话状态
+    ja_JP: 音声通話ステータス
+
+description:
+  en_US: Triggered when a voice call status changes (ringing, in-progress, completed, failed, etc.)
+  zh_Hans: 当语音通话状态变化时触发（响铃、进行中、已完成、失败等）
+  ja_JP: 音声通話のステータスが変更されたときにトリガーされます（呼び出し中、進行中、完了、失敗など）
+
+parameters:
+  - name: status_filter
+    label:
+      en_US: Call Status Filter
+      zh_Hans: 通话状态过滤
+      ja_JP: 通話ステータスフィルター
+    type: select
+    required: false
+    multiple: true
+    options:
+      - value: queued
+        label:
+          en_US: Queued
+          zh_Hans: 排队中
+          ja_JP: キューイング中
+      - value: ringing
+        label:
+          en_US: Ringing
+          zh_Hans: 响铃中
+          ja_JP: 呼び出し中
+      - value: in-progress
+        label:
+          en_US: In Progress
+          zh_Hans: 进行中
+          ja_JP: 進行中
+      - value: completed
+        label:
+          en_US: Completed
+          zh_Hans: 已完成
+          ja_JP: 完了
+      - value: busy
+        label:
+          en_US: Busy
+          zh_Hans: 忙线
+          ja_JP: 話中
+      - value: no-answer
+        label:
+          en_US: No Answer
+          zh_Hans: 无应答
+          ja_JP: 応答なし
+      - value: canceled
+        label:
+          en_US: Canceled
+          zh_Hans: 已取消
+          ja_JP: キャンセル済み
+      - value: failed
+        label:
+          en_US: Failed
+          zh_Hans: 失败
+          ja_JP: 失敗
+    description:
+      en_US: Filter by call status. Leave empty to accept all status changes.
+      zh_Hans: 按通话状态过滤。留空表示接受所有状态变化。
+      ja_JP: 通話ステータスでフィルタリング。空の場合はすべてのステータス変更を受け入れます。
+
+  - name: from_number
+    label:
+      en_US: From Number
+      zh_Hans: 主叫号码
+      ja_JP: 発信者番号
+    type: string
+    required: false
+    placeholder:
+      en_US: "+1234567890 or comma-separated list"
+      zh_Hans: "+1234567890 或逗号分隔的号码列表"
+      ja_JP: "+1234567890 またはカンマ区切りのリスト"
+    description:
+      en_US: Filter by caller phone number(s). Leave empty to accept all callers.
+      zh_Hans: 按主叫电话号码过滤。留空表示接受所有主叫。
+      ja_JP: 発信者の電話番号でフィルタリング。空の場合はすべての発信者を受け入れます。
+
+  - name: to_number
+    label:
+      en_US: To Number
+      zh_Hans: 被叫号码
+      ja_JP: 着信番号
+    type: string
+    required: false
+    placeholder:
+      en_US: "+1234567890 or comma-separated list"
+      zh_Hans: "+1234567890 或逗号分隔的号码列表"
+      ja_JP: "+1234567890 またはカンマ区切りのリスト"
+    description:
+      en_US: Filter by recipient phone number(s). Leave empty to accept all recipients.
+      zh_Hans: 按被叫电话号码过滤。留空表示接受所有被叫。
+      ja_JP: 着信者の電話番号でフィルタリング。空の場合はすべての着信者を受け入れます。
+
+  - name: direction_filter
+    label:
+      en_US: Call Direction
+      zh_Hans: 通话方向
+      ja_JP: 通話方向
+    type: select
+    required: false
+    multiple: true
+    options:
+      - value: inbound
+        label:
+          en_US: Inbound
+          zh_Hans: 呼入
+          ja_JP: 着信
+      - value: outbound-api
+        label:
+          en_US: Outbound (API)
+          zh_Hans: 呼出（API）
+          ja_JP: 発信（API）
+      - value: outbound-dial
+        label:
+          en_US: Outbound (Dial)
+          zh_Hans: 呼出（拨号）
+          ja_JP: 発信（ダイヤル）
+    description:
+      en_US: Filter by call direction. Leave empty to accept all directions.
+      zh_Hans: 按通话方向过滤。留空表示接受所有方向。
+      ja_JP: 通話方向でフィルタリング。空の場合はすべての方向を受け入れます。
+
+  - name: min_duration
+    label:
+      en_US: Minimum Duration (seconds)
+      zh_Hans: 最小通话时长（秒）
+      ja_JP: 最小通話時間（秒）
+    type: number
+    required: false
+    placeholder:
+      en_US: "30"
+      zh_Hans: "30"
+      ja_JP: "30"
+    description:
+      en_US: Only trigger if call duration is at least this many seconds (for completed calls).
+      zh_Hans: 仅当通话时长至少为此秒数时触发（仅对已完成的通话）。
+      ja_JP: 通話時間が少なくともこの秒数の場合にのみトリガーします（完了した通話の場合）。
+
+output_schema:
+  type: object
+  required:
+    - CallSid
+    - CallStatus
+  properties:
+    CallSid:
+      type: string
+      description: Unique identifier for the call
+
+    AccountSid:
+      type: string
+      description: Your Twilio Account SID
+
+    From:
+      type: string
+      description: Caller's phone number
+
+    To:
+      type: string
+      description: Called phone number
+
+    CallStatus:
+      type: string
+      description: Current status of the call
+      enum: [queued, ringing, in-progress, completed, busy, no-answer, canceled, failed]
+
+    Direction:
+      type: string
+      description: Direction of the call
+      enum: [inbound, outbound-api, outbound-dial]
+
+    Duration:
+      type: string
+      description: Call duration in seconds (for completed calls)
+
+    CallDuration:
+      type: string
+      description: Total call duration including ringing time
+
+    Timestamp:
+      type: string
+      description: Timestamp of the status change
+      format: date-time
+
+    CallbackSource:
+      type: string
+      description: Source of the callback
+
+    SequenceNumber:
+      type: string
+      description: Sequence number for ordering callbacks
+
+    FromCity:
+      type: string
+      description: Caller's city (if available)
+
+    FromState:
+      type: string
+      description: Caller's state (if available)
+
+    FromZip:
+      type: string
+      description: Caller's ZIP code (if available)
+
+    FromCountry:
+      type: string
+      description: Caller's country code
+
+    ToCity:
+      type: string
+      description: Called party's city
+
+    ToState:
+      type: string
+      description: Called party's state
+
+    ToZip:
+      type: string
+      description: Called party's ZIP code
+
+    ToCountry:
+      type: string
+      description: Called party's country code
+
+    CallerName:
+      type: string
+      description: Caller ID name (if available)
+
+    ApiVersion:
+      type: string
+      description: Twilio API version used
+
+    ForwardedFrom:
+      type: string
+      description: Original number if call was forwarded
+
+    ParentCallSid:
+      type: string
+      description: SID of parent call (for child calls)
+
+    ErrorCode:
+      type: string
+      description: Twilio error code (if call failed)
+
+    ErrorMessage:
+      type: string
+      description: Human-readable error message
+
+extra:
+  python:
+    source: events/voice_call_status/voice_call_status.py

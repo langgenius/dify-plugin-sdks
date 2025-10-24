@@ -1,0 +1,124 @@
+identity:
+  name: whatsapp_status
+  author: langgenius
+  label:
+    en_US: WhatsApp Status Callback
+    zh_Hans: WhatsApp 状态回调
+    ja_JP: WhatsAppステータスコールバック
+
+description:
+  en_US: Triggered when a WhatsApp message status changes (sent, delivered, read, failed)
+  zh_Hans: 当 WhatsApp 消息状态变化时触发（已发送、已送达、已读、失败）
+  ja_JP: WhatsAppメッセージのステータスが変更されたときにトリガーされます（送信済み、配信済み、既読、失敗）
+
+parameters:
+  - name: status_filter
+    label:
+      en_US: Status Filter
+      zh_Hans: 状态过滤
+      ja_JP: ステータスフィルター
+    type: select
+    required: false
+    multiple: true
+    options:
+      - value: queued
+        label:
+          en_US: Queued
+          zh_Hans: 排队中
+          ja_JP: キューイング中
+      - value: sent
+        label:
+          en_US: Sent
+          zh_Hans: 已发送
+          ja_JP: 送信済み
+      - value: delivered
+        label:
+          en_US: Delivered
+          zh_Hans: 已送达
+          ja_JP: 配信済み
+      - value: read
+        label:
+          en_US: Read
+          zh_Hans: 已读
+          ja_JP: 既読
+      - value: failed
+        label:
+          en_US: Failed
+          zh_Hans: 失败
+          ja_JP: 失敗
+    description:
+      en_US: Filter by message status. Leave empty to accept all status changes.
+      zh_Hans: 按消息状态过滤。留空表示接受所有状态变化。
+      ja_JP: メッセージステータスでフィルタリング。空の場合はすべてのステータス変更を受け入れます。
+
+  - name: to_number
+    label:
+      en_US: To Number (WhatsApp)
+      zh_Hans: 接收者号码（WhatsApp）
+      ja_JP: 受信者番号（WhatsApp）
+    type: string
+    required: false
+    placeholder:
+      en_US: "whatsapp:+1234567890"
+      zh_Hans: "whatsapp:+1234567890"
+      ja_JP: "whatsapp:+1234567890"
+    description:
+      en_US: Filter by recipient WhatsApp number. Leave empty to accept all recipients.
+      zh_Hans: 按接收者 WhatsApp 号码过滤。留空表示接受所有接收者。
+      ja_JP: 受信者のWhatsApp番号でフィルタリング。空の場合はすべての受信者を受け入れます。
+
+output_schema:
+  type: object
+  required:
+    - MessageSid
+    - MessageStatus
+  properties:
+    MessageSid:
+      type: string
+      description: Unique identifier for the message
+      example: "SM1234567890abcdef1234567890abcdef"
+
+    AccountSid:
+      type: string
+      description: Your Twilio Account SID
+
+    From:
+      type: string
+      description: Sender's WhatsApp number
+      example: "whatsapp:+15551234567"
+
+    To:
+      type: string
+      description: Recipient's WhatsApp number
+      example: "whatsapp:+15559876543"
+
+    MessageStatus:
+      type: string
+      description: Current status of the message
+      enum: [queued, sent, delivered, read, failed]
+      example: "delivered"
+
+    Body:
+      type: string
+      description: Message text content
+
+    ErrorCode:
+      type: string
+      description: Twilio error code (if message failed)
+
+    ErrorMessage:
+      type: string
+      description: Human-readable error message
+
+    ChannelToAddress:
+      type: string
+      description: WhatsApp channel address
+
+    ApiVersion:
+      type: string
+      description: Twilio API version used
+      example: "2010-04-01"
+
+extra:
+  python:
+    source: events/whatsapp_status/whatsapp_status.py
