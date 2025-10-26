@@ -15,8 +15,8 @@ class FileChangesEvent(Event):
             variables={
                 "changes": payload.get("changes", []),
                 "accounts": payload.get("accounts", []),
-                "cursor_before": payload.get("cursor_before", ""),
-                "cursor_after": payload.get("cursor_after", ""),
+                "cursor_start": payload.get("cursor_before", ""),
+                "cursor_end": payload.get("cursor_after", ""),
                 "received_at": payload.get("received_at", 0),
             }
         )

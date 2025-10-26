@@ -49,6 +49,15 @@ output_schema:
             type: integer
           content_hash:
             type: string
+    cursor_start:
+      type: string
+      description: Cursor used before fetching changes (if available)
+    cursor_end:
+      type: string
+      description: Cursor after applying this batch (if available)
+    received_at:
+      type: integer
+      description: Timestamp of the event
 extra:
   python:
     source: events/file_changes/file_changes.py
