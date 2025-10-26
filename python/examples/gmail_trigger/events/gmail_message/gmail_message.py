@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import base64
 import json
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 import requests
 from werkzeug import Request
@@ -26,7 +27,7 @@ class GmailMessageEvent(Event):
 
     def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         envelope: Mapping[str, Any] = request.get_json()
-        if not isinstance(envelope, Mapping) or "message" not in envelope:
+        if "message" not in envelope:
             raise ValueError("Invalid Pub/Sub push envelope: missing message")
 
         message: Mapping[str, Any] = envelope.get("message") or {}
@@ -154,7 +155,7 @@ class GmailMessageEvent(Event):
                     for p in (part.get("parts") or []) or []:
                         _walk_parts(p)
 
-                _walk_parts((m.get("payload") or {}))
+                _walk_parts(m.get("payload") or {})
 
                 messages.append(
                     {

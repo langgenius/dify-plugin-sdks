@@ -10,56 +10,62 @@ Overview
 - Note: API Key is NOT supported for Gmail API access. Use OAuth (gmail.readonly) only.
 
 Prerequisites
-- A Google Cloud project
-- Enable APIs:
-  - Gmail API: https://console.cloud.google.com/apis/library/gmail.googleapis.com
-  - Cloud Pub/Sub API: https://console.cloud.google.com/apis/library/pubsub.googleapis.com
 - A Google account authorized for Gmail API (used during OAuth)
+- A Google Cloud project with Pub/Sub enabled (manual setup)
 
 Step-by-step Setup
-1) Create a Pub/Sub topic
-   - Name: `projects/<PROJECT_ID>/topics/<TOPIC_NAME>`
-   - Grant Gmail publisher role:
-     - `gcloud pubsub topics add-iam-policy-binding projects/<PROJECT_ID>/topics/<TOPIC_NAME> \
-        --member=serviceAccount:gmail-api-push@system.gserviceaccount.com \
-        --role=roles/pubsub.publisher`
-
-2) Install the plugin in Dify
+1) Install the plugin in Dify
 - Options:
   - If packaged as `.difypkg`, import it in Dify’s Plugin Center (Plugins → Import).
   - For local run during development, ensure the runtime installs dependencies in `requirements.txt`.
 
-3) Configure OAuth in the provider (one-time)
+2) Configure OAuth in the provider (one-time)
 - In Google Cloud Console → APIs & Services → Credentials → Create Credentials → OAuth client ID
   - Application type: Web application
   - Authorized redirect URIs: Copy the redirect URI shown by Dify when setting up OAuth for this provider
 - Back in Dify, enter Client ID/Secret; click “Authorize” to complete OAuth (gmail.readonly)
 - The constructor validates the token via `users/me/profile`
 
-4) Create a Gmail subscription in Dify
+3) Create a Gmail subscription in Dify
 - Parameters
   - `watch_email` (userId): use `me` or the full Gmail address
-    - Docs: https://developers.google.com/gmail/api/reference/rest/v1/users/watch
-  - `topic_name`: `projects/<PROJECT_ID>/topics/<TOPIC_NAME>`
-    - Docs: https://cloud.google.com/pubsub/docs/create-topic
+  - `topic_name`: Paste the full Pub/Sub topic path you created (e.g., `projects/<PROJECT_ID>/topics/<TOPIC>`). If you configure tenant-level GCP client params (see below), you may leave this empty and the plugin will auto-provision Pub/Sub.
   - `label_ids` (optional): scope to specific labels (INBOX/UNREAD...)
     - Docs: https://developers.google.com/gmail/api/reference/rest/v1/users.labels/list
   - `label_filter_action` (optional): `include` or `exclude` for users.watch
     - Docs: https://developers.google.com/gmail/api/reference/rest/v1/users/watch#request-body
-- Properties (optional)
-  - `require_oidc`: enforce OIDC bearer verification
-  - `oidc_audience`: use the exact webhook endpoint URL (shown after subscription is created)
-  - `oidc_service_account_email`: the service account used by the Pub/Sub push subscription
+  - Properties (optional)
+    - `require_oidc`: enforce OIDC bearer verification
+    - `oidc_audience`: use the exact webhook endpoint URL (shown after subscription is created)
+    - `oidc_service_account_email`: the service account used by the Pub/Sub push subscription
 - After you click Create, open the subscription details and copy the Webhook Endpoint URL. You will use this in Pub/Sub push.
 
-5) Create a Pub/Sub push subscription to Dify’s endpoint
-   - After the Dify subscription exists, create a push subscription on your topic with the Dify endpoint:
+4) Prepare Pub/Sub (manual)
+   - Enable APIs:
+     - Gmail API: https://console.cloud.google.com/apis/library/gmail.googleapis.com
+     - Cloud Pub/Sub API: https://console.cloud.google.com/apis/library/pubsub.googleapis.com
+   - Create topic:
+     - `gcloud pubsub topics create <TOPIC> --project=<PROJECT_ID>`
+   - Grant Gmail publisher on the topic:
+     - `gcloud pubsub topics add-iam-policy-binding projects/<PROJECT_ID>/topics/<TOPIC> \
+        --member=serviceAccount:gmail-api-push@system.gserviceaccount.com \
+        --role=roles/pubsub.publisher`
+   - Create a Push subscription to the Callback URL displayed by Dify:
      - `gcloud pubsub subscriptions create <SUB_NAME> \
-        --topic=projects/<PROJECT_ID>/topics/<TOPIC_NAME> \
-        --push-endpoint="https://<YOUR_DIFY_HOST>/api/plugin/triggers/<SUBSCRIPTION_ID>" \
-        --push-auth-service-account=<YOUR_SA_EMAIL> \
-        --push-auth-token-audience="https://<YOUR_DIFY_HOST>/api/plugin/triggers/<SUBSCRIPTION_ID>"`
-   - If you set `require_oidc=true`, the push subscription must use OIDC; set `--push-auth-service-account` and match `oidc_audience` exactly.
+        --topic=projects/<PROJECT_ID>/topics/<TOPIC> \
+        --push-endpoint="https://<YOUR_DIFY_HOST>/api/plugin/triggers/<SUBSCRIPTION_ID>"`
+     - OIDC (optional): add `--push-auth-service-account=<YOUR_SA_EMAIL>` and `--push-auth-token-audience="<Callback URL>"`
+
+Auto mode (tenant-level)
+- Configure in OAuth client params (one-time, tenant-level):
+  - `gcp_project_id`: GCP project ID
+  - `gcp_service_account_json`: Service Account JSON with Pub/Sub admin perms
+  - Optional `gcp_topic_id`: default to `dify-gmail`
+- With these set, if `topic_name` is empty, the plugin will:
+  - Create/reuse Topic and grant Gmail publisher
+  - Create a dedicated Push subscription per Dify subscription (supports OIDC)
+  - Call `users.watch` with the managed Topic
+- On unsubscribe, the plugin will best-effort delete the managed Push subscription (Topic is preserved for reuse).
 
 Where To Get OIDC Values
 - `oidc_audience`

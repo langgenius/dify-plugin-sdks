@@ -67,7 +67,7 @@ subscription_constructor:
 
   - name: "topic_name"
     type: "string"
-    required: true
+    required: false
     label:
       en_US: "Pub/Sub Topic"
       zh_Hans: "Pub/Sub 主题"
@@ -76,10 +76,29 @@ subscription_constructor:
       en_US: "projects/<project>/topics/<topic>"
       zh_Hans: "projects/<project>/topics/<topic>"
       ja_JP: "projects/<project>/topics/<topic>"
-    description:
-      en_US: "Cloud Pub/Sub topic for Gmail to publish notifications to."
-      zh_Hans: "Gmail 将向该 Cloud Pub/Sub 主题发布通知。"
-      ja_JP: "Gmail が通知を発行する Cloud Pub/Sub トピック。"
+    help:
+      zh_Hans: |
+        两种方式：
+        - 自动（推荐）：在“OAuth 客户端参数”里由租户级运维配置 GCP 项目与服务账号后，此处可留空，系统会自动创建/复用 Topic 与 Push 订阅。
+        - 手动：按文档创建 Topic/Push 订阅后，在此粘贴完整 Topic 路径（如 projects/my-proj/topics/gmail-notify）。
+        手动步骤参考：
+          1) 启用 Gmail API 与 Cloud Pub/Sub API；
+          2) gcloud pubsub topics create <TOPIC> --project=<PROJECT_ID>
+          3) gcloud pubsub topics add-iam-policy-binding projects/<PROJECT_ID>/topics/<TOPIC> \
+             --member=serviceAccount:gmail-api-push@system.gserviceaccount.com --role=roles/pubsub.publisher
+          4) gcloud pubsub subscriptions create <SUB_NAME> --topic=projects/<PROJECT_ID>/topics/<TOPIC> \
+             --push-endpoint="<Callback URL>" [--push-auth-service-account=<SA> --push-auth-token-audience="<Callback URL>"]
+      en_US: |
+        Two options:
+        - Auto (recommended): if tenant-level GCP project + service account are configured in OAuth client params, leave this empty and the system will create/reuse a Topic and a Push subscription automatically.
+        - Manual: paste the full topic path after creating Topic/Push subscription yourself (e.g., projects/my-proj/topics/gmail-notify).
+        Manual steps:
+          1) Enable Gmail API and Cloud Pub/Sub API;
+          2) gcloud pubsub topics create <TOPIC> --project=<PROJECT_ID>
+          3) gcloud pubsub topics add-iam-policy-binding projects/<PROJECT_ID>/topics/<TOPIC> \
+             --member=serviceAccount:gmail-api-push@system.gserviceaccount.com --role=roles/pubsub.publisher
+          4) gcloud pubsub subscriptions create <SUB_NAME> --topic=projects/<PROJECT_ID>/topics/<TOPIC> \
+             --push-endpoint="<Callback URL>" [--push-auth-service-account=<SA> --push-auth-token-audience="<Callback URL>"]
     url: https://cloud.google.com/pubsub/docs/create-topic
 
   - name: "label_ids"
@@ -153,6 +172,39 @@ subscription_constructor:
         en_US: "Client Secret"
         zh_Hans: "Client Secret"
         ja_JP: "Client Secret"
+    - name: "gcp_project_id"
+      type: "string"
+      required: false
+      label:
+        en_US: "GCP Project ID (for auto Pub/Sub)"
+        zh_Hans: "GCP 项目 ID（用于自动 Pub/Sub）"
+        ja_JP: "GCP プロジェクト ID（自動 Pub/Sub 用）"
+      help:
+        en_US: "If set together with Service Account JSON, the plugin will auto-provision Topic and Push subscription per subscription."
+        zh_Hans: "与服务账号 JSON 一起配置后，插件会为每个订阅自动创建/复用 Topic 与 Push 订阅。"
+        ja_JP: "サービスアカウント JSON と併せて設定すると、各サブスクリプションに対して Pub/Sub を自動作成/再利用します。"
+    - name: "gcp_service_account_json"
+      type: "secret-input"
+      required: false
+      label:
+        en_US: "GCP Service Account JSON"
+        zh_Hans: "GCP 服务账号 JSON"
+        ja_JP: "GCP サービスアカウント JSON"
+      help:
+        en_US: "JSON key with permissions to manage Pub/Sub (roles/pubsub.admin recommended)."
+        zh_Hans: "具备管理 Pub/Sub 权限的服务账号 JSON（建议 roles/pubsub.admin）。"
+        ja_JP: "Pub/Sub 管理権限を持つサービスアカウントの JSON（roles/pubsub.admin 推奨）。"
+    - name: "gcp_topic_id"
+      type: "string"
+      required: false
+      label:
+        en_US: "Default Topic ID (optional)"
+        zh_Hans: "默认 Topic ID（可选）"
+        ja_JP: "デフォルト Topic ID（任意）"
+      help:
+        en_US: "Used when auto-provisioning. Defaults to dify-gmail if empty."
+        zh_Hans: "用于自动创建，留空时默认 dify-gmail。"
+        ja_JP: "自動作成時に利用。未設定時は dify-gmail。"
     credentials_schema:
     - name: "access_token"
       type: "secret-input"

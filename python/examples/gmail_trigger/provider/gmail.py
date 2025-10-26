@@ -5,13 +5,14 @@ import json
 import secrets
 import time
 import urllib.parse
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 import requests
 from werkzeug import Request, Response
 
 from dify_plugin.entities import I18nObject, ParameterOption
-from dify_plugin.entities.oauth import TriggerOAuthCredentials, OAuthCredentials
+from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
 from dify_plugin.errors.trigger import (
@@ -26,169 +27,183 @@ from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstruct
 
 
 class GmailTrigger(Trigger):
-    """Handle Gmail Pub/Sub push event dispatch."""
+    """Handle Gmail Pub/Sub push event dispatch.
+
+    Responsibilities:
+    - Optionally verify Pub/Sub OIDC JWT
+    - Parse Pub/Sub envelope and Gmail notification
+    - Fetch Gmail history delta since last checkpoint
+    - Split delta into concrete event families and stash batches
+    - Return EventDispatch with events and a combined payload for convenience
+    """
 
     _GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1"
 
     def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
-        # Optional OIDC verification for Pub/Sub push
         props = subscription.properties or {}
-        require_oidc = bool(props.get("require_oidc"))
-        oidc_audience = props.get("oidc_audience") or subscription.endpoint
-        expected_sa = props.get("oidc_service_account_email")
+        # 1) Verify Pub/Sub OIDC if enabled
+        self._maybe_verify_pubsub_oidc(request, props, subscription.endpoint)
 
-        auth_header = request.headers.get("Authorization")
-        if require_oidc:
-            if not auth_header or not auth_header.startswith("Bearer "):
-                raise TriggerValidationError("Missing OIDC bearer token for Pub/Sub push")
-            token = auth_header.split(" ", 1)[1].strip()
-            self._verify_oidc_token(token=token, audience=oidc_audience, expected_email=expected_sa)
+        # 2) Parse Gmail push notification from Pub/Sub envelope
+        notification = self._parse_pubsub_push(request)
 
-        # Parse Pub/Sub push envelope
-        try:
-            envelope: Mapping[str, Any] = request.get_json(force=True)
-        except Exception as exc:
-            raise TriggerDispatchError(f"Invalid JSON: {exc}") from exc
-
-        if not isinstance(envelope, Mapping) or "message" not in envelope:
-            raise TriggerDispatchError("Missing Pub/Sub message")
-
-        message: Mapping[str, Any] = envelope.get("message") or {}
-        data_b64: str | None = message.get("data")
-        if not data_b64:
-            raise TriggerDispatchError("Missing Pub/Sub message.data")
-
-        try:
-            decoded: str = base64.b64decode(data_b64).decode("utf-8")
-            notification: dict[str, Any] = json.loads(decoded)
-        except Exception as exc:
-            raise TriggerDispatchError(f"Invalid Pub/Sub data: {exc}") from exc
-
-        if not notification.get("historyId") or not notification.get("emailAddress"):
-            raise TriggerDispatchError("Missing historyId or emailAddress in Gmail notification")
-
-        # Decide concrete events by fetching history delta now, and stash pending batches for events
-        # Use runtime credentials (OAuth)
-        if not self.runtime or not self.runtime.credentials:
-            raise TriggerDispatchError("Missing runtime credentials for Gmail API")
-        access_token = self.runtime.credentials.get("access_token")
+        # 3) Build auth headers using runtime OAuth credentials
+        access_token = (self.runtime.credentials or {}).get("access_token") if self.runtime else None
         if not access_token:
             raise TriggerDispatchError("Missing access_token for Gmail API")
+        headers = {"Authorization": f"Bearer {access_token}"}
+        user_id: str = props.get("watch_email") or "me"
 
-        headers: dict[str, str] = {"Authorization": f"Bearer {access_token}"}
-        user_id: str = (subscription.properties or {}).get("watch_email") or "me"
-
-        # Storage keys
-        sub_key = (subscription.properties or {}).get("subscription_key") or ""
+        # 4) Prepare storage keys and checkpoint
+        sub_key = props.get("subscription_key") or ""
         checkpoint_key = f"gmail:{sub_key}:history_checkpoint"
-        pending_added_key = f"gmail:{sub_key}:pending:message_added"
-        pending_deleted_key = f"gmail:{sub_key}:pending:message_deleted"
-        pending_label_added_key = f"gmail:{sub_key}:pending:label_added"
-        pending_label_removed_key = f"gmail:{sub_key}:pending:label_removed"
+        keys = {
+            "added": f"gmail:{sub_key}:pending:message_added",
+            "deleted": f"gmail:{sub_key}:pending:message_deleted",
+            "label_added": f"gmail:{sub_key}:pending:label_added",
+            "label_removed": f"gmail:{sub_key}:pending:label_removed",
+        }
 
         session = self.runtime.session
-
-        # If first time: initialize checkpoint and return 200 without events
         if not session.storage.exist(checkpoint_key):
+            # First notification: initialize checkpoint and return 200
             session.storage.set(checkpoint_key, str(notification["historyId"]).encode("utf-8"))
-            response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
-            return EventDispatch(events=[], response=response)
+            return EventDispatch(events=[], response=self._ok())
 
         start_history_id: str = session.storage.get(checkpoint_key).decode("utf-8")
 
-        # Fetch history delta
-        history_url: str = f"{self._GMAIL_BASE}/users/{user_id}/history"
-        params: dict[str, Any] = {
-            "startHistoryId": start_history_id,
-        }
+        # 5) Fetch history delta since last checkpoint
+        added, deleted, labels_added, labels_removed = self._fetch_history_delta(
+            headers=headers, user_id=user_id, start_history_id=start_history_id, fallback_history_id=str(notification["historyId"])
+        )
 
-        added: list[dict[str, Any]] = []
-        deleted: list[dict[str, Any]] = []
-        labels_added: list[dict[str, Any]] = []
-        labels_removed: list[dict[str, Any]] = []
+        # Always advance checkpoint to current notification's historyId
+        session.storage.set(checkpoint_key, str(notification["historyId"]).encode("utf-8"))
 
-        try:
-            while True:
-                resp: requests.Response = requests.get(history_url, headers=headers, params=params, timeout=10)
-                if resp.status_code != 200:
-                    # If historyId invalid/out-of-date → reset checkpoint to current and return no events
-                    try:
-                        err: dict[str, Any] = resp.json()
-                        reason = (err.get("error", {}).get("errors", [{}])[0].get("reason")) or err.get(
-                            "error", {}
-                        ).get("status")
-                    except Exception:
-                        reason = ""
-                    session.storage.set(checkpoint_key, str(notification["historyId"]).encode("utf-8"))
-                    response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
-                    return EventDispatch(events=[], response=response)
-
-                data: dict[str, Any] = resp.json() or {}
-                for h in data.get("history", []) or []:
-                    for item in h.get("messagesAdded", []) or []:
-                        msg = item.get("message") or {}
-                        if msg.get("id"):
-                            added.append({"id": msg.get("id"), "threadId": msg.get("threadId")})
-                    for item in h.get("messagesDeleted", []) or []:
-                        msg = item.get("message") or {}
-                        if msg.get("id"):
-                            deleted.append({"id": msg.get("id"), "threadId": msg.get("threadId")})
-                    for item in h.get("labelsAdded", []) or []:
-                        msg = item.get("message") or {}
-                        if msg.get("id"):
-                            labels_added.append(
-                                {
-                                    "id": msg.get("id"),
-                                    "threadId": msg.get("threadId"),
-                                    "labelIds": item.get("labelIds") or [],
-                                }
-                            )
-                    for item in h.get("labelsRemoved", []) or []:
-                        msg = item.get("message") or {}
-                        if msg.get("id"):
-                            labels_removed.append(
-                                {
-                                    "id": msg.get("id"),
-                                    "threadId": msg.get("threadId"),
-                                    "labelIds": item.get("labelIds") or [],
-                                }
-                            )
-
-                page_token = data.get("nextPageToken")
-                if not page_token:
-                    break
-                params["pageToken"] = page_token
-        finally:
-            # Advance checkpoint to current notification's historyId regardless of content
-            session.storage.set(checkpoint_key, str(notification["historyId"]).encode("utf-8"))
-
-        # Stash pending batches per event family
-        events: list[str] = []
-
-        def _stash(key: str, items: list[dict[str, Any]], event_name: str) -> None:
-            nonlocal events
+        # 6) Stash batches and build combined payload
+        events = []
+        def stash(key: str, items: list[dict[str, Any]], event_name: str) -> None:
             if not items:
                 return
             payload = json.dumps({"historyId": notification["historyId"], "items": items}).encode("utf-8")
             session.storage.set(key, payload)
             events.append(event_name)
 
-        _stash(pending_added_key, added, "gmail_message_added")
-        _stash(pending_deleted_key, deleted, "gmail_message_deleted")
-        _stash(pending_label_added_key, labels_added, "gmail_label_added")
-        _stash(pending_label_removed_key, labels_removed, "gmail_label_removed")
+        stash(keys["added"], added, "gmail_message_added")
+        stash(keys["deleted"], deleted, "gmail_message_deleted")
+        stash(keys["label_added"], labels_added, "gmail_label_added")
+        stash(keys["label_removed"], labels_removed, "gmail_label_removed")
 
-        response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
-        return EventDispatch(events=events, response=response)
+        combined_payload = {
+            "historyId": str(notification["historyId"]),
+            "message_added": added,
+            "message_deleted": deleted,
+            "label_added": labels_added,
+            "label_removed": labels_removed,
+        }
+
+        return EventDispatch(events=events, response=self._ok(), payload=combined_payload)
+
+    # ---------------- Helper methods (trigger) -----------------
+    def _ok(self) -> Response:
+        return Response(response='{"status": "ok"}', status=200, mimetype="application/json")
+
+    def _maybe_verify_pubsub_oidc(self, request: Request, props: Mapping[str, Any], endpoint: str) -> None:
+        require_oidc = bool(props.get("require_oidc"))
+        if not require_oidc:
+            return
+        token = (request.headers.get("Authorization") or "").removeprefix("Bearer ").strip()
+        if not token:
+            raise TriggerValidationError("Missing OIDC bearer token for Pub/Sub push")
+        audience = props.get("oidc_audience") or endpoint
+        expected_sa = props.get("oidc_service_account_email")
+        self._verify_oidc_token(token=token, audience=audience, expected_email=expected_sa)
+
+    def _parse_pubsub_push(self, request: Request) -> dict[str, Any]:
+        try:
+            envelope: Mapping[str, Any] = request.get_json(force=True)
+        except Exception as exc:
+            raise TriggerDispatchError(f"Invalid JSON: {exc}") from exc
+        if "message" not in envelope:
+            raise TriggerDispatchError("Missing Pub/Sub message")
+        data_b64: str | None = (envelope.get("message") or {}).get("data")
+        if not data_b64:
+            raise TriggerDispatchError("Missing Pub/Sub message.data")
+        try:
+            decoded = base64.b64decode(data_b64).decode("utf-8")
+            notification = json.loads(decoded)
+        except Exception as exc:
+            raise TriggerDispatchError(f"Invalid Pub/Sub data: {exc}") from exc
+        if not notification.get("historyId") or not notification.get("emailAddress"):
+            raise TriggerDispatchError("Missing historyId or emailAddress in Gmail notification")
+        return notification
+
+    def _fetch_history_delta(
+        self,
+        headers: Mapping[str, str],
+        user_id: str,
+        start_history_id: str,
+        fallback_history_id: str,
+    ):
+        """Fetch Gmail history delta and return categorized changes.
+
+        If the start_history_id is invalid/out-of-date, reset the pointer and return empty changes.
+        """
+        added: list[dict[str, Any]] = []
+        deleted: list[dict[str, Any]] = []
+        labels_added: list[dict[str, Any]] = []
+        labels_removed: list[dict[str, Any]] = []
+
+        url = f"{self._GMAIL_BASE}/users/{user_id}/history"
+        params: dict[str, Any] = {"startHistoryId": start_history_id}
+
+        while True:
+            resp: requests.Response = requests.get(url, headers=headers, params=params, timeout=10)
+            if resp.status_code != 200:
+                # invalid historyId → caller will advance checkpoint to fallback id and swallow this batch
+                return [], [], [], []
+            data: dict[str, Any] = resp.json() or {}
+            for h in data.get("history", []) or []:
+                for item in h.get("messagesAdded", []) or []:
+                    msg = item.get("message") or {}
+                    if msg.get("id"):
+                        added.append({"id": msg.get("id"), "threadId": msg.get("threadId")})
+                for item in h.get("messagesDeleted", []) or []:
+                    msg = item.get("message") or {}
+                    if msg.get("id"):
+                        deleted.append({"id": msg.get("id"), "threadId": msg.get("threadId")})
+                for item in h.get("labelsAdded", []) or []:
+                    msg = item.get("message") or {}
+                    if msg.get("id"):
+                        labels_added.append(
+                            {
+                                "id": msg.get("id"),
+                                "threadId": msg.get("threadId"),
+                                "labelIds": item.get("labelIds") or [],
+                            }
+                        )
+                for item in h.get("labelsRemoved", []) or []:
+                    msg = item.get("message") or {}
+                    if msg.get("id"):
+                        labels_removed.append(
+                            {
+                                "id": msg.get("id"),
+                                "threadId": msg.get("threadId"),
+                                "labelIds": item.get("labelIds") or [],
+                            }
+                        )
+            page_token = data.get("nextPageToken")
+            if not page_token:
+                break
+            params["pageToken"] = page_token
+
+        return added, deleted, labels_added, labels_removed
 
     def _verify_oidc_token(self, token: str, audience: str, expected_email: str | None = None) -> None:
-        """Verify OIDC token from Pub/Sub push using google-auth if available.
-
-        If google-auth is not installed, and verification is required, raise TriggerValidationError.
-        """
+        """Verify OIDC token from Pub/Sub push using google-auth if available."""
         try:
-            from google.oauth2 import id_token
             from google.auth.transport import requests as google_requests
+            from google.oauth2 import id_token
 
             req = google_requests.Request()
             claims = id_token.verify_oauth2_token(token, req, audience=audience)
@@ -200,7 +215,6 @@ class GmailTrigger(Trigger):
         except ImportError as exc:
             raise TriggerValidationError("google-auth is required for OIDC verification but not installed") from exc
         except Exception as exc:  # pragma: no cover - verification failure
-            # id_token.verify_oauth2_token raises on invalid signature/audience/etc.
             raise TriggerValidationError(f"OIDC verification failed: {exc}") from exc
 
 
@@ -304,8 +318,24 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> Subscription:
         watch_email: str = parameters.get("watch_email") or "me"
         topic_name: str | None = parameters.get("topic_name")
+        # Try auto-provision if not provided and system creds exist
         if not topic_name:
-            raise ValueError("topic_name is required (projects/<project>/topics/<topic>)")
+            sysc = self.runtime.credentials or {}
+            gcp_pid = (sysc.get("gcp_project_id") or "").strip()
+            gcp_sa = (sysc.get("gcp_service_account_json") or "").strip()
+            if gcp_pid and gcp_sa:
+                info = self._ensure_pubsub(
+                    project_id=gcp_pid,
+                    sa_json=gcp_sa,
+                    endpoint=endpoint,
+                    topic_id=(sysc.get("gcp_topic_id") or "dify-gmail").strip() or "dify-gmail",
+                    require_oidc=bool(parameters.get("require_oidc") or False),
+                    audience=(parameters.get("oidc_audience") or endpoint),
+                    properties_holder=parameters,
+                )
+                topic_name = info["topic_path"]
+            if not topic_name:
+                raise ValueError("topic_name is required (or configure auto Pub/Sub in client params)")
         label_ids: list[str] = parameters.get("label_ids") or []
         label_filter_action: str | None = parameters.get("label_filter_action")
 
@@ -361,6 +391,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
         if oidc_sa_email:
             properties["oidc_service_account_email"] = oidc_sa_email
+        # 不向用户暴露托管细节；不写入任何 managed_* 字段
 
         # internal subscription key for storage scoping
         import uuid as _uuid
@@ -373,6 +404,58 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             parameters=parameters,
             properties=properties,
         )
+
+    # Minimal auto Pub/Sub helper using google-cloud-pubsub
+    def _ensure_pubsub(
+        self,
+        project_id: str,
+        sa_json: str,
+        endpoint: str,
+        topic_id: str,
+        require_oidc: bool,
+        audience: str,
+        properties_holder: Mapping[str, Any],
+    ) -> dict[str, str]:
+        import json as _json
+        import hashlib as _hashlib
+        from google.oauth2 import service_account as _sa
+        from google.cloud import pubsub_v1
+        from google.api_core.exceptions import AlreadyExists
+        from google.iam.v1 import policy_pb2
+
+        info = _json.loads(sa_json) if isinstance(sa_json, str) else sa_json
+        creds = _sa.Credentials.from_service_account_info(info)
+        sa_email = info.get("client_email")
+
+        publisher = pubsub_v1.PublisherClient(credentials=creds)
+        subscriber = pubsub_v1.SubscriberClient(credentials=creds)
+        topic_path = publisher.topic_path(project_id, topic_id)
+        try:
+            publisher.create_topic(name=topic_path)
+        except AlreadyExists:
+            pass
+
+        # Grant Gmail push service as publisher (idempotent)
+        policy = publisher.get_iam_policy(request={"resource": topic_path})
+        member = "serviceAccount:gmail-api-push@system.gserviceaccount.com"
+        role = "roles/pubsub.publisher"
+        if not any(b.role == role and member in b.members for b in policy.bindings):
+            policy.bindings.append(policy_pb2.Binding(role=role, members=[member]))
+            publisher.set_iam_policy(request={"resource": topic_path, "policy": policy})
+
+        # Create deterministic push subscription per plugin subscription (derived from endpoint)
+        sub_id = f"dify-gmail-{_hashlib.sha1(endpoint.encode()).hexdigest()[:16]}"
+        sub_path = subscriber.subscription_path(project_id, sub_id)
+        push = pubsub_v1.types.PushConfig(push_endpoint=endpoint)
+        if require_oidc and sa_email:
+            push.oidc_token.service_account_email = sa_email
+            push.oidc_token.audience = audience
+        try:
+            subscriber.create_subscription(name=sub_path, topic=topic_path, push_config=push)
+        except AlreadyExists:
+            pass
+
+        return {"topic_path": topic_path}
 
     def _delete_subscription(
         self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
@@ -391,6 +474,17 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             return UnsubscribeResult(success=False, message=f"Network error: {exc}")
 
         if resp.status_code in (200, 204):
+            # best-effort cleanup for managed Push subscription (deterministic name)
+            sysc = self.runtime.credentials or {}
+            proj = (sysc.get("gcp_project_id") or "").strip()
+            sa_json = (sysc.get("gcp_service_account_json") or "").strip()
+            if proj and sa_json:
+                try:
+                    import hashlib as _hashlib
+                    sub_id = f"dify-gmail-{_hashlib.sha1(subscription.endpoint.encode()).hexdigest()[:16]}"
+                    self._delete_managed_subscription(project_id=proj, sa_json=sa_json, subscription_name=sub_id)
+                except Exception:
+                    pass
             return UnsubscribeResult(success=True, message="Gmail watch stopped")
 
         try:
@@ -398,6 +492,21 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         except Exception:
             err = {"message": resp.text}
         return UnsubscribeResult(success=False, message=f"Failed to stop Gmail watch: {err}")
+
+    def _delete_managed_subscription(self, project_id: str, sa_json: str, subscription_name: str) -> None:
+        import json as _json
+        from google.oauth2 import service_account as _sa
+        from google.cloud import pubsub_v1
+        from google.api_core.exceptions import NotFound
+
+        info = _json.loads(sa_json) if isinstance(sa_json, str) else sa_json
+        creds = _sa.Credentials.from_service_account_info(info)
+        subscriber = pubsub_v1.SubscriberClient(credentials=creds)
+        sub_path = subscriber.subscription_path(project_id, subscription_name)
+        try:
+            subscriber.delete_subscription(subscription=sub_path)
+        except NotFound:
+            pass
 
     def _refresh_subscription(
         self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
