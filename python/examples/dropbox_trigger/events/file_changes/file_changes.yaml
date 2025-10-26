@@ -19,12 +19,6 @@ output_schema:
       description: Account IDs included in the notification
       items:
         type: string
-    cursor_before:
-      type: string
-      description: Cursor used before fetching changes (if available)
-    cursor_after:
-      type: string
-      description: Cursor after applying this batch (if available)
     changes:
       type: array
       description: Optional list of file/folder changes if access token is provided
@@ -55,8 +49,6 @@ output_schema:
             type: integer
           content_hash:
             type: string
-
 extra:
   python:
     source: events/file_changes/file_changes.py
-
