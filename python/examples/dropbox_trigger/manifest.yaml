@@ -1,0 +1,40 @@
+author: langgenius
+created_at: "2024-10-25T00:00:00Z"
+description:
+  en_US: Dropbox webhook trigger for unified file change events.
+  ja_JP: Dropbox の Webhook トリガー。ファイル変更の統合イベントを提供します。
+  zh_Hans: Dropbox Webhook 触发器，统一输出文件变更事件。
+icon: icon.svg
+label:
+  en_US: Dropbox
+  ja_JP: Dropbox
+  zh_Hans: Dropbox
+meta:
+  arch:
+  - amd64
+  - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+  minimum_dify_version: 1.7.0
+name: dropbox_trigger
+plugins:
+  triggers:
+  - provider/dropbox.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+    storage:
+      enabled: true
+      size: 1048576
+tags:
+- utilities
+type: plugin
+version: 1.4.0

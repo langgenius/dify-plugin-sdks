@@ -1,0 +1,62 @@
+identity:
+  name: file_changes
+  author: langgenius
+  label:
+    en_US: Dropbox File Changes
+    ja_JP: Dropbox ファイル変更
+    zh_Hans: Dropbox 文件变更
+
+description:
+  en_US: Unified file changes event fed by Dropbox webhooks; includes accounts and optionally resolved change entries when access token is provided.
+  ja_JP: Dropbox Webhook により供給される統合ファイル変更イベント。アカウント一覧および（アクセストークンが設定された場合）解決済みの変更エントリを含みます。
+  zh_Hans: 由 Dropbox Webhook 驱动的统一文件变更事件；包含账号列表，以及（提供 access_token 时）解析到的变更条目。
+
+output_schema:
+  type: object
+  properties:
+    accounts:
+      type: array
+      description: Account IDs included in the notification
+      items:
+        type: string
+    cursor_before:
+      type: string
+      description: Cursor used before fetching changes (if available)
+    cursor_after:
+      type: string
+      description: Cursor after applying this batch (if available)
+    changes:
+      type: array
+      description: Optional list of file/folder changes if access token is provided
+      items:
+        type: object
+        properties:
+          action:
+            type: string
+            description: upsert or deleted
+          tag:
+            type: string
+            description: file | folder | deleted
+          id:
+            type: string
+          name:
+            type: string
+          path_display:
+            type: string
+          path_lower:
+            type: string
+          server_modified:
+            type: string
+          client_modified:
+            type: string
+          rev:
+            type: string
+          size:
+            type: integer
+          content_hash:
+            type: string
+
+extra:
+  python:
+    source: events/file_changes/file_changes.py
+
