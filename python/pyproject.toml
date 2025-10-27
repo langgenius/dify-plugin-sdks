@@ -33,8 +33,5 @@ build-backend = "pdm.backend"
 distribution = true
 
 [dependency-groups]
-example-lark-trigger = [
-    "lark-oapi>=1.4.23",
-]
 lint = ["ruff>=0.11.2"]
 test = ["pytest>=8.3.5"]
