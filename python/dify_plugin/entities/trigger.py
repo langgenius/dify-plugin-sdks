@@ -197,7 +197,7 @@ class EventConfiguration(BaseModel):
     """
 
     identity: EventIdentity = Field(..., description="The identity of the event")
-    parameters: list[EventParameter] = Field(default=[], description="The parameters of the event")
+    parameters: list[EventParameter] = Field(default_factory=list, description="The parameters of the event")
     description: I18nObject = Field(..., description="The description of the event")
     extra: EventConfigurationExtra = Field(..., description="The extra configuration of the event")
     output_schema: Mapping[str, Any] | None = Field(
