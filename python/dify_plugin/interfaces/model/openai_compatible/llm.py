@@ -261,10 +261,12 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         features = []
 
         # for reasoning thought support, they use max_completion_tokens
-        def get_max_token_param():
-            if credentials.get("reasoning_thought_support") == "supported":
-                return {"name": DefaultParameterName.MAX_COMPLETION_TOKENS.value, "label": "Max Completion Tokens"}
-            return {"name": DefaultParameterName.MAX_TOKENS.value, "label": "Max Tokens"}
+        if credentials.get("reasoning_thought_support") == "supported":
+            max_token_param_name = DefaultParameterName.MAX_COMPLETION_TOKENS.value
+            max_token_param_label = "Max Completion Tokens"
+        else:
+            max_token_param_name = DefaultParameterName.MAX_TOKENS.value
+            max_token_param_label = "Max Tokens"
 
         function_calling_type = credentials.get("function_calling_type", "no_call")
         if function_calling_type == "function_call":
@@ -348,8 +350,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     max=2,
                 ),
                 ParameterRule(
-                    name=get_max_token_param(),
-                    label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
+                    name=max_token_param_name,
+                    label=I18nObject(en_US=max_token_param_label, zh_Hans="最大标记"),
                     help=I18nObject(
                         en_US="Maximum length of tokens for the model response.",
                         zh_Hans="模型回答的tokens的最大长度。",
