@@ -180,7 +180,11 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 endpoint_url += "/"
 
             # prepare the payload for a simple ping to the model
-            data = {"model": credentials.get("endpoint_model_name", model), "max_tokens": 5}
+            if credentials.get("reasoning_thought_support") == "supported":
+                # for reasoning thought support, they use max_completion_tokens
+                data = {"model": credentials.get("endpoint_model_name", model), "max_completion_tokens": 5}
+            else:
+                data = {"model": credentials.get("endpoint_model_name", model), "max_tokens": 5}
 
             completion_type = LLMMode.value_of(credentials["mode"])
 
@@ -255,6 +259,12 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         generate custom model entities from credentials
         """
         features = []
+
+        # for reasoning thought support, they use max_completion_tokens
+        def get_max_token_param():
+            if credentials.get("reasoning_thought_support") == "supported":
+                return {"name": DefaultParameterName.MAX_COMPLETION_TOKENS.value, "label": "Max Completion Tokens"}
+            return {"name": DefaultParameterName.MAX_TOKENS.value, "label": "Max Tokens"}
 
         function_calling_type = credentials.get("function_calling_type", "no_call")
         if function_calling_type == "function_call":
@@ -338,7 +348,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     max=2,
                 ),
                 ParameterRule(
-                    name=DefaultParameterName.MAX_TOKENS.value,
+                    name=get_max_token_param(),
                     label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
                     help=I18nObject(
                         en_US="Maximum length of tokens for the model response.",
