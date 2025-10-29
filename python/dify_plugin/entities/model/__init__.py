@@ -22,6 +22,7 @@ class DefaultParameterName(Enum):
     PRESENCE_PENALTY = "presence_penalty"
     FREQUENCY_PENALTY = "frequency_penalty"
     MAX_TOKENS = "max_tokens"
+    MAX_COMPLETION_TOKENS = "max_completion_tokens"
     RESPONSE_FORMAT = "response_format"
     JSON_SCHEMA = "json_schema"
 
