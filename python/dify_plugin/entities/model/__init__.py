@@ -22,6 +22,7 @@ class DefaultParameterName(Enum):
     PRESENCE_PENALTY = "presence_penalty"
     FREQUENCY_PENALTY = "frequency_penalty"
     MAX_TOKENS = "max_tokens"
+    MAX_COMPLETION_TOKENS = "max_completion_tokens"
     RESPONSE_FORMAT = "response_format"
     JSON_SCHEMA = "json_schema"
 
@@ -126,6 +127,23 @@ PARAMETER_RULE_TEMPLATE: dict[DefaultParameterName, dict] = {
         "label": {
             "en_US": "Max Tokens",
             "zh_Hans": "最大标记",
+        },
+        "type": "int",
+        "help": {
+            "en_US": "Specifies the upper limit on the length of generated results. "
+            "If the generated results are truncated, you can increase this parameter.",
+            "zh_Hans": "指定生成结果长度的上限。如果生成结果截断，可以调大该参数。",
+        },
+        "required": False,
+        "default": 64,
+        "min": 1,
+        "max": 2048,
+        "precision": 0,
+    },
+    DefaultParameterName.MAX_COMPLETION_TOKENS: {
+        "label": {
+            "en_US": "Max Completion Tokens",
+            "zh_Hans": "最大完成标记",
         },
         "type": "int",
         "help": {
