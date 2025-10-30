@@ -23,6 +23,20 @@ identity:
 parameters:
   - form: llm
     human_description:
+      en_US: The GitHub username to get repositories for. The name is not case sensitive.
+      pt_BR: O nome de usuário do GitHub para obter repositórios. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 要获取仓库的GitHub用户名。名称不区分大小写。
+    label:
+      en_US: Username
+      pt_BR: Nome de usuário
+      zh_Hans: 用户名
+    llm_description: The GitHub username to get repositories for. The name is not case sensitive.
+    name: username
+    required: true
+    type: dynamic-select
+
+  - form: llm
+    human_description:
       en_US:
         You want to find the project development language, keywords, For example.
         Find 10 Python developed PDF document parsing projects.
@@ -41,6 +55,7 @@ parameters:
     name: query
     required: true
     type: string
+
   - default: 5
     form: llm
     human_description:

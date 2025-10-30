@@ -1,0 +1,46 @@
+identity:
+  name: dropbox_trigger
+  icon: icon.svg
+  author: langgenius
+  label:
+    en_US: Dropbox Triggers
+    ja_JP: Dropbox トリガー
+    zh_Hans: Dropbox 触发器
+  description:
+    en_US: Receive Dropbox webhook notifications (manual app webhook) and emit account change events.
+    ja_JP: Dropbox の手動設定 Webhook 通知を受信し、アカウント変更イベントを発火します。
+    zh_Hans: 接收 Dropbox（手动配置 App Webhook）通知，触发账号变更事件。
+
+subscription_schema:
+- name: app_secret
+  type: secret-input
+  required: true
+  label:
+    en_US: App Secret (Signature)
+    ja_JP: アプリ シークレット（署名）
+    zh_Hans: 应用密钥（签名）
+  help:
+    en_US: Used to validate X-Dropbox-Signature on incoming webhooks. Get it from your Dropbox app.
+    ja_JP: 受信 Webhook の X-Dropbox-Signature を検証するために使用します。Dropbox アプリから取得してください。
+    zh_Hans: 用于校验 Webhook 请求头 X-Dropbox-Signature。请从 Dropbox 应用控制台获取。
+  url: https://www.dropbox.com/developers/apps
+
+- name: access_token
+  type: secret-input
+  required: true
+  label:
+    en_US: Access Token
+    ja_JP: アクセストークン
+    zh_Hans: 访问令牌
+  help:
+    en_US: "User access token for your Dropbox App. Generate it in your App Console or via OAuth."
+    ja_JP: "Dropbox アプリのユーザーアクセストークン。アプリ コンソールまたは OAuth で生成してください。"
+    zh_Hans: "你的 Dropbox 应用的用户访问令牌，可在应用控制台或通过 OAuth 生成。"
+  url: https://www.dropbox.com/developers/apps
+
+extra:
+  python:
+    source: provider/dropbox.py
+
+events:
+- events/file_changes/file_changes.yaml
