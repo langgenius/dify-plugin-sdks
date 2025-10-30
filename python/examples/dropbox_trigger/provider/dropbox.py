@@ -27,7 +27,7 @@ class DropboxTrigger(Trigger):
     """
 
     _EVENT_NAME = "file_changes"
-    _MAX_PAGES = 3
+    _MAX_PAGES = 10
 
     def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
         # Dropbox webhook verification challenge (GET)
@@ -80,12 +80,11 @@ class DropboxTrigger(Trigger):
                 return EventDispatch(events=[], response=self._ok_response(), payload={})
 
             # Fetch changes since cursor_before
-            start_time = time.time()
             cursor = cursor_before
             for _ in range(self._MAX_PAGES):
                 page, cursor, has_more = self._list_folder_continue(access_token, cursor)
                 changes.extend(self._format_entries(page))
-                if not has_more or (time.time() - start_time) > 6.0:
+                if not has_more:
                     break
 
             # Save the new cursor for next time
