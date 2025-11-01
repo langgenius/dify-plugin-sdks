@@ -31,6 +31,9 @@ resource:
       llm: true
     tool:
       enabled: true
+    storage:
+      enabled: true
+      size: 1048576
 tags:
 - utilities
 type: plugin

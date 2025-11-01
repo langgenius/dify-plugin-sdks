@@ -371,7 +371,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         data: dict[str, Any] = resp.json() or {}
         start_history_id: str | None = data.get("historyId")
-        expiration_ms: int | None = data.get("expiration")  # may not be present
+        expiration_ms: int | None = int(data.get("expiration"))  # may not be present
         # Gmail watch is time-limited; if expiration is not provided, use 6 days as a safe default
         expires_at: int = int(expiration_ms / 1000) if expiration_ms else int(time.time()) + 6 * 24 * 60 * 60
 
@@ -544,7 +544,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         data: dict[str, Any] = resp.json() or {}
         start_history_id: str | None = data.get("historyId")
-        expiration_ms: int | None = data.get("expiration")
+        expiration_ms: int | None = int(data.get("expiration"))
         expires_at: int = int(expiration_ms / 1000) if expiration_ms else int(time.time()) + 6 * 24 * 60 * 60
 
         properties: dict[str, Any] = dict(subscription.properties or {})
