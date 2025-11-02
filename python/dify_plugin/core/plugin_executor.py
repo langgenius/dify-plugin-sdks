@@ -89,8 +89,8 @@ class PluginExecutor:
             session=session,
         )
 
-        # invoke tool
-        yield from tool.invoke(request.tool_parameters)
+        # invoke tool with passthrough (if provided)
+        yield from tool.invoke(request.tool_parameters, passthrough=session.passthrough)
 
     def invoke_agent_strategy(self, session: Session, request: AgentInvokeRequest):
         agent_cls = self.registration.get_agent_strategy_cls(request.agent_strategy_provider, request.agent_strategy)

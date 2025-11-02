@@ -47,6 +47,7 @@ class IOServer(ABC):
         app_id: str | None = None,
         endpoint_id: str | None = None,
         context: dict | None = None,
+        passthrough: str | None = None,
     ):
         """
         accept requests and execute them, should be implemented outside
@@ -72,6 +73,7 @@ class IOServer(ABC):
                 data.app_id,
                 data.endpoint_id,
                 data.context,
+                data.passthrough,
             )
 
     def _execute_request_in_thread(
@@ -85,6 +87,7 @@ class IOServer(ABC):
         app_id: str | None = None,
         endpoint_id: str | None = None,
         context: dict | None = None,
+        passthrough: str | None = None,
     ):
         """
         wrapper for _execute_request
@@ -101,6 +104,7 @@ class IOServer(ABC):
                 app_id,
                 endpoint_id,
                 context,
+                passthrough,
             )
         except Exception as e:
             args = {}
