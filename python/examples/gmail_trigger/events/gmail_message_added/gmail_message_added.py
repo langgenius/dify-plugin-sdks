@@ -53,14 +53,17 @@ class GmailMessageAddedEvent(Event):
         if not access_token:
             raise ValueError("Missing access token")
         headers: dict[str, str] = {"Authorization": f"Bearer {access_token}"}
-        user_id: str = (self.runtime.subscription.properties or {}).get("watch_email") or "me"
+
+        # Optional label-based local filtering
+        prop_label_ids: list[str] = (self.runtime.subscription.properties or {}).get("label_ids") or []
+        selected: set[str] = set(prop_label_ids)
 
         messages: list[dict[str, Any]] = []
         for it in items:
             mid = it.get("id")
             if not mid:
                 continue
-            murl = f"{self._GMAIL_BASE}/users/{user_id}/messages/{mid}"
+            murl = f"{self._GMAIL_BASE}/users/me/messages/{mid}"
             mparams: dict[str, str] = {"format": "full"}
             mresp: requests.Response = requests.get(murl, headers=headers, params=mparams, timeout=10)
             if mresp.status_code != 200:
@@ -90,6 +93,11 @@ class GmailMessageAddedEvent(Event):
                     _walk_parts(p)
 
             _walk_parts(m.get("payload") or {})
+
+            # If label filters configured, enforce OR semantics (any match)
+            msg_label_ids: list[str] = m.get("labelIds") or []
+            if selected and not (selected.intersection(msg_label_ids)):
+                continue
 
             messages.append(
                 {

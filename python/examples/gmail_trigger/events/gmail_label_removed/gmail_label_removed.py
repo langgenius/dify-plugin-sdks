@@ -41,5 +41,13 @@ class GmailLabelRemovedEvent(Event):
 
         if not items:
             raise EventIgnoreError()
+        # Optional label-based local filtering (any match)
+        prop_label_ids: list[str] = (self.runtime.subscription.properties or {}).get("label_ids") or []
+        selected = set(prop_label_ids)
+        if selected:
+            items = [it for it in items if set(it.get("labelIds") or []).intersection(selected)]
+
+        if not items:
+            raise EventIgnoreError()
 
         return Variables(variables={"history_id": str(history_id or ""), "changes": items})

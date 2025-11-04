@@ -48,59 +48,6 @@ subscription_schema:
 
 subscription_constructor:
   parameters:
-  - name: "watch_email"
-    type: "string"
-    required: false
-    label:
-      en_US: "Watch Email (userId)"
-      zh_Hans: "监听邮箱 (userId)"
-      ja_JP: "監視メール (userId)"
-    placeholder:
-      en_US: "me"
-      zh_Hans: "me"
-      ja_JP: "me"
-    description:
-      en_US: "Gmail API userId. Use 'me' for the authorized account or provide the full Gmail address."
-      zh_Hans: "Gmail API 的 userId。使用 'me' 表示当前授权用户，或填写完整邮箱地址。"
-      ja_JP: "Gmail API の userId。認証済みユーザーは 'me'、または完全なメールアドレスを指定します。"
-    url: https://developers.google.com/gmail/api/reference/rest/v1/users/watch
-
-  - name: "topic_name"
-    type: "string"
-    required: false
-    label:
-      en_US: "Pub/Sub Topic"
-      zh_Hans: "Pub/Sub 主题"
-      ja_JP: "Pub/Sub トピック"
-    placeholder:
-      en_US: "projects/<project>/topics/<topic>"
-      zh_Hans: "projects/<project>/topics/<topic>"
-      ja_JP: "projects/<project>/topics/<topic>"
-    help:
-      zh_Hans: |
-        两种方式：
-        - 自动（推荐）：在“OAuth 客户端参数”里由租户级运维配置 GCP 项目与服务账号后，此处可留空，系统会自动创建/复用 Topic 与 Push 订阅。
-        - 手动：按文档创建 Topic/Push 订阅后，在此粘贴完整 Topic 路径（如 projects/my-proj/topics/gmail-notify）。
-        手动步骤参考：
-          1) 启用 Gmail API 与 Cloud Pub/Sub API；
-          2) gcloud pubsub topics create <TOPIC> --project=<PROJECT_ID>
-          3) gcloud pubsub topics add-iam-policy-binding projects/<PROJECT_ID>/topics/<TOPIC> \
-             --member=serviceAccount:gmail-api-push@system.gserviceaccount.com --role=roles/pubsub.publisher
-          4) gcloud pubsub subscriptions create <SUB_NAME> --topic=projects/<PROJECT_ID>/topics/<TOPIC> \
-             --push-endpoint="<Callback URL>" [--push-auth-service-account=<SA> --push-auth-token-audience="<Callback URL>"]
-      en_US: |
-        Two options:
-        - Auto (recommended): if tenant-level GCP project + service account are configured in OAuth client params, leave this empty and the system will create/reuse a Topic and a Push subscription automatically.
-        - Manual: paste the full topic path after creating Topic/Push subscription yourself (e.g., projects/my-proj/topics/gmail-notify).
-        Manual steps:
-          1) Enable Gmail API and Cloud Pub/Sub API;
-          2) gcloud pubsub topics create <TOPIC> --project=<PROJECT_ID>
-          3) gcloud pubsub topics add-iam-policy-binding projects/<PROJECT_ID>/topics/<TOPIC> \
-             --member=serviceAccount:gmail-api-push@system.gserviceaccount.com --role=roles/pubsub.publisher
-          4) gcloud pubsub subscriptions create <SUB_NAME> --topic=projects/<PROJECT_ID>/topics/<TOPIC> \
-             --push-endpoint="<Callback URL>" [--push-auth-service-account=<SA> --push-auth-token-audience="<Callback URL>"]
-    url: https://cloud.google.com/pubsub/docs/create-topic
-
   - name: "label_ids"
     type: "dynamic-select"
     required: false
@@ -114,30 +61,6 @@ subscription_constructor:
       zh_Hans: "可选，用于限定通知范围的 Gmail 标签 ID（如 INBOX、UNREAD）。选项将从 Gmail 动态加载。"
       ja_JP: "任意。通知範囲を限定する Gmail ラベル ID（例: INBOX, UNREAD）。Gmail から動的に取得します。"
     url: https://developers.google.com/gmail/api/reference/rest/v1/users.labels/list
-
-  - name: "label_filter_action"
-    type: "select"
-    required: false
-    label:
-      en_US: "Label Filter Action"
-      zh_Hans: "标签过滤动作"
-      ja_JP: "ラベルフィルター動作"
-    options:
-    - value: "include"
-      label:
-        en_US: "Include only these labels"
-        zh_Hans: "仅包含这些标签"
-        ja_JP: "これらのラベルのみを含む"
-    - value: "exclude"
-      label:
-        en_US: "Exclude these labels"
-        zh_Hans: "排除这些标签"
-        ja_JP: "これらのラベルを除外"
-    description:
-      en_US: "How to apply labelIds to filter notifications when calling users.watch (include/exclude)."
-      zh_Hans: "调用 users.watch 时如何应用 labelIds 来过滤通知（包含/排除）。"
-      ja_JP: "users.watch 呼び出し時に labelIds をどのように適用するか（含む/除外）。"
-    url: https://developers.google.com/gmail/api/reference/rest/v1/users/watch#request-body
   oauth_schema:
     client_schema:
     - name: "client_id"
@@ -172,39 +95,22 @@ subscription_constructor:
         en_US: "Client Secret"
         zh_Hans: "Client Secret"
         ja_JP: "Client Secret"
-    - name: "gcp_project_id"
-      type: "text-input"
-      required: false
-      label:
-        en_US: "GCP Project ID (for auto Pub/Sub)"
-        zh_Hans: "GCP 项目 ID（用于自动 Pub/Sub）"
-        ja_JP: "GCP プロジェクト ID（自動 Pub/Sub 用）"
-      help:
-        en_US: "If set together with Service Account JSON, the plugin will auto-provision Topic and Push subscription per subscription."
-        zh_Hans: "与服务账号 JSON 一起配置后，插件会为每个订阅自动创建/复用 Topic 与 Push 订阅。"
-        ja_JP: "サービスアカウント JSON と併せて設定すると、各サブスクリプションに対して Pub/Sub を自動作成/再利用します。"
     - name: "gcp_service_account_json"
       type: "secret-input"
-      required: false
+      required: true
       label:
         en_US: "GCP Service Account JSON"
         zh_Hans: "GCP 服务账号 JSON"
         ja_JP: "GCP サービスアカウント JSON"
+      placeholder:
+        en_US: '{"type":"service_account","project_id":"...","private_key":"..."}'
+        zh_Hans: '{"type":"service_account","project_id":"...","private_key":"..."}'
+        ja_JP: '{"type":"service_account","project_id":"...","private_key":"..."}'
       help:
-        en_US: "JSON key with permissions to manage Pub/Sub (roles/pubsub.admin recommended)."
-        zh_Hans: "具备管理 Pub/Sub 权限的服务账号 JSON（建议 roles/pubsub.admin）。"
-        ja_JP: "Pub/Sub 管理権限を持つサービスアカウントの JSON（roles/pubsub.admin 推奨）。"
-    - name: "gcp_topic_id"
-      type: "text-input"
-      required: false
-      label:
-        en_US: "Default Topic ID (optional)"
-        zh_Hans: "默认 Topic ID（可选）"
-        ja_JP: "デフォルト Topic ID（任意）"
-      help:
-        en_US: "Used when auto-provisioning. Defaults to dify-gmail if empty."
-        zh_Hans: "用于自动创建，留空时默认 dify-gmail。"
-        ja_JP: "自動作成時に利用。未設定時は dify-gmail。"
+        en_US: "Complete JSON key file content for a GCP service account with Pub/Sub management permissions (roles/pubsub.admin recommended). The JSON must include project_id field. To create: GCP Console → IAM & Admin → Service Accounts → Create → Assign roles/pubsub.admin → Create Key (JSON). Keep this credential secure."
+        zh_Hans: "具备 Pub/Sub 管理权限的 GCP 服务账号完整 JSON 密钥文件内容（建议授予 roles/pubsub.admin 角色）。JSON 必须包含 project_id 字段。创建步骤：GCP 控制台 → IAM 与管理 → 服务账号 → 创建服务账号 → 授予 roles/pubsub.admin 角色 → 创建密钥（JSON 格式）。请妥善保管此凭据。"
+        ja_JP: "Pub/Sub 管理権限を持つ GCP サービスアカウントの完全な JSON キーファイルの内容（roles/pubsub.admin ロール推奨）。JSON に project_id フィールドが含まれている必要があります。作成手順：GCP コンソール → IAM と管理 → サービスアカウント → サービスアカウントを作成 → roles/pubsub.admin ロールを付与 → キーを作成（JSON 形式）。この認証情報は安全に保管してください。"
+      url: https://console.cloud.google.com/iam-admin/serviceaccounts
     credentials_schema:
     - name: "access_token"
       type: "secret-input"
@@ -225,7 +131,7 @@ subscription_constructor:
       source: provider/gmail.py
 
 events:
-- events/gmail_message_added/gmail_message_added.yaml
+- events/gmail_message/gmail_message.yaml
 - events/gmail_message_deleted/gmail_message_deleted.yaml
 - events/gmail_label_added/gmail_label_added.yaml
 - events/gmail_label_removed/gmail_label_removed.yaml

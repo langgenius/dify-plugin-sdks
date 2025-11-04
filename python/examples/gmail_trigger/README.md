@@ -1,6 +1,7 @@
 Gmail Trigger (Push + History)
 
 Overview
+
 - Gmail Trigger is a Dify provider that receives Gmail push notifications via Cloud Pub/Sub and emits concrete events based on Gmail History:
   - `gmail_message_added` (new messages)
   - `gmail_message_deleted` (deleted messages)
@@ -10,64 +11,91 @@ Overview
 - Note: API Key is NOT supported for Gmail API access. Use OAuth (gmail.readonly) only.
 
 Prerequisites
+
 - A Google account authorized for Gmail API (used during OAuth)
-- A Google Cloud project with Pub/Sub enabled (manual setup)
+- A Google Cloud project with Pub/Sub API enabled (configured at tenant-level by administrator)
 
 Step-by-step Setup
-1) Install the plugin in Dify
+
+1. Install the plugin in Dify
+
 - Options:
   - If packaged as `.difypkg`, import it in Dify’s Plugin Center (Plugins → Import).
   - For local run during development, ensure the runtime installs dependencies in `requirements.txt`.
 
-2) Configure OAuth in the provider (one-time)
-- In Google Cloud Console → APIs & Services → Credentials → Create Credentials → OAuth client ID
-  - Application type: Web application
-  - Authorized redirect URIs: Copy the redirect URI shown by Dify when setting up OAuth for this provider
-- Back in Dify, enter Client ID/Secret; click “Authorize” to complete OAuth (gmail.readonly)
-- The constructor validates the token via `users/me/profile`
+2. Configure GCP resources (Administrator, one-time setup)
 
-3) Create a Gmail subscription in Dify
-- Parameters
-  - `watch_email` (userId): use `me` or the full Gmail address
-  - `topic_name`: Paste the full Pub/Sub topic path you created (e.g., `projects/<PROJECT_ID>/topics/<TOPIC>`). If you configure tenant-level GCP client params (see below), you may leave this empty and the plugin will auto-provision Pub/Sub.
-  - `label_ids` (optional): scope to specific labels (INBOX/UNREAD...)
+- Create or select the Google Cloud project that will host your Pub/Sub resources. Make sure the following APIs are enabled _(APIs & Services → Library)_:
+  - Gmail API: https://console.cloud.google.com/apis/library/gmail.googleapis.com
+  - Cloud Pub/Sub API: https://console.cloud.google.com/apis/library/pubsub.googleapis.com
+- Create a dedicated service account and grant Pub/Sub permissions:
+
+  1. Go to IAM & Admin → Service Accounts → **Create Service Account**.  
+     Console URL: https://console.cloud.google.com/iam-admin/serviceaccounts
+
+     Screenshot:
+
+     [![GCP Service Account](./_assets/GCP_SERVICE_ACCOUNT.png)](./_assets/GCP_SERVICE_ACCOUNT.png)
+
+  2. Assign the `roles/pubsub.admin` role to this service account or select "Pub/Sub Admin" role which already includes the necessary permissions (required so the plugin can create topics, subscriptions, and update IAM policies automatically).
+
+     - Alternatively, a custom role must include: `pubsub.topics.create`, `pubsub.topics.getIamPolicy`, `pubsub.topics.setIamPolicy`, `pubsub.subscriptions.create`, `pubsub.subscriptions.get`, `pubsub.subscriptions.delete`, `pubsub.subscriptions.list`.
+
+       Screenshot:
+
+       [![GCP Permissions](./_assets/GCP_PERMISSION.png)](./_assets/GCP_PERMISSION.png)
+
+  3. Create a JSON key for this service account and download it securely.
+     Screenshot:
+
+     [![GCP Key](./_assets/GCP_KEY.png)](./_assets/GCP_KEY.png)
+
+- Note your Google Cloud **Project ID** (displayed on the project dashboard or IAM page).
+
+3. Configure OAuth client for the plugin (Administrator, one-time setup)
+
+- In Google Cloud Console → APIs & Services → Credentials → **Create Credentials** → OAuth client ID.  
+  Console URL: https://console.cloud.google.com/apis/credentials
+
+  Screenshot:
+
+  [![GCP OAuth Client](./_assets/GC_OAUTH_CLIENT.png)](./_assets/GC_OAUTH_CLIENT.png)
+
+  - Application type: **Web application**
+  - Authorized redirect URIs: copy the redirect URI shown in Dify when you set up the plugin (e.g., `https://<your-dify-host>/console/api/plugin/oauth/callback`)
+
+- Capture the generated **Client ID** and **Client Secret** for later use.
+
+4. Enter OAuth client parameters in Dify
+
+- In the plugin configuration form:
+  - `client_id`: The OAuth client ID created above.
+  - `client_secret`: The corresponding client secret.
+  - `gcp_project_id`: The Google Cloud project ID with Pub/Sub enabled.
+  - `gcp_service_account_json`: Paste the full JSON key created for the service account (keep it private).
+- Dify will automatically derive a per-user Pub/Sub topic when the end user authorizes the plugin.
+
+5. User: Authorize and create subscription
+
+- Click "Authorize" to complete OAuth (gmail.readonly scope)
+- Create a Gmail subscription with optional parameters:
+  - `label_ids` (optional): Scope to specific labels (INBOX, UNREAD, etc.)
     - Docs: https://developers.google.com/gmail/api/reference/rest/v1/users.labels/list
-  - `label_filter_action` (optional): `include` or `exclude` for users.watch
-    - Docs: https://developers.google.com/gmail/api/reference/rest/v1/users/watch#request-body
-  - Properties (optional)
-    - `require_oidc`: enforce OIDC bearer verification
-    - `oidc_audience`: use the exact webhook endpoint URL (shown after subscription is created)
-    - `oidc_service_account_email`: the service account used by the Pub/Sub push subscription
-- After you click Create, open the subscription details and copy the Webhook Endpoint URL. You will use this in Pub/Sub push.
+  - Properties (optional, for enhanced security):
+    - `require_oidc`: Enforce OIDC bearer verification
+    - `oidc_audience`: Webhook endpoint URL (auto-filled)
+    - `oidc_service_account_email`: Service account used for Push subscription
 
-4) Prepare Pub/Sub (manual)
-   - Enable APIs:
-     - Gmail API: https://console.cloud.google.com/apis/library/gmail.googleapis.com
-     - Cloud Pub/Sub API: https://console.cloud.google.com/apis/library/pubsub.googleapis.com
-   - Create topic:
-     - `gcloud pubsub topics create <TOPIC> --project=<PROJECT_ID>`
-   - Grant Gmail publisher on the topic:
-     - `gcloud pubsub topics add-iam-policy-binding projects/<PROJECT_ID>/topics/<TOPIC> \
-        --member=serviceAccount:gmail-api-push@system.gserviceaccount.com \
-        --role=roles/pubsub.publisher`
-   - Create a Push subscription to the Callback URL displayed by Dify:
-     - `gcloud pubsub subscriptions create <SUB_NAME> \
-        --topic=projects/<PROJECT_ID>/topics/<TOPIC> \
-        --push-endpoint="https://<YOUR_DIFY_HOST>/api/plugin/triggers/<SUBSCRIPTION_ID>"`
-     - OIDC (optional): add `--push-auth-service-account=<YOUR_SA_EMAIL>` and `--push-auth-token-audience="<Callback URL>"`
+What happens automatically:
 
-Auto mode (tenant-level)
-- Configure in OAuth client params (one-time, tenant-level):
-  - `gcp_project_id`: GCP project ID
-  - `gcp_service_account_json`: Service Account JSON with Pub/Sub admin perms
-  - Optional `gcp_topic_id`: default to `dify-gmail`
-- With these set, if `topic_name` is empty, the plugin will:
-  - Create/reuse Topic and grant Gmail publisher
-  - Create a dedicated Push subscription per Dify subscription (supports OIDC)
-  - Call `users.watch` with the managed Topic
-- On unsubscribe, the plugin will best-effort delete the managed Push subscription (Topic is preserved for reuse).
+- Plugin creates/reuses a Pub/Sub Topic in your GCP project
+- Plugin grants Gmail API publisher permission to the topic
+- Plugin creates a dedicated Push subscription for this user
+- Plugin calls Gmail `users.watch` API to start monitoring
+- On unsubscribe, plugin cleans up the Push subscription (topic is preserved for reuse)
 
 Where To Get OIDC Values
+
 - `oidc_audience`
   - Use the exact webhook endpoint URL shown in the Dify subscription details (Endpoint). Example:
     - `https://<your-dify-host>/api/plugin/triggers/<subscription-id>`
@@ -79,6 +107,7 @@ Where To Get OIDC Values
   - The YAML field links to the Service Accounts console page.
 
 How It Works
+
 - Dispatch (trigger)
   - Optionally verifies OIDC bearer from Pub/Sub push (iss/aud/email)
   - Decodes `message.data` to get `historyId`/`emailAddress`
@@ -91,6 +120,7 @@ How It Works
   - Output matches the event YAML `output_schema`
 
 Event Outputs (high-level)
+
 - `gmail_message_added`
   - `history_id`: string
   - `messages[]`: id, threadId, internalDate, snippet, sizeEstimate, labelIds, headers{From,To,Subject,Date,Message-Id}, has_attachments, attachments[]
@@ -102,23 +132,28 @@ Event Outputs (high-level)
   - `changes[]`: id, threadId, labelIds
 
 Lifecycle & Refresh
-- Create: `users.watch` with `topicName`, optional `labelIds`/`labelFilterAction`
-- Refresh: `users.watch` again before expiry (Gmail watch is time-limited). If `expiration` not provided, plugin targets ~6 days
-- Delete: `users.stop`
+
+- Create: Plugin auto-provisions Pub/Sub, then calls `users.watch` with `topicName` and optional `labelIds`
+- Refresh: `users.watch` is called again before expiry (Gmail watch is time-limited, ~7 days)
+- Delete: Calls `users.stop` and cleans up the Push subscription
 
 Testing
+
 - Send an email to the watched mailbox (INBOX). You should see `gmail_message_added`
 - Mark read/unread (UNREAD label removed/added) triggers label events
 - Delete an email triggers `gmail_message_deleted`
- - Tip: You can view recent deliveries in Pub/Sub subscription details; Dify logs/console will show trigger and event traces.
+- Tip: You can view recent deliveries in Pub/Sub subscription details; Dify logs/console will show trigger and event traces.
 
 Troubleshooting
-- Nothing triggers: ensure topic exists, Gmail has publisher role on the topic, and push subscription points to Dify endpoint
+
+- Plugin fails to create subscription: Check GCP credentials are correctly configured in OAuth client parameters
+- Nothing triggers: Verify Gmail API and Pub/Sub API are enabled in your GCP project
 - 401/403 at dispatch: OIDC settings mismatch; verify service account and audience
-- `historyId` out of date: plugin resets checkpoint to the latest notification and skips the batch
-- OAuth issues: re-authorize the provider; token is validated by `users/me/profile`
+- `historyId` out of date: Plugin resets checkpoint to the latest notification and skips the batch
+- OAuth issues: Re-authorize; ensure gmail.readonly scope is granted
 
 References
+
 - Gmail Push: https://developers.google.com/workspace/gmail/api/guides/push
 - History: https://developers.google.com/gmail/api/reference/rest/v1/users.history/list
 - Messages: https://developers.google.com/gmail/api/reference/rest/v1/users.messages/get
