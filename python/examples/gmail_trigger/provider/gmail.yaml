@@ -173,7 +173,7 @@ subscription_constructor:
         zh_Hans: "Client Secret"
         ja_JP: "Client Secret"
     - name: "gcp_project_id"
-      type: "string"
+      type: "text-input"
       required: false
       label:
         en_US: "GCP Project ID (for auto Pub/Sub)"
@@ -195,7 +195,7 @@ subscription_constructor:
         zh_Hans: "具备管理 Pub/Sub 权限的服务账号 JSON（建议 roles/pubsub.admin）。"
         ja_JP: "Pub/Sub 管理権限を持つサービスアカウントの JSON（roles/pubsub.admin 推奨）。"
     - name: "gcp_topic_id"
-      type: "string"
+      type: "text-input"
       required: false
       label:
         en_US: "Default Topic ID (optional)"
