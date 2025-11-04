@@ -147,7 +147,6 @@ subscription_constructor:
       source: provider/gmail.py
 
 events:
-- events/gmail_message/gmail_message.yaml
 - events/gmail_message_added/gmail_message_added.yaml
 - events/gmail_message_deleted/gmail_message_deleted.yaml
 - events/gmail_label_added/gmail_label_added.yaml
@@ -156,9 +155,9 @@ events:
 identity:
   author: langgenius
   description:
-    en_US: Gmail push trigger provider with unified message event.
-    zh_Hans: 支持统一消息事件的 Gmail 推送触发器。
-    ja_JP: 統合メッセージイベント対応の Gmail プッシュトリガー。
+    en_US: Gmail push trigger provider with message and label change events.
+    zh_Hans: 支持邮件与标签变更事件的 Gmail 推送触发器。
+    ja_JP: メールとラベル更新イベント対応の Gmail プッシュトリガー。
   icon: icon.svg
   label:
     en_US: Gmail Triggers

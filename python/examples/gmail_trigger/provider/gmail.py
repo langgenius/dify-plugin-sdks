@@ -77,7 +77,7 @@ class GmailTrigger(Trigger):
         session.storage.set(checkpoint_key, str(notification["historyId"]).encode("utf-8"))
 
         # 6) Build combined payload and select events (no storage stashing)
-        events: list[str] = ["gmail_message"]
+        events: list[str] = []
         if added:
             events.append("gmail_message_added")
         if deleted:
@@ -86,8 +86,6 @@ class GmailTrigger(Trigger):
             events.append("gmail_label_added")
         if labels_removed:
             events.append("gmail_label_removed")
-        if added or deleted:
-            events.append("gmail_message")
         combined_payload = {
             "historyId": str(notification["historyId"]),
             "messages": messages,
