@@ -63,7 +63,8 @@ class GmailMessageAddedEvent(Event):
             mid = it.get("id")
             if not mid:
                 continue
-            murl = f"{self._GMAIL_BASE}/users/me/messages/{mid}"
+            mid_str = str(mid)
+            murl = f"{self._GMAIL_BASE}/users/me/messages/{mid_str}"
             mparams: dict[str, str] = {"format": "full"}
             mresp: requests.Response = requests.get(murl, headers=headers, params=mparams, timeout=10)
             if mresp.status_code != 200:
@@ -82,11 +83,26 @@ class GmailMessageAddedEvent(Event):
                 filename = part.get("filename")
                 if filename:
                     has_attachments = True
+                    body = part.get("body")
+                    attachment_id: str | None = None
+                    size: Any = None
+                    if isinstance(body, Mapping):
+                        raw_attachment_id = body.get("attachmentId")
+                        if isinstance(raw_attachment_id, str):
+                            attachment_id = raw_attachment_id
+                        size = body.get("size")
+                    download_url: str | None = (
+                        f"{self._GMAIL_BASE}/users/me/messages/{mid_str}/attachments/{attachment_id}"
+                        if attachment_id
+                        else None
+                    )
                     attachments_meta.append(
                         {
                             "filename": filename,
                             "mimeType": part.get("mimeType"),
-                            "size": ((part.get("body") or {}).get("size")),
+                            "size": size,
+                            "attachmentId": attachment_id,
+                            "download_url": download_url,
                         }
                     )
                 for p in (part.get("parts") or []) or []:

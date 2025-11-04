@@ -114,24 +114,41 @@ subscription_constructor:
     credentials_schema:
     - name: "access_token"
       type: "secret-input"
-      help:
-        en_US: "Filled automatically after OAuth authorization. You usually do not need to enter it manually."
-        zh_Hans: "完成 OAuth 授权后自动填充，通常无需手动输入。"
-        ja_JP: "OAuth 認可後に自動入力されます。通常は手動入力の必要はありません。"
-      placeholder:
-        en_US: "Will be populated after OAuth"
-        zh_Hans: "OAuth 完成后自动填充"
-        ja_JP: "OAuth 完了後に自動入力"
       label:
-        zh_Hans: "Access Token"
-        en_US: "Access Token"
-        ja_JP: "アクセストークン"
+        en_US: "Filled automatically after OAuth authorization. You usually do not need to enter it manually."
+    - name: "gcp_topic_id"
+      type: "secret-input"
+      label:
+        en_US: "GCP Topic ID"
+      url: https://console.cloud.google.com/pubsub/topics
+    - name: "gcp_topic_path"
+      type: "secret-input"
+      label:
+        en_US: "GCP Topic Path"
+      url: https://console.cloud.google.com/pubsub/topics
+    - name: "gcp_project_id"
+      type: "secret-input"
+      label:
+        en_US: "GCP Project ID"
+    - name: "gcp_service_account_json"
+      type: "secret-input"
+      label:
+        en_US: "GCP Service Account JSON"
+    - name: "gmail_email"
+      type: "secret-input"
+      label:
+        en_US: "Gmail Email"
+    - name: "refresh_token"
+      type: "secret-input"
+      label:
+        en_US: "Refresh Token"
   extra:
     python:
       source: provider/gmail.py
 
 events:
 - events/gmail_message/gmail_message.yaml
+- events/gmail_message_added/gmail_message_added.yaml
 - events/gmail_message_deleted/gmail_message_deleted.yaml
 - events/gmail_label_added/gmail_label_added.yaml
 - events/gmail_label_removed/gmail_label_removed.yaml

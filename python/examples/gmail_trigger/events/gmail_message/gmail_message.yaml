@@ -7,9 +7,9 @@ identity:
     ja_JP: Gmail メッセージ（統合）
 
 description:
-  en_US: Unified Gmail message event based on history delta. Returns new messages since last checkpoint.
-  zh_Hans: 基于历史增量的统一 Gmail 消息事件，返回自上次位点以来的新邮件。
-  ja_JP: 履歴差分に基づく Gmail メッセージ統合イベント。前回チェックポイント以降の新規メッセージを返します。
+  en_US: Unified Gmail message event based on history delta. Returns message additions and deletions since last checkpoint.
+  zh_Hans: 基于历史增量的统一 Gmail 消息事件，返回自上次位点以来新增或删除的邮件。
+  ja_JP: 履歴差分に基づく Gmail メッセージ統合イベント。前回チェックポイント以降に追加または削除されたメッセージを返します。
 
 parameters:
 - name: from_contains
@@ -92,6 +92,11 @@ output_schema:
             type: array
             items:
               type: string
+          change_type:
+            type: string
+            enum:
+            - added
+            - deleted
           headers:
             type: object
             properties:
@@ -120,4 +125,3 @@ output_schema:
                   type:
                   - integer
                   - "null"
-

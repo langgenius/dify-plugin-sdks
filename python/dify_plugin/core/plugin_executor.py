@@ -64,6 +64,7 @@ from dify_plugin.entities.trigger import (
     UnsubscribeResult,
     Variables,
 )
+from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.datasource import DatasourceProvider
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model.ai_model import AIModel
@@ -490,14 +491,23 @@ class PluginExecutor:
                 subscription=request.subscription,
             ),
         )
-        variables: Variables = event.on_event(
-            request=deserialize_request(raw_data=binascii.unhexlify(request.raw_http_request)),
-            parameters=request.parameters,
-            payload=request.payload,
-        )
-        return TriggerInvokeEventResponse(
-            variables=variables.variables,
-        )
+        try:
+            variables: Variables = event.on_event(
+                request=deserialize_request(raw_data=binascii.unhexlify(request.raw_http_request)),
+                parameters=request.parameters,
+                payload=request.payload,
+            )
+            return TriggerInvokeEventResponse(
+                variables=variables.variables,
+                cancelled=False,
+            )
+        except EventIgnoreError:
+            return TriggerInvokeEventResponse(
+                variables={},
+                cancelled=True,
+            )
+        except Exception as e:
+            raise e
 
     def validate_trigger_provider_credentials(
         self, session: Session, request: TriggerValidateProviderCredentialsRequest

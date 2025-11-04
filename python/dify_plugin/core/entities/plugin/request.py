@@ -392,7 +392,10 @@ class TriggerInvokeEventResponse(BaseModel):
     variables: Mapping[str, Any] = Field(
         description="The output variables of the event, same with the schema defined in `output_schema` in the YAML",
     )
-
+    cancelled: bool = Field(
+        default=False,
+        description="Whether the event is cancelled.",
+    )
     model_config = ConfigDict(protected_namespaces=())
 
 

@@ -49,7 +49,7 @@ class GmailTrigger(Trigger):
         # 3) Build auth headers using runtime OAuth credentials
         access_token = (self.runtime.credentials or {}).get("access_token") if self.runtime else None
         if not access_token:
-            return EventDispatch(events=[], response=self._ok())
+            return EventDispatch(events=[], response=self._value_error("Missing access token for Gmail API"))
         headers = {"Authorization": f"Bearer {access_token}"}
         user_id: str = "me"
 
@@ -86,6 +86,8 @@ class GmailTrigger(Trigger):
             events.append("gmail_label_added")
         if labels_removed:
             events.append("gmail_label_removed")
+        if added or deleted:
+            events.append("gmail_message")
         combined_payload = {
             "historyId": str(notification["historyId"]),
             "messages": messages,
@@ -98,8 +100,13 @@ class GmailTrigger(Trigger):
         return EventDispatch(events=events, response=self._ok(), payload=combined_payload)
 
     # ---------------- Helper methods (trigger) -----------------
+    def _value_error(self, message: str) -> Response:
+        return Response(
+            response=json.dumps({"status": "value_error", "message": message}), status=400, mimetype="application/json"
+        )
+
     def _ok(self) -> Response:
-        return Response(response='{"status": "ok"}', status=200, mimetype="application/json")
+        return Response(response=json.dumps({"status": "ok"}), status=200, mimetype="application/json")
 
     def _maybe_verify_pubsub_oidc(self, request: Request, props: Mapping[str, Any], endpoint: str) -> None:
         require_oidc = bool(props.get("require_oidc"))
@@ -191,7 +198,7 @@ class GmailTrigger(Trigger):
                 break
             params["pageToken"] = page_token
 
-        messages.extend(added + deleted + labels_added + labels_removed)
+        messages.extend(added + deleted)
         return messages, added, deleted, labels_added, labels_removed
 
     def _verify_oidc_token(self, token: str, audience: str, expected_email: str | None = None) -> None:
@@ -415,7 +422,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         require_oidc: bool = bool(parameters.get("require_oidc") or False)
         oidc_audience: str = parameters.get("oidc_audience") or endpoint
 
-        # Derive a unique push subscription name for this subscription (endpoint + subscription key)
+        # Derive a unique push subscription name for this subscription (endpoint +   key)
         push_sub_name = f"dify-gmail-{_hashlib.sha1(endpoint.encode()).hexdigest()[:16]}-{subscription_key[:8]}"
         info = self._ensure_pubsub(
             project_id=gcp_project_id,
