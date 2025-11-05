@@ -1,0 +1,106 @@
+subscription_schema:
+- name: "include_cancelled"
+  type: "boolean"
+  required: false
+  default: true
+  label:
+    en_US: "Include Cancelled Events"
+    zh_Hans: "包含已取消的事件"
+    ja_JP: "キャンセル済み予定を含める"
+  help:
+    en_US: "If enabled, cancelled events are dispatched as delete events. Disable this if you only care about active events."
+    zh_Hans: "开启后，取消的事件会作为删除事件推送。若只关注正常事件，可关闭此选项。"
+    ja_JP: "オンにするとキャンセルされた予定も削除イベントとして配信されます。アクティブな予定だけが必要な場合はオフにしてください。"
+  url: https://developers.google.com/calendar/api/v3/push
+
+subscription_constructor:
+  parameters:
+  - name: "calendar_id"
+    type: "dynamic-select"
+    required: false
+    multiple: false
+    label:
+      en_US: "Calendar"
+      zh_Hans: "日历"
+      ja_JP: "カレンダー"
+    description:
+      en_US: "Target Google Calendar identifier (e.g., primary or calendar ID). The list is loaded dynamically after OAuth authorization."
+      zh_Hans: "目标 Google 日历 ID（如 primary 或具体日历 ID），OAuth 授权后将动态加载列表。"
+      ja_JP: "対象の Google カレンダー ID（primary など）。OAuth 認可後に選択肢が動的に読み込まれます。"
+    placeholder:
+      en_US: "primary"
+      zh_Hans: "primary"
+      ja_JP: "primary"
+    url: https://developers.google.com/calendar/api/v3/reference/calendarList/list
+  oauth_schema:
+    client_schema:
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Client ID"
+        zh_Hans: "Client ID"
+        ja_JP: "Client ID"
+      placeholder:
+        en_US: "Google OAuth Client ID"
+        zh_Hans: "Google OAuth Client ID"
+        ja_JP: "Google OAuth Client ID"
+      help:
+        en_US: "Create an OAuth 2.0 Client ID (Web application) in Google Cloud Console and add the redirect URI provided by Dify."
+        zh_Hans: "在 Google Cloud Console 创建 OAuth 2.0 Client ID（Web 应用），并添加 Dify 提供的回调地址。"
+        ja_JP: "Google Cloud Console で OAuth 2.0 クライアント ID（ウェブアプリ）を作成し、Dify のリダイレクト URI を追加してください。"
+      url: https://console.cloud.google.com/apis/credentials
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Client Secret"
+        zh_Hans: "Client Secret"
+        ja_JP: "Client Secret"
+      placeholder:
+        en_US: "Google OAuth Client Secret"
+        zh_Hans: "Google OAuth Client Secret"
+        ja_JP: "Google OAuth Client Secret"
+      help:
+        en_US: "Keep the client secret generated with your OAuth 2.0 Client ID secure."
+        zh_Hans: "妥善保管与你的 OAuth 2.0 Client ID 一起生成的 Client Secret。"
+        ja_JP: "OAuth 2.0 クライアント ID と一緒に生成されるクライアントシークレットを安全に保管してください。"
+      url: https://console.cloud.google.com/apis/credentials
+  credentials_schema:
+  - name: "access_token"
+    type: "secret-input"
+    label:
+      en_US: "Access Token"
+  - name: "refresh_token"
+    type: "secret-input"
+    label:
+      en_US: "Refresh Token"
+  - name: "account_email"
+    type: "text-input"
+    label:
+      en_US: "Google Account Email"
+  extra:
+    python:
+      source: provider/google_calendar_trigger.py
+
+events:
+- events/google_calendar_event_created/google_calendar_event_created.yaml
+- events/google_calendar_event_updated/google_calendar_event_updated.yaml
+- events/google_calendar_event_deleted/google_calendar_event_deleted.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: Google Calendar push trigger provider with create, update, and delete events.
+    zh_Hans: 支持事件创建、更新、删除的 Google 日历推送触发器。
+    ja_JP: 予定の作成・更新・削除イベントを扱う Google カレンダープッシュトリガー。
+  icon: icon.svg
+  label:
+    en_US: google_calendar_trigger
+    zh_Hans: google_calendar_trigger
+    ja_JP: google_calendar_trigger
+  name: google_calendar_trigger
+
+extra:
+  python:
+    source: provider/google_calendar_trigger.py
