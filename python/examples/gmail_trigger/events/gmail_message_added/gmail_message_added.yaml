@@ -73,11 +73,11 @@ output_schema:
                   type:
                   - string
                   - "null"
-                download_url:
+                file_url:
                   type:
                   - string
                   - "null"
-                file_url:
+                original_url:
                   type:
                   - string
                   - "null"
@@ -88,5 +88,5 @@ output_schema:
                 file_source:
                   type: string
                   enum:
-                  - storage
+                  - dify_storage
                   - gmail
