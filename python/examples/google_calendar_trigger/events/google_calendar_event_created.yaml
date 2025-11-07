@@ -1,21 +1,21 @@
 identity:
-  name: google_calendar_event_updated
+  name: google_calendar_event_created
   author: langgenius
   label:
-    en_US: Google Calendar Event Updated
-    zh_Hans: Google 日历事件更新
-    ja_JP: Google カレンダー予定の更新
+    en_US: Google Calendar Event Created
+    zh_Hans: Google 日历事件创建
+    ja_JP: Google カレンダー予定の作成
 
 description:
-  en_US: Emits Google Calendar events whose details were modified since the last sync (time, attendees, description, etc.).
-  zh_Hans: 当检测到 Google 日历事件的时间、参与者或描述等信息变更时触发。
-  ja_JP: 時間・参加者・説明などが更新された Google カレンダー予定を通知します。
+  en_US: Emits newly created Google Calendar events detected by incremental sync.
+  zh_Hans: 当检测到新增的 Google 日历事件时触发。
+  ja_JP: 増分同期で検出された新しい Google カレンダー予定を出力します。
 
 parameters: []
 
 extra:
   python:
-    source: events/google_calendar_event_updated/google_calendar_event_updated.py
+    source: events/google_calendar_event_created.py
 
 output_schema:
   type: object
@@ -89,3 +89,5 @@ output_schema:
                 type: string
               displayName:
                 type: string
+          conferenceData:
+            type: object

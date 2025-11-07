@@ -15,7 +15,7 @@ parameters: []
 
 extra:
   python:
-    source: events/google_calendar_event_deleted/google_calendar_event_deleted.py
+    source: events/google_calendar_event_deleted.py
 
 output_schema:
   type: object

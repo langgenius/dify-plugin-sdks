@@ -4,7 +4,7 @@ description:
   en_US: Google Calendar push notifications trigger provider for Dify.
   ja_JP: Dify 向け Google カレンダーのプッシュ通知トリガープロバイダー。
   zh_Hans: 面向 Dify 的 Google 日历推送触发器。
-icon: icon.svg
+icon: icon.png
 label:
   en_US: Google Calendar Trigger
   ja_JP: Google Calendar Trigger
@@ -19,7 +19,7 @@ meta:
     version: "3.12"
   version: 0.0.1
   minimum_dify_version: 1.7.0
-name: Google Calendar Trigger
+name: google_calendar_trigger
 plugins:
   triggers:
   - provider/google_calendar_trigger.yaml

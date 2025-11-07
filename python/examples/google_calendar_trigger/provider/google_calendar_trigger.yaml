@@ -66,27 +66,30 @@ subscription_constructor:
         zh_Hans: "妥善保管与你的 OAuth 2.0 Client ID 一起生成的 Client Secret。"
         ja_JP: "OAuth 2.0 クライアント ID と一緒に生成されるクライアントシークレットを安全に保管してください。"
       url: https://console.cloud.google.com/apis/credentials
-  credentials_schema:
-  - name: "access_token"
-    type: "secret-input"
-    label:
-      en_US: "Access Token"
-  - name: "refresh_token"
-    type: "secret-input"
-    label:
-      en_US: "Refresh Token"
-  - name: "account_email"
-    type: "text-input"
-    label:
-      en_US: "Google Account Email"
+    credentials_schema:
+    - name: "access_token"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Access Token"
+    - name: "refresh_token"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Refresh Token"
+    - name: "account_email"
+      type: "text-input"
+      required: true
+      label:
+        en_US: "Google Account Email"
   extra:
     python:
       source: provider/google_calendar_trigger.py
 
 events:
-- events/google_calendar_event_created/google_calendar_event_created.yaml
-- events/google_calendar_event_updated/google_calendar_event_updated.yaml
-- events/google_calendar_event_deleted/google_calendar_event_deleted.yaml
+- events/google_calendar_event_created.yaml
+- events/google_calendar_event_updated.yaml
+- events/google_calendar_event_deleted.yaml
 
 identity:
   author: langgenius
@@ -94,7 +97,7 @@ identity:
     en_US: Google Calendar push trigger provider with create, update, and delete events.
     zh_Hans: 支持事件创建、更新、删除的 Google 日历推送触发器。
     ja_JP: 予定の作成・更新・削除イベントを扱う Google カレンダープッシュトリガー。
-  icon: icon.svg
+  icon: icon.png
   label:
     en_US: google_calendar_trigger
     zh_Hans: google_calendar_trigger
