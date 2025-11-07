@@ -12,6 +12,19 @@ subscription_schema:
     zh_Hans: "开启后，取消的事件会作为删除事件推送。若只关注正常事件，可关闭此选项。"
     ja_JP: "オンにするとキャンセルされた予定も削除イベントとして配信されます。アクティブな予定だけが必要な場合はオフにしてください。"
   url: https://developers.google.com/calendar/api/v3/push
+- name: "enrich_event_details"
+  type: "boolean"
+  required: false
+  default: true
+  label:
+    en_US: "Fetch Full Event Details"
+    zh_Hans: "补全事件详情"
+    ja_JP: "予定詳細を取得"
+  help:
+    en_US: "When enabled, the plugin refetches each changed event via events.get to include attendees, conference links, etc. Disable to reduce Google API calls."
+    zh_Hans: "开启后，会为每条变更事件额外调用 events.get 以补全参会者、会议链接等字段；关闭可减少 API 调用。"
+    ja_JP: "有効にすると events.get を追加で呼び出し、参加者や会議リンクなどの詳細情報を取得します。API 呼び出しを抑えたい場合はオフにしてください。"
+  url: https://developers.google.com/calendar/api/v3/reference/events/get
 
 subscription_constructor:
   parameters:
@@ -30,8 +43,20 @@ subscription_constructor:
     placeholder:
       en_US: "primary"
       zh_Hans: "primary"
-      ja_JP: "primary"
+    ja_JP: "primary"
     url: https://developers.google.com/calendar/api/v3/reference/calendarList/list
+  - name: "enrich_event_details"
+    type: "boolean"
+    required: false
+    default: true
+    label:
+      en_US: "Fetch Full Event Details"
+      zh_Hans: "补全事件详情"
+      ja_JP: "予定詳細を取得"
+    description:
+      en_US: "Re-fetch each changed event to include attendees, attachments, conference data, etc. Disable for lower latency and fewer API calls."
+      zh_Hans: "为每条变更事件再调用一次 API 以带上参会者、附件、会议链接等字段；关闭可减少延迟与配额消耗。"
+      ja_JP: "各変更予定について追加の API 呼び出しを行い、参加者・添付ファイル・会議情報などを含めます。遅延や API 回数を抑えたい場合はオフにしてください。"
   oauth_schema:
     client_schema:
     - name: "client_id"
@@ -99,9 +124,9 @@ identity:
     ja_JP: 予定の作成・更新・削除イベントを扱う Google カレンダープッシュトリガー。
   icon: icon.png
   label:
-    en_US: google_calendar_trigger
-    zh_Hans: google_calendar_trigger
-    ja_JP: google_calendar_trigger
+    en_US: Google Calendar Trigger
+    zh_Hans: Google 日历触发器
+    ja_JP: Google カレンダートリガー
   name: google_calendar_trigger
 
 extra:

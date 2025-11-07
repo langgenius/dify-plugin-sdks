@@ -104,7 +104,7 @@ def build_variables(payload: Mapping[str, Any], calendar_id: str, events: list[d
         "events": events,
     }
     include_cancelled = payload.get("includeCancelled")
-    if include_cancelled is not None:
+    if include_cancelled:
         variables["include_cancelled"] = include_cancelled
 
     return Variables(variables=variables)
@@ -113,3 +113,16 @@ def build_variables(payload: Mapping[str, Any], calendar_id: str, events: list[d
 def ensure_events_or_raise(events: list[dict[str, Any]]) -> None:
     if not events:
         raise EventIgnoreError()
+
+
+def should_enrich_details(runtime: Any, parameters: Mapping[str, Any]) -> bool:
+    if "enrich_event_details" in parameters:
+        return bool(parameters.get("enrich_event_details"))
+
+    if getattr(runtime, "subscription", None):
+        subscription_params = runtime.subscription.parameters or {}
+        if "enrich_event_details" in subscription_params:
+            return bool(subscription_params.get("enrich_event_details"))
+
+    return True
+

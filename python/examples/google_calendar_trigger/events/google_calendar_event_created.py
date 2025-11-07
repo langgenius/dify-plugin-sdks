@@ -14,6 +14,7 @@ from .utils import (
     enrich_events,
     ensure_events_or_raise,
     resolve_calendar_id,
+    should_enrich_details,
 )
 
 
@@ -27,6 +28,9 @@ class GoogleCalendarEventCreatedEvent(Event):
         ensure_events_or_raise(events)
 
         calendar_id = resolve_calendar_id(self.runtime, payload, parameters)
-        enriched = enrich_events(self.runtime, calendar_id=calendar_id, events=events, include_deleted=False)
+        if should_enrich_details(self.runtime, parameters):
+            enriched = enrich_events(self.runtime, calendar_id=calendar_id, events=events, include_deleted=False)
+        else:
+            enriched = events
 
         return build_variables(payload=payload, calendar_id=calendar_id, events=enriched)

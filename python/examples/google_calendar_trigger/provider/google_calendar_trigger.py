@@ -6,7 +6,7 @@ import secrets
 import time
 import urllib.parse
 import uuid
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any
 
 import requests
@@ -26,6 +26,8 @@ from dify_plugin.errors.trigger import (
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
 
+_CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
+
 
 class SyncTokenExpiredError(TriggerError):
     """Raised when Google Calendar reports an invalidated sync token."""
@@ -38,7 +40,7 @@ def _encode_calendar_id(calendar_id: str) -> str:
 
 
 def _isoformat_now() -> str:
-    return datetime.datetime.now(datetime.UTC).replace(microsecond=0).isoformat() + "Z"
+    return datetime.datetime.now(datetime.UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _parse_google_error(resp: requests.Response) -> str:
@@ -59,10 +61,102 @@ def _parse_google_error(resp: requests.Response) -> str:
     return resp.text or f"HTTP {resp.status_code}"
 
 
+def _to_bool(value: Any, default: bool) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "off"}:
+            return False
+    return default
+
+
+def _retrieve_sync_token(
+    access_token: str,
+    calendar_id: str,
+    error_factory: Callable[[str], Exception],
+) -> str:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"{_CALENDAR_API_BASE}/calendars/{_encode_calendar_id(calendar_id)}/events"
+    params: dict[str, str] = {"showDeleted": "true", "singleEvents": "true", "maxResults": "50"}
+
+    next_sync_token: str | None = None
+
+    while True:
+        try:
+            resp = requests.get(url, headers=headers, params=params, timeout=10)
+        except requests.RequestException as exc:
+            raise error_factory(f"Network error while obtaining sync token: {exc}") from exc
+
+        if resp.status_code != 200:
+            raise error_factory(f"Failed to obtain calendar sync token: {_parse_google_error(resp)}")
+
+        data: dict[str, Any] = resp.json() or {}
+        next_page = data.get("nextPageToken")
+        next_sync = data.get("nextSyncToken")
+
+        if next_page:
+            params["pageToken"] = next_page
+            continue
+
+        if isinstance(next_sync, str) and next_sync:
+            next_sync_token = next_sync
+        break
+
+    if not next_sync_token:
+        raise error_factory(
+            "Google Calendar response missing nextSyncToken after paginating all events. "
+            "See https://developers.google.com/calendar/api/guides/sync for requirements."
+        )
+    return next_sync_token
+
+
+def _parse_rfc3339(value: Any) -> datetime.datetime | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        text = value.strip()
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        return datetime.datetime.fromisoformat(text)
+    except Exception:
+        return None
+
+
+def _is_recent_creation(event: Mapping[str, Any], threshold_seconds: int = 1) -> bool:
+    seq = event.get("sequence")
+    seq_value: int | None = None
+    if isinstance(seq, int):
+        seq_value = seq
+    elif isinstance(seq, str):
+        try:
+            seq_value = int(seq)
+        except ValueError:
+            seq_value = None
+    seq_looks_new = seq_value is None or seq_value <= 1
+
+    created_dt = _parse_rfc3339(event.get("created"))
+    updated_dt = _parse_rfc3339(event.get("updated"))
+    if created_dt and updated_dt:
+        time_gap = abs((updated_dt - created_dt).total_seconds())
+        time_looks_new = time_gap <= threshold_seconds
+    else:
+        time_looks_new = True
+
+    return bool(seq_looks_new and time_looks_new)
+
+
 class GoogleCalendarTrigger(Trigger):
     """Dispatch Google Calendar push notifications into concrete event families."""
 
-    _CAL_BASE = "https://www.googleapis.com/calendar/v3"
+    _CAL_BASE = _CALENDAR_API_BASE
+    _MAX_SEEN_EVENT_IDS = 500
 
     # ---------------- Trigger dispatch lifecycle -----------------
     def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
@@ -82,7 +176,7 @@ class GoogleCalendarTrigger(Trigger):
         resource_id = (request.headers.get("X-Goog-Resource-ID") or "").strip()
         calendar_id = properties.get("calendar_id") or parameters.get("calendar_id") or "primary"
         calendar_id = str(calendar_id)
-        include_cancelled = bool(parameters.get("include_cancelled", True))
+        include_cancelled = _to_bool(parameters.get("include_cancelled"), True)
 
         access_token: str | None = (self.runtime.credentials or {}).get("access_token") if self.runtime else None
         if not access_token:
@@ -97,6 +191,7 @@ class GoogleCalendarTrigger(Trigger):
 
         # Ensure we have a sync token persisted for incremental fetches
         sync_token: str | None = None
+        initialized_now = False
         if session.storage.exist(sync_storage_key):
             sync_token = session.storage.get(sync_storage_key).decode("utf-8")
         else:
@@ -104,11 +199,12 @@ class GoogleCalendarTrigger(Trigger):
             if initial_sync:
                 sync_token = str(initial_sync)
                 session.storage.set(sync_storage_key, sync_token.encode("utf-8"))
-
-        if not sync_token:
-            sync_token = self._bootstrap_sync_token(access_token=access_token, calendar_id=calendar_id)
-            if sync_token:
+            else:
+                sync_token = self._bootstrap_sync_token(access_token=access_token, calendar_id=calendar_id)
                 session.storage.set(sync_storage_key, sync_token.encode("utf-8"))
+                initialized_now = True
+
+        if initialized_now:
             # No events to emit on initial bootstrap
             return EventDispatch(events=[], response=self._ok())
 
@@ -140,16 +236,24 @@ class GoogleCalendarTrigger(Trigger):
                 continue
             event = dict(raw)
             status = (event.get("status") or "").lower()
+            change_type: str
             if status == "cancelled":
+                change_type = "deleted"
+            elif _is_recent_creation(event):
+                change_type = "created"
+            else:
+                change_type = "updated"
+
+            event["changeType"] = change_type
+
+            if change_type == "deleted":
                 if include_cancelled:
                     deleted.append(event)
                 continue
-            created_ts = event.get("created")
-            updated_ts = event.get("updated")
-            if created_ts and updated_ts and str(created_ts) != str(updated_ts):
-                updated.append(event)
-            else:
+            if change_type == "created":
                 created.append(event)
+            else:
+                updated.append(event)
 
         events: list[str] = []
         if created:
@@ -168,10 +272,11 @@ class GoogleCalendarTrigger(Trigger):
             "created": created,
             "updated": updated,
             "deleted": deleted,
-            "includeCancelled": include_cancelled,
         }
         if next_sync_token:
             payload["nextSyncToken"] = next_sync_token
+        if include_cancelled:
+            payload["includeCancelled"] = True
 
         return EventDispatch(events=events, response=self._ok(), payload=payload)
 
@@ -233,28 +338,7 @@ class GoogleCalendarTrigger(Trigger):
         return items, next_sync_token or sync_token
 
     def _bootstrap_sync_token(self, access_token: str, calendar_id: str) -> str:
-        headers = {"Authorization": f"Bearer {access_token}"}
-        url = f"{self._CAL_BASE}/calendars/{_encode_calendar_id(calendar_id)}/events"
-        params: dict[str, str] = {
-            "showDeleted": "true",
-            "singleEvents": "true",
-            "timeMin": _isoformat_now(),
-            "maxResults": "1",
-        }
-
-        try:
-            resp = requests.get(url, headers=headers, params=params, timeout=10)
-        except requests.RequestException as exc:
-            raise TriggerDispatchError(f"Network error while bootstrapping sync token: {exc}") from exc
-
-        if resp.status_code != 200:
-            raise TriggerDispatchError(f"Failed to obtain calendar sync token: {_parse_google_error(resp)}")
-
-        data: dict[str, Any] = resp.json() or {}
-        sync_token = data.get("nextSyncToken")
-        if not isinstance(sync_token, str) or not sync_token:
-            raise TriggerDispatchError("Google Calendar response missing nextSyncToken")
-        return sync_token
+        return _retrieve_sync_token(access_token, calendar_id, lambda msg: TriggerDispatchError(msg))
 
 
 class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
@@ -262,7 +346,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
 
     _AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
     _TOKEN_URL = "https://oauth2.googleapis.com/token"
-    _CAL_BASE = "https://www.googleapis.com/calendar/v3"
+    _CAL_BASE = _CALENDAR_API_BASE
 
     _DEFAULT_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 
@@ -445,6 +529,8 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
             params["calendar_id"] = calendar_id
         if "include_cancelled" not in params:
             params["include_cancelled"] = True
+        if "enrich_event_details" not in params:
+            params["enrich_event_details"] = True
 
         properties: dict[str, Any] = {
             "calendar_id": calendar_id,
@@ -523,6 +609,8 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         params["calendar_id"] = calendar_id
         if "include_cancelled" not in params:
             params["include_cancelled"] = True
+        if "enrich_event_details" not in params:
+            params["enrich_event_details"] = True
 
         properties.update(
             {
@@ -575,33 +663,11 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         return resp.status_code in (200, 204)
 
     def _bootstrap_sync_token(self, access_token: str, calendar_id: str) -> str:
-        headers = {"Authorization": f"Bearer {access_token}"}
-        url = f"{self._CAL_BASE}/calendars/{_encode_calendar_id(calendar_id)}/events"
-        params: dict[str, str] = {
-            "showDeleted": "true",
-            "singleEvents": "true",
-            "timeMin": _isoformat_now(),
-            "maxResults": "1",
-        }
-
-        try:
-            resp = requests.get(url, headers=headers, params=params, timeout=10)
-        except requests.RequestException as exc:
-            raise SubscriptionError(
-                f"Network error while obtaining sync token: {exc}", error_code="SYNC_TOKEN_ERROR"
-            ) from exc
-
-        if resp.status_code != 200:
-            raise SubscriptionError(
-                f"Failed to obtain calendar sync token: {_parse_google_error(resp)}",
-                error_code="SYNC_TOKEN_ERROR",
-            )
-
-        data: dict[str, Any] = resp.json() or {}
-        sync_token = data.get("nextSyncToken")
-        if not isinstance(sync_token, str) or not sync_token:
-            raise SubscriptionError("Google Calendar response missing nextSyncToken", error_code="SYNC_TOKEN_ERROR")
-        return sync_token
+        return _retrieve_sync_token(
+            access_token,
+            calendar_id,
+            lambda msg: SubscriptionError(msg, error_code="SYNC_TOKEN_ERROR"),
+        )
 
     def _fetch_parameter_options(
         self,
