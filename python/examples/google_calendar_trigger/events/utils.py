@@ -125,4 +125,3 @@ def should_enrich_details(runtime: Any, parameters: Mapping[str, Any]) -> bool:
             return bool(subscription_params.get("enrich_event_details"))
 
     return True
-

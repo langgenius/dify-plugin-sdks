@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import hashlib
+import hashlib as _hashlib
 import hmac
 import json
 import time
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-import hashlib as _hashlib
 import requests
 from werkzeug import Request, Response
 

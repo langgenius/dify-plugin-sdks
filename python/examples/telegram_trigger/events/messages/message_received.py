@@ -4,7 +4,6 @@ from collections.abc import Mapping
 from typing import Any
 
 from dify_plugin.errors.trigger import EventIgnoreError
-
 from dify_plugin.interfaces.trigger import Event
 
 from ..base import TelegramUpdateEvent
