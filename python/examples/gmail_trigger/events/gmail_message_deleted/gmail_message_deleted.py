@@ -31,9 +31,9 @@ class GmailMessageDeletedEvent(Event):
             raw_bytes: bytes = self.runtime.session.storage.get(pending_key)
             try:
                 data: dict[str, Any] = json.loads(raw_bytes.decode("utf-8"))
-            except Exception:
+            except Exception as err:
                 self.runtime.session.storage.delete(pending_key)
-                raise EventIgnoreError()
+                raise EventIgnoreError() from err
 
             # Cleanup pending batch
             self.runtime.session.storage.delete(pending_key)

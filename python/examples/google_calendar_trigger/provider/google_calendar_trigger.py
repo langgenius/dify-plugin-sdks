@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import datetime
 import json
 import secrets
@@ -44,7 +45,7 @@ def _isoformat_now() -> str:
 
 
 def _parse_google_error(resp: requests.Response) -> str:
-    try:
+    with contextlib.suppress(Exception):
         data = resp.json()
         error = data.get("error")
         if isinstance(error, Mapping):
@@ -55,9 +56,6 @@ def _parse_google_error(resp: requests.Response) -> str:
             message = data.get("message")
             if message:
                 return str(message)
-    except Exception:
-        pass
-
     return resp.text or f"HTTP {resp.status_code}"
 
 
@@ -176,7 +174,7 @@ class GoogleCalendarTrigger(Trigger):
         resource_id = (request.headers.get("X-Goog-Resource-ID") or "").strip()
         calendar_id = properties.get("calendar_id") or parameters.get("calendar_id") or "primary"
         calendar_id = str(calendar_id)
-        include_cancelled = _to_bool(parameters.get("include_cancelled"), True)
+        include_cancelled = _to_bool(parameters.get("include_cancelled"), default=True)
 
         access_token: str | None = (self.runtime.credentials or {}).get("access_token") if self.runtime else None
         if not access_token:

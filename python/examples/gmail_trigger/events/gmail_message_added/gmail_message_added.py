@@ -43,10 +43,10 @@ class GmailMessageAddedEvent(Event):
             raw_bytes = self.runtime.session.storage.get(pending_key)
             try:
                 data = json.loads(raw_bytes.decode("utf-8"))
-            except Exception:
+            except Exception as err:
                 # Corrupted payload, cleanup and ignore
                 self.runtime.session.storage.delete(pending_key)
-                raise EventIgnoreError()
+                raise EventIgnoreError() from err
 
             # Cleanup the pending batch to avoid re-processing
             self.runtime.session.storage.delete(pending_key)
@@ -86,8 +86,13 @@ class GmailMessageAddedEvent(Event):
             attachments_meta: list[Mapping[str, Any]] = []
             inline_parts: list[Mapping[str, Any]] = []
 
-            def _walk_parts(part: Mapping[str, Any] | None):
-                nonlocal has_attachments, attachments_meta, inline_parts
+            def _walk_parts(
+                part: Mapping[str, Any] | None,
+                mid_str: str = mid_str,
+                attachments_meta: list[Mapping[str, Any]] = attachments_meta,
+                inline_parts: list[Mapping[str, Any]] = inline_parts,
+            ):
+                nonlocal has_attachments
                 if not part:
                     return
                 filename = part.get("filename")

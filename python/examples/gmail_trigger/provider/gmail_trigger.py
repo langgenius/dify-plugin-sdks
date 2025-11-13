@@ -318,7 +318,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
 
             import hashlib as _hashlib
 
-            topic_id = f"dify-gmail-{_hashlib.sha1(email_addr.lower().encode()).hexdigest()[:16]}"
+            topic_id = f"dify-gmail-{_hashlib.sha256(email_addr.lower().encode()).hexdigest()[:16]}"
             credentials["gcp_topic_id"] = topic_id
 
             try:
@@ -414,14 +414,14 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         topic_id = credentials.get("gcp_topic_id")
         if not topic_id:
-            topic_id = f"dify-gmail-{_hashlib.sha1(email_addr.lower().encode()).hexdigest()[:16]}"
+            topic_id = f"dify-gmail-{_hashlib.sha256(email_addr.lower().encode()).hexdigest()[:16]}"
 
         # 2) Ensure Pub/Sub Topic and per-subscription Push Subscription
         require_oidc: bool = bool(parameters.get("require_oidc") or False)
         oidc_audience: str = parameters.get("oidc_audience") or endpoint
 
         # Derive a unique push subscription name for this subscription (endpoint +   key)
-        push_sub_name = f"dify-gmail-{_hashlib.sha1(endpoint.encode()).hexdigest()[:16]}-{subscription_key[:8]}"
+        push_sub_name = f"dify-gmail-{_hashlib.sha256(endpoint.encode()).hexdigest()[:16]}-{subscription_key[:8]}"
         info = self._ensure_pubsub(
             project_id=gcp_project_id,
             sa_json=gcp_sa,
@@ -573,10 +573,10 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 if require_oidc and (cur_sa != sa_email or cur_aud != audience):
                     need_recreate = True
             if need_recreate:
-                try:
+                import contextlib
+
+                with contextlib.suppress(NotFound):
                     subscriber.delete_subscription(subscription=sub_path)
-                except NotFound:
-                    pass
                 subscriber.create_subscription(name=sub_path, topic=topic_path, push_config=push)
 
         return {"topic_path": topic_path}
@@ -632,10 +632,10 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         # Delete Push Subscription
         subscriber = pubsub_v1.SubscriberClient(credentials=creds)
         sub_path = subscriber.subscription_path(project_id, subscription_name)
-        try:
+        import contextlib
+
+        with contextlib.suppress(NotFound):
             subscriber.delete_subscription(subscription=sub_path)
-        except NotFound:
-            pass
         # Optionally delete topic when no managed subscriptions remain (skipped to avoid disrupting others)
 
     def _best_effort_cleanup(
@@ -666,7 +666,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         # List all subscriptions on the topic
         subs_iter = publisher.list_topic_subscriptions(request={"topic": topic_path})
-        subs = [s for s in subs_iter]
+        subs = list(subs_iter)
         if not subs:
             # No subscriptions at all -> safe to stop watch and delete topic
             stopped = False
@@ -678,11 +678,12 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                     stopped = True
                 except Exception:
                     stopped = False
-            try:
+            import contextlib
+
+            with contextlib.suppress(NotFound):
                 publisher.delete_topic(topic=topic_path)
                 return "Watch stopped and topic deleted" if stopped else "Topic deleted"
-            except NotFound:
-                return ""
+            return ""
         # If there are remaining subscriptions, especially non-plugin ones, do nothing
         return ""
 

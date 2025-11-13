@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import secrets
 import time
@@ -181,10 +182,8 @@ class GoogleDriveTrigger(Trigger):
 
         If the storage is not found, do nothing.
         """
-        try:
+        with contextlib.suppress(Exception):
             self.runtime.session.storage.set(self._STORAGE_KEY, token.encode())
-        except Exception:
-            pass
 
     def _get_max_page_token(self, subscription: Subscription) -> str:
         """

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import hashlib as _hashlib
 import hmac
@@ -211,10 +212,8 @@ class DropboxTrigger(Trigger):
             return ""
 
     def _set_storage(self, key: str, value: str) -> None:
-        try:
+        with contextlib.suppress(Exception):
             self.runtime.session.storage.set(key, value.encode("utf-8"))
-        except Exception:
-            pass
 
     def _get_cursor(self, key: str) -> str:
         return self._get_storage(key)
