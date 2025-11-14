@@ -211,10 +211,12 @@ class BackwardsInvocation(Generic[T], ABC):
         self,
         session: Session | None = None,
     ) -> None:
-        """
-        backwards invocation
+        """Initializes a backwards invocation handler.
 
-        :param session: session
+        Backwards invocations allow the plugin to call back to the Dify platform
+        to use its features like models, tools, or storage.
+
+        :param session: The session object containing context for the invocation.
         """
         self.session = session
 
