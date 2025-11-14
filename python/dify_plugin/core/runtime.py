@@ -211,9 +211,19 @@ class BackwardsInvocation(Generic[T], ABC):
         self,
         session: Session | None = None,
     ) -> None:
+        """
+        backwards invocation
+
+        :param session: session
+        """
         self.session = session
 
     def _generate_backwards_request_id(self):
+        """
+        generate a unique request id for backwards invocation
+
+        :return: request id
+        """
         return uuid.uuid4().hex
 
     def _backwards_invoke(
@@ -310,11 +320,11 @@ class BackwardsInvocation(Generic[T], ABC):
                 headers=headers,
                 content=payload,
                 timeout=(
-                    300,
-                    300,
-                    300,
-                    300,
-                ),  # 300 seconds for connection, read, write, and pool
+                    self.session.max_invocation_timeout,  # connection timeout
+                    self.session.max_invocation_timeout,  # read timeout
+                    self.session.max_invocation_timeout,  # write timeout
+                    self.session.max_invocation_timeout,  # pool timeout
+                ),
             ) as response,
         ):
 
