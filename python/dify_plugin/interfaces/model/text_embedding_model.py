@@ -3,7 +3,11 @@ from abc import abstractmethod
 from pydantic import ConfigDict
 
 from dify_plugin.entities.model import EmbeddingInputType, ModelPropertyKey, ModelType
-from dify_plugin.entities.model.text_embedding import TextEmbeddingResult
+from dify_plugin.entities.model.text_embedding import (
+    MultiModalContent,
+    MultiModalEmbeddingResult,
+    TextEmbeddingResult,
+)
 from dify_plugin.interfaces.model.ai_model import AIModel
 
 
@@ -41,6 +45,21 @@ class TextEmbeddingModel(AIModel):
         :return: embeddings result
         """
         raise NotImplementedError
+
+    def _invoke_multimodal(
+        self,
+        model: str,
+        credentials: dict,
+        documents: list[MultiModalContent],
+        user: str | None = None,
+        input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
+    ) -> MultiModalEmbeddingResult:
+        """Invoke a multimodal embedding model."""
+
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not implement `_invoke_multimodal`. "
+            "Implement this method to support multimodal embeddings."
+        )
 
     @abstractmethod
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
@@ -113,5 +132,29 @@ class TextEmbeddingModel(AIModel):
         with self.timing_context():
             try:
                 return self._invoke(model, credentials, texts, user, input_type)
+            except Exception as e:
+                raise self._transform_invoke_error(e) from e
+
+    def invoke_multimodal(
+        self,
+        model: str,
+        credentials: dict,
+        documents: list[MultiModalContent],
+        user: str | None = None,
+        input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
+    ) -> MultiModalEmbeddingResult:
+        """Invoke a multimodal embedding model."""
+
+        with self.timing_context():
+            try:
+                return self._invoke_multimodal(
+                    model,
+                    credentials,
+                    documents,
+                    user,
+                    input_type,
+                )
+            except NotImplementedError:
+                raise
             except Exception as e:
                 raise self._transform_invoke_error(e) from e
