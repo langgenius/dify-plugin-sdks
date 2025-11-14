@@ -89,6 +89,7 @@ class ToolParameter(BaseModel):
         FILES = CommonParameterType.FILES.value
         MODEL_SELECTOR = CommonParameterType.MODEL_SELECTOR.value
         APP_SELECTOR = CommonParameterType.APP_SELECTOR.value
+        CHECKBOX = CommonParameterType.CHECKBOX.value
         # TOOL_SELECTOR = CommonParameterType.TOOL_SELECTOR.value
         ANY = CommonParameterType.ANY.value
         # MCP object and array type parameters
