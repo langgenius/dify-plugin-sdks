@@ -226,7 +226,6 @@ class PluginExecutor:
         if isinstance(model_instance, TextEmbeddingModel):
             return model_instance.invoke_multimodal(
                 data.model,
-                data.tenant_id,
                 data.credentials,
                 data.documents,
                 user=data.user_id,

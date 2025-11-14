@@ -209,7 +209,6 @@ class ModelInvokeMultimodalEmbeddingRequest(PluginAccessModelRequest):
     action: ModelActions = ModelActions.InvokeMultimodalEmbedding
     model_type: ModelType = ModelType.TEXT_EMBEDDING
 
-    tenant_id: str
     documents: list[MultiModalContent]
     input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT
 

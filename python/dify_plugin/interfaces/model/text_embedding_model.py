@@ -49,7 +49,6 @@ class TextEmbeddingModel(AIModel):
     def _invoke_multimodal(
         self,
         model: str,
-        tenant_id: str,
         credentials: dict,
         documents: list[MultiModalContent],
         user: str | None = None,
@@ -139,7 +138,6 @@ class TextEmbeddingModel(AIModel):
     def invoke_multimodal(
         self,
         model: str,
-        tenant_id: str,
         credentials: dict,
         documents: list[MultiModalContent],
         user: str | None = None,
@@ -151,7 +149,6 @@ class TextEmbeddingModel(AIModel):
             try:
                 return self._invoke_multimodal(
                     model,
-                    tenant_id,
                     credentials,
                     documents,
                     user,
