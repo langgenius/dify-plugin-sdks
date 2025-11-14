@@ -1,4 +1,5 @@
-from typing import Mapping
+from collections.abc import Mapping
+
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.rerank import MultiModalRerankResult, RerankDocument, RerankResult
 from dify_plugin.entities.model.text_embedding import MultiModalContent, MultiModalContentType
