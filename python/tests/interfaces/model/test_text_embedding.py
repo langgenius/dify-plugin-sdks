@@ -1,4 +1,5 @@
 from decimal import Decimal
+
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 

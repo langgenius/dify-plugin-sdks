@@ -1,4 +1,5 @@
-from typing import Mapping
+from collections.abc import Mapping
+
 from dify_plugin.core.model_factory import ModelFactory
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import ModelType

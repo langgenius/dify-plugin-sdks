@@ -1,6 +1,7 @@
-from concurrent.futures import ThreadPoolExecutor
 import time
-from typing import Mapping
+from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
+
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.provider import (
