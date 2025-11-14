@@ -85,9 +85,9 @@ class MockTextEmbeddingModel(TextEmbeddingModel):
         return EmbeddingUsage(
             tokens=1,
             total_tokens=1,
-            unit_price=Decimal("0"),
-            price_unit=Decimal("1"),
-            total_price=Decimal("0"),
+            unit_price=Decimal(0),
+            price_unit=Decimal(1),
+            total_price=Decimal(0),
             currency="USD",
             latency=0.0,
         )

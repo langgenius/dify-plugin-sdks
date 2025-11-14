@@ -42,8 +42,7 @@ class TextEmbeddingInvocation(BackwardsInvocation[TextEmbeddingResult]):
         payload = {
             **model_config.model_dump(),
             "documents": [
-                document.model_dump() if isinstance(document, MultiModalContent) else document
-                for document in documents
+                document.model_dump() if isinstance(document, MultiModalContent) else document for document in documents
             ],
             "input_type": input_type.value,
         }
