@@ -1,5 +1,5 @@
+from collections.abc import Mapping
 from decimal import Decimal
-from typing import Mapping
 
 from dify_plugin.entities.model import EmbeddingInputType, ModelType
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
