@@ -1,7 +1,9 @@
 from decimal import Decimal
+from typing import Mapping
 
 from dify_plugin.entities.model import EmbeddingInputType, ModelType
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
+from dify_plugin.errors.model import InvokeError
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from tests.interfaces.model.utils import prepare_model_factory
 
@@ -28,6 +30,13 @@ class MockTextEmbeddingModel(TextEmbeddingModel):
             ),
             embeddings=[[0.0] * 1536 for _ in texts],
         )
+
+    @property
+    def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
+        return {}
+
+    def validate_credentials(self, model: str, credentials: Mapping) -> None:
+        pass
 
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         return [0] * len(texts)
