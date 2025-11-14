@@ -1,8 +1,9 @@
 from decimal import Decimal
 
-from dify_plugin.entities.model import EmbeddingInputType
+from dify_plugin.entities.model import EmbeddingInputType, ModelType
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
+from tests.interfaces.model.utils import prepare_model_factory
 
 
 class MockTextEmbeddingModel(TextEmbeddingModel):
@@ -30,3 +31,11 @@ class MockTextEmbeddingModel(TextEmbeddingModel):
 
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         return [0] * len(texts)
+
+
+# test both constructor and invoke
+def test_text_embedding():
+    model_factory = prepare_model_factory({ModelType.TEXT_EMBEDDING: MockTextEmbeddingModel})
+    instance = model_factory.get_instance(ModelType.TEXT_EMBEDDING)
+    assert isinstance(instance, MockTextEmbeddingModel)
+    instance.invoke(model="test", credentials={}, texts=["test"])
