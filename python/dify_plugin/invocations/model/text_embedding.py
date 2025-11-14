@@ -1,7 +1,13 @@
 from dify_plugin.core.entities.invocation import InvokeType
 from dify_plugin.core.runtime import BackwardsInvocation
 from dify_plugin.entities.model import EmbeddingInputType
-from dify_plugin.entities.model.text_embedding import TextEmbeddingModelConfig, TextEmbeddingResult
+from dify_plugin.entities.model.text_embedding import (
+    MultiModalContent,
+    MultiModalEmbeddingModelConfig,
+    MultiModalEmbeddingResult,
+    TextEmbeddingModelConfig,
+    TextEmbeddingResult,
+)
 
 
 class TextEmbeddingInvocation(BackwardsInvocation[TextEmbeddingResult]):
@@ -26,3 +32,27 @@ class TextEmbeddingInvocation(BackwardsInvocation[TextEmbeddingResult]):
             return data
 
         raise Exception("No response from text embedding")
+
+    def invoke_multimodal(
+        self,
+        model_config: MultiModalEmbeddingModelConfig,
+        documents: list[MultiModalContent],
+        input_type: EmbeddingInputType = EmbeddingInputType.QUERY,
+    ) -> MultiModalEmbeddingResult:
+        payload = {
+            **model_config.model_dump(),
+            "documents": [
+                document.model_dump() if isinstance(document, MultiModalContent) else document
+                for document in documents
+            ],
+            "input_type": input_type.value,
+        }
+
+        for data in self._backwards_invoke(
+            InvokeType.MultimodalEmbedding,
+            MultiModalEmbeddingResult,
+            payload,
+        ):
+            return data
+
+        raise Exception("No response from multimodal embedding")

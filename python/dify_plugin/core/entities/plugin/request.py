@@ -9,7 +9,7 @@ from dify_plugin.entities.datasource import (
     OnlineDriveBrowseFilesRequest,
     OnlineDriveDownloadFileRequest,
 )
-from dify_plugin.entities.model import ModelType
+from dify_plugin.entities.model import EmbeddingInputType, ModelType
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
@@ -19,6 +19,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
+from dify_plugin.entities.model.text_embedding import MultiModalContent
 from dify_plugin.entities.provider_config import CredentialType
 
 
@@ -48,8 +49,10 @@ class ModelActions(StrEnum):
     InvokeLLM = "invoke_llm"
     GetLLMNumTokens = "get_llm_num_tokens"
     InvokeTextEmbedding = "invoke_text_embedding"
+    InvokeMultimodalEmbedding = "invoke_multimodal_embedding"
     GetTextEmbeddingNumTokens = "get_text_embedding_num_tokens"
     InvokeRerank = "invoke_rerank"
+    InvokeMultimodalRerank = "invoke_multimodal_rerank"
     InvokeTTS = "invoke_tts"
     GetTTSVoices = "get_tts_model_voices"
     InvokeSpeech2Text = "invoke_speech2text"
@@ -183,6 +186,15 @@ class ModelInvokeTextEmbeddingRequest(PluginAccessModelRequest):
     texts: list[str]
 
 
+class ModelInvokeMultimodalEmbeddingRequest(PluginAccessModelRequest):
+    action: ModelActions = ModelActions.InvokeMultimodalEmbedding
+    model_type: ModelType = ModelType.TEXT_EMBEDDING
+
+    tenant_id: str
+    documents: list[MultiModalContent]
+    input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT
+
+
 class ModelGetTextEmbeddingNumTokens(PluginAccessModelRequest):
     action: ModelActions = ModelActions.GetTextEmbeddingNumTokens
 
@@ -194,6 +206,16 @@ class ModelInvokeRerankRequest(PluginAccessModelRequest):
 
     query: str
     docs: list[str]
+    score_threshold: float | None
+    top_n: int | None
+
+
+class ModelInvokeMultimodalRerankRequest(PluginAccessModelRequest):
+    action: ModelActions = ModelActions.InvokeMultimodalRerank
+    model_type: ModelType = ModelType.RERANK
+
+    query: MultiModalContent
+    docs: list[MultiModalContent]
     score_threshold: float | None
     top_n: int | None
 

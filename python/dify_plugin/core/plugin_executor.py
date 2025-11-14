@@ -23,6 +23,8 @@ from dify_plugin.core.entities.plugin.request import (
     ModelInvokeModerationRequest,
     ModelInvokeRerankRequest,
     ModelInvokeSpeech2TextRequest,
+    ModelInvokeMultimodalEmbeddingRequest,
+    ModelInvokeMultimodalRerankRequest,
     ModelInvokeTextEmbeddingRequest,
     ModelInvokeTTSRequest,
     ModelValidateModelCredentialsRequest,
@@ -193,6 +195,19 @@ class PluginExecutor:
         else:
             raise ValueError(f"Model `{data.model_type}` not found for provider `{data.provider}`")
 
+    def invoke_multimodal_embedding(self, session: Session, data: ModelInvokeMultimodalEmbeddingRequest):
+        model_instance = self.registration.get_model_instance(data.provider, data.model_type)
+        if isinstance(model_instance, TextEmbeddingModel):
+            return model_instance.invoke_multimodal(
+                data.model,
+                data.tenant_id,
+                data.credentials,
+                data.documents,
+                user=data.user_id,
+                input_type=data.input_type,
+            )
+        raise ValueError(f"Model `{data.model_type}` not found for provider `{data.provider}`")
+
     def get_text_embedding_num_tokens(self, session: Session, data: ModelGetTextEmbeddingNumTokens):
         model_instance = self.registration.get_model_instance(data.provider, data.model_type)
         if isinstance(model_instance, TextEmbeddingModel):
@@ -220,6 +235,20 @@ class PluginExecutor:
             )
         else:
             raise ValueError(f"Model `{data.model_type}` not found for provider `{data.provider}`")
+
+    def invoke_multimodal_rerank(self, session: Session, data: ModelInvokeMultimodalRerankRequest):
+        model_instance = self.registration.get_model_instance(data.provider, data.model_type)
+        if isinstance(model_instance, RerankModel):
+            return model_instance.invoke_multimodal(
+                data.model,
+                data.credentials,
+                data.query,
+                data.docs,
+                score_threshold=data.score_threshold,
+                top_n=data.top_n,
+                user=data.user_id,
+            )
+        raise ValueError(f"Model `{data.model_type}` not found for provider `{data.provider}`")
 
     def invoke_tts(self, session: Session, data: ModelInvokeTTSRequest):
         model_instance = self.registration.get_model_instance(data.provider, data.model_type)

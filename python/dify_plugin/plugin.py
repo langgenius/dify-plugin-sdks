@@ -255,6 +255,12 @@ class Plugin(IOServer, Router):
         )
 
         self.register_route(
+            self.plugin_executer.invoke_multimodal_embedding,
+            lambda data: data.get("type") == PluginInvokeType.Model.value
+            and data.get("action") == ModelActions.InvokeMultimodalEmbedding.value,
+        )
+
+        self.register_route(
             self.plugin_executer.get_text_embedding_num_tokens,
             lambda data: data.get("type") == PluginInvokeType.Model.value
             and data.get("action") == ModelActions.GetTextEmbeddingNumTokens.value,
@@ -264,6 +270,12 @@ class Plugin(IOServer, Router):
             self.plugin_executer.invoke_rerank,
             lambda data: data.get("type") == PluginInvokeType.Model.value
             and data.get("action") == ModelActions.InvokeRerank.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.invoke_multimodal_rerank,
+            lambda data: data.get("type") == PluginInvokeType.Model.value
+            and data.get("action") == ModelActions.InvokeMultimodalRerank.value,
         )
 
         self.register_route(
