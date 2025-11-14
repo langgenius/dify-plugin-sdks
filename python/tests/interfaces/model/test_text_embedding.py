@@ -1,11 +1,19 @@
 from decimal import Decimal
 
+from dify_plugin.entities.model import EmbeddingInputType
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 
 
 class MockTextEmbeddingModel(TextEmbeddingModel):
-    def _invoke(self, model: str, credentials: dict, texts: list[str], user: str | None = None) -> TextEmbeddingResult:
+    def _invoke(
+        self,
+        model: str,
+        credentials: dict,
+        texts: list[str],
+        user: str | None = None,
+        input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
+    ) -> TextEmbeddingResult:
         return TextEmbeddingResult(
             model=model,
             usage=EmbeddingUsage(
