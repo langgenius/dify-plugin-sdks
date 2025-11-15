@@ -357,10 +357,14 @@ class Tool(ToolLike[ToolInvokeMessage]):
     #                 For executor use only                    #
     ############################################################
 
-    def invoke(self, tool_parameters: dict) -> Generator[ToolInvokeMessage, None, None]:
+    def invoke(self, tool_parameters: dict, passthrough: str | None = None) -> Generator[ToolInvokeMessage, None, None]:
         # convert parameters into correct types
         tool_parameters = self._convert_parameters(tool_parameters)
-        return self._invoke(tool_parameters)
+        # try to pass passthrough to implementations that support it, fallback otherwise
+        try:
+            return self._invoke(tool_parameters, passthrough=passthrough)  # type: ignore[call-arg]
+        except TypeError:
+            return self._invoke(tool_parameters)
 
     @deprecated("This feature is deprecated, will soon be replaced by dynamic select parameter")
     def get_runtime_parameters(self) -> list[ToolParameter]:
