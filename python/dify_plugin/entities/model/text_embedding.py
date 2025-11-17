@@ -1,5 +1,5 @@
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -40,7 +40,7 @@ class TextEmbeddingModelConfig(BaseModelConfig):
     model_config = ConfigDict(protected_namespaces=())
 
 
-class MultiModalContentType(str, Enum):
+class MultiModalContentType(StrEnum):
     """Supported content types for multimodal inputs."""
 
     TEXT = "text"

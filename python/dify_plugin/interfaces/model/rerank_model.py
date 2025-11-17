@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from collections.abc import Sequence
 
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.rerank import MultiModalRerankResult, RerankResult
@@ -47,7 +48,7 @@ class RerankModel(AIModel):
         model: str,
         credentials: dict,
         query: MultiModalContent,
-        docs: list[MultiModalContent],
+        docs: Sequence[MultiModalContent],
         score_threshold: float | None = None,
         top_n: int | None = None,
         user: str | None = None,
@@ -97,7 +98,7 @@ class RerankModel(AIModel):
         model: str,
         credentials: dict,
         query: MultiModalContent,
-        docs: list[MultiModalContent],
+        docs: Sequence[MultiModalContent],
         score_threshold: float | None = None,
         top_n: int | None = None,
         user: str | None = None,

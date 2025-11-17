@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from enum import StrEnum
 from typing import Any
 
@@ -233,7 +233,7 @@ class ModelInvokeMultimodalRerankRequest(PluginAccessModelRequest):
     model_type: ModelType = ModelType.RERANK
 
     query: MultiModalContent
-    docs: list[MultiModalContent]
+    docs: Sequence[MultiModalContent]
     score_threshold: float | None
     top_n: int | None
 
