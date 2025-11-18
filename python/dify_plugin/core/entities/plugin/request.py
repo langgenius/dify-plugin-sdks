@@ -9,7 +9,10 @@ from dify_plugin.entities.datasource import (
     OnlineDriveBrowseFilesRequest,
     OnlineDriveDownloadFileRequest,
 )
-from dify_plugin.entities.model import ModelType
+from dify_plugin.entities.model import (
+    EmbeddingInputType,
+    ModelType,
+)
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
@@ -200,6 +203,7 @@ class ModelInvokeTextEmbeddingRequest(PluginAccessModelRequest):
     action: ModelActions = ModelActions.InvokeTextEmbedding
 
     texts: list[str]
+    input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT
 
 
 class ModelGetTextEmbeddingNumTokens(PluginAccessModelRequest):
