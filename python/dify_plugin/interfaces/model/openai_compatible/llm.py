@@ -6,10 +6,11 @@ from collections.abc import Generator
 from decimal import Decimal
 from typing import Any, Union, cast
 from urllib.parse import urljoin
-from dify_plugin.config.config import DifyPluginEnv
+
 import requests
 from pydantic import TypeAdapter, ValidationError
 
+from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import (
     AIModelEntity,
