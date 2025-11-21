@@ -469,11 +469,14 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if user:
             data["user"] = user
 
+        # get max request timeout from environment variable
+        config = DifyPluginEnv()
+        
         response = requests.post(
             endpoint_url,
             headers=headers,
             json=data,
-            timeout=(10, DifyPluginEnv.MAX_REQUEST_TIMEOUT),
+            timeout=(10, config.MAX_REQUEST_TIMEOUT),
             stream=stream,
         )
 
