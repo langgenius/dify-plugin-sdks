@@ -47,6 +47,8 @@ from dify_plugin.interfaces.model.openai_compatible.common import _CommonOaiApiC
 
 logger = logging.getLogger(__name__)
 
+_plugin_config = DifyPluginEnv()
+
 
 def _gen_tool_call_id() -> str:
     return f"chatcmpl-tool-{uuid.uuid4().hex!s}"
@@ -469,14 +471,11 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if user:
             data["user"] = user
 
-        # get max request timeout from environment variable
-        config = DifyPluginEnv()
-
         response = requests.post(
             endpoint_url,
             headers=headers,
             json=data,
-            timeout=(10, config.MAX_REQUEST_TIMEOUT),
+            timeout=(10, _plugin_config.MAX_REQUEST_TIMEOUT),
             stream=stream,
         )
 
