@@ -471,7 +471,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         # get max request timeout from environment variable
         config = DifyPluginEnv()
-        
+
         response = requests.post(
             endpoint_url,
             headers=headers,
