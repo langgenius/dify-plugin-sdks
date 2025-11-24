@@ -145,7 +145,7 @@ wheels = [
 
 [[package]]
 name = "dify-plugin"
-version = "0.6.0b9"
+version = "0.6.2"
 source = { editable = "." }
 dependencies = [
     { name = "dpkt" },
