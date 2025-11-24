@@ -6,6 +6,11 @@ A SDK sets for building plugins for Dify, including the following languages:
 
 Here is a short introduction to Dify Plugin: <https://docs.dify.ai/plugins/introduction>
 
+## Maintainer Profile
+
+GameJAM Player  
+Twitter: [@promethurs](https://x.com/promethurs)
+
 ## SDK Version Management
 
 ### Python SDK
