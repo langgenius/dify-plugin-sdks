@@ -6,6 +6,10 @@ A SDK sets for building plugins for Dify, including the following languages:
 
 Here is a short introduction to Dify Plugin: <https://docs.dify.ai/plugins/introduction>
 
+## Community & Social
+
+Follow project updates and release announcements on Twitter/X: [@promethurs](https://x.com/promethurs).
+
 ## SDK Version Management
 
 ### Python SDK
@@ -40,3 +44,14 @@ For the manifest specification, we've introduced two versioning fields:
 | 1.8.1                | 0.4.4         | Support filename in MultiModalPromptMessageContent |
 | 1.9.0                | 0.5.0         | Support Datasource functionality for plugins       |
 | 1.10.0               | 0.6.0         | Support Trigger functionality for plugins          |
+
+## GameJAM Player
+
+GameJAM Player is a lightweight browser-based experience designed to showcase rapid prototypes built during game jams. It emphasizes zero-install sharing, responsive controls, and telemetry hooks that map nicely onto Dify Plugin workflows for collecting playtest feedback.
+
+**Highlights**
+- `Drop-in hosting` – distribute a single HTML file that runs anywhere a modern browser exists.
+- `Controller-agnostic controls` – supports touch, keyboard, and pointer input with simple helpers for remapping.
+- `Jam-friendly scaffolding` – includes a timer, scoring primitive, and heads-up messaging so teams can focus on core mechanics.
+
+**Try the demo:** open `python/examples/gamejam_player_demo/index.html` in any browser to launch the micro game bundled with this repository.
