@@ -112,9 +112,13 @@ class ToolParameter(BaseModel):
     form: ToolParameterForm = Field(..., description="The form of the parameter, schema/form/llm")
     llm_description: str | None = None
     required: bool | None = False
-    default: Union[int, float, str] | None = None
+    default: Union[int, float, str, list] | None = None
     min: Union[float, int] | None = None
     max: Union[float, int] | None = None
+    multiple: bool | None = Field(
+        default=False,
+        description="Whether the parameter is multiple select, only valid for select or dynamic-select type",
+    )
     precision: int | None = None
     options: list[ToolParameterOption] | None = None
     # MCP object and array type parameters use this field to store the schema
