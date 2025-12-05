@@ -20,9 +20,6 @@ from dify_plugin.entities.provider_config import (
     CredentialType,
     ProviderConfig,
 )
-from dify_plugin.entities.provider_config import (
-    LogMetadata as CommonLogMetadata,
-)
 
 
 class ToolRuntime(BaseModel):
