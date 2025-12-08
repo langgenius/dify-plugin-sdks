@@ -1,11 +1,11 @@
 [project]
 name = "dify_plugin"
-version = "0.7.0b1"
+version = "0.7.0"
 description = "Dify Plugin SDK"
 authors = [{ name = "langgenius", email = "hello@dify.ai" }]
 dependencies = [
     "Flask~=3.0.3",
-    "Werkzeug~=3.0.3",
+    "Werkzeug~=3.1.4",
     "dpkt~=1.9.8",
     "gevent~=25.5.1",
     "httpx~=0.28.1",

@@ -10,6 +10,7 @@ from urllib.parse import urljoin
 import requests
 from pydantic import TypeAdapter, ValidationError
 
+from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -45,6 +46,8 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from dify_plugin.interfaces.model.openai_compatible.common import _CommonOaiApiCompat
 
 logger = logging.getLogger(__name__)
+
+_plugin_config = DifyPluginEnv()
 
 
 def _gen_tool_call_id() -> str:
@@ -468,7 +471,13 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if user:
             data["user"] = user
 
-        response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300), stream=stream)
+        response = requests.post(
+            endpoint_url,
+            headers=headers,
+            json=data,
+            timeout=(10, _plugin_config.MAX_REQUEST_TIMEOUT),
+            stream=stream,
+        )
 
         if response.encoding is None or response.encoding == "ISO-8859-1":
             response.encoding = "utf-8"
