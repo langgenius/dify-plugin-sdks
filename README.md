@@ -40,4 +40,4 @@ For the manifest specification, we've introduced two versioning fields:
 | 1.8.1                | 0.4.4         | Support filename in MultiModalPromptMessageContent |
 | 1.9.0                | 0.5.0         | Support Datasource functionality for plugins       |
 | 1.10.0               | 0.6.0         | Support Trigger functionality for plugins          |
-| 1.11.0               | 0.7.0         | Support Multimodal Reanking / Embeddings           |
+| 1.11.0               | 0.7.0         | Support Multimodal Reranking / Embeddings          |
