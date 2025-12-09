@@ -127,6 +127,11 @@ class PluginConfiguration(BaseModel):
             description="manifest paths of datasource providers in yaml format"
             " refers to [DatasourceProvider](#datasourceprovider)",
         )
+        triggers: list[str] = Field(
+            default_factory=list,
+            description="manifest paths of trigger providers in yaml format, "
+            "refers to [TriggerProvider](#triggerprovider)",
+        )
 
     @docs(
         description="Meta information of plugin",

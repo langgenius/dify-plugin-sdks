@@ -10,6 +10,7 @@ from urllib.parse import urljoin
 import requests
 from pydantic import TypeAdapter, ValidationError
 
+from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -45,6 +46,8 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from dify_plugin.interfaces.model.openai_compatible.common import _CommonOaiApiCompat
 
 logger = logging.getLogger(__name__)
+
+_plugin_config = DifyPluginEnv()
 
 
 def _gen_tool_call_id() -> str:
@@ -169,6 +172,10 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :return:
         """
         try:
+            # Load ping max_tokens configuration from environment variable
+            config = DifyPluginEnv()
+            ping_max_tokens = config.PING_MAX_TOKENS
+
             headers = {"Content-Type": "application/json"}
 
             api_key = credentials.get("api_key")
@@ -180,7 +187,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 endpoint_url += "/"
 
             # prepare the payload for a simple ping to the model
-            data = {"model": credentials.get("endpoint_model_name", model), "max_tokens": 5}
+            data = {"model": credentials.get("endpoint_model_name", model), "max_tokens": ping_max_tokens}
 
             completion_type = LLMMode.value_of(credentials["mode"])
 
@@ -199,7 +206,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             stream_mode_auth = credentials.get("stream_mode_auth", "not_use")
             if stream_mode_auth == "use":
                 data["stream"] = True
-                data["max_tokens"] = 10
+                data["max_tokens"] = ping_max_tokens
                 response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300), stream=True)
                 if response.status_code != 200:
                     raise CredentialsValidateFailedError(
@@ -468,7 +475,13 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if user:
             data["user"] = user
 
-        response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300), stream=stream)
+        response = requests.post(
+            endpoint_url,
+            headers=headers,
+            json=data,
+            timeout=(10, _plugin_config.MAX_REQUEST_TIMEOUT),
+            stream=stream,
+        )
 
         if response.encoding is None or response.encoding == "ISO-8859-1":
             response.encoding = "utf-8"

@@ -20,15 +20,6 @@ from dify_plugin.entities.provider_config import (
     CredentialType,
     ProviderConfig,
 )
-from dify_plugin.entities.provider_config import (
-    LogMetadata as CommonLogMetadata,
-)
-
-# TODO: this is a temporary solution to avoid breaking changes from agent imports
-# ImportError: cannot import name "LogMetadata" from "dify_plugin.entities.tool"
-# which will be removed in 0.5.0
-# ISSUE: https://github.com/langgenius/dify-plugin-sdks/issues/181
-LogMetadata = CommonLogMetadata
 
 
 class ToolRuntime(BaseModel):
@@ -89,6 +80,7 @@ class ToolParameter(BaseModel):
         FILES = CommonParameterType.FILES.value
         MODEL_SELECTOR = CommonParameterType.MODEL_SELECTOR.value
         APP_SELECTOR = CommonParameterType.APP_SELECTOR.value
+        CHECKBOX = CommonParameterType.CHECKBOX.value
         # TOOL_SELECTOR = CommonParameterType.TOOL_SELECTOR.value
         ANY = CommonParameterType.ANY.value
         # MCP object and array type parameters

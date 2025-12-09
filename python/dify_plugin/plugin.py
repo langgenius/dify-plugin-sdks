@@ -19,6 +19,7 @@ from dify_plugin.core.entities.plugin.request import (
     OAuthActions,
     PluginInvokeType,
     ToolActions,
+    TriggerActions,
 )
 from dify_plugin.core.plugin_executor import PluginExecutor
 from dify_plugin.core.plugin_registration import PluginRegistration
@@ -159,6 +160,15 @@ class Plugin(IOServer, Router):
                 + "\n\n"
             )
 
+        if self.registration.triggers_configuration:
+            tcp_stream.write(
+                InitializeMessage(
+                    type=InitializeMessage.Type.TRIGGER_DECLARATION,
+                    data=List(root=self.registration.triggers_configuration).model_dump(),
+                ).model_dump_json()
+                + "\n\n"
+            )
+
         for file in self.registration.files:
             # divide the file into chunks
             chunks = [file.data[i : i + 8192] for i in range(0, len(file.data), 8192)]
@@ -213,6 +223,8 @@ class Plugin(IOServer, Router):
             logger.info(f"Installed endpoint: {[e.path for e in endpoint.endpoints]}")
         for agent in self.registration.agent_strategies_configuration:
             logger.info(f"Installed agent: {agent.identity.name}")
+        for trigger_provider in self.registration.triggers_configuration:
+            logger.info(f"Installed trigger provider: {trigger_provider.identity.name}")
 
     def _register_request_routes(self):
         """
@@ -255,6 +267,12 @@ class Plugin(IOServer, Router):
         )
 
         self.register_route(
+            self.plugin_executer.invoke_multimodal_embedding,
+            lambda data: data.get("type") == PluginInvokeType.Model.value
+            and data.get("action") == ModelActions.InvokeMultimodalEmbedding.value,
+        )
+
+        self.register_route(
             self.plugin_executer.get_text_embedding_num_tokens,
             lambda data: data.get("type") == PluginInvokeType.Model.value
             and data.get("action") == ModelActions.GetTextEmbeddingNumTokens.value,
@@ -264,6 +282,12 @@ class Plugin(IOServer, Router):
             self.plugin_executer.invoke_rerank,
             lambda data: data.get("type") == PluginInvokeType.Model.value
             and data.get("action") == ModelActions.InvokeRerank.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.invoke_multimodal_rerank,
+            lambda data: data.get("type") == PluginInvokeType.Model.value
+            and data.get("action") == ModelActions.InvokeMultimodalRerank.value,
         )
 
         self.register_route(
@@ -372,6 +396,40 @@ class Plugin(IOServer, Router):
             self.plugin_executer.fetch_parameter_options,
             lambda data: data.get("type") == PluginInvokeType.DynamicParameter.value
             and data.get("action") == DynamicParameterActions.FetchParameterOptions.value,
+        )
+
+        # Trigger routes
+        self.register_route(
+            self.plugin_executer.invoke_trigger_event,
+            lambda data: data.get("type") == PluginInvokeType.Trigger.value
+            and data.get("action") == TriggerActions.InvokeTriggerEvent.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.validate_trigger_provider_credentials,
+            lambda data: data.get("type") == PluginInvokeType.Trigger.value
+            and data.get("action") == TriggerActions.ValidateProviderCredentials.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.dispatch_trigger_event,
+            lambda data: data.get("type") == PluginInvokeType.Trigger.value
+            and data.get("action") == TriggerActions.DispatchTriggerEvent.value,
+        )
+        self.register_route(
+            self.plugin_executer.subscribe_trigger,
+            lambda data: data.get("type") == PluginInvokeType.Trigger.value
+            and data.get("action") == TriggerActions.SubscribeTrigger.value,
+        )
+        self.register_route(
+            self.plugin_executer.unsubscribe_trigger,
+            lambda data: data.get("type") == PluginInvokeType.Trigger.value
+            and data.get("action") == TriggerActions.UnsubscribeTrigger.value,
+        )
+        self.register_route(
+            self.plugin_executer.refresh_trigger,
+            lambda data: data.get("type") == PluginInvokeType.Trigger.value
+            and data.get("action") == TriggerActions.RefreshTrigger.value,
         )
 
     def _execute_request(
