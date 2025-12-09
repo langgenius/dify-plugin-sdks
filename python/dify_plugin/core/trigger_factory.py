@@ -140,11 +140,9 @@ class TriggerFactory:
     # ------------------------------------------------------------------
 
     def get_trigger_event_handler_safely(self, provider_name: str, event: str, runtime: EventRuntime) -> Event | None:
-        try:
-            entry = self._get_entry(provider_name)
-        except ValueError:
+        entry = self._providers.get(provider_name)
+        if not entry:
             return None
-
         if event not in entry.events:
             return None
         _, event_cls = entry.events[event]
