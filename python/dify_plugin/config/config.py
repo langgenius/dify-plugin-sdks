@@ -40,11 +40,6 @@ class DifyPluginEnv(BaseSettings):
 
     DIFY_PLUGIN_DAEMON_URL: str = Field(default="http://localhost:5002", description="backwards invocation address")
 
-    PING_MAX_TOKENS: int = Field(
-        default=16,
-        description="Maximum tokens for model validation ping request. Some providers require at least 16 tokens.",
-    )
-
     model_config = SettingsConfigDict(
         # read from dotenv format config file
         env_file=".env",
