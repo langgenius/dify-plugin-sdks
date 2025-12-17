@@ -6,11 +6,11 @@ from pydantic import BaseModel
 
 from dify_plugin.core.entities.plugin.request import (
     AgentActions,
+    DatasourceActions,
     EndpointActions,
     ModelActions,
     PluginInvokeType,
     ToolActions,
-    DatasourceActions,
     TriggerActions,
 )
 
