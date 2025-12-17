@@ -426,6 +426,11 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             If this method raises an exception, Dify will still remove the subscription
             but display a warning message to the user.
 
+            If the subscription no longer exists on the external service (e.g., already
+            deleted or expired), this method should return success=True rather than
+            treating it as an error. The goal is to ensure the subscription is removed,
+            which is already achieved if it doesn't exist.
+
         Examples:
             Successful unsubscription:
             >>> subscription = Subscription(
