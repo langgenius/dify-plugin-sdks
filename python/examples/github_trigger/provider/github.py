@@ -338,10 +338,8 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             )
 
         if response.status_code == 404:
-            raise UnsubscribeError(
-                message=f"Webhook {external_id} not found in repository {repository}",
-                error_code="WEBHOOK_NOT_FOUND",
-                external_response=response.json(),
+            return UnsubscribeResult(
+                success=True, message=f"Webhook {external_id} not found in repository {repository}"
             )
 
         raise UnsubscribeError(
