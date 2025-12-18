@@ -427,9 +427,9 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             but display a warning message to the user.
 
             If the subscription no longer exists on the external service (e.g., already
-            deleted or expired), this method should return success=True rather than
-            treating it as an error. The goal is to ensure the subscription is removed,
-            which is already achieved if it doesn't exist.
+            deleted or expired), this method should return `success=True`. This ensures
+            idempotent behavior, as the desired state (the subscription being absent)
+            is already met.
 
         Examples:
             Successful unsubscription:
