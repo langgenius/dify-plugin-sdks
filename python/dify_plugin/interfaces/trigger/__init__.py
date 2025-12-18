@@ -481,6 +481,161 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             "This plugin should implement `_delete_subscription` method to enable event unsubscription"
         )
 
+    def update_subscription(
+        self,
+        subscription: Subscription,
+        new_parameters: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+        credential_type: CredentialType,
+    ) -> Subscription:
+        """
+        Update an existing subscription with new parameters.
+
+        This method updates a subscription's configuration (e.g., changing subscribed events,
+        filters, or other provider-specific settings) while keeping the same endpoint.
+
+        Implementation patterns:
+        1. For services that support update API (e.g., GitHub webhook PATCH):
+           Implement `_update_subscription` to call the service's update API directly.
+        2. For services that don't support update API:
+           Implement `_update_subscription` by calling delete_subscription followed by
+           create_subscription yourself. This gives you control over error handling.
+
+        Why you should implement this method?
+        Implementing `_update_subscription` gives you better control over error handling.
+        For example, if delete fails, you can decide whether the error actually prevents
+        creating a new subscription (e.g., "webhook not found" error can be safely ignored
+        and you can proceed to create a new subscription).
+
+        Note: If not implemented, Dify provides a fallback by calling delete_subscription
+        followed by create_subscription automatically. However, this fallback has limited
+        error handling capabilities, so implementing this method yourself is recommended.
+
+        Args:
+            subscription: The current Subscription object to update.
+                         Contains endpoint and properties with all current configuration.
+
+            new_parameters: The new parameters for the subscription.
+                           Structure depends on provider's parameters_schema and may include:
+                           - "events" (list[str]): Updated event types to subscribe to
+                           - "repository" (str): Target repository for GitHub
+                           - Other provider-specific configuration
+
+            credentials: Authentication credentials for the external service.
+                        Structure depends on provider's credential_type.
+                        For API key auth, according to `credentials_schema` defined in the YAML.
+                        For OAuth auth, according to `oauth_schema.credentials_schema` defined in the YAML.
+                        For unauthorized auth, there is no credentials.
+
+            credential_type: The type of the credentials, e.g., "api-key", "oauth2", "unauthorized"
+
+        Returns:
+            Subscription: Updated subscription with:
+                         - endpoint: Same endpoint URL (unchanged)
+                         - parameters: The new parameters
+                         - properties: Updated provider-specific configuration
+                         - expires_at: Expiration timestamp (may be updated)
+
+        Raises:
+            SubscriptionError: If update fails (e.g., invalid credentials, API errors)
+            ValueError: If required parameters are missing or invalid
+
+        Examples:
+            Update GitHub webhook events:
+            >>> current_sub = Subscription(
+            ...     expires_at=-1,
+            ...     endpoint="https://dify.ai/webhooks/sub_123",
+            ...     parameters={"repository": "owner/repo", "events": ["push"]},
+            ...     properties={"external_id": "12345", "webhook_secret": "secret"}
+            ... )
+            >>> result = provider.update_subscription(
+            ...     subscription=current_sub,
+            ...     new_parameters={"repository": "owner/repo", "events": ["push", "pull_request"]},
+            ...     credentials={"access_token": "ghp_abc123"},
+            ...     credential_type=CredentialType.API_KEY
+            ... )
+            >>> print(result.parameters["events"])  # ["push", "pull_request"]
+        """
+        return self._update_subscription(
+            subscription=subscription,
+            new_parameters=new_parameters,
+            credentials=credentials,
+            credential_type=credential_type,
+        )
+
+    def _update_subscription(
+        self,
+        subscription: Subscription,
+        new_parameters: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+        credential_type: CredentialType,
+    ) -> Subscription:
+        """
+        Internal method to implement subscription update logic.
+
+        Subclasses should implement this method to handle subscription updates.
+        If not implemented, Dify provides a fallback by calling delete_subscription
+        followed by create_subscription, but this fallback has limited error handling.
+
+        Implementing this method is recommended because:
+        1. For services WITH update API support (e.g., GitHub webhook PATCH):
+           - Call service's update/PATCH API directly
+           - More efficient than delete + create
+           - No downtime in event delivery
+
+        2. For services WITHOUT update API support:
+           - Implement delete + create yourself
+           - You can decide how to handle delete failures
+           - For example, "webhook not found" error during delete can be safely ignored
+             and you can proceed to create a new subscription
+
+        Implementation examples:
+        >>> def _update_subscription(self, subscription, new_parameters, credentials, credential_type):
+        ...     webhook_id = subscription.properties["external_id"]
+        ...     # Option 1: Direct update API call
+        ...     response = github_api.patch_webhook(
+        ...         webhook_id=webhook_id,
+        ...         events=new_parameters.get("events"),
+        ...         config={"url": subscription.endpoint}
+        ...     )
+        ...     return Subscription(
+        ...         expires_at=-1,
+        ...         endpoint=subscription.endpoint,
+        ...         parameters=new_parameters,
+        ...         properties={**subscription.properties, "updated_at": response["updated_at"]}
+        ...     )
+        ...
+        ...     # Option 2: Delete + create with custom error handling
+        ...     try:
+        ...         self._delete_subscription(subscription, credentials, credential_type)
+        ...     except Exception as e:
+        ...         # Ignore "not found" errors, they don't affect creating new subscription
+        ...         if "not found" not in str(e).lower():
+        ...             raise
+        ...     return self._create_subscription(
+        ...         endpoint=subscription.endpoint,
+        ...         parameters=new_parameters,
+        ...         credentials=credentials,
+        ...         credential_type=credential_type
+        ...     )
+
+        Args:
+            subscription: Current subscription with properties
+            new_parameters: New parameters to apply
+            credentials: Authentication credentials
+            credential_type: The type of credentials
+
+        Returns:
+            Subscription: Updated subscription with new configuration
+
+        Raises:
+            SubscriptionError: For operational failures (API errors, invalid credentials)
+        """
+        raise NotImplementedError(
+            "This plugin does not implement `_update_subscription` method. "
+            "Dify will handle the update by calling delete_subscription followed by create_subscription."
+        )
+
     def refresh_subscription(
         self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
     ) -> Subscription:
