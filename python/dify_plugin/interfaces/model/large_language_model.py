@@ -535,7 +535,7 @@ if you are not sure about the structure.
         """
 
         content = delta.get("content") or ""
-        reasoning_content = delta.get("reasoning_content")
+        reasoning_content = delta.get("reasoning_content") or delta.get("reasoning")
 
         if reasoning_content:
             if not is_reasoning:
