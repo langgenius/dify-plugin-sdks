@@ -536,17 +536,22 @@ if you are not sure about the structure.
 
         content = delta.get("content") or ""
         reasoning_content = delta.get("reasoning_content")
-
+        output = content
         if reasoning_content:
             if not is_reasoning:
-                content = "<think>\n" + reasoning_content
+                output = "<think>\n" + reasoning_content
                 is_reasoning = True
             else:
-                content = reasoning_content
-        elif is_reasoning and content:
-            content = "\n</think>" + content
-            is_reasoning = False
-        return content, is_reasoning
+                output = reasoning_content
+        else:
+            if is_reasoning:
+                is_reasoning = False
+                if not reasoning_content:
+                    output = "\n</think>"
+                if content:
+                    output += content
+            
+        return output, is_reasoning
 
     ############################################################
     #                 For executor use only                    #
