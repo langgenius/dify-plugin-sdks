@@ -550,7 +550,7 @@ if you are not sure about the structure.
                     output = "\n</think>"
                 if content:
                     output += content
-            
+
         return output, is_reasoning
 
     ############################################################
