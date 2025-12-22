@@ -183,7 +183,11 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 endpoint_url += "/"
 
             # prepare the payload for a simple ping to the model
-            data = {"model": credentials.get("endpoint_model_name", model), "max_tokens": 5}
+            validate_credentials_max_tokens = credentials.get("validate_credentials_max_tokens", 5) or 5
+            data = {
+                "model": credentials.get("endpoint_model_name", model),
+                "max_tokens": validate_credentials_max_tokens,
+            }
 
             completion_type = LLMMode.value_of(credentials["mode"])
 
@@ -201,8 +205,11 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             # ADD stream validate_credentials
             stream_mode_auth = credentials.get("stream_mode_auth", "not_use")
             if stream_mode_auth == "use":
+                stream_validate_max_tokens = credentials.get("validate_credentials_max_tokens", None) or 10
                 data["stream"] = True
-                data["max_tokens"] = 10
+                # default 10 (introduced in PR #93) to ensure streaming endpoints emit a token chunk;
+                # allow overriding via credentials when explicitly provided.
+                data["max_tokens"] = stream_validate_max_tokens
                 response = requests.post(endpoint_url, headers=headers, json=data, timeout=(10, 300), stream=True)
                 if response.status_code != 200:
                     raise CredentialsValidateFailedError(
