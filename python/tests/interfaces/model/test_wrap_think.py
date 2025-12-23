@@ -2,9 +2,11 @@ import json
 
 from openai import OpenAI
 
+
 # ==========================================
 # 1. 逻辑定义 (Old vs New)
 # ==========================================
+
 
 def old_wrap_thinking_by_reasoning_content(delta_dict: dict, is_reasoning: bool) -> tuple[str, bool]:
     """[OLD] PR 修改前的逻辑"""
@@ -75,19 +77,17 @@ def main():
     # --- Round 1 ---
     msgs = [
         {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "北京天气如何？"}
+        {"role": "user", "content": "北京天气如何？"},
     ]
-    tools = [{
-        "type": "function",
-        "function": {
-            "name": "get_weather",
-            "parameters": {
-                "type": "object",
-                "properties": {"city": {"type": "string"}},
-                "required": ["city"]
-            }
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "parameters": {"type": "object", "properties": {"city": {"type": "string"}}, "required": ["city"]},
+            },
         }
-    }]
+    ]
 
     print("\n[Request 1] ...")
     r1_deltas = []
@@ -96,11 +96,7 @@ def main():
 
     try:
         response = client.chat.completions.create(
-            model=model,
-            messages=msgs,
-            tools=tools,
-            stream=True,
-            extra_body={"thinking": {"type": "enabled"}}
+            model=model, messages=msgs, tools=tools, stream=True, extra_body={"thinking": {"type": "enabled"}}
         )
         for chunk in response:
             if not chunk.choices:
@@ -114,10 +110,7 @@ def main():
             if d.tool_calls:
                 for tc in d.tool_calls:
                     if len(tool_calls) <= tc.index:
-                        tool_calls.append({
-                            "id": tc.id,
-                            "function": {"name": tc.function.name, "arguments": ""}
-                        })
+                        tool_calls.append({"id": tc.id, "function": {"name": tc.function.name, "arguments": ""}})
                     tool_calls[tc.index]["function"]["arguments"] += tc.function.arguments
     except Exception as e:
         print(e)
@@ -126,11 +119,13 @@ def main():
     print(f"R1 Done. Tool Calls: {len(tool_calls)}")
 
     # --- Tool Exec ---
-    msgs.append({
-        "role": "assistant",
-        "tool_calls": [{"id": t["id"], "type": "function", "function": t["function"]} for t in tool_calls],
-        "reasoning_content": r1_reasoning
-    })
+    msgs.append(
+        {
+            "role": "assistant",
+            "tool_calls": [{"id": t["id"], "type": "function", "function": t["function"]} for t in tool_calls],
+            "reasoning_content": r1_reasoning,
+        }
+    )
     for t in tool_calls:
         msgs.append({"role": "tool", "tool_call_id": t["id"], "content": mock_weather_tool("Beijing")})
 
@@ -139,11 +134,7 @@ def main():
     r2_deltas = []
     try:
         response = client.chat.completions.create(
-            model=model,
-            messages=msgs,
-            tools=tools,
-            stream=True,
-            extra_body={"thinking": {"type": "enabled"}}
+            model=model, messages=msgs, tools=tools, stream=True, extra_body={"thinking": {"type": "enabled"}}
         )
         for chunk in response:
             if not chunk.choices:
@@ -156,13 +147,13 @@ def main():
     print("R2 Done.")
 
     # --- Contrast ---
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("OUTPUT VISUALIZATION")
-    print("="*80)
+    print("=" * 80)
 
     for label, proc_func in [
         ("OLD_LOGIC", old_wrap_thinking_by_reasoning_content),
-        ("NEW_LOGIC", new_wrap_thinking_by_reasoning_content)
+        ("NEW_LOGIC", new_wrap_thinking_by_reasoning_content),
     ]:
         print(f"\n>>> Mode: {label} <<<")
 
@@ -190,7 +181,7 @@ def main():
         print(f"AI: {r1_text}")
         print("[System: Tool Result used...]")
         print(f"AI: {r2_text}")
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
 
 
 if __name__ == "__main__":
