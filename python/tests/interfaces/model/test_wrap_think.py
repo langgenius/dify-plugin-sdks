@@ -1,7 +1,7 @@
-import os
 import json
-import time
+
 from openai import OpenAI
+
 
 # ==========================================
 # 1. 逻辑定义 (Old vs New)
@@ -12,7 +12,7 @@ def old_wrap_thinking_by_reasoning_content(delta_dict: dict, is_reasoning: bool)
     content = delta_dict.get("content") or ""
     reasoning_content = delta_dict.get("reasoning_content")
     output = content
-    
+
     if reasoning_content:
         if not is_reasoning:
             output = "<think>\n" + reasoning_content
@@ -24,7 +24,7 @@ def old_wrap_thinking_by_reasoning_content(delta_dict: dict, is_reasoning: bool)
         if is_reasoning and content:
             output = "\n</think>" + content
             is_reasoning = False
-            
+
     return output, is_reasoning
 
 def new_wrap_thinking_by_reasoning_content(delta_dict: dict, is_reasoning: bool) -> tuple[str, bool]:
@@ -32,7 +32,7 @@ def new_wrap_thinking_by_reasoning_content(delta_dict: dict, is_reasoning: bool)
     content = delta_dict.get("content") or ""
     reasoning_content = delta_dict.get("reasoning_content")
     output = content
-    
+
     if reasoning_content:
         if not is_reasoning:
             output = "<think>\n" + reasoning_content
@@ -47,7 +47,7 @@ def new_wrap_thinking_by_reasoning_content(delta_dict: dict, is_reasoning: bool)
                 output = "\n</think>"
             if content:
                 output += content
-                
+
     return output, is_reasoning
 
 def get_reasoning_from_chunk(delta) -> str | None:
@@ -140,11 +140,11 @@ def main():
             dct = {"content": d.content, "reasoning_content": get_reasoning_from_chunk(d)}
             out, is_reasoning = proc_func(dct, is_reasoning)
             r2_text += out
-            
+        
         # Final Visual Check
         print(f"\n--- Human Readability ({label}) ---")
         print(f"AI: {r1_text}")
-        print(f"[System: Tool Result used...]")
+        print("[System: Tool Result used...]")
         print(f"AI: {r2_text}")
         print("\n" + "="*80)
 
