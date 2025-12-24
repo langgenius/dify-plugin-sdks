@@ -1,7 +1,8 @@
 import unittest
+
+from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey, ModelType
+from dify_plugin.entities.model.llm import LLMMode, LLMResult
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from dify_plugin.entities.model.llm import LLMResult, LLMUsage, LLMMode
-from dify_plugin.entities.model import AIModelEntity, ModelType, ModelPropertyKey
 
 
 class MockLLM(LargeLanguageModel):
@@ -46,11 +47,11 @@ class TestWrapThinking(unittest.TestCase):
         Test that when reasoning_content ends, even if content is empty (e.g. followed immediately by tool_calls),
         the <think> tag should be closed correctly.
         """
-        
+
         # Simulate simulated streaming data:
         # 1. Has reasoning_content
         # 2. reasoning_content ends, followed immediately by tool_calls (content is None)
-        
+
         chunks = [
             # Chunk 1: Thinking started
             {"reasoning_content": "Thinking started.", "content": ""},
@@ -63,29 +64,28 @@ class TestWrapThinking(unittest.TestCase):
             {"reasoning_content": None, "content": "", "tool_calls": [{"function": {"arguments": "{"}}]},
         ]
 
-        # Use the "new logic" from PR for testing
-        # To facilitate testing, we define it as a helper function, or if your PR has already modified LargeLanguageModel,
-        # we can directly call self.llm._wrap_thinking_by_reasoning_content.
-        
+        # Use the "new logic" from PR for testing.
+        # We can directly call self.llm._wrap_thinking_by_reasoning_content.
+
         # Assume we are testing the logic function itself:
         is_reasoning = False
         full_output = ""
-        
+
         for chunk in chunks:
-            # 直接调用 SDK 中的实现，验证真实代码逻辑
+            # Directly call the implementation in SDK to verify real code logic
             output, is_reasoning = self.llm._wrap_thinking_by_reasoning_content(chunk, is_reasoning)
             full_output += output
 
-        # 验证结果
-        print(f"DEBUG Output: {repr(full_output)}")
-        
-        self.assertIn("<think>", full_output)
-        self.assertIn("Thinking started. Still thinking.", full_output)
-        self.assertIn("</think>", full_output, "Should verify <think> tag is closed properly")
-        
-        # 验证闭合标签的位置：应该在思考内容之后
+        # Verify results
+        print(f"DEBUG Output: {full_output!r}")
+
+        assert "<think>" in full_output
+        assert "Thinking started. Still thinking." in full_output
+        assert "</think>" in full_output, "Should verify <think> tag is closed properly"
+
+        # Verify the position of the closing tag: should be after the thinking content
         expected_part = "Thinking started. Still thinking.\n</think>"
-        self.assertIn(expected_part, full_output)
+        assert expected_part in full_output
 
     def test_standard_reasoning_flow(self):
         """Test standard reasoning -> text flow"""
@@ -93,12 +93,12 @@ class TestWrapThinking(unittest.TestCase):
             {"reasoning_content": "Thinking.", "content": ""},
             {"reasoning_content": None, "content": "Hello world."},
         ]
-        
+
         is_reasoning = False
         full_output = ""
         for chunk in chunks:
-            # 直接调用 SDK 中的实现
+            # Directly call the implementation in SDK
             output, is_reasoning = self.llm._wrap_thinking_by_reasoning_content(chunk, is_reasoning)
             full_output += output
-            
-        self.assertEqual(full_output, "<think>\nThinking.\n</think>Hello world.")
+
+        assert full_output == "<think>\nThinking.\n</think>Hello world."
