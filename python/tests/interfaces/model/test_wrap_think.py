@@ -9,8 +9,18 @@ class MockLLM(LargeLanguageModel):
     """
     Concrete Mock class for testing non-abstract methods of LargeLanguageModel.
     """
-    def _invoke(self, model: str, credentials: dict, prompt_messages: list, model_parameters: dict,
-                tools: list, stop: list, stream: bool, user: str) -> LLMResult:
+
+    def _invoke(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list,
+        model_parameters: dict,
+        tools: list,
+        stop: list,
+        stream: bool,
+        user: str,
+    ) -> LLMResult:
         pass
 
     def get_num_tokens(self, model: str, credentials: dict, prompt_messages: list, tools: list) -> int:
@@ -32,13 +42,10 @@ class TestWrapThinking(unittest.TestCase):
             label={"en_US": "Mock Model"},
             model_type=ModelType.LLM,
             features=[],
-            model_properties={
-                ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 4096
-            },
+            model_properties={ModelPropertyKey.MODE: LLMMode.CHAT.value, ModelPropertyKey.CONTEXT_SIZE: 4096},
             parameter_rules=[],
             pricing=None,
-            deprecated=False
+            deprecated=False,
         )
         self.llm = MockLLM(model_schemas=[dummy_schema])
 
