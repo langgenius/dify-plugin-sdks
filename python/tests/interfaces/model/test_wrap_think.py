@@ -1,187 +1,104 @@
-import json
-
-from openai import OpenAI
-
-# ==========================================
-# 1. 逻辑定义 (Old vs New)
-# ==========================================
+import unittest
+from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
+from dify_plugin.entities.model.llm import LLMResult, LLMUsage, LLMMode
+from dify_plugin.entities.model import AIModelEntity, ModelType, ModelPropertyKey
 
 
-def old_wrap_thinking_by_reasoning_content(delta_dict: dict, is_reasoning: bool) -> tuple[str, bool]:
-    """[OLD] PR 修改前的逻辑"""
-    content = delta_dict.get("content") or ""
-    reasoning_content = delta_dict.get("reasoning_content")
-    output = content
+class MockLLM(LargeLanguageModel):
+    """
+    Concrete Mock class for testing non-abstract methods of LargeLanguageModel.
+    """
+    def _invoke(self, model: str, credentials: dict, prompt_messages: list, model_parameters: dict,
+                tools: list, stop: list, stream: bool, user: str) -> LLMResult:
+        pass
 
-    if reasoning_content:
-        if not is_reasoning:
-            output = "<think>\n" + reasoning_content
-            is_reasoning = True
-        else:
-            output = reasoning_content
-    else:
-        # 旧逻辑缺陷
-        if is_reasoning and content:
-            output = "\n</think>" + content
-            is_reasoning = False
+    def get_num_tokens(self, model: str, credentials: dict, prompt_messages: list, tools: list) -> int:
+        return 0
 
-    return output, is_reasoning
+    def validate_credentials(self, model: str, credentials: dict) -> None:
+        pass
+
+    @property
+    def _invoke_error_mapping(self) -> dict:
+        return {}
 
 
-def new_wrap_thinking_by_reasoning_content(delta_dict: dict, is_reasoning: bool) -> tuple[str, bool]:
-    """[NEW] PR 修改后的逻辑"""
-    content = delta_dict.get("content") or ""
-    reasoning_content = delta_dict.get("reasoning_content")
-    output = content
-
-    if reasoning_content:
-        if not is_reasoning:
-            output = "<think>\n" + reasoning_content
-            is_reasoning = True
-        else:
-            output = reasoning_content
-    else:
-        # 新逻辑
-        if is_reasoning:
-            is_reasoning = False
-            if not reasoning_content:
-                output = "\n</think>"
-            if content:
-                output += content
-
-    return output, is_reasoning
-
-
-def get_reasoning_from_chunk(delta) -> str | None:
-    val = getattr(delta, "reasoning_content", None)
-    if val is not None:
-        return val
-    if hasattr(delta, "model_extra") and delta.model_extra:
-        return delta.model_extra.get("reasoning_content")
-    if hasattr(delta, "__dict__"):
-        return delta.__dict__.get("reasoning_content")
-    return None
-
-
-def mock_weather_tool(city: str):
-    return json.dumps({"city": city, "weather": "Sunny", "temperature": "25°C", "humidity": "40%"})
-
-
-def main():
-    api_key = "your_api_key"
-    base_url = "your_base_url"
-    model = "your_model"
-    client = OpenAI(api_key=api_key, base_url=base_url)
-
-    # --- Round 1 ---
-    msgs = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "北京天气如何？"},
-    ]
-    tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": "get_weather",
-                "parameters": {"type": "object", "properties": {"city": {"type": "string"}}, "required": ["city"]},
+class TestWrapThinking(unittest.TestCase):
+    def setUp(self):
+        # Create a dummy model schema to satisfy AIModel.__init__
+        dummy_schema = AIModelEntity(
+            model="mock_model",
+            label={"en_US": "Mock Model"},
+            model_type=ModelType.LLM,
+            features=[],
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 4096
             },
-        }
-    ]
-
-    print("\n[Request 1] ...")
-    r1_deltas = []
-    r1_reasoning = ""
-    tool_calls = []
-
-    try:
-        response = client.chat.completions.create(
-            model=model, messages=msgs, tools=tools, stream=True, extra_body={"thinking": {"type": "enabled"}}
+            parameter_rules=[],
+            pricing=None,
+            deprecated=False
         )
-        for chunk in response:
-            if not chunk.choices:
-                continue
-            d = chunk.choices[0].delta
-            r1_deltas.append(d)
+        self.llm = MockLLM(model_schemas=[dummy_schema])
 
-            rc = get_reasoning_from_chunk(d)
-            if rc:
-                r1_reasoning += rc
-            if d.tool_calls:
-                for tc in d.tool_calls:
-                    if len(tool_calls) <= tc.index:
-                        tool_calls.append({"id": tc.id, "function": {"name": tc.function.name, "arguments": ""}})
-                    tool_calls[tc.index]["function"]["arguments"] += tc.function.arguments
-    except Exception as e:
-        print(e)
-        return
+    def test_wrap_thinking_logic_closure(self):
+        """
+        Test that when reasoning_content ends, even if content is empty (e.g. followed immediately by tool_calls),
+        the <think> tag should be closed correctly.
+        """
+        
+        # Simulate simulated streaming data:
+        # 1. Has reasoning_content
+        # 2. reasoning_content ends, followed immediately by tool_calls (content is None)
+        
+        chunks = [
+            # Chunk 1: Thinking started
+            {"reasoning_content": "Thinking started.", "content": ""},
+            # Chunk 2: Still thinking
+            {"reasoning_content": " Still thinking.", "content": ""},
+            # Chunk 3: Thinking ended, transitioned to Tool Call (reasoning_content=None, content=None/Empty)
+            # This is a critical point, old logic would fail here because content is empty
+            {"reasoning_content": None, "content": "", "tool_calls": [{"id": "call_1", "function": {}}]},
+            # Chunk 4: Subsequent tool parameter stream
+            {"reasoning_content": None, "content": "", "tool_calls": [{"function": {"arguments": "{"}}]},
+        ]
 
-    print(f"R1 Done. Tool Calls: {len(tool_calls)}")
-
-    # --- Tool Exec ---
-    msgs.append(
-        {
-            "role": "assistant",
-            "tool_calls": [{"id": t["id"], "type": "function", "function": t["function"]} for t in tool_calls],
-            "reasoning_content": r1_reasoning,
-        }
-    )
-    for t in tool_calls:
-        msgs.append({"role": "tool", "tool_call_id": t["id"], "content": mock_weather_tool("Beijing")})
-
-    # --- Round 2 ---
-    print("\n[Request 2] ...")
-    r2_deltas = []
-    try:
-        response = client.chat.completions.create(
-            model=model, messages=msgs, tools=tools, stream=True, extra_body={"thinking": {"type": "enabled"}}
-        )
-        for chunk in response:
-            if not chunk.choices:
-                continue
-            r2_deltas.append(chunk.choices[0].delta)
-    except Exception as e:
-        print(e)
-        return
-
-    print("R2 Done.")
-
-    # --- Contrast ---
-    print("\n" + "=" * 80)
-    print("OUTPUT VISUALIZATION")
-    print("=" * 80)
-
-    for label, proc_func in [
-        ("OLD_LOGIC", old_wrap_thinking_by_reasoning_content),
-        ("NEW_LOGIC", new_wrap_thinking_by_reasoning_content),
-    ]:
-        print(f"\n>>> Mode: {label} <<<")
-
-        # Simulate Dify Internal: Reset is_reasoning per Invoke
-
-        # 1. Generate R1 Output
+        # Use the "new logic" from PR for testing
+        # To facilitate testing, we define it as a helper function, or if your PR has already modified LargeLanguageModel,
+        # we can directly call self.llm._wrap_thinking_by_reasoning_content.
+        
+        # Assume we are testing the logic function itself:
         is_reasoning = False
-        r1_text = ""
-        for d in r1_deltas:
-            # Reconstruct dict
-            dct = {"content": d.content, "reasoning_content": get_reasoning_from_chunk(d)}
-            out, is_reasoning = proc_func(dct, is_reasoning)
-            r1_text += out
+        full_output = ""
+        
+        for chunk in chunks:
+            # 直接调用 SDK 中的实现，验证真实代码逻辑
+            output, is_reasoning = self.llm._wrap_thinking_by_reasoning_content(chunk, is_reasoning)
+            full_output += output
 
-        # 2. Generate R2 Output
-        is_reasoning = False  # Reset for new request
-        r2_text = ""
-        for d in r2_deltas:
-            dct = {"content": d.content, "reasoning_content": get_reasoning_from_chunk(d)}
-            out, is_reasoning = proc_func(dct, is_reasoning)
-            r2_text += out
+        # 验证结果
+        print(f"DEBUG Output: {repr(full_output)}")
+        
+        self.assertIn("<think>", full_output)
+        self.assertIn("Thinking started. Still thinking.", full_output)
+        self.assertIn("</think>", full_output, "Should verify <think> tag is closed properly")
+        
+        # 验证闭合标签的位置：应该在思考内容之后
+        expected_part = "Thinking started. Still thinking.\n</think>"
+        self.assertIn(expected_part, full_output)
 
-        # Final Visual Check
-        print(f"\n--- Human Readability ({label}) ---")
-        print(f"AI: {r1_text}")
-        print("[System: Tool Result used...]")
-        print(f"AI: {r2_text}")
-        print("\n" + "=" * 80)
-
-
-if __name__ == "__main__":
-    main()
+    def test_standard_reasoning_flow(self):
+        """Test standard reasoning -> text flow"""
+        chunks = [
+            {"reasoning_content": "Thinking.", "content": ""},
+            {"reasoning_content": None, "content": "Hello world."},
+        ]
+        
+        is_reasoning = False
+        full_output = ""
+        for chunk in chunks:
+            # 直接调用 SDK 中的实现
+            output, is_reasoning = self.llm._wrap_thinking_by_reasoning_content(chunk, is_reasoning)
+            full_output += output
+            
+        self.assertEqual(full_output, "<think>\nThinking.\n</think>Hello world.")
