@@ -12,7 +12,7 @@ requires_python = ">=3.11"
 
 [[package]]
 name = "annotated-types"
-version = "0.7.1"
+version = "0.7.0"
 requires_python = ">=3.8"
 summary = "Reusable constraint types to use with typing.Annotated"
 groups = ["default"]
