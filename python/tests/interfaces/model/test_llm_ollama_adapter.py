@@ -64,6 +64,7 @@ class TestOllamaAdapter(unittest.TestCase):
             {"reasoning_content": "Thinking started.", "content": ""},
             # Chunk 2: Still thinking
             {"reasoning_content": " Still thinking.", "content": ""},
+            {"content": "Content started."},
         ]
 
         # Assume we are testing the logic function itself:
@@ -96,6 +97,7 @@ class TestOllamaAdapter(unittest.TestCase):
             {"reasoning": "Thinking started.", "content": ""},
             # Chunk 2: Still thinking
             {"reasoning": " Still thinking.", "content": ""},
+            {"content": "Content started."},
         ]
 
         # Assume we are testing the logic function itself:
