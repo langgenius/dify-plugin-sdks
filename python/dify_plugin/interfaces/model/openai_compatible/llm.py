@@ -183,7 +183,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 endpoint_url += "/"
 
             # prepare the payload for a simple ping to the model
-            data = {"model": credentials.get("endpoint_model_name", model), "max_tokens": 5}
+            data = {"model": credentials.get("endpoint_model_name", model),
+                    "max_tokens": int(credentials.get("max_tokens_to_sample", 20))}
 
             completion_type = LLMMode.value_of(credentials["mode"])
 
