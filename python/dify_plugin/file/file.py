@@ -1,8 +1,11 @@
 import httpx
 from pydantic import BaseModel
 
+from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.file.constants import DIFY_FILE_IDENTITY
 from dify_plugin.file.entities import FileType
+
+_plugin_config = DifyPluginEnv()
 
 
 class File(BaseModel):
@@ -30,7 +33,7 @@ class File(BaseModel):
         """
         if self._blob is None:
             try:
-                response = httpx.get(self.url)
+                response = httpx.get(self.url, verify=_plugin_config.HTTP_REQUEST_SSL_VERIFY)
                 response.raise_for_status()
                 self._blob = response.content
             except httpx.UnsupportedProtocol as e:

@@ -40,6 +40,11 @@ class DifyPluginEnv(BaseSettings):
 
     DIFY_PLUGIN_DAEMON_URL: str = Field(default="http://localhost:5002", description="backwards invocation address")
 
+    HTTP_REQUEST_SSL_VERIFY: bool = Field(
+        description="Enable or disable SSL verification for HTTP requests",
+        default=True,
+    )
+
     model_config = SettingsConfigDict(
         # read from dotenv format config file
         env_file=".env",
