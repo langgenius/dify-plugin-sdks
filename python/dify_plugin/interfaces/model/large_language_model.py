@@ -526,8 +526,8 @@ if you are not sure about the structure.
 
     def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
         """
-        If the reasoning response is from delta.get("reasoning_content"), we wrap
-        it with HTML think tag.
+        If the reasoning response is from delta.get("reasoning_content") or delta.get("reasoning"),
+        we wrap it with HTML think tag.
 
         :param delta: delta dictionary from LLM streaming response
         :param is_reasoning: is reasoning
@@ -535,7 +535,8 @@ if you are not sure about the structure.
         """
 
         content = delta.get("content") or ""
-        reasoning_content = delta.get("reasoning_content")
+        reasoning_content = delta.get("reasoning_content") or delta.get("reasoning")
+
         output = content
         if reasoning_content:
             if not is_reasoning:
