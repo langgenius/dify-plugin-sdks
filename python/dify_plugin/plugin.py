@@ -444,6 +444,7 @@ class Plugin(IOServer, Router):
         app_id: str | None = None,
         endpoint_id: str | None = None,
         context: dict | None = None,
+        passthrough: str | None = None,
     ):
         """
         accept requests and execute
@@ -463,6 +464,7 @@ class Plugin(IOServer, Router):
             app_id=app_id,
             endpoint_id=endpoint_id,
             context=context,
+            passthrough=passthrough,
             max_invocation_timeout=self.config.MAX_INVOCATION_TIMEOUT,
         )
         response = self.dispatch(session, data)
