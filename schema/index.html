@@ -1,0 +1,6396 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Dify Plugin SDK Documentation">
+      
+      
+        <meta name="author" content="Dify Team">
+      
+      
+        <link rel="canonical" href="https://langgenius.github.io/dify-plugin-sdks/schema/">
+      
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.17">
+    
+    
+      
+        <title>Schema Documentation - Dify Plugin SDK</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.bcfcd587.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#dify-plugin-sdk-schema-documentation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Dify Plugin SDK" class="md-header__button md-logo" aria-label="Dify Plugin SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Dify Plugin SDK
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Schema Documentation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/langgenius/dify-plugin-sdks" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    langgenius/dify-plugin-sdks
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+    
+  
+  Schema Documentation
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Dify Plugin SDK" class="md-nav__button md-logo" aria-label="Dify Plugin SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    Dify Plugin SDK
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/langgenius/dify-plugin-sdks" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    langgenius/dify-plugin-sdks
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Schema Documentation
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Schema Documentation
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table of Contents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manifest
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Manifest">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python" class="md-nav__link">
+    <span class="md-ellipsis">
+      Python
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Python">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app" class="md-nav__link">
+    <span class="md-ellipsis">
+      App
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="App">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Storage
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Storage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasourceidentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      DatasourceIdentity
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DatasourceIdentity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parametertype" class="md-nav__link">
+    <span class="md-ellipsis">
+      ParameterType
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ParameterType">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appselectorscope" class="md-nav__link">
+    <span class="md-ellipsis">
+      AppSelectorScope
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AppSelectorScope">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelprovidercredentialschema" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelProviderCredentialSchema
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelProviderCredentialSchema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Python
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Python">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modeltype" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelType
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelType">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Python
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Python">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pluginrunner" class="md-nav__link">
+    <span class="md-ellipsis">
+      PluginRunner
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PluginRunner">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentstrategyprovideridentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      AgentStrategyProviderIdentity
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AgentStrategyProviderIdentity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      Plugins
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasourceparameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      DatasourceParameter
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DatasourceParameter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasourceentityextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      DatasourceEntityExtra
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DatasourceEntityExtra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameterautogenerate" class="md-nav__link">
+    <span class="md-ellipsis">
+      ParameterAutoGenerate
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ParameterAutoGenerate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasourceproviderextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      DatasourceProviderExtra
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DatasourceProviderExtra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelpropertykey" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelPropertyKey
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelPropertyKey">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentstrategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      AgentStrategy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AgentStrategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toolparameteroption" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToolParameterOption
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToolParameterOption">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eventidentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      EventIdentity
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EventIdentity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelconfiguratemethod" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelConfigurateMethod
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelConfigurateMethod">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eventparameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      EventParameter
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EventParameter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelproviderhelp" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelProviderHelp
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelProviderHelp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentstrategyextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      AgentStrategyExtra
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AgentStrategyExtra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subscription" class="md-nav__link">
+    <span class="md-ellipsis">
+      Subscription
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subscription">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasourceprovider" class="md-nav__link">
+    <span class="md-ellipsis">
+      DatasourceProvider
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DatasourceProvider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelconfigscope" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelConfigScope
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelConfigScope">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parametertemplate" class="md-nav__link">
+    <span class="md-ellipsis">
+      ParameterTemplate
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ParameterTemplate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toolprovideridentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToolProviderIdentity
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToolProviderIdentity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pluginlanguage" class="md-nav__link">
+    <span class="md-ellipsis">
+      PluginLanguage
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PluginLanguage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toolextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToolExtra
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToolExtra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#triggerproviderconfigurationextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      TriggerProviderConfigurationExtra
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TriggerProviderConfigurationExtra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tooldescription" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToolDescription
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToolDescription">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fetchfrom" class="md-nav__link">
+    <span class="md-ellipsis">
+      FetchFrom
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FetchFrom">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pluginarch" class="md-nav__link">
+    <span class="md-ellipsis">
+      PluginArch
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PluginArch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasourceprovideridentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      DatasourceProviderIdentity
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DatasourceProviderIdentity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tool
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tool">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasourcelabelenum" class="md-nav__link">
+    <span class="md-ellipsis">
+      DatasourceLabelEnum
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DatasourceLabelEnum">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      Endpoint
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Endpoint">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#providerconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      ProviderConfig
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ProviderConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permission" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Permission">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eventconfiguration" class="md-nav__link">
+    <span class="md-ellipsis">
+      EventConfiguration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EventConfiguration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugintype" class="md-nav__link">
+    <span class="md-ellipsis">
+      PluginType
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PluginType">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toolselectorscope" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToolSelectorScope
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToolSelectorScope">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aimodelentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      AIModelEntity
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AIModelEntity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentstrategyparameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      AgentStrategyParameter
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AgentStrategyParameter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasourceprovidertype" class="md-nav__link">
+    <span class="md-ellipsis">
+      DatasourceProviderType
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DatasourceProviderType">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toolidentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToolIdentity
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToolIdentity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelformtype" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelFormType
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelFormType">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentstrategyproviderextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      AgentStrategyProviderExtra
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AgentStrategyProviderExtra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oauthschema" class="md-nav__link">
+    <span class="md-ellipsis">
+      OAuthSchema
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OAuthSchema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tool
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tool">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pluginresourcerequirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      PluginResourceRequirements
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PluginResourceRequirements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_41" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#triggersubscriptionconstructor" class="md-nav__link">
+    <span class="md-ellipsis">
+      TriggerSubscriptionConstructor
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TriggerSubscriptionConstructor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_42" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#triggersubscriptionconstructorconfigurationextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      TriggerSubscriptionConstructorConfigurationExtra
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TriggerSubscriptionConstructorConfigurationExtra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_43" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelformoption" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelFormOption
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelFormOption">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_44" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentstrategyprovider" class="md-nav__link">
+    <span class="md-ellipsis">
+      AgentStrategyProvider
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AgentStrategyProvider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_45" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commonparametertype" class="md-nav__link">
+    <span class="md-ellipsis">
+      CommonParameterType
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CommonParameterType">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eventconfigurationextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      EventConfigurationExtra
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EventConfigurationExtra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_46" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endpointextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      EndpointExtra
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EndpointExtra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_47" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentstrategyfeature" class="md-nav__link">
+    <span class="md-ellipsis">
+      AgentStrategyFeature
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AgentStrategyFeature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endpointgroup" class="md-nav__link">
+    <span class="md-ellipsis">
+      EndpointGroup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EndpointGroup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_48" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#triggerprovider" class="md-nav__link">
+    <span class="md-ellipsis">
+      TriggerProvider
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TriggerProvider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_49" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pluginprovidertype" class="md-nav__link">
+    <span class="md-ellipsis">
+      PluginProviderType
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PluginProviderType">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eventdescription" class="md-nav__link">
+    <span class="md-ellipsis">
+      EventDescription
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EventDescription">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_50" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameterrule" class="md-nav__link">
+    <span class="md-ellipsis">
+      ParameterRule
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ParameterRule">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_51" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parametertemplate_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      ParameterTemplate
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ParameterTemplate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_52" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toolprovider" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToolProvider
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToolProvider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_53" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meta" class="md-nav__link">
+    <span class="md-ellipsis">
+      Meta
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Meta">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_54" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#i18nobject" class="md-nav__link">
+    <span class="md-ellipsis">
+      I18nObject
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="I18nObject">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_55" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toollabelenum" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToolLabelEnum
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToolLabelEnum">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toolproviderextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToolProviderExtra
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToolProviderExtra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_56" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#providermodel" class="md-nav__link">
+    <span class="md-ellipsis">
+      ProviderModel
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ProviderModel">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_57" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelfeature" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelFeature
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelFeature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelfieldmodelschema" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelFieldModelSchema
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelFieldModelSchema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_58" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#node" class="md-nav__link">
+    <span class="md-ellipsis">
+      Node
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Node">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_59" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameterautogenerate_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      ParameterAutoGenerate
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ParameterAutoGenerate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_60" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toolparameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToolParameter
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToolParameter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_61" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unsubscriberesult" class="md-nav__link">
+    <span class="md-ellipsis">
+      UnsubscribeResult
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="UnsubscribeResult">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_62" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#priceconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      PriceConfig
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PriceConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_63" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelcredentialformschema" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelCredentialFormSchema
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelCredentialFormSchema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_64" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelformshowonobject" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelFormShowOnObject
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelFormShowOnObject">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_65" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelproviderextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelProviderExtra
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelProviderExtra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_66" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eventparameteroption" class="md-nav__link">
+    <span class="md-ellipsis">
+      EventParameterOption
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EventParameterOption">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_67" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Python
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Python">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_68" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#triggerprovideridentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      TriggerProviderIdentity
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TriggerProviderIdentity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_69" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endpoint_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Endpoint
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Endpoint">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_70" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasource" class="md-nav__link">
+    <span class="md-ellipsis">
+      Datasource
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Datasource">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_71" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameteroption" class="md-nav__link">
+    <span class="md-ellipsis">
+      ParameterOption
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ParameterOption">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_72" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelprovider" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelProvider
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelProvider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_73" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modelposition" class="md-nav__link">
+    <span class="md-ellipsis">
+      ModelPosition
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ModelPosition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_74" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defaultparametername" class="md-nav__link">
+    <span class="md-ellipsis">
+      DefaultParameterName
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DefaultParameterName">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentstrategyidentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      AgentStrategyIdentity
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AgentStrategyIdentity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_75" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Python
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Python">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_76" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configoption" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConfigOption
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ConfigOption">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_77" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Model
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields_78" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="dify-plugin-sdk-schema-documentation">Dify Plugin SDK Schema Documentation</h1>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#manifest">Manifest</a></li>
+<li><a href="#plugins">Plugins</a></li>
+<li><a href="#meta">Meta</a><ul>
+<li><a href="#pluginrunner">PluginRunner</a></li>
+<li><a href="#pluginlanguage">PluginLanguage</a></li>
+<li><a href="#pluginarch">PluginArch</a></li>
+</ul>
+</li>
+<li><a href="#plugintype">PluginType</a></li>
+<li><a href="#pluginresourcerequirements">PluginResourceRequirements</a><ul>
+<li><a href="#permission">Permission</a></li>
+<li><a href="#app">App</a></li>
+<li><a href="#tool">Tool</a></li>
+<li><a href="#node">Node</a></li>
+<li><a href="#storage">Storage</a></li>
+<li><a href="#endpoint">Endpoint</a></li>
+<li><a href="#model">Model</a></li>
+</ul>
+</li>
+<li><a href="#appselectorscope">AppSelectorScope</a></li>
+<li><a href="#modeltype">ModelType</a></li>
+<li><a href="#parameterautogenerate">ParameterAutoGenerate</a></li>
+<li><a href="#modelpropertykey">ModelPropertyKey</a></li>
+<li><a href="#toolparameteroption">ToolParameterOption</a></li>
+<li><a href="#eventparameter">EventParameter</a></li>
+<li><a href="#eventparameteroption">EventParameterOption</a></li>
+<li><a href="#subscription">Subscription</a></li>
+<li><a href="#datasourceprovider">DatasourceProvider</a></li>
+<li><a href="#datasourceprovidertype">DatasourceProviderType</a></li>
+<li><a href="#datasourceproviderextra">DatasourceProviderExtra</a></li>
+<li><a href="#datasourceprovideridentity">DatasourceProviderIdentity</a><ul>
+<li><a href="#datasourcelabelenum">DatasourceLabelEnum</a></li>
+</ul>
+</li>
+<li><a href="#datasource">Datasource</a><ul>
+<li><a href="#datasourceidentity">DatasourceIdentity</a></li>
+<li><a href="#datasourceentityextra">DatasourceEntityExtra</a></li>
+<li><a href="#datasourceparameter">DatasourceParameter</a></li>
+<li><a href="#parametertemplate">ParameterTemplate</a></li>
+<li><a href="#parameteroption">ParameterOption</a></li>
+<li><a href="#parameterautogenerate">ParameterAutoGenerate</a></li>
+</ul>
+</li>
+<li><a href="#modelconfigscope">ModelConfigScope</a></li>
+<li><a href="#parametertemplate">ParameterTemplate</a></li>
+<li><a href="#fetchfrom">FetchFrom</a></li>
+<li><a href="#variables">Variables</a></li>
+<li><a href="#providerconfig">ProviderConfig</a></li>
+<li><a href="#configoption">ConfigOption</a></li>
+<li><a href="#toolselectorscope">ToolSelectorScope</a></li>
+<li><a href="#agentstrategyproviderextra">AgentStrategyProviderExtra</a></li>
+<li><a href="#python">Python</a></li>
+<li><a href="#oauthschema">OAuthSchema</a></li>
+<li><a href="#agentstrategyprovider">AgentStrategyProvider</a></li>
+<li><a href="#agentstrategy">AgentStrategy</a><ul>
+<li><a href="#agentstrategyfeature">AgentStrategyFeature</a></li>
+<li><a href="#agentstrategyidentity">AgentStrategyIdentity</a></li>
+<li><a href="#agentstrategyparameter">AgentStrategyParameter</a></li>
+<li><a href="#agentstrategyextra">AgentStrategyExtra</a></li>
+<li><a href="#python">Python</a></li>
+</ul>
+</li>
+<li><a href="#agentstrategyprovideridentity">AgentStrategyProviderIdentity</a></li>
+<li><a href="#commonparametertype">CommonParameterType</a></li>
+<li><a href="#endpointgroup">EndpointGroup</a></li>
+<li><a href="#endpoint">Endpoint</a><ul>
+<li><a href="#endpointextra">EndpointExtra</a></li>
+</ul>
+</li>
+<li><a href="#triggerprovider">TriggerProvider</a></li>
+<li><a href="#triggerprovideridentity">TriggerProviderIdentity</a></li>
+<li><a href="#eventconfiguration">EventConfiguration</a><ul>
+<li><a href="#eventconfigurationextra">EventConfigurationExtra</a></li>
+<li><a href="#python">Python</a></li>
+<li><a href="#eventidentity">EventIdentity</a></li>
+</ul>
+</li>
+<li><a href="#triggersubscriptionconstructor">TriggerSubscriptionConstructor</a><ul>
+<li><a href="#triggersubscriptionconstructorconfigurationextra">TriggerSubscriptionConstructorConfigurationExtra</a></li>
+<li><a href="#python">Python</a></li>
+</ul>
+</li>
+<li><a href="#triggerproviderconfigurationextra">TriggerProviderConfigurationExtra</a><ul>
+<li><a href="#python">Python</a></li>
+</ul>
+</li>
+<li><a href="#pluginprovidertype">PluginProviderType</a></li>
+<li><a href="#eventdescription">EventDescription</a></li>
+<li><a href="#toolprovider">ToolProvider</a></li>
+<li><a href="#toolproviderextra">ToolProviderExtra</a></li>
+<li><a href="#toolprovideridentity">ToolProviderIdentity</a></li>
+<li><a href="#tool">Tool</a><ul>
+<li><a href="#tooldescription">ToolDescription</a></li>
+<li><a href="#toolparameter">ToolParameter</a></li>
+<li><a href="#toolidentity">ToolIdentity</a></li>
+<li><a href="#toolextra">ToolExtra</a></li>
+</ul>
+</li>
+<li><a href="#i18nobject">I18nObject</a></li>
+<li><a href="#toollabelenum">ToolLabelEnum</a></li>
+<li><a href="#providermodel">ProviderModel</a></li>
+<li><a href="#modelfeature">ModelFeature</a></li>
+<li><a href="#modelfieldmodelschema">ModelFieldModelSchema</a></li>
+<li><a href="#unsubscriberesult">UnsubscribeResult</a></li>
+<li><a href="#modelformshowonobject">ModelFormShowOnObject</a></li>
+<li><a href="#modelprovider">ModelProvider</a></li>
+<li><a href="#modelprovidercredentialschema">ModelProviderCredentialSchema</a><ul>
+<li><a href="#modelcredentialformschema">ModelCredentialFormSchema</a></li>
+<li><a href="#modelformoption">ModelFormOption</a></li>
+<li><a href="#modelformtype">ModelFormType</a></li>
+</ul>
+</li>
+<li><a href="#modelposition">ModelPosition</a></li>
+<li><a href="#modelproviderextra">ModelProviderExtra</a></li>
+<li><a href="#modelproviderhelp">ModelProviderHelp</a></li>
+<li><a href="#aimodelentity">AIModelEntity</a><ul>
+<li><a href="#priceconfig">PriceConfig</a></li>
+<li><a href="#parameterrule">ParameterRule</a></li>
+<li><a href="#parametertype">ParameterType</a></li>
+</ul>
+</li>
+<li><a href="#modelconfiguratemethod">ModelConfigurateMethod</a></li>
+<li><a href="#defaultparametername">DefaultParameterName</a></li>
+</ul>
+<h2 id="manifest">Manifest</h2>
+<p>The Manifest of the plugin</p>
+<h3 id="fields">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>version</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>type</td>
+<td><a href="#plugintype">PluginType</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>author</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>name</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td>pattern='^[a-z0-9_-]{1,128}$'</td>
+</tr>
+<tr>
+<td>repo</td>
+<td>str</td>
+<td>None</td>
+<td>The repository URL of the plugin</td>
+<td>None</td>
+</tr>
+<tr>
+<td>description</td>
+<td><a href="#i18nobject">I18nObject</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>icon</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>icon_dark</td>
+<td>str</td>
+<td>None</td>
+<td>The dark mode icon of the plugin</td>
+<td>None</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>datetime</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>resource</td>
+<td><a href="#pluginresourcerequirements">PluginResourceRequirements</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>plugins</td>
+<td><a href="#plugins">Plugins</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>meta</td>
+<td><a href="#meta">Meta</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="python">Python</h2>
+<p>The python configuration for event</p>
+<h3 id="fields_1">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>source</td>
+<td>str</td>
+<td>The source file path for the event implementation</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="app">App</h2>
+<p>Permission of app</p>
+<h3 id="fields_2">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enabled</td>
+<td>bool</td>
+<td>None</td>
+<td>Whether to enable invocation of app</td>
+<td>False</td>
+</tr>
+</tbody>
+</table>
+<h2 id="storage">Storage</h2>
+<p>Permission of storage</p>
+<h3 id="fields_3">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enabled</td>
+<td>bool</td>
+<td>None</td>
+<td>Whether to enable uses of storage</td>
+<td>False</td>
+</tr>
+<tr>
+<td>size</td>
+<td>int</td>
+<td>Size of storage</td>
+<td>1048576</td>
+<td>Ge(ge=1024) Le(le=1073741824)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="datasourceidentity">DatasourceIdentity</h2>
+<p>Identity of datasource entity</p>
+<h3 id="fields_4">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>author</td>
+<td>str</td>
+<td>The author of the datasource</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the datasource</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>icon</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="parametertype">ParameterType</h2>
+<h3 id="values">Values</h3>
+<ul>
+<li><code>FLOAT</code>: float</li>
+<li><code>INT</code>: int</li>
+<li><code>STRING</code>: string</li>
+<li><code>BOOLEAN</code>: boolean</li>
+<li><code>TEXT</code>: text</li>
+</ul>
+<h2 id="appselectorscope">AppSelectorScope</h2>
+<h3 id="values_1">Values</h3>
+<ul>
+<li><code>ALL</code>: all</li>
+<li><code>CHAT</code>: chat</li>
+<li><code>WORKFLOW</code>: workflow</li>
+<li><code>COMPLETION</code>: completion</li>
+</ul>
+<h2 id="modelprovidercredentialschema">ModelProviderCredentialSchema</h2>
+<p>Model provider credential schema</p>
+<h3 id="fields_5">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>credential_form_schemas</td>
+<td>list[<a href="#modelcredentialformschema">ModelCredentialFormSchema</a>]</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="python_1">Python</h2>
+<p>The extra of the agent provider</p>
+<h3 id="fields_6">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>source</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="modeltype">ModelType</h2>
+<h3 id="values_2">Values</h3>
+<ul>
+<li><code>LLM</code>: llm</li>
+<li><code>TEXT_EMBEDDING</code>: text-embedding</li>
+<li><code>RERANK</code>: rerank</li>
+<li><code>SPEECH2TEXT</code>: speech2text</li>
+<li><code>MODERATION</code>: moderation</li>
+<li><code>TTS</code>: tts</li>
+<li><code>TEXT2IMG</code>: text2img</li>
+</ul>
+<h2 id="python_2">Python</h2>
+<p>The python configuration for trigger subscription constructor</p>
+<h3 id="fields_7">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>source</td>
+<td>str</td>
+<td>The source file path for the constructor implementation</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="pluginrunner">PluginRunner</h2>
+<p>Runner of plugin</p>
+<h3 id="fields_8">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>language</td>
+<td><a href="#pluginlanguage">PluginLanguage</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>version</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>entrypoint</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="agentstrategyprovideridentity">AgentStrategyProviderIdentity</h2>
+<p>The identity of the agent strategy provider</p>
+<h3 id="fields_9">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>author</td>
+<td>str</td>
+<td>The author of the tool</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the tool</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>icon</td>
+<td>str</td>
+<td>The icon of the tool</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>icon_dark</td>
+<td>str</td>
+<td>None</td>
+<td>The dark mode icon of the tool</td>
+<td>None</td>
+</tr>
+<tr>
+<td>tags</td>
+<td>list[<a href="#toollabelenum">ToolLabelEnum</a>]</td>
+<td>The tags of the tool</td>
+<td>[]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="plugins">Plugins</h2>
+<p>Extensions of plugin</p>
+<h3 id="fields_10">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>tools</td>
+<td>list[str]</td>
+<td>manifest paths of tool providers in yaml format, refers to <a href="#toolprovider">ToolProvider</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>models</td>
+<td>list[str]</td>
+<td>manifest paths of model providers in yaml format, refers to <a href="#modelprovider">ModelProvider</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>endpoints</td>
+<td>list[str]</td>
+<td>manifest paths of endpoint groups in yaml format, refers to <a href="#endpointgroup">EndpointGroup</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>agent_strategies</td>
+<td>list[str]</td>
+<td>manifest paths of agent strategy providers in yaml format,refers to <a href="#agentstrategyprovider">AgentStrategyProvider</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>datasources</td>
+<td>list[str]</td>
+<td>manifest paths of datasource providers in yaml format refers to <a href="#datasourceprovider">DatasourceProvider</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>triggers</td>
+<td>list[str]</td>
+<td>manifest paths of trigger providers in yaml format, refers to <a href="#triggerprovider">TriggerProvider</a></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="datasourceparameter">DatasourceParameter</h2>
+<p>Parameter of datasource entity</p>
+<h3 id="fields_11">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the parameter</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>placeholder</td>
+<td>dify_plugin.entities.I18nObject</td>
+<td>None</td>
+<td>The placeholder presented to the user</td>
+<td>None</td>
+</tr>
+<tr>
+<td>scope</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>auto_generate</td>
+<td>dify_plugin.entities.ParameterAutoGenerate</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>template</td>
+<td>dify_plugin.entities.ParameterTemplate</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>required</td>
+<td>bool</td>
+<td></td>
+<td>False</td>
+<td></td>
+</tr>
+<tr>
+<td>default</td>
+<td>Union[int, float, str, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>min</td>
+<td>Union[float, int, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>max</td>
+<td>Union[float, int, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>int</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>options</td>
+<td>list[<a href="#parameteroption">ParameterOption</a>]</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>type</td>
+<td><a href="#datasourceparametertype">DatasourceParameterType</a></td>
+<td>The type of the parameter</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="datasourceentityextra">DatasourceEntityExtra</h2>
+<p>The extra of the datasource entity</p>
+<h3 id="fields_12">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>python</td>
+<td><a href="#python">Python</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="parameterautogenerate">ParameterAutoGenerate</h2>
+<p>The auto generate of the parameter</p>
+<h3 id="fields_13">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td><a href="#type">Type</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="datasourceproviderextra">DatasourceProviderExtra</h2>
+<p>The extra of the datasource provider</p>
+<h3 id="fields_14">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>python</td>
+<td><a href="#python">Python</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="modelpropertykey">ModelPropertyKey</h2>
+<h3 id="values_3">Values</h3>
+<ul>
+<li><code>MODE</code>: mode</li>
+<li><code>CONTEXT_SIZE</code>: context_size</li>
+<li><code>MAX_CHUNKS</code>: max_chunks</li>
+<li><code>FILE_UPLOAD_LIMIT</code>: file_upload_limit</li>
+<li><code>SUPPORTED_FILE_EXTENSIONS</code>: supported_file_extensions</li>
+<li><code>MAX_CHARACTERS_PER_CHUNK</code>: max_characters_per_chunk</li>
+<li><code>DEFAULT_VOICE</code>: default_voice</li>
+<li><code>VOICES</code>: voices</li>
+<li><code>WORD_LIMIT</code>: word_limit</li>
+<li><code>AUDIO_TYPE</code>: audio_type</li>
+<li><code>MAX_WORKERS</code>: max_workers</li>
+</ul>
+<h2 id="agentstrategy">AgentStrategy</h2>
+<p>The Manifest of the agent strategy</p>
+<h3 id="fields_15">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>identity</td>
+<td><a href="#agentstrategyidentity">AgentStrategyIdentity</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>parameters</td>
+<td>list[<a href="#agentstrategyparameter">AgentStrategyParameter</a>]</td>
+<td>The parameters of the agent</td>
+<td>[]</td>
+<td></td>
+</tr>
+<tr>
+<td>extra</td>
+<td><a href="#agentstrategyextra">AgentStrategyExtra</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>has_runtime_parameters</td>
+<td>bool</td>
+<td>Whether the tool has runtime parameters</td>
+<td>False</td>
+<td></td>
+</tr>
+<tr>
+<td>output_schema</td>
+<td>collections.abc.Mapping[str, typing.Any]</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>features</td>
+<td>list[<a href="#agentstrategyfeature">AgentStrategyFeature</a>]</td>
+<td>The features of the agent</td>
+<td>[]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="toolparameteroption">ToolParameterOption</h2>
+<p>The option of the tool parameter</p>
+<h3 id="fields_16">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>value</td>
+<td>str</td>
+<td>The value of the option</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>icon</td>
+<td>str</td>
+<td>None</td>
+<td>The icon of the option, can be a URL or a base64 encoded string</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="eventidentity">EventIdentity</h2>
+<p>The identity of an event</p>
+<h3 id="fields_17">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>author</td>
+<td>str</td>
+<td>The author of the event</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the event</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="modelconfiguratemethod">ModelConfigurateMethod</h2>
+<h3 id="values_4">Values</h3>
+<ul>
+<li><code>PREDEFINED_MODEL</code>: predefined-model</li>
+<li><code>CUSTOMIZABLE_MODEL</code>: customizable-model</li>
+</ul>
+<h2 id="eventparameter">EventParameter</h2>
+<p>The type of the parameter</p>
+<h3 id="fields_18">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the parameter</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>type</td>
+<td><a href="#eventparametertype">EventParameterType</a></td>
+<td>The type of the parameter</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>auto_generate</td>
+<td>dify_plugin.entities.tool.ParameterAutoGenerate</td>
+<td>None</td>
+<td>The auto generate of the parameter</td>
+<td>None</td>
+</tr>
+<tr>
+<td>template</td>
+<td>dify_plugin.entities.tool.ParameterTemplate</td>
+<td>None</td>
+<td>The template of the parameter</td>
+<td>None</td>
+</tr>
+<tr>
+<td>scope</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>required</td>
+<td>bool</td>
+<td>None</td>
+<td></td>
+<td>False</td>
+</tr>
+<tr>
+<td>multiple</td>
+<td>bool</td>
+<td>None</td>
+<td>Whether the parameter is multiple select, only valid for select or dynamic-select type</td>
+<td>False</td>
+</tr>
+<tr>
+<td>default</td>
+<td>Union[int, float, str, list, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>min</td>
+<td>Union[float, int, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>max</td>
+<td>Union[float, int, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>int</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>options</td>
+<td>list[dify_plugin.entities.trigger.EventParameterOption]</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>description</td>
+<td>dify_plugin.entities.I18nObject</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="modelproviderhelp">ModelProviderHelp</h2>
+<p>Model provider help</p>
+<h3 id="fields_19">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="agentstrategyextra">AgentStrategyExtra</h2>
+<p>The extra of the agent strategy</p>
+<h3 id="fields_20">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>python</td>
+<td><a href="#python">Python</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="subscription">Subscription</h2>
+<p>Result of a successful trigger subscription operation</p>
+<h3 id="fields_21">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>expires_at</td>
+<td>int</td>
+<td>The timestamp when the subscription will expire, used for refreshing the subscription. Set to -1 if the subscription does not expire</td>
+<td>-1</td>
+<td></td>
+</tr>
+<tr>
+<td>endpoint</td>
+<td>str</td>
+<td>The webhook endpoint URL allocated by Dify for receiving events</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>parameters</td>
+<td>collections.abc.Mapping[str, typing.Any]</td>
+<td>None</td>
+<td>The parameters of the subscription, only available when the subscription is created by the trigger subscription constructor</td>
+<td>None</td>
+</tr>
+<tr>
+<td>properties</td>
+<td>collections.abc.Mapping[str, typing.Any]</td>
+<td>The necessary information for this subscription, e.g., external_id, events, repository, etc. These properties are defined in <code>subscription_schema</code> in the provider's YAML</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="datasourceprovider">DatasourceProvider</h2>
+<p>Manifest of datasource providers</p>
+<h3 id="fields_22">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>identity</td>
+<td><a href="#datasourceprovideridentity">DatasourceProviderIdentity</a></td>
+<td>The identity of the datasource provider</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>credentials_schema</td>
+<td>list[<a href="#providerconfig">ProviderConfig</a>]</td>
+<td>The credentials schema of the datasource provider</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>oauth_schema</td>
+<td>dify_plugin.entities.oauth.OAuthSchema</td>
+<td>None</td>
+<td>The OAuth schema of the datasource provider if OAuth is supported</td>
+<td>None</td>
+</tr>
+<tr>
+<td>provider_type</td>
+<td><a href="#datasourceprovidertype">DatasourceProviderType</a></td>
+<td>The type of the datasource provider</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>datasources</td>
+<td>list[str]</td>
+<td>The datasources of the datasource provider</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>extra</td>
+<td><a href="#datasourceproviderextra">DatasourceProviderExtra</a></td>
+<td>The extra of the datasource provider</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="modelconfigscope">ModelConfigScope</h2>
+<h3 id="values_5">Values</h3>
+<ul>
+<li><code>LLM</code>: llm</li>
+<li><code>TEXT_EMBEDDING</code>: text-embedding</li>
+<li><code>RERANK</code>: rerank</li>
+<li><code>TTS</code>: tts</li>
+<li><code>SPEECH2TEXT</code>: speech2text</li>
+<li><code>MODERATION</code>: moderation</li>
+<li><code>VISION</code>: vision</li>
+</ul>
+<h2 id="parametertemplate">ParameterTemplate</h2>
+<p>The template of the parameter</p>
+<h3 id="fields_23">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enabled</td>
+<td>bool</td>
+<td>Whether the parameter is jinja enabled</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="toolprovideridentity">ToolProviderIdentity</h2>
+<p>The identity of the tool provider</p>
+<h3 id="fields_24">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>author</td>
+<td>str</td>
+<td>The author of the tool</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the tool</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>icon</td>
+<td>str</td>
+<td>The icon of the tool</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>icon_dark</td>
+<td>str</td>
+<td>None</td>
+<td>The dark mode icon of the tool</td>
+<td>None</td>
+</tr>
+<tr>
+<td>tags</td>
+<td>list[<a href="#toollabelenum">ToolLabelEnum</a>]</td>
+<td>The tags of the tool</td>
+<td>[]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="pluginlanguage">PluginLanguage</h2>
+<h3 id="values_6">Values</h3>
+<ul>
+<li><code>PYTHON</code>: python</li>
+</ul>
+<h2 id="toolextra">ToolExtra</h2>
+<p>The extra of the tool</p>
+<h3 id="fields_25">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>python</td>
+<td><a href="#python">Python</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="triggerproviderconfigurationextra">TriggerProviderConfigurationExtra</h2>
+<p>The extra configuration for trigger provider</p>
+<h3 id="fields_26">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>python</td>
+<td><a href="#python">Python</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="tooldescription">ToolDescription</h2>
+<p>The description of the tool</p>
+<h3 id="fields_27">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>llm</td>
+<td>str</td>
+<td>The description presented to the LLM</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="fetchfrom">FetchFrom</h2>
+<h3 id="values_7">Values</h3>
+<ul>
+<li><code>PREDEFINED_MODEL</code>: predefined-model</li>
+<li><code>CUSTOMIZABLE_MODEL</code>: customizable-model</li>
+</ul>
+<h2 id="pluginarch">PluginArch</h2>
+<h3 id="values_8">Values</h3>
+<ul>
+<li><code>AMD64</code>: amd64</li>
+<li><code>ARM64</code>: arm64</li>
+</ul>
+<h2 id="variables">Variables</h2>
+<p>The structured output variables from an event</p>
+<h3 id="fields_28">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>variables</td>
+<td>collections.abc.Mapping[str, typing.Any]</td>
+<td>The output variables of the event, same with the schema defined in <code>output_schema</code> in the YAML</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="datasourceprovideridentity">DatasourceProviderIdentity</h2>
+<p>Identity of datasource provider</p>
+<h3 id="fields_29">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>author</td>
+<td>str</td>
+<td>The author of the datasource</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the datasource</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>icon</td>
+<td>str</td>
+<td>The icon of the datasource</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>tags</td>
+<td>list[dify_plugin.entities.datasource_manifest.DatasourceLabelEnum]</td>
+<td>None</td>
+<td>The tags of the datasource</td>
+<td>[]</td>
+</tr>
+</tbody>
+</table>
+<h2 id="tool">Tool</h2>
+<p>The manifest of the tool</p>
+<h3 id="fields_30">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>identity</td>
+<td><a href="#toolidentity">ToolIdentity</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>parameters</td>
+<td>list[<a href="#toolparameter">ToolParameter</a>]</td>
+<td>The parameters of the tool</td>
+<td>[]</td>
+<td></td>
+</tr>
+<tr>
+<td>description</td>
+<td><a href="#tooldescription">ToolDescription</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>extra</td>
+<td><a href="#toolextra">ToolExtra</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>has_runtime_parameters</td>
+<td>bool</td>
+<td>Whether the tool has runtime parameters</td>
+<td>False</td>
+<td></td>
+</tr>
+<tr>
+<td>output_schema</td>
+<td>collections.abc.Mapping[str, typing.Any]</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="datasourcelabelenum">DatasourceLabelEnum</h2>
+<h3 id="values_9">Values</h3>
+<ul>
+<li><code>SEARCH</code>: search</li>
+<li><code>IMAGE</code>: image</li>
+<li><code>VIDEOS</code>: videos</li>
+<li><code>WEATHER</code>: weather</li>
+<li><code>FINANCE</code>: finance</li>
+<li><code>DESIGN</code>: design</li>
+<li><code>TRAVEL</code>: travel</li>
+<li><code>SOCIAL</code>: social</li>
+<li><code>NEWS</code>: news</li>
+<li><code>MEDICAL</code>: medical</li>
+<li><code>PRODUCTIVITY</code>: productivity</li>
+<li><code>EDUCATION</code>: education</li>
+<li><code>BUSINESS</code>: business</li>
+<li><code>ENTERTAINMENT</code>: entertainment</li>
+<li><code>UTILITIES</code>: utilities</li>
+<li><code>OTHER</code>: other</li>
+</ul>
+<h2 id="endpoint">Endpoint</h2>
+<p>The Manifest of the endpoint</p>
+<h3 id="fields_31">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>path</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>method</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>hidden</td>
+<td>bool</td>
+<td>Whether to hide this endpoint in the UI</td>
+<td>False</td>
+<td></td>
+</tr>
+<tr>
+<td>extra</td>
+<td><a href="#endpointextra">EndpointExtra</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="providerconfig">ProviderConfig</h2>
+<p>A common config schema</p>
+<h3 id="fields_32">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the credentials</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>type</td>
+<td><a href="#config">Config</a></td>
+<td>The type of the credentials</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>scope</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>required</td>
+<td>bool</td>
+<td></td>
+<td>False</td>
+<td></td>
+</tr>
+<tr>
+<td>default</td>
+<td>Union[int, float, str, bool, list, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>options</td>
+<td>list[dify_plugin.entities.provider_config.ConfigOption]</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>multiple</td>
+<td>bool</td>
+<td>None</td>
+<td></td>
+<td>False</td>
+</tr>
+<tr>
+<td>help</td>
+<td>dify_plugin.entities.I18nObject</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>url</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>placeholder</td>
+<td>dify_plugin.entities.I18nObject</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="permission">Permission</h2>
+<p>Permission of plugin</p>
+<h3 id="fields_33">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>tool</td>
+<td>dify_plugin.core.entities.plugin.setup.PluginResourceRequirements.Permission.Tool</td>
+<td>None</td>
+<td>Permission of tool</td>
+<td>None</td>
+</tr>
+<tr>
+<td>model</td>
+<td>dify_plugin.core.entities.plugin.setup.PluginResourceRequirements.Permission.Model</td>
+<td>None</td>
+<td>Permission of model</td>
+<td>None</td>
+</tr>
+<tr>
+<td>node</td>
+<td>dify_plugin.core.entities.plugin.setup.PluginResourceRequirements.Permission.Node</td>
+<td>None</td>
+<td>Permission of node</td>
+<td>None</td>
+</tr>
+<tr>
+<td>endpoint</td>
+<td>dify_plugin.core.entities.plugin.setup.PluginResourceRequirements.Permission.Endpoint</td>
+<td>None</td>
+<td>Permission of endpoint</td>
+<td>None</td>
+</tr>
+<tr>
+<td>app</td>
+<td>dify_plugin.core.entities.plugin.setup.PluginResourceRequirements.Permission.App</td>
+<td>None</td>
+<td>Permission of app</td>
+<td>None</td>
+</tr>
+<tr>
+<td>storage</td>
+<td>dify_plugin.core.entities.plugin.setup.PluginResourceRequirements.Permission.Storage</td>
+<td>None</td>
+<td>Permission of storage</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="eventconfiguration">EventConfiguration</h2>
+<p>The configuration of an event</p>
+<h3 id="fields_34">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>identity</td>
+<td><a href="#eventidentity">EventIdentity</a></td>
+<td>The identity of the event</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>parameters</td>
+<td>list[<a href="#eventparameter">EventParameter</a>]</td>
+<td>The parameters of the event</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>extra</td>
+<td><a href="#eventconfigurationextra">EventConfigurationExtra</a></td>
+<td>The extra configuration of the event</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>output_schema</td>
+<td>collections.abc.Mapping[str, typing.Any]</td>
+<td>None</td>
+<td>The output schema that this event produces</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="plugintype">PluginType</h2>
+<h3 id="values_10">Values</h3>
+<ul>
+<li><code>Plugin</code>: plugin</li>
+</ul>
+<h2 id="toolselectorscope">ToolSelectorScope</h2>
+<h3 id="values_11">Values</h3>
+<ul>
+<li><code>ALL</code>: all</li>
+<li><code>PLUGIN</code>: plugin</li>
+<li><code>API</code>: api</li>
+<li><code>WORKFLOW</code>: workflow</li>
+</ul>
+<h2 id="aimodelentity">AIModelEntity</h2>
+<p>AI model entity</p>
+<h3 id="fields_35">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>model</td>
+<td>str</td>
+<td>The model name</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>model_type</td>
+<td><a href="#modeltype">ModelType</a></td>
+<td>The model type</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>features</td>
+<td>list[dify_plugin.entities.model.ModelFeature]</td>
+<td>None</td>
+<td>The features of the model</td>
+<td>None</td>
+</tr>
+<tr>
+<td>fetch_from</td>
+<td><a href="#fetchfrom">FetchFrom</a></td>
+<td>The fetch from</td>
+<td>FetchFrom.PREDEFINED_MODEL</td>
+<td></td>
+</tr>
+<tr>
+<td>model_properties</td>
+<td>dict[<a href="#modelpropertykey">ModelPropertyKey</a>, Any]</td>
+<td>The model properties</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>deprecated</td>
+<td>bool</td>
+<td>Whether the model is deprecated</td>
+<td>False</td>
+<td></td>
+</tr>
+<tr>
+<td>parameter_rules</td>
+<td>list[<a href="#parameterrule">ParameterRule</a>]</td>
+<td></td>
+<td>[]</td>
+<td></td>
+</tr>
+<tr>
+<td>pricing</td>
+<td>dify_plugin.entities.model.PriceConfig</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="agentstrategyparameter">AgentStrategyParameter</h2>
+<p>The parameter of the agent strategy</p>
+<h3 id="fields_36">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the parameter</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>help</td>
+<td>dify_plugin.entities.I18nObject</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>type</td>
+<td><a href="#toolparametertype">ToolParameterType</a></td>
+<td>The type of the parameter</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>auto_generate</td>
+<td>dify_plugin.entities.tool.ParameterAutoGenerate</td>
+<td>None</td>
+<td>The auto generate of the parameter</td>
+<td>None</td>
+</tr>
+<tr>
+<td>template</td>
+<td>dify_plugin.entities.tool.ParameterTemplate</td>
+<td>None</td>
+<td>The template of the parameter</td>
+<td>None</td>
+</tr>
+<tr>
+<td>scope</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>required</td>
+<td>bool</td>
+<td>None</td>
+<td></td>
+<td>False</td>
+</tr>
+<tr>
+<td>default</td>
+<td>Union[int, float, str, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>min</td>
+<td>Union[float, int, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>max</td>
+<td>Union[float, int, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>int</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>options</td>
+<td>list[dify_plugin.entities.tool.ToolParameterOption]</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="datasourceprovidertype">DatasourceProviderType</h2>
+<h3 id="values_12">Values</h3>
+<ul>
+<li><code>ONLINE_DOCUMENT</code>: online_document</li>
+<li><code>WEBSITE_CRAWL</code>: website_crawl</li>
+<li><code>ONLINE_DRIVE</code>: online_drive</li>
+</ul>
+<h2 id="toolidentity">ToolIdentity</h2>
+<p>The identity of the tool</p>
+<h3 id="fields_37">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>author</td>
+<td>str</td>
+<td>The author of the tool</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the tool</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="modelformtype">ModelFormType</h2>
+<h3 id="values_13">Values</h3>
+<ul>
+<li><code>TEXT_INPUT</code>: text-input</li>
+<li><code>SECRET_INPUT</code>: secret-input</li>
+<li><code>SELECT</code>: select</li>
+<li><code>RADIO</code>: radio</li>
+<li><code>SWITCH</code>: switch</li>
+</ul>
+<h2 id="agentstrategyproviderextra">AgentStrategyProviderExtra</h2>
+<p>The extra of the agent provider</p>
+<h3 id="fields_38">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>python</td>
+<td><a href="#python">Python</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="oauthschema">OAuthSchema</h2>
+<p>The schema of the OAuth</p>
+<h3 id="fields_39">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>client_schema</td>
+<td>collections.abc.Sequence[dify_plugin.entities.provider_config.ProviderConfig]</td>
+<td>The schema of the OAuth client</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>credentials_schema</td>
+<td>collections.abc.Sequence[dify_plugin.entities.provider_config.ProviderConfig]</td>
+<td>The schema of the OAuth credentials</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="tool_1">Tool</h2>
+<p>Permission of tool</p>
+<h3 id="fields_40">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enabled</td>
+<td>bool</td>
+<td>None</td>
+<td></td>
+<td>False</td>
+</tr>
+</tbody>
+</table>
+<h2 id="pluginresourcerequirements">PluginResourceRequirements</h2>
+<p>Resource requirements of plugin</p>
+<h3 id="fields_41">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>memory</td>
+<td>int</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>permission</td>
+<td>dify_plugin.core.entities.plugin.setup.PluginResourceRequirements.Permission</td>
+<td>None</td>
+<td>Permission of plugin</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="triggersubscriptionconstructor">TriggerSubscriptionConstructor</h2>
+<p>Configuration for a trigger subscription constructor</p>
+<h3 id="fields_42">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>parameters</td>
+<td>list[<a href="#eventparameter">EventParameter</a>]</td>
+<td>The user input parameters required to create a subscription</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>credentials_schema</td>
+<td>list[<a href="#providerconfig">ProviderConfig</a>]</td>
+<td>The credentials schema required by the subscription constructor</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>oauth_schema</td>
+<td>dify_plugin.entities.oauth.OAuthSchema</td>
+<td>None</td>
+<td>The OAuth schema of the subscription constructor if OAuth is supported</td>
+<td>None</td>
+</tr>
+<tr>
+<td>extra</td>
+<td>dify_plugin.entities.trigger.TriggerSubscriptionConstructorConfigurationExtra</td>
+<td>None</td>
+<td>Extra metadata for locating the constructor implementation</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="triggersubscriptionconstructorconfigurationextra">TriggerSubscriptionConstructorConfigurationExtra</h2>
+<p>The subscription constructor configuration of the trigger provider</p>
+<h3 id="fields_43">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>python</td>
+<td><a href="#python">Python</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="modelformoption">ModelFormOption</h2>
+<p>Form option</p>
+<h3 id="fields_44">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>value</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>show_on</td>
+<td>list[<a href="#modelformshowonobject">ModelFormShowOnObject</a>]</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="agentstrategyprovider">AgentStrategyProvider</h2>
+<p>The Manifest of the agent strategy provider</p>
+<h3 id="fields_45">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>identity</td>
+<td><a href="#agentstrategyprovideridentity">AgentStrategyProviderIdentity</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>strategies</td>
+<td>list[str]</td>
+<td>The strategies of the agent provider</td>
+<td>[]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="commonparametertype">CommonParameterType</h2>
+<h3 id="values_14">Values</h3>
+<ul>
+<li><code>SECRET_INPUT</code>: secret-input</li>
+<li><code>TEXT_INPUT</code>: text-input</li>
+<li><code>SELECT</code>: select</li>
+<li><code>STRING</code>: string</li>
+<li><code>NUMBER</code>: number</li>
+<li><code>FILE</code>: file</li>
+<li><code>FILES</code>: files</li>
+<li><code>BOOLEAN</code>: boolean</li>
+<li><code>CHECKBOX</code>: checkbox</li>
+<li><code>APP_SELECTOR</code>: app-selector</li>
+<li><code>MODEL_SELECTOR</code>: model-selector</li>
+<li><code>TOOLS_SELECTOR</code>: array[tools]</li>
+<li><code>ANY</code>: any</li>
+<li><code>OBJECT</code>: object</li>
+<li><code>ARRAY</code>: array</li>
+<li><code>DYNAMIC_SELECT</code>: dynamic-select</li>
+</ul>
+<h2 id="eventconfigurationextra">EventConfigurationExtra</h2>
+<p>The extra configuration for an event</p>
+<h3 id="fields_46">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>python</td>
+<td><a href="#python">Python</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="endpointextra">EndpointExtra</h2>
+<p>The extra of the endpoint</p>
+<h3 id="fields_47">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>python</td>
+<td><a href="#python">Python</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="agentstrategyfeature">AgentStrategyFeature</h2>
+<h3 id="values_15">Values</h3>
+<ul>
+<li><code>HISTORY_MESSAGES</code>: history-messages</li>
+</ul>
+<h2 id="endpointgroup">EndpointGroup</h2>
+<p>The Manifest of the endpoint group</p>
+<h3 id="fields_48">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>settings</td>
+<td>list[<a href="#providerconfig">ProviderConfig</a>]</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>endpoints</td>
+<td>list[str]</td>
+<td>Paths to yaml files that will be loaded as <a href="#endpoint">Endpoint</a></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="triggerprovider">TriggerProvider</h2>
+<p>The configuration of a trigger provider</p>
+<h3 id="fields_49">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>identity</td>
+<td><a href="#triggerprovideridentity">TriggerProviderIdentity</a></td>
+<td>The identity of the trigger provider</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>subscription_schema</td>
+<td>list[<a href="#providerconfig">ProviderConfig</a>]</td>
+<td>The credentials schema of the trigger provider</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>subscription_constructor</td>
+<td>dify_plugin.entities.trigger.TriggerSubscriptionConstructorConfiguration</td>
+<td>None</td>
+<td>The configuration of the trigger subscription constructor</td>
+<td>None</td>
+</tr>
+<tr>
+<td>events</td>
+<td>list[str]</td>
+<td>The Events of the trigger</td>
+<td>[]</td>
+<td></td>
+</tr>
+<tr>
+<td>extra</td>
+<td><a href="#triggerproviderconfigurationextra">TriggerProviderConfigurationExtra</a></td>
+<td>The extra configuration of the trigger provider</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="pluginprovidertype">PluginProviderType</h2>
+<h3 id="values_16">Values</h3>
+<ul>
+<li><code>Tool</code>: tool</li>
+<li><code>Model</code>: model</li>
+<li><code>Endpoint</code>: endpoint</li>
+</ul>
+<h2 id="eventdescription">EventDescription</h2>
+<p>The description of an event</p>
+<h3 id="fields_50">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="parameterrule">ParameterRule</h2>
+<p>The parameter rule of the model</p>
+<h3 id="fields_51">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the parameter</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>use_template</td>
+<td>str</td>
+<td>None</td>
+<td>The template of the parameter</td>
+<td>None</td>
+</tr>
+<tr>
+<td>type</td>
+<td><a href="#parametertype">ParameterType</a></td>
+<td>The type of the parameter</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>help</td>
+<td>dify_plugin.entities.I18nObject</td>
+<td>None</td>
+<td>The help of the parameter</td>
+<td>None</td>
+</tr>
+<tr>
+<td>required</td>
+<td>bool</td>
+<td>Whether the parameter is required</td>
+<td>False</td>
+<td></td>
+</tr>
+<tr>
+<td>default</td>
+<td>typing.Any</td>
+<td>None</td>
+<td>The default value of the parameter</td>
+<td>None</td>
+</tr>
+<tr>
+<td>min</td>
+<td>float</td>
+<td>None</td>
+<td>The minimum value of the parameter</td>
+<td>None</td>
+</tr>
+<tr>
+<td>max</td>
+<td>float</td>
+<td>None</td>
+<td>The maximum value of the parameter</td>
+<td>None</td>
+</tr>
+<tr>
+<td>precision</td>
+<td>int</td>
+<td>None</td>
+<td>The precision of the parameter</td>
+<td>None</td>
+</tr>
+<tr>
+<td>options</td>
+<td>list[str]</td>
+<td>The options of the parameter</td>
+<td>[]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="parametertemplate_1">ParameterTemplate</h2>
+<p>The template of the parameter</p>
+<h3 id="fields_52">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enabled</td>
+<td>bool</td>
+<td>Whether the parameter is jinja enabled</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="toolprovider">ToolProvider</h2>
+<p>The Manifest of the tool provider</p>
+<h3 id="fields_53">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>identity</td>
+<td><a href="#toolprovideridentity">ToolProviderIdentity</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>credentials_schema</td>
+<td>list[<a href="#providerconfig">ProviderConfig</a>]</td>
+<td>The credentials schema of the tool provider</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>oauth_schema</td>
+<td>dify_plugin.entities.oauth.OAuthSchema</td>
+<td>None</td>
+<td>The OAuth schema of the tool provider if OAuth is supported</td>
+<td>None</td>
+</tr>
+<tr>
+<td>tools</td>
+<td>list[str]</td>
+<td>The tools of the tool provider</td>
+<td>[]</td>
+<td></td>
+</tr>
+<tr>
+<td>extra</td>
+<td><a href="#toolproviderextra">ToolProviderExtra</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="meta">Meta</h2>
+<p>Meta information of plugin</p>
+<h3 id="fields_54">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>version</td>
+<td>str</td>
+<td>The version of the manifest specification, designed for backward compatibility,when installing an older plugin to a newer Dify, it's hard to ensure breaking changes never happen, but at least, Dify can detect it by this field, it knows which version of the manifest is supported.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>arch</td>
+<td>list[<a href="#pluginarch">PluginArch</a>]</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>runner</td>
+<td><a href="#pluginrunner">PluginRunner</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>minimum_dify_version</td>
+<td>str</td>
+<td>None</td>
+<td>The minimum version of Dify, designed for forward compatibility.When installing a newer plugin to an older Dify, many new features may not be available,but showing the minimum Dify version helps users understand how to upgrade.</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="i18nobject">I18nObject</h2>
+<p>Common i18n object</p>
+<h3 id="fields_55">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>zh_Hans</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>pt_BR</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>ja_JP</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>en_US</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="toollabelenum">ToolLabelEnum</h2>
+<h3 id="values_17">Values</h3>
+<ul>
+<li><code>SEARCH</code>: search</li>
+<li><code>IMAGE</code>: image</li>
+<li><code>VIDEOS</code>: videos</li>
+<li><code>WEATHER</code>: weather</li>
+<li><code>FINANCE</code>: finance</li>
+<li><code>DESIGN</code>: design</li>
+<li><code>TRAVEL</code>: travel</li>
+<li><code>SOCIAL</code>: social</li>
+<li><code>NEWS</code>: news</li>
+<li><code>MEDICAL</code>: medical</li>
+<li><code>PRODUCTIVITY</code>: productivity</li>
+<li><code>EDUCATION</code>: education</li>
+<li><code>BUSINESS</code>: business</li>
+<li><code>ENTERTAINMENT</code>: entertainment</li>
+<li><code>UTILITIES</code>: utilities</li>
+<li><code>RAG</code>: rag</li>
+<li><code>OTHER</code>: other</li>
+</ul>
+<h2 id="toolproviderextra">ToolProviderExtra</h2>
+<p>The extra of the tool provider</p>
+<h3 id="fields_56">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>python</td>
+<td><a href="#python">Python</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="providermodel">ProviderModel</h2>
+<p>The provider model</p>
+<h3 id="fields_57">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>model</td>
+<td>str</td>
+<td>The model name</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>model_type</td>
+<td><a href="#modeltype">ModelType</a></td>
+<td>The model type</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>features</td>
+<td>list[dify_plugin.entities.model.ModelFeature]</td>
+<td>None</td>
+<td>The features of the model</td>
+<td>None</td>
+</tr>
+<tr>
+<td>fetch_from</td>
+<td><a href="#fetchfrom">FetchFrom</a></td>
+<td>The fetch from</td>
+<td>FetchFrom.PREDEFINED_MODEL</td>
+<td></td>
+</tr>
+<tr>
+<td>model_properties</td>
+<td>dict[<a href="#modelpropertykey">ModelPropertyKey</a>, Any]</td>
+<td>The model properties</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>deprecated</td>
+<td>bool</td>
+<td>Whether the model is deprecated</td>
+<td>False</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="modelfeature">ModelFeature</h2>
+<h3 id="values_18">Values</h3>
+<ul>
+<li><code>TOOL_CALL</code>: tool-call</li>
+<li><code>MULTI_TOOL_CALL</code>: multi-tool-call</li>
+<li><code>AGENT_THOUGHT</code>: agent-thought</li>
+<li><code>VISION</code>: vision</li>
+<li><code>STREAM_TOOL_CALL</code>: stream-tool-call</li>
+<li><code>DOCUMENT</code>: document</li>
+<li><code>VIDEO</code>: video</li>
+<li><code>AUDIO</code>: audio</li>
+<li><code>STRUCTURED_OUTPUT</code>: structured-output</li>
+</ul>
+<h2 id="modelfieldmodelschema">ModelFieldModelSchema</h2>
+<p>Field model schema</p>
+<h3 id="fields_58">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>placeholder</td>
+<td>dify_plugin.entities.I18nObject</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="node">Node</h2>
+<p>Permission of node</p>
+<h3 id="fields_59">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enabled</td>
+<td>bool</td>
+<td>None</td>
+<td>Whether to enable invocation of node</td>
+<td>False</td>
+</tr>
+</tbody>
+</table>
+<h2 id="parameterautogenerate_1">ParameterAutoGenerate</h2>
+<p>The auto generate of the parameter</p>
+<h3 id="fields_60">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td><a href="#type">Type</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="toolparameter">ToolParameter</h2>
+<p>The type of the parameter</p>
+<h3 id="fields_61">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the parameter</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>type</td>
+<td><a href="#toolparametertype">ToolParameterType</a></td>
+<td>The type of the parameter</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>auto_generate</td>
+<td>dify_plugin.entities.tool.ParameterAutoGenerate</td>
+<td>None</td>
+<td>The auto generate of the parameter</td>
+<td>None</td>
+</tr>
+<tr>
+<td>template</td>
+<td>dify_plugin.entities.tool.ParameterTemplate</td>
+<td>None</td>
+<td>The template of the parameter</td>
+<td>None</td>
+</tr>
+<tr>
+<td>scope</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>form</td>
+<td><a href="#toolparameterform">ToolParameterForm</a></td>
+<td>The form of the parameter, schema/form/llm</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>llm_description</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>required</td>
+<td>bool</td>
+<td>None</td>
+<td></td>
+<td>False</td>
+</tr>
+<tr>
+<td>default</td>
+<td>Union[int, float, str, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>min</td>
+<td>Union[float, int, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>max</td>
+<td>Union[float, int, NoneType]</td>
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>int</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>options</td>
+<td>list[dify_plugin.entities.tool.ToolParameterOption]</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>input_schema</td>
+<td>collections.abc.Mapping[str, typing.Any]</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="unsubscriberesult">UnsubscribeResult</h2>
+<p>Result of a trigger unsubscription operation</p>
+<h3 id="fields_62">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>success</td>
+<td>bool</td>
+<td>Whether the unsubscribe was successful</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>message</td>
+<td>str</td>
+<td>None</td>
+<td>Human-readable message about the operation result. Success message for successful operations, detailed error information for failures.</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="priceconfig">PriceConfig</h2>
+<p>The price config</p>
+<h3 id="fields_63">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>input</td>
+<td>Decimal</td>
+<td>Input price</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>output</td>
+<td>decimal.Decimal</td>
+<td>None</td>
+<td>Output price</td>
+<td>None</td>
+</tr>
+<tr>
+<td>unit</td>
+<td>Decimal</td>
+<td>Unit, e.g. 0.0001 -&gt; per 10000 tokens</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>currency</td>
+<td>str</td>
+<td>Currency, e.g. USD</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="modelcredentialformschema">ModelCredentialFormSchema</h2>
+<p>Credential form schema</p>
+<h3 id="fields_64">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>variable</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>type</td>
+<td><a href="#modelformtype">ModelFormType</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>required</td>
+<td>bool</td>
+<td></td>
+<td>True</td>
+<td></td>
+</tr>
+<tr>
+<td>default</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>options</td>
+<td>list[dify_plugin.entities.model.provider.FormOption]</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>placeholder</td>
+<td>dify_plugin.entities.I18nObject</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>max_length</td>
+<td>int</td>
+<td></td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>show_on</td>
+<td>list[<a href="#modelformshowonobject">ModelFormShowOnObject</a>]</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="modelformshowonobject">ModelFormShowOnObject</h2>
+<p>Form show on</p>
+<h3 id="fields_65">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>variable</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>value</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="modelproviderextra">ModelProviderExtra</h2>
+<p>Model provider configuration extra</p>
+<h3 id="fields_66">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>python</td>
+<td><a href="#python">Python</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="eventparameteroption">EventParameterOption</h2>
+<p>The option of the event parameter</p>
+<h3 id="fields_67">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>value</td>
+<td>str</td>
+<td>The value of the option</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>icon</td>
+<td>str</td>
+<td>None</td>
+<td>The icon of the option, can be a URL or a base64 encoded string</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="python_3">Python</h2>
+<p>The extra of the agent strategy</p>
+<h3 id="fields_68">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>source</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="triggerprovideridentity">TriggerProviderIdentity</h2>
+<p>The identity of the trigger provider</p>
+<h3 id="fields_69">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>author</td>
+<td>str</td>
+<td>The author of the trigger provider</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the trigger provider</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>icon</td>
+<td>str</td>
+<td>None</td>
+<td>The icon of the trigger provider</td>
+<td>None</td>
+</tr>
+<tr>
+<td>icon_dark</td>
+<td>str</td>
+<td>None</td>
+<td>The dark mode icon of the trigger provider</td>
+<td>None</td>
+</tr>
+<tr>
+<td>tags</td>
+<td>list[<a href="#eventlabelenum">EventLabelEnum</a>]</td>
+<td>The tags of the trigger provider</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="endpoint_1">Endpoint</h2>
+<p>Permission of endpoint</p>
+<h3 id="fields_70">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enabled</td>
+<td>bool</td>
+<td>None</td>
+<td>Whether to enable registration of endpoint</td>
+<td>False</td>
+</tr>
+</tbody>
+</table>
+<h2 id="datasource">Datasource</h2>
+<p>Datasource entity</p>
+<h3 id="fields_71">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>identity</td>
+<td><a href="#datasourceidentity">DatasourceIdentity</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>parameters</td>
+<td>list[<a href="#datasourceparameter">DatasourceParameter</a>]</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>output_schema</td>
+<td>dict[str, Any]</td>
+<td>Output schema definition</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>extra</td>
+<td><a href="#datasourceentityextra">DatasourceEntityExtra</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="parameteroption">ParameterOption</h2>
+<p>The option of the parameter</p>
+<h3 id="fields_72">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>value</td>
+<td>str</td>
+<td>The value of the option</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>icon</td>
+<td>str</td>
+<td>None</td>
+<td>The icon of the option, can be a URL or a base64 encoded string</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="modelprovider">ModelProvider</h2>
+<p>Model provider configuration</p>
+<h3 id="fields_73">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>provider</td>
+<td>str</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>description</td>
+<td>dify_plugin.entities.I18nObject</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>icon_small</td>
+<td>dify_plugin.entities.I18nObject</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>icon_large</td>
+<td>dify_plugin.entities.I18nObject</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>background</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>help</td>
+<td>dify_plugin.entities.model.provider.ProviderHelpEntity</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>supported_model_types</td>
+<td>collections.abc.Sequence[dify_plugin.entities.model.ModelType]</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>configurate_methods</td>
+<td>list[<a href="#modelconfiguratemethod">ModelConfigurateMethod</a>]</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>models</td>
+<td>list[str]</td>
+<td>Paths to yaml files that will be loaded as <a href="#aimodelentity">AIModelEntity</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>provider_credential_schema</td>
+<td>dify_plugin.entities.model.provider.ProviderCredentialSchema</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>model_credential_schema</td>
+<td>dify_plugin.entities.model.provider.ModelCredentialSchema</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>position</td>
+<td>dify_plugin.entities.model.provider.ModelPosition</td>
+<td>None</td>
+<td></td>
+<td>None</td>
+</tr>
+<tr>
+<td>extra</td>
+<td><a href="#modelproviderextra">ModelProviderExtra</a></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="modelposition">ModelPosition</h2>
+<p>Model position</p>
+<h3 id="fields_74">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>llm</td>
+<td>list[str]</td>
+<td>None</td>
+<td>Sorts of llm model in ascending order, fill model name here</td>
+<td></td>
+</tr>
+<tr>
+<td>text_embedding</td>
+<td>list[str]</td>
+<td>None</td>
+<td>Sorts of text embedding model in ascending order, fill model name here</td>
+<td></td>
+</tr>
+<tr>
+<td>rerank</td>
+<td>list[str]</td>
+<td>None</td>
+<td>Sorts of rerank model in ascending order, fill model name here</td>
+<td></td>
+</tr>
+<tr>
+<td>tts</td>
+<td>list[str]</td>
+<td>None</td>
+<td>Sorts of tts model in ascending order, fill model name here</td>
+<td></td>
+</tr>
+<tr>
+<td>speech2text</td>
+<td>list[str]</td>
+<td>None</td>
+<td>Sorts of speech2text model in ascending order, fill model name here</td>
+<td></td>
+</tr>
+<tr>
+<td>moderation</td>
+<td>list[str]</td>
+<td>None</td>
+<td>Sorts of moderation model in ascending order, fill model name here</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="defaultparametername">DefaultParameterName</h2>
+<h3 id="values_19">Values</h3>
+<ul>
+<li><code>TEMPERATURE</code>: temperature</li>
+<li><code>TOP_P</code>: top_p</li>
+<li><code>TOP_K</code>: top_k</li>
+<li><code>PRESENCE_PENALTY</code>: presence_penalty</li>
+<li><code>FREQUENCY_PENALTY</code>: frequency_penalty</li>
+<li><code>MAX_TOKENS</code>: max_tokens</li>
+<li><code>RESPONSE_FORMAT</code>: response_format</li>
+<li><code>JSON_SCHEMA</code>: json_schema</li>
+</ul>
+<h2 id="agentstrategyidentity">AgentStrategyIdentity</h2>
+<p>The identity of the agent strategy</p>
+<h3 id="fields_75">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>author</td>
+<td>str</td>
+<td>The author of the tool</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>The name of the tool</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="python_4">Python</h2>
+<p>The python configuration for trigger provider</p>
+<h3 id="fields_76">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>source</td>
+<td>str</td>
+<td>The source file path for the trigger provider implementation</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="configoption">ConfigOption</h2>
+<p>The option of the credentials</p>
+<h3 id="fields_77">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>value</td>
+<td>str</td>
+<td>The value of the option</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="model">Model</h2>
+<p>Permission of model</p>
+<h3 id="fields_78">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enabled</td>
+<td>bool</td>
+<td>None</td>
+<td>Whether to enable invocation of model</td>
+<td>False</td>
+</tr>
+<tr>
+<td>llm</td>
+<td>bool</td>
+<td>None</td>
+<td>Whether to enable invocation of llm</td>
+<td>False</td>
+</tr>
+<tr>
+<td>text_embedding</td>
+<td>bool</td>
+<td>None</td>
+<td>Whether to enable invocation of text embedding</td>
+<td>False</td>
+</tr>
+<tr>
+<td>rerank</td>
+<td>bool</td>
+<td>None</td>
+<td>Whether to enable invocation of rerank</td>
+<td>False</td>
+</tr>
+<tr>
+<td>tts</td>
+<td>bool</td>
+<td>None</td>
+<td>Whether to enable invocation of tts</td>
+<td>False</td>
+</tr>
+<tr>
+<td>speech2text</td>
+<td>bool</td>
+<td>None</td>
+<td>Whether to enable invocation of speech2text</td>
+<td>False</td>
+</tr>
+<tr>
+<td>moderation</td>
+<td>bool</td>
+<td>None</td>
+<td>Whether to enable invocation of moderation</td>
+<td>False</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/langgenius/dify-plugin-sdks" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.1e8ae164.min.js"></script>
+      
+    
+  </body>
+</html>
