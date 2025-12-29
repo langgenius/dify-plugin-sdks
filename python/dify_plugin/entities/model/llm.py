@@ -76,6 +76,7 @@ class LLMResultChunkDelta(BaseModel):
 
     index: int
     message: AssistantPromptMessage
+    reasoning_content: str | None = None
     usage: LLMUsage | None = None
     finish_reason: str | None = None
 
