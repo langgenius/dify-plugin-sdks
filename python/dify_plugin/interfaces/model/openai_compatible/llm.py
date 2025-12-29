@@ -40,6 +40,7 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
+    VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
@@ -743,6 +744,15 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                             "image_url": {
                                 "url": message_content.data,
                                 "detail": message_content.detail.value,
+                            },
+                        }
+                        sub_messages.append(sub_message_dict)
+                    elif message_content.type == PromptMessageContentType.VIDEO:
+                        message_content = cast(VideoPromptMessageContent, message_content)
+                        sub_message_dict = {
+                            "type": "video_url",
+                            "video_url": {
+                                "url": message_content.data,
                             },
                         }
                         sub_messages.append(sub_message_dict)
