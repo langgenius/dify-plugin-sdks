@@ -78,6 +78,9 @@ class OAICompatRerankModel(RerankModel):
             scores = [result["relevance_score"] for result in results["results"]]
 
             # Min-Max Normalization: Normalize scores to 0 ~ 1.0 range
+            if len(scores) == 1:
+                scores.append(0)
+                
             min_score = min(scores)
             max_score = max(scores)
             score_range = max_score - min_score if max_score != min_score else 1.0  # Avoid division by zero
