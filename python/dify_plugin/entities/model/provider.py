@@ -189,6 +189,8 @@ class ProviderEntity(BaseModel):
     description: I18nObject | None = None
     icon_small: I18nObject | None = None
     icon_large: I18nObject | None = None
+    icon_small_dark: I18nObject | None = None
+    icon_large_dark: I18nObject | None = None
     background: str | None = None
     help: ProviderHelpEntity | None = None
     supported_model_types: Sequence[ModelType]
@@ -212,6 +214,8 @@ class ProviderEntity(BaseModel):
             label=self.label,
             icon_small=self.icon_small,
             icon_large=self.icon_large,
+            icon_small_dark=self.icon_small_dark,
+            icon_large_dark=self.icon_large_dark,
             supported_model_types=self.supported_model_types,
             models=self.models,
         )
