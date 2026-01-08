@@ -62,12 +62,16 @@ class TestWrapThinking(unittest.TestCase):
         chunks = [
             # Chunk 1: Thinking started
             {"reasoning_content": "Thinking started.", "content": ""},
-            # Chunk 2: Still thinking
-            {"reasoning_content": " Still thinking.", "content": ""},
-            # Chunk 3: Thinking ended, transitioned to Tool Call (reasoning_content=None, content=None/Empty)
+            # Chunk 2: Still thinking #1
+            {"reasoning_content": " Still thinking #1.", "content": ""},
+            # Chunk 3: Still thinking (reasoning_content=Empty)
+            {"reasoning_content": "", "content": ""},
+            # Chunk 4: Still thinking #2
+            {"reasoning_content": " Still thinking #2.", "content": ""},
+            # Chunk 5: Thinking ended, transitioned to Tool Call (reasoning_content=None, content=None/Empty)
             # This is a critical point, old logic would fail here because content is empty
             {"reasoning_content": None, "content": "", "tool_calls": [{"id": "call_1", "function": {}}]},
-            # Chunk 4: Subsequent tool parameter stream
+            # Chunk 6: Subsequent tool parameter stream
             {"reasoning_content": None, "content": "", "tool_calls": [{"function": {"arguments": "{"}}]},
         ]
 
@@ -86,13 +90,8 @@ class TestWrapThinking(unittest.TestCase):
         # Verify results
         print(f"DEBUG Output: {full_output!r}")
 
-        assert "<think>" in full_output
-        assert "Thinking started. Still thinking." in full_output
-        assert "</think>" in full_output, "Should verify <think> tag is closed properly"
-
-        # Verify the position of the closing tag: should be after the thinking content
-        expected_part = "Thinking started. Still thinking.\n</think>"
-        assert expected_part in full_output
+        expected_output = "<think>\nThinking started. Still thinking #1. Still thinking #2.\n</think>"
+        self.assertEqual(full_output, expected_output)
 
     def test_standard_reasoning_flow(self):
         """Test standard reasoning -> text flow"""
