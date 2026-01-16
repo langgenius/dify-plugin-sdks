@@ -29,6 +29,10 @@ from dify_plugin.config.config import DifyPluginEnv
 # Store original method before patching - use getattr to avoid reload issues
 _original_client_init = getattr(httpx.Client.__init__, "__wrapped__", httpx.Client.__init__)
 
+# Instantiate DifyPluginEnv at module level to avoid repeated instantiation
+# These environment-based settings are not expected to change during runtime
+dify_plugin_env = DifyPluginEnv()
+
 
 def _decode_base64_cert(data: str | None) -> bytes | None:
     """
@@ -117,8 +121,7 @@ def _patched_client_init(self, *args: Any, **kwargs: Any) -> None:
     - httpx.get(), httpx.post(), etc. - these internally create Client instances
     """
     if "verify" not in kwargs:
-        config = DifyPluginEnv()
-        kwargs["verify"] = _create_ssl_context(config)
+        kwargs["verify"] = _create_ssl_context(dify_plugin_env)
     return _original_client_init(self, *args, **kwargs)
 
 
