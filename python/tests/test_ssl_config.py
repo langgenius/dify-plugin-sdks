@@ -41,6 +41,21 @@ def test_decode_invalid_base64_raises_error():
         _decode_base64_cert("invalid!@#$%")
 
 
+def test_decode_ca_cert_invalid_utf8_raises_error():
+    """Test that invalid UTF-8 encoded CA certificate data raises ValueError."""
+    # Create binary data that is not valid UTF-8
+    invalid_utf8_data = b"\xff\xfe\xfd"
+    encoded = base64.b64encode(invalid_utf8_data).decode("utf-8")
+
+    config = DifyPluginEnv(
+        HTTP_REQUEST_NODE_SSL_VERIFY=True,
+        HTTP_REQUEST_NODE_SSL_CERT_DATA=encoded,
+    )
+
+    with pytest.raises(ValueError, match="Failed to decode CA certificate data as UTF-8"):
+        _create_ssl_context(config)
+
+
 def test_ssl_context_verify_disabled():
     """Test that SSL verification disabled returns False."""
     config = DifyPluginEnv(HTTP_REQUEST_NODE_SSL_VERIFY=False)

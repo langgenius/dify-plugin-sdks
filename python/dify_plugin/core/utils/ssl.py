@@ -77,7 +77,14 @@ def _create_ssl_context(config: DifyPluginEnv) -> ssl.SSLContext | bool:
     # Load custom CA certificate if provided
     if ca_cert_data:
         # Load CA cert data directly from memory to avoid writing to a temporary file.
-        ssl_context.load_verify_locations(cadata=ca_cert_data.decode("utf-8"))
+        try:
+            ca_cert_str = ca_cert_data.decode("utf-8")
+        except UnicodeDecodeError as e:
+            raise ValueError(
+                f"Failed to decode CA certificate data as UTF-8. "
+                f"Ensure HTTP_REQUEST_NODE_SSL_CERT_DATA contains valid PEM-encoded certificate: {e}"
+            ) from e
+        ssl_context.load_verify_locations(cadata=ca_cert_str)
 
     # Load client certificate and key for mutual TLS if provided
     if client_cert_data and client_key_data:
@@ -91,15 +98,11 @@ def _create_ssl_context(config: DifyPluginEnv) -> ssl.SSLContext | bool:
             # Set restrictive permissions immediately (owner read/write only)
             # This minimizes the risk window while the files exist
             # Only set permissions on POSIX systems (Unix-like), as chmod doesn't work the same way on Windows
-            if os.name == "posix":
-                os.chmod(cert_file.name, 0o600)
-            cert_file.write(client_cert_data)
-            cert_file.flush()  # Ensure data is written to disk
-
-            if os.name == "posix":
-                os.chmod(key_file.name, 0o600)
-            key_file.write(client_key_data)
-            key_file.flush()  # Ensure data is written to disk
+            for file, data in [(cert_file, client_cert_data), (key_file, client_key_data)]:
+                if os.name == "posix":
+                    os.chmod(file.name, 0o600)
+                file.write(data)
+                file.flush()  # Ensure data is written to disk
 
             # Load the certificate chain while files still exist
             # load_cert_chain() reads the contents into memory
