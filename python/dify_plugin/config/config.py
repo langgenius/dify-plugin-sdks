@@ -40,6 +40,20 @@ class DifyPluginEnv(BaseSettings):
 
     DIFY_PLUGIN_DAEMON_URL: str = Field(default="http://localhost:5002", description="backwards invocation address")
 
+    # HTTP Request SSL Configuration
+    HTTP_REQUEST_NODE_SSL_VERIFY: bool = Field(
+        default=True, description="Enable SSL certificate verification for HTTP requests"
+    )
+    HTTP_REQUEST_NODE_SSL_CERT_DATA: str | None = Field(
+        default=None, description="Base64 encoded CA certificate data for custom certificate verification (PEM format)"
+    )
+    HTTP_REQUEST_NODE_SSL_CLIENT_CERT_DATA: str | None = Field(
+        default=None, description="Base64 encoded client certificate data for mutual TLS authentication (PEM format)"
+    )
+    HTTP_REQUEST_NODE_SSL_CLIENT_KEY_DATA: str | None = Field(
+        default=None, description="Base64 encoded client private key data for mutual TLS authentication (PEM format)"
+    )
+
     model_config = SettingsConfigDict(
         # read from dotenv format config file
         env_file=".env",
