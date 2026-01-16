@@ -71,15 +71,8 @@ def _create_ssl_context(config: DifyPluginEnv) -> ssl.SSLContext | bool:
     if has_ca_cert:
         ca_cert_data = _decode_base64_cert(config.HTTP_REQUEST_NODE_SSL_CERT_DATA)
         if ca_cert_data:
-            # Write CA cert to temporary file and load it
-            with tempfile.NamedTemporaryFile(mode="wb", suffix=".pem", delete=False) as ca_file:
-                ca_file.write(ca_cert_data)
-                ca_cert_path = ca_file.name
-            try:
-                ssl_context.load_verify_locations(cafile=ca_cert_path)
-            finally:
-                # Clean up temporary file
-                Path(ca_cert_path).unlink(missing_ok=True)
+            # Load CA cert data directly from memory to avoid writing to a temporary file.
+            ssl_context.load_verify_locations(cadata=ca_cert_data.decode("utf-8"))
 
     # Load client certificate and key for mutual TLS if provided
     if has_client_cert and has_client_key:
