@@ -3,6 +3,8 @@
 import base64
 import os
 import ssl
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 import httpx
@@ -220,3 +222,158 @@ def test_multiple_certs_workflow():
 
     # 5. Verify all certificates are present
     assert decoded.count(b"-----BEGIN CERTIFICATE-----") == 3
+
+
+# Security tests for temporary file handling
+def test_temp_files_have_restrictive_permissions():
+    """Test that temporary files are created with 0o600 permissions."""
+    # Create mock certificate and key data
+    cert_data = b"-----BEGIN CERTIFICATE-----\nFakeCertData\n-----END CERTIFICATE-----"
+    key_data = b"-----BEGIN PRIVATE KEY-----\nFakeKeyData\n-----END PRIVATE KEY-----"
+
+    encoded_cert = base64.b64encode(cert_data).decode("utf-8")
+    encoded_key = base64.b64encode(key_data).decode("utf-8")
+
+    config = DifyPluginEnv(
+        HTTP_REQUEST_NODE_SSL_VERIFY=True,
+        HTTP_REQUEST_NODE_SSL_CLIENT_CERT_DATA=encoded_cert,
+        HTTP_REQUEST_NODE_SSL_CLIENT_KEY_DATA=encoded_key,
+    )
+
+    # Track file permissions during creation
+    original_chmod = os.chmod
+    permissions_set = []
+
+    def mock_chmod(path, mode):
+        permissions_set.append((path, mode))
+        return original_chmod(path, mode)
+
+    with patch("dify_plugin.core.utils.ssl.os.chmod", side_effect=mock_chmod):
+        try:
+            _create_ssl_context(config)
+        except ssl.SSLError:
+            # Expected with fake certificate data
+            pass
+
+    # Verify that chmod was called with 0o600 for both files
+    assert len(permissions_set) >= 2
+    for path, mode in permissions_set:
+        assert mode == 0o600, f"Expected 0o600 but got {oct(mode)} for {path}"
+
+
+def test_temp_files_are_auto_deleted():
+    """Test that temporary files are automatically deleted after use."""
+    # Create mock certificate and key data
+    cert_data = b"-----BEGIN CERTIFICATE-----\nFakeCertData\n-----END CERTIFICATE-----"
+    key_data = b"-----BEGIN PRIVATE KEY-----\nFakeKeyData\n-----END PRIVATE KEY-----"
+
+    encoded_cert = base64.b64encode(cert_data).decode("utf-8")
+    encoded_key = base64.b64encode(key_data).decode("utf-8")
+
+    config = DifyPluginEnv(
+        HTTP_REQUEST_NODE_SSL_VERIFY=True,
+        HTTP_REQUEST_NODE_SSL_CLIENT_CERT_DATA=encoded_cert,
+        HTTP_REQUEST_NODE_SSL_CLIENT_KEY_DATA=encoded_key,
+    )
+
+    # Track created temporary files
+    created_files = []
+    original_namedtemporaryfile = tempfile.NamedTemporaryFile
+
+    def mock_namedtemporaryfile(*args, **kwargs):
+        temp_file = original_namedtemporaryfile(*args, **kwargs)
+        created_files.append(temp_file.name)
+        return temp_file
+
+    with patch("dify_plugin.core.utils.ssl.tempfile.NamedTemporaryFile", side_effect=mock_namedtemporaryfile):
+        try:
+            _create_ssl_context(config)
+        except ssl.SSLError:
+            # Expected with fake certificate data
+            pass
+
+    # Verify all temporary files were deleted
+    for file_path in created_files:
+        assert not Path(file_path).exists(), f"Temporary file {file_path} was not deleted"
+
+
+def test_temp_files_deleted_on_exception():
+    """Test that temporary files are deleted even when an exception occurs."""
+    # Create mock certificate and key data that will cause load_cert_chain to fail
+    cert_data = b"invalid cert data"
+    key_data = b"invalid key data"
+
+    encoded_cert = base64.b64encode(cert_data).decode("utf-8")
+    encoded_key = base64.b64encode(key_data).decode("utf-8")
+
+    config = DifyPluginEnv(
+        HTTP_REQUEST_NODE_SSL_VERIFY=True,
+        HTTP_REQUEST_NODE_SSL_CLIENT_CERT_DATA=encoded_cert,
+        HTTP_REQUEST_NODE_SSL_CLIENT_KEY_DATA=encoded_key,
+    )
+
+    # Track created temporary files
+    created_files = []
+    original_namedtemporaryfile = tempfile.NamedTemporaryFile
+
+    def mock_namedtemporaryfile(*args, **kwargs):
+        temp_file = original_namedtemporaryfile(*args, **kwargs)
+        created_files.append(temp_file.name)
+        return temp_file
+
+    with patch("dify_plugin.core.utils.ssl.tempfile.NamedTemporaryFile", side_effect=mock_namedtemporaryfile):
+        try:
+            _create_ssl_context(config)
+        except (ssl.SSLError, OSError):
+            # Expected with invalid certificate data
+            pass
+
+    # Verify all temporary files were deleted even though an exception occurred
+    for file_path in created_files:
+        assert not Path(file_path).exists(), f"Temporary file {file_path} was not deleted after exception"
+
+
+def test_temp_files_content_written_correctly():
+    """Test that certificate and key content is correctly written to temporary files."""
+    # Create specific test data
+    cert_data = b"-----BEGIN CERTIFICATE-----\nTestCertContent123\n-----END CERTIFICATE-----"
+    key_data = b"-----BEGIN PRIVATE KEY-----\nTestKeyContent456\n-----END PRIVATE KEY-----"
+
+    encoded_cert = base64.b64encode(cert_data).decode("utf-8")
+    encoded_key = base64.b64encode(key_data).decode("utf-8")
+
+    config = DifyPluginEnv(
+        HTTP_REQUEST_NODE_SSL_VERIFY=True,
+        HTTP_REQUEST_NODE_SSL_CLIENT_CERT_DATA=encoded_cert,
+        HTTP_REQUEST_NODE_SSL_CLIENT_KEY_DATA=encoded_key,
+    )
+
+    # Track file contents
+    file_contents = {}
+    original_namedtemporaryfile = tempfile.NamedTemporaryFile
+
+    def mock_namedtemporaryfile(*args, **kwargs):
+        temp_file = original_namedtemporaryfile(*args, **kwargs)
+        original_write = temp_file.write
+
+        def tracking_write(data):
+            file_contents[temp_file.name] = data
+            return original_write(data)
+
+        temp_file.write = tracking_write
+        return temp_file
+
+    with patch("dify_plugin.core.utils.ssl.tempfile.NamedTemporaryFile", side_effect=mock_namedtemporaryfile):
+        try:
+            _create_ssl_context(config)
+        except ssl.SSLError:
+            # Expected with fake certificate data
+            pass
+
+    # Verify that both cert and key data were written
+    assert len(file_contents) == 2, "Expected 2 files (cert and key) to be created"
+
+    # Verify the written content
+    written_data = list(file_contents.values())
+    assert cert_data in written_data, "Certificate data was not written correctly"
+    assert key_data in written_data, "Key data was not written correctly"

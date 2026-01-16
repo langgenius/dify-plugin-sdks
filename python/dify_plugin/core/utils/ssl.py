@@ -16,10 +16,10 @@ No code changes are needed in places that use httpx.
 
 import base64
 import binascii
+import os
 import ssl
 import tempfile
 from functools import wraps
-from pathlib import Path
 from typing import Any
 
 import httpx
@@ -81,22 +81,28 @@ def _create_ssl_context(config: DifyPluginEnv) -> ssl.SSLContext | bool:
         client_key_data = _decode_base64_cert(config.HTTP_REQUEST_NODE_SSL_CLIENT_KEY_DATA)
 
         if client_cert_data and client_key_data:
-            # Write client cert and key to temporary files
+            # Write client cert and key to temporary files with secure permissions
+            # Security: Use delete=True (default) so files are automatically deleted when the with block exits
+            # ssl.SSLContext.load_cert_chain() reads the file contents into memory, so the files can be deleted immediately after
             with (
-                tempfile.NamedTemporaryFile(mode="wb", suffix=".pem", delete=False) as cert_file,
-                tempfile.NamedTemporaryFile(mode="wb", suffix=".pem", delete=False) as key_file,
+                tempfile.NamedTemporaryFile(mode="wb", suffix=".pem", delete=True) as cert_file,
+                tempfile.NamedTemporaryFile(mode="wb", suffix=".pem", delete=True) as key_file,
             ):
+                # Set restrictive permissions immediately (owner read/write only)
+                # This minimizes the risk window while the files exist
+                os.chmod(cert_file.name, 0o600)
                 cert_file.write(client_cert_data)
-                key_file.write(client_key_data)
-                cert_path = cert_file.name
-                key_path = key_file.name
+                cert_file.flush()  # Ensure data is written to disk
 
-            try:
-                ssl_context.load_cert_chain(certfile=cert_path, keyfile=key_path)
-            finally:
-                # Clean up temporary files
-                Path(cert_path).unlink(missing_ok=True)
-                Path(key_path).unlink(missing_ok=True)
+                os.chmod(key_file.name, 0o600)
+                key_file.write(client_key_data)
+                key_file.flush()  # Ensure data is written to disk
+
+                # Load the certificate chain while files still exist
+                # load_cert_chain() reads the contents into memory
+                ssl_context.load_cert_chain(certfile=cert_file.name, keyfile=key_file.name)
+
+                # Files are automatically deleted when exiting this with block
 
     return ssl_context
 
@@ -118,7 +124,7 @@ def _patched_client_init(self, *args: Any, **kwargs: Any) -> None:
 
 # Apply monkey patch to httpx.Client.__init__
 # This single patch is sufficient because:
-# - httpx.get/post/put/delete/patch/head/options all call httpx.request()
+# - httpx.get/post/put/delete/patch/all call httpx.request()
 # - httpx.request() creates a Client instance internally with the verify parameter
 # - So patching Client.__init__ catches all cases
 httpx.Client.__init__ = _patched_client_init
