@@ -15,6 +15,7 @@ No code changes are needed in places that use httpx.
 """
 
 import base64
+import binascii
 import ssl
 import tempfile
 from functools import wraps
@@ -40,7 +41,7 @@ def _decode_base64_cert(data: str | None) -> bytes | None:
         return None
     try:
         return base64.b64decode(data)
-    except Exception as e:
+    except binascii.Error as e:
         raise ValueError(f"Failed to decode base64 certificate data: {e}") from e
 
 
