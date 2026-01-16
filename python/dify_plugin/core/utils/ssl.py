@@ -1,14 +1,15 @@
 """
 HTTPX client utility with SSL configuration support.
 
-This module patches httpx.Client.__init__ to automatically apply SSL configuration
-from environment variables. It supports:
+This module patches httpx.Client.__init__ and httpx.AsyncClient.__init__ to automatically
+apply SSL configuration from environment variables. It supports:
 - SSL verification control
 - Custom CA certificates
 - Mutual TLS (mTLS) with client certificates and keys
 
-The patching is done via monkey patching httpx.Client.__init__, which covers all use cases:
-- Direct Client instantiation: httpx.Client()
+The patching is done via monkey patching both Client and AsyncClient __init__ methods,
+which covers all use cases:
+- Direct Client/AsyncClient instantiation: httpx.Client(), httpx.AsyncClient()
 - Convenience methods: httpx.get(), httpx.post(), etc. (they internally use Client)
 
 No code changes are needed in places that use httpx.
@@ -26,8 +27,9 @@ import httpx
 
 from dify_plugin.config.config import DifyPluginEnv
 
-# Store original method before patching - use getattr to avoid reload issues
+# Store original methods before patching - use getattr to avoid reload issues
 _original_client_init = getattr(httpx.Client.__init__, "__wrapped__", httpx.Client.__init__)
+_original_async_client_init = getattr(httpx.AsyncClient.__init__, "__wrapped__", httpx.AsyncClient.__init__)
 
 # Instantiate DifyPluginEnv at module level to avoid repeated instantiation
 # These environment-based settings are not expected to change during runtime
@@ -116,7 +118,7 @@ def _patched_client_init(self, *args: Any, **kwargs: Any) -> None:
     """
     Patched httpx.Client.__init__ that injects SSL configuration.
 
-    This single patch covers all httpx usage patterns:
+    This patch covers synchronous httpx usage patterns:
     - httpx.Client() - direct instantiation
     - httpx.get(), httpx.post(), etc. - these internally create Client instances
     """
@@ -125,9 +127,25 @@ def _patched_client_init(self, *args: Any, **kwargs: Any) -> None:
     return _original_client_init(self, *args, **kwargs)
 
 
-# Apply monkey patch to httpx.Client.__init__
-# This single patch is sufficient because:
-# - httpx.get/post/put/delete/patch/all call httpx.request()
-# - httpx.request() creates a Client instance internally with the verify parameter
-# - So patching Client.__init__ catches all cases
+@wraps(_original_async_client_init)
+def _patched_async_client_init(self, *args: Any, **kwargs: Any) -> None:
+    """
+    Patched httpx.AsyncClient.__init__ that injects SSL configuration.
+
+    This patch covers asynchronous httpx usage patterns:
+    - httpx.AsyncClient() - direct instantiation
+    - Ensures async HTTP requests also use configured SSL settings
+    """
+    if "verify" not in kwargs:
+        kwargs["verify"] = _create_ssl_context(dify_plugin_env)
+    return _original_async_client_init(self, *args, **kwargs)
+
+
+# Apply monkey patches to both Client and AsyncClient
+# Both patches are necessary because:
+# - httpx.Client handles synchronous requests (httpx.get(), httpx.post(), etc.)
+# - httpx.AsyncClient handles asynchronous requests (used in async/await contexts)
+# - This project uses gevent, so AsyncClient may be used for async operations
+# - Without patching both, async requests would bypass SSL configuration
 httpx.Client.__init__ = _patched_client_init
+httpx.AsyncClient.__init__ = _patched_async_client_init

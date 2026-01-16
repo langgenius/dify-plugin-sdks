@@ -87,6 +87,16 @@ def test_httpx_client_with_default_config():
     client.close()
 
 
+def test_httpx_async_client_with_default_config():
+    """Test that httpx.AsyncClient works with default SSL configuration."""
+    client = httpx.AsyncClient()
+    assert client is not None
+    assert hasattr(client, "_transport")
+    assert client._transport is not None
+    # AsyncClient needs to be closed asynchronously, but for this test we just verify instantiation
+    # In real async context, you'd use: await client.aclose()
+
+
 def test_httpx_client_with_explicit_verify_params():
     """Test that explicit verify parameters work correctly."""
     # Test with explicit verify=True
@@ -100,41 +110,104 @@ def test_httpx_client_with_explicit_verify_params():
     client.close()
 
 
+def test_httpx_async_client_with_explicit_verify_params():
+    """Test that explicit verify parameters work correctly for AsyncClient."""
+    # Test with explicit verify=True
+    client = httpx.AsyncClient(verify=True)
+    assert client is not None
+
+    # Test with explicit verify=False
+    client = httpx.AsyncClient(verify=False)
+    assert client is not None
+
+
 def test_ssl_patch_applies_config_from_env():
     """Test that SSL patch actually applies configuration from environment."""
-    # Test verify=False from environment
-    with patch.dict(os.environ, {"HTTP_REQUEST_NODE_SSL_VERIFY": "false"}):
-        with patch("dify_plugin.core.utils.ssl.DifyPluginEnv") as mock_env:
-            mock_config = DifyPluginEnv(HTTP_REQUEST_NODE_SSL_VERIFY=False)
-            mock_env.return_value = mock_config
+    from dify_plugin.core.utils.ssl import _original_client_init
 
+    # Test verify=False from environment
+    mock_config_false = DifyPluginEnv(HTTP_REQUEST_NODE_SSL_VERIFY=False)
+    with patch("dify_plugin.core.utils.ssl.dify_plugin_env", mock_config_false):
+        with patch("dify_plugin.core.utils.ssl._original_client_init", wraps=_original_client_init) as mock_init:
             client = httpx.Client()
-            assert client._transport is not None
+            mock_init.assert_called_once()
+            assert mock_init.call_args.kwargs.get("verify") is False
             client.close()
 
     # Test verify=True from environment
-    with patch.dict(os.environ, {"HTTP_REQUEST_NODE_SSL_VERIFY": "true"}):
-        with patch("dify_plugin.core.utils.ssl.DifyPluginEnv") as mock_env:
-            mock_config = DifyPluginEnv(HTTP_REQUEST_NODE_SSL_VERIFY=True)
-            mock_env.return_value = mock_config
-
+    mock_config_true = DifyPluginEnv(HTTP_REQUEST_NODE_SSL_VERIFY=True)
+    with patch("dify_plugin.core.utils.ssl.dify_plugin_env", mock_config_true):
+        with patch("dify_plugin.core.utils.ssl._original_client_init", wraps=_original_client_init) as mock_init:
             client = httpx.Client()
-            assert client._transport is not None
+            mock_init.assert_called_once()
+            assert mock_init.call_args.kwargs.get("verify") is True
             client.close()
 
 
 def test_explicit_verify_overrides_env_config():
     """Test that explicit verify parameter takes precedence over environment config."""
-    with patch.dict(os.environ, {"HTTP_REQUEST_NODE_SSL_VERIFY": "false"}):
-        # Even with env=false, explicit verify=True should work
-        client = httpx.Client(verify=True)
-        assert client is not None
-        client.close()
+    from dify_plugin.core.utils.ssl import _original_client_init
 
-        # Explicit verify=False should also work
-        client = httpx.Client(verify=False)
-        assert client is not None
-        client.close()
+    mock_config_false = DifyPluginEnv(HTTP_REQUEST_NODE_SSL_VERIFY=False)
+    with patch("dify_plugin.core.utils.ssl.dify_plugin_env", mock_config_false):
+        with patch("dify_plugin.core.utils.ssl._original_client_init", wraps=_original_client_init) as mock_init:
+            # Even with env config for verify=False, explicit verify=True should be used.
+            client = httpx.Client(verify=True)
+            mock_init.assert_called_once()
+            assert mock_init.call_args.kwargs.get("verify") is True
+            client.close()
+
+            mock_init.reset_mock()
+
+            # Explicit verify=False should also be used.
+            client = httpx.Client(verify=False)
+            mock_init.assert_called_once()
+            assert mock_init.call_args.kwargs.get("verify") is False
+            client.close()
+
+
+def test_async_client_explicit_verify_overrides_env_config():
+    """Test that explicit verify parameter takes precedence over environment config for AsyncClient."""
+    from dify_plugin.core.utils.ssl import _original_async_client_init
+
+    mock_config_false = DifyPluginEnv(HTTP_REQUEST_NODE_SSL_VERIFY=False)
+    with patch("dify_plugin.core.utils.ssl.dify_plugin_env", mock_config_false):
+        with patch(
+            "dify_plugin.core.utils.ssl._original_async_client_init", wraps=_original_async_client_init
+        ) as mock_init:
+            # Even with env config for verify=False, explicit verify=True should be used.
+            client = httpx.AsyncClient(verify=True)
+            mock_init.assert_called_once()
+            assert mock_init.call_args.kwargs.get("verify") is True
+
+            mock_init.reset_mock()
+
+            # Explicit verify=False should also be used.
+            client = httpx.AsyncClient(verify=False)
+            mock_init.assert_called_once()
+            assert mock_init.call_args.kwargs.get("verify") is False
+
+
+def test_ssl_patch_applies_to_both_client_types():
+    """Test that SSL patch applies to both Client and AsyncClient."""
+    from dify_plugin.core.utils.ssl import _original_async_client_init, _original_client_init
+
+    mock_config_false = DifyPluginEnv(HTTP_REQUEST_NODE_SSL_VERIFY=False)
+    with patch("dify_plugin.core.utils.ssl.dify_plugin_env", mock_config_false):
+        with patch("dify_plugin.core.utils.ssl._original_client_init", wraps=_original_client_init) as mock_sync_init:
+            with patch(
+                "dify_plugin.core.utils.ssl._original_async_client_init", wraps=_original_async_client_init
+            ) as mock_async_init:
+                # Test synchronous client
+                sync_client = httpx.Client()
+                mock_sync_init.assert_called_once()
+                assert mock_sync_init.call_args.kwargs.get("verify") is False
+                sync_client.close()
+
+                # Test asynchronous client
+                async_client = httpx.AsyncClient()
+                mock_async_init.assert_called_once()
+                assert mock_async_init.call_args.kwargs.get("verify") is False
 
 
 # Tests for multiple CA certificates support
