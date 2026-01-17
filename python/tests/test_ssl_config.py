@@ -313,6 +313,7 @@ def test_multiple_certs_workflow():
 
 
 # Security tests for temporary file handling
+@pytest.mark.skipif(os.name != "posix", reason="os.chmod permissions test is POSIX-specific")
 def test_temp_files_have_restrictive_permissions():
     """Test that temporary files are created with 0o600 permissions."""
     # Create mock certificate and key data

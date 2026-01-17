@@ -98,9 +98,12 @@ def _create_ssl_context(config: DifyPluginEnv) -> ssl.SSLContext | bool:
             # Set restrictive permissions immediately (owner read/write only)
             # This minimizes the risk window while the files exist
             # Only set permissions on POSIX systems (Unix-like), as chmod doesn't work the same way on Windows
-            for file, data in [(cert_file, client_cert_data), (key_file, client_key_data)]:
+            for file, data, path in [
+                (cert_file, client_cert_data, cert_file.name),
+                (key_file, client_key_data, key_file.name),
+            ]:
                 if os.name == "posix":
-                    os.chmod(file.name, 0o600)
+                    os.chmod(path, 0o600)
                 file.write(data)
                 file.flush()  # Ensure data is written to disk
 
