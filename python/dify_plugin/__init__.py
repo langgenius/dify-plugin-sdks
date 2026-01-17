@@ -3,6 +3,9 @@ from gevent import monkey
 # patch all the blocking calls
 monkey.patch_all(sys=True)
 
+# Apply httpx SSL configuration patches
+from dify_plugin.core.utils import ssl  # noqa: F401
+
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.interfaces.agent import AgentProvider, AgentStrategy
 from dify_plugin.interfaces.endpoint import Endpoint
