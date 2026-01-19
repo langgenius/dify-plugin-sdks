@@ -60,6 +60,9 @@ class DatasourceParameter(BaseModel):
     Overrides type
     """
 
+    @docs(
+        description="Datasource parameter type (aliases CommonParameterType values)",
+    )
     class DatasourceParameterType(StrEnum):
         STRING = CommonParameterType.STRING.value
         NUMBER = CommonParameterType.NUMBER.value
