@@ -414,3 +414,6 @@ class SchemaDocumentationGenerator:
                 return f"Union[{', '.join(types)}]"
 
         return str(field_type)
+
+    def generate_json_schema(self, output_file: str):
+        pass
