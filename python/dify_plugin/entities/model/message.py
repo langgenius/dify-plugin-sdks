@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from collections.abc import Sequence
 from enum import Enum, StrEnum
 from typing import Annotated, Literal, Union
 
-from pydantic import BaseModel, BeforeValidator, Field, field_validator
+from pydantic import BaseModel, BeforeValidator, Field, JsonValue, field_validator
 
 
 class PromptMessageRole(Enum):
@@ -63,7 +65,7 @@ class PromptMessageContentType(StrEnum):
 
 
 class PromptMessageContent(BaseModel):
-    pass
+    opaque_body: JsonValue | None = None
 
 
 class TextPromptMessageContent(PromptMessageContent):
@@ -225,6 +227,7 @@ class AssistantPromptMessage(PromptMessage):
 
     role: PromptMessageRole = PromptMessageRole.ASSISTANT
     tool_calls: list[ToolCall] = []
+    opaque_body: JsonValue | None = None
 
     def is_empty(self) -> bool:
         """

@@ -2,6 +2,17 @@ from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultC
 from dify_plugin.entities.model.message import AssistantPromptMessage, TextPromptMessageContent
 
 
+def test_assistant_message_opaque_body_roundtrip():
+    message = AssistantPromptMessage(
+        content=[TextPromptMessageContent(data="Hello", opaque_body={"segment_id": 1})],
+        opaque_body={"provider_message_id": "msg_123"},
+    )
+
+    assert message.opaque_body == {"provider_message_id": "msg_123"}
+    assert isinstance(message.content, list)
+    assert message.content[0].opaque_body == {"segment_id": 1}
+
+
 def test_build_llm_result_chunk_with_prompt_messages():
     chunk = LLMResultChunk(
         model="test",
