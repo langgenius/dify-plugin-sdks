@@ -19,7 +19,7 @@ class PromptMessageRole(Enum):
     DEVELOPER = "developer"
 
     @classmethod
-    def value_of(cls, value: str) -> "PromptMessageRole":
+    def value_of(cls, value: str) -> PromptMessageRole:
         """
         Get value of given mode.
 
