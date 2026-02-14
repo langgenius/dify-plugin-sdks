@@ -173,6 +173,12 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         """
         try:
             headers = {"Content-Type": "application/json"}
+            extra_headers = credentials.get("extra_headers")
+            if extra_headers is not None:
+                headers = {
+                    **headers,
+                    **extra_headers,
+                }
 
             api_key = credentials.get("api_key")
             if api_key:
