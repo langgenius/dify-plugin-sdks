@@ -77,10 +77,11 @@ class OAICompatRerankModel(RerankModel):
             rerank_documents = []
             scores = [result["relevance_score"] for result in results["results"]]
 
-            # Min-Max Normalization: Normalize scores to 0 ~ 1.0 range
-            min_score = min(scores)
-            max_score = max(scores)
-            score_range = max_score - min_score if max_score != min_score else 1.0  # Avoid division by zero
+            # Use sigmoid normalization to map scores to 0-1 range
+            import math
+            def sigmoid(x):
+                # Apply the sigmoid formula: 1 / (1 + e^(-x))
+                return 1.0 / (1.0 + math.exp(-x))
 
             for result in results["results"]:
                 index = result["index"]
@@ -94,8 +95,8 @@ class OAICompatRerankModel(RerankModel):
                     elif isinstance(document, str):
                         text = document
 
-                # Normalize the score
-                normalized_score = (result["relevance_score"] - min_score) / score_range
+                # Normalize the score Apply sigmoid normalization to each score
+                normalized_scores = [sigmoid(score) for score in scores]
 
                 # Create RerankDocument object with normalized score
                 rerank_document = RerankDocument(
