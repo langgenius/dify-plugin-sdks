@@ -120,6 +120,7 @@ class Session:
         app_id: str | None = None,
         endpoint_id: str | None = None,
         context: SessionContext | dict | None = None,
+        passthrough: str | None = None,
         max_invocation_timeout: int = 250,
     ) -> None:
         # current session id
@@ -151,6 +152,9 @@ class Session:
         self.context: SessionContext = (
             SessionContext.model_validate(context) if isinstance(context, dict) else context or SessionContext()
         )
+
+        # passthrough data from Dify
+        self.passthrough: str | None = passthrough
 
         # dify plugin daemon url
         self.dify_plugin_daemon_url: str | None = dify_plugin_daemon_url

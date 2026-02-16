@@ -68,6 +68,7 @@ class StdioRequestReader(RequestReader):
                         event=PluginInStreamEvent.value_of(data["event"]),
                         data=data["data"],
                         context=data.get("context"),
+                        passthrough=data.get("passthrough"),
                         reader=self,
                         writer=StdioResponseWriter(),
                     )
