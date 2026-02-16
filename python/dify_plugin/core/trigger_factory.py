@@ -140,11 +140,15 @@ class TriggerFactory:
     # ------------------------------------------------------------------
 
     def get_trigger_event_handler_safely(self, provider_name: str, event: str, runtime: EventRuntime) -> Event | None:
-        entry = self._get_entry(provider_name)
-        if event not in entry.events:
+        try:
+            entry = self._get_entry(provider_name)
+            if event not in entry.events:
+                return None
+            _, event_cls = entry.events[event]
+            return event_cls(runtime)
+        except Exception as e:
+            print(f"Error getting trigger event handler: {e!s}")
             return None
-        _, event_cls = entry.events[event]
-        return event_cls(runtime)
 
     def get_trigger_event_handler(self, provider_name: str, event: str, runtime: EventRuntime) -> Event:
         """Instantiate an event for the given provider and event name."""
