@@ -200,12 +200,13 @@ class Plugin(IOServer, Router):
         Launch Serverless stream
         """
         serverless = ServerlessRequestReader(
-            config.SERVERLESS_HOST,
-            config.SERVERLESS_PORT,
-            config.SERVERLESS_WORKER_CLASS,
-            config.SERVERLESS_WORKERS,
-            config.SERVERLESS_THREADS,
-            config.MAX_REQUEST_TIMEOUT,
+            host=config.SERVERLESS_HOST,
+            port=config.SERVERLESS_PORT,
+            worker_class=config.SERVERLESS_WORKER_CLASS,
+            workers=config.SERVERLESS_WORKERS,
+            worker_connections=config.SERVERLESS_WORKER_CONNECTIONS,
+            threads=config.SERVERLESS_THREADS,
+            max_single_connection_lifetime=config.MAX_REQUEST_TIMEOUT,
         )
         serverless.launch()
 
@@ -267,6 +268,12 @@ class Plugin(IOServer, Router):
         )
 
         self.register_route(
+            self.plugin_executer.invoke_multimodal_embedding,
+            lambda data: data.get("type") == PluginInvokeType.Model.value
+            and data.get("action") == ModelActions.InvokeMultimodalEmbedding.value,
+        )
+
+        self.register_route(
             self.plugin_executer.get_text_embedding_num_tokens,
             lambda data: data.get("type") == PluginInvokeType.Model.value
             and data.get("action") == ModelActions.GetTextEmbeddingNumTokens.value,
@@ -276,6 +283,12 @@ class Plugin(IOServer, Router):
             self.plugin_executer.invoke_rerank,
             lambda data: data.get("type") == PluginInvokeType.Model.value
             and data.get("action") == ModelActions.InvokeRerank.value,
+        )
+
+        self.register_route(
+            self.plugin_executer.invoke_multimodal_rerank,
+            lambda data: data.get("type") == PluginInvokeType.Model.value
+            and data.get("action") == ModelActions.InvokeMultimodalRerank.value,
         )
 
         self.register_route(
