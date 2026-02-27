@@ -171,6 +171,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :param credentials: model credentials
         :return:
         """
+        response = None
         try:
             headers = {"Content-Type": "application/json"}
 
@@ -255,9 +256,15 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 )
         except CredentialsValidateFailedError:
             raise
-        except Exception as ex:
+        except requests.RequestException as ex:
             raise CredentialsValidateFailedError(
-                f"An error occurred during credentials validation: {ex!s}, response body {response.text}"
+                f"Credentials validation request failed: {ex!s}"
+            ) from ex
+        except Exception as ex:
+            response_body = response.text if response is not None else "<no response>"
+            raise CredentialsValidateFailedError(
+                f"An error occurred during credentials validation: {ex!s}, "
+                f"response body {response_body}"
             ) from ex
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
