@@ -262,9 +262,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     f"An error occurred during credentials validation: {ex!s}, response body {response.text}"
                 ) from ex
             else:
-                raise CredentialsValidateFailedError(
-                    f"An error occurred during credentials validation: {ex!s}"
-                ) from ex
+                raise CredentialsValidateFailedError(f"An error occurred during credentials validation: {ex!s}") from ex
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
         """
