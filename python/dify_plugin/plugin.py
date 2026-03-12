@@ -464,6 +464,7 @@ class Plugin(IOServer, Router):
             endpoint_id=endpoint_id,
             context=context,
             max_invocation_timeout=self.config.MAX_INVOCATION_TIMEOUT,
+            httpx_timeout=self.config.HTTPX_TIMEOUT,
         )
         response = self.dispatch(session, data)
         if response:

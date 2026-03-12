@@ -40,6 +40,8 @@ class DifyPluginEnv(BaseSettings):
 
     DIFY_PLUGIN_DAEMON_URL: str = Field(default="http://localhost:5002", description="backwards invocation address")
 
+    HTTPX_TIMEOUT: int = Field(default=5, description="HTTPX timeout in seconds")
+
     model_config = SettingsConfigDict(
         # read from dotenv format config file
         env_file=".env",
