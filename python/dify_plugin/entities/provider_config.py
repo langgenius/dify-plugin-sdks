@@ -86,6 +86,9 @@ class ConfigOption(BaseModel):
     description="A common config schema",
 )
 class ProviderConfig(BaseModel):
+    @docs(
+        description="The type options for provider config entries",
+    )
     class Config(Enum):
         SECRET_INPUT = CommonParameterType.SECRET_INPUT.value
         TEXT_INPUT = CommonParameterType.TEXT_INPUT.value
