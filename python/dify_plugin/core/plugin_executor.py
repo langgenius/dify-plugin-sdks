@@ -217,6 +217,7 @@ class PluginExecutor:
                 data.credentials,
                 data.texts,
                 data.user_id,
+                data.input_type,
             )
         else:
             raise ValueError(f"Model `{data.model_type}` not found for provider `{data.provider}`")
