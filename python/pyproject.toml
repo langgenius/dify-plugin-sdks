@@ -17,6 +17,8 @@ dependencies = [
     "tiktoken~=0.8.0",
     "yarl>=1.9.4,<2.0",
     "packaging>=25.0",
+    "urllib3>=2.6.3",  # common deps by plugins
+    "aiohttp>=3.13.3",  # common deps by plugins
 ]
 requires-python = ">=3.11"
 readme = "README.md"
