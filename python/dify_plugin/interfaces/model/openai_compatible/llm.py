@@ -482,6 +482,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if user:
             data["user"] = user
 
+        headers['Content-Type'] = 'application/json; charset=utf-8'
         response = requests.post(
             endpoint_url,
             headers=headers,
