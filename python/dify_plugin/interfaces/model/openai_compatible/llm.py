@@ -485,7 +485,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         response = requests.post(
             endpoint_url,
             headers=headers,
-            json=data,
+            json=json.dumps(data, ensure_ascii=False),
             timeout=(10, _plugin_config.MAX_REQUEST_TIMEOUT),
             stream=stream,
         )
