@@ -1,6 +1,7 @@
 import httpx
 
 from dify_plugin import RerankModel
+from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -21,6 +22,8 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
+
+_plugin_config = DifyPluginEnv()
 
 
 class JinaRerankModel(RerankModel):
@@ -66,6 +69,7 @@ class JinaRerankModel(RerankModel):
                     "top_n": top_n,
                 },
                 headers={"Authorization": f"Bearer {credentials.get('api_key')}"},
+                timeout=_plugin_config.HTTPX_TIMEOUT,
             )
             response.raise_for_status()
             results = response.json()
