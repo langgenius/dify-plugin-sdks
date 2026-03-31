@@ -284,6 +284,10 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if vision_support == "support":
             features.append(ModelFeature.VISION)
 
+        video_support = credentials.get("video_support", "not_support")
+        if video_support == "support":
+            features.append(ModelFeature.VIDEO)
+
         entity = AIModelEntity(
             model=model,
             label=I18nObject(en_US=model),
