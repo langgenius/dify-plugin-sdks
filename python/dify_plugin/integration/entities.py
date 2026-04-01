@@ -6,10 +6,12 @@ from pydantic import BaseModel
 
 from dify_plugin.core.entities.plugin.request import (
     AgentActions,
+    DatasourceActions,
     EndpointActions,
     ModelActions,
     PluginInvokeType,
     ToolActions,
+    TriggerActions,
 )
 
 T = TypeVar("T", bound=BaseModel)
@@ -18,7 +20,7 @@ T = TypeVar("T", bound=BaseModel)
 class PluginInvokeRequest(BaseModel, Generic[T]):
     invoke_id: str
     type: PluginInvokeType
-    action: AgentActions | ToolActions | ModelActions | EndpointActions
+    action: AgentActions | ToolActions | ModelActions | EndpointActions | DatasourceActions | TriggerActions
     request: T
 
 
