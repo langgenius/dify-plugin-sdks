@@ -12,6 +12,7 @@ class WorkflowAppInvocation(BackwardsInvocation[dict]):
         app_id: str,
         inputs: dict,
         response_mode: Literal["streaming"],
+        user: str | None = None,
     ) -> Generator[dict, None, None]: ...
 
     @overload
@@ -20,6 +21,7 @@ class WorkflowAppInvocation(BackwardsInvocation[dict]):
         app_id: str,
         inputs: dict,
         response_mode: Literal["blocking"],
+        user: str | None = None,
     ) -> dict: ...
 
     def invoke(
@@ -27,6 +29,7 @@ class WorkflowAppInvocation(BackwardsInvocation[dict]):
         app_id: str,
         inputs: dict,
         response_mode: Literal["streaming", "blocking"] = "blocking",
+        user: str | None = None,
     ) -> Generator[dict, None, None] | dict:
         """
         Invoke workflow app
@@ -38,6 +41,7 @@ class WorkflowAppInvocation(BackwardsInvocation[dict]):
                 "app_id": app_id,
                 "inputs": inputs,
                 "response_mode": response_mode,
+                "user": user,
             },
         )
 
