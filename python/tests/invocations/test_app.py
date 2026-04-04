@@ -17,19 +17,20 @@ def _build_session() -> Session:
     )
 
 
+def _mock_backwards_invoke(
+    invoke_type: InvokeType,
+    data_type: type[dict],
+    data: dict,
+) -> Generator[dict, None, None]:
+    _ = invoke_type
+    _ = data_type
+    yield data
+
+
 def test_chat_app_invoke_should_pass_user_in_payload():
     session = _build_session()
 
-    def mock_backwards_invoke(
-        invoke_type: InvokeType,
-        data_type: type[dict],
-        data: dict,
-    ) -> Generator[dict, None, None]:
-        _ = invoke_type
-        _ = data_type
-        yield data
-
-    with patch.object(session.app.chat, "_backwards_invoke", side_effect=mock_backwards_invoke):
+    with patch.object(session.app.chat, "_backwards_invoke", side_effect=_mock_backwards_invoke):
         response = session.app.chat.invoke(
             app_id="app-id",
             query="hello",
@@ -46,16 +47,7 @@ def test_chat_app_invoke_should_pass_user_in_payload():
 def test_completion_app_invoke_should_pass_user_in_payload():
     session = _build_session()
 
-    def mock_backwards_invoke(
-        invoke_type: InvokeType,
-        data_type: type[dict],
-        data: dict,
-    ) -> Generator[dict, None, None]:
-        _ = invoke_type
-        _ = data_type
-        yield data
-
-    with patch.object(session.app.completion, "_backwards_invoke", side_effect=mock_backwards_invoke):
+    with patch.object(session.app.completion, "_backwards_invoke", side_effect=_mock_backwards_invoke):
         response = session.app.completion.invoke(
             app_id="app-id",
             inputs={"foo": "bar"},
@@ -69,16 +61,7 @@ def test_completion_app_invoke_should_pass_user_in_payload():
 def test_workflow_app_invoke_should_pass_user_in_payload():
     session = _build_session()
 
-    def mock_backwards_invoke(
-        invoke_type: InvokeType,
-        data_type: type[dict],
-        data: dict,
-    ) -> Generator[dict, None, None]:
-        _ = invoke_type
-        _ = data_type
-        yield data
-
-    with patch.object(session.app.workflow, "_backwards_invoke", side_effect=mock_backwards_invoke):
+    with patch.object(session.app.workflow, "_backwards_invoke", side_effect=_mock_backwards_invoke):
         response = session.app.workflow.invoke(
             app_id="app-id",
             inputs={"foo": "bar"},
