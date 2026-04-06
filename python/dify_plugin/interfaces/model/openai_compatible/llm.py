@@ -486,10 +486,11 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if user:
             data["user"] = user
 
+        headers['Content-Type'] = 'application/json; charset=utf-8'
         response = requests.post(
             endpoint_url,
             headers=headers,
-            json=data,
+            data=json.dumps(data, ensure_ascii=False).encode('utf-8'),
             timeout=(10, _plugin_config.MAX_REQUEST_TIMEOUT),
             stream=stream,
         )
