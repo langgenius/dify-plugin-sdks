@@ -109,3 +109,33 @@ class TestWrapThinking(unittest.TestCase):
             full_output += output
 
         assert full_output == "<think>\nThinking.\n</think>Hello world."
+
+    def test_reasoning_key_fallback(self):
+        """
+        Test that delta.get("reasoning") is used when reasoning_content is absent.
+        Line 538: reasoning_content = delta.get("reasoning_content") or delta.get("reasoning")
+        """
+        chunks = [
+            {"reasoning": "Using reasoning key.", "content": ""},
+            {"reasoning": None, "content": "Response text."},
+        ]
+
+        is_reasoning = False
+        full_output = ""
+        for chunk in chunks:
+            output, is_reasoning = self.llm._wrap_thinking_by_reasoning_content(chunk, is_reasoning)
+            full_output += output
+
+        assert full_output == "<think>\nUsing reasoning key.\n</think>Response text."
+
+    def test_reasoning_content_takes_precedence_over_reasoning(self):
+        """
+        Test that reasoning_content takes precedence when both keys exist.
+        Line 538: reasoning_content = delta.get("reasoning_content") or delta.get("reasoning")
+        """
+        chunk = {"reasoning_content": "Primary.", "reasoning": "Fallback.", "content": ""}
+        output, is_reasoning = self.llm._wrap_thinking_by_reasoning_content(chunk, False)
+
+        assert "Primary." in output
+        assert "Fallback." not in output
+        assert is_reasoning is True
