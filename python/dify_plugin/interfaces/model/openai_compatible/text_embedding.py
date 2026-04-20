@@ -157,7 +157,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
 
             endpoint_url = urljoin(endpoint_url, "embeddings")
 
-            payload = {"input": "ping", "model": credentials.get("endpoint_model_name", model)}
+            payload = {"input": ["ping"], "model": credentials.get("endpoint_model_name", model)}
 
             response = requests.post(
                 url=endpoint_url,
