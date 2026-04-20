@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 from enum import Enum
 from typing import Any, Union
@@ -414,3 +415,215 @@ class SchemaDocumentationGenerator:
                 return f"Union[{', '.join(types)}]"
 
         return str(field_type)
+
+    def generate_json_schema(self, output_file: str):
+        """Generate JSON Schema format documentation."""
+        schemas = list_schema_docs()
+
+        # Build type to schema mapping
+        for schema in schemas:
+            self._type_to_schema[schema.cls] = schema
+            self._types.add(schema.cls)
+
+        json_schemas = {}
+
+        for schema in schemas:
+            cls = schema.cls
+            # Use the resolved name from schema
+            name = schema.name or cls.__name__
+
+            if issubclass(cls, BaseModel):
+                json_schema = self._convert_basemodel_to_json_schema(cls, schema)
+                json_schemas[name] = json_schema
+            elif issubclass(cls, Enum):
+                json_schema = self._convert_enum_to_json_schema(cls, schema)
+                json_schemas[name] = json_schema
+
+        output = {"$schema": "http://json-schema.org/draft-07/schema#", "definitions": json_schemas}
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(output, f, indent=2, ensure_ascii=False)
+
+    def _convert_basemodel_to_json_schema(self, cls: type[BaseModel], schema_doc) -> dict:
+        """Convert a Pydantic BaseModel to JSON Schema."""
+        properties = {}
+        required = []
+
+        ignore_fields = set(getattr(schema_doc, "ignore_fields", []) or [])
+        outside_reference_fields = getattr(schema_doc, "outside_reference_fields", {}) or {}
+
+        for field_name, field_info in cls.model_fields.items():
+            if field_name in ignore_fields:
+                continue
+
+            field_type = field_info.annotation
+            if field_type is None:
+                continue
+
+            description = field_info.description or ""
+
+            # Handle dynamic fields
+            if (
+                hasattr(schema_doc, "dynamic_fields")
+                and schema_doc.dynamic_fields
+                and field_name in schema_doc.dynamic_fields
+            ):
+                description = schema_doc.dynamic_fields[field_name]
+
+            # Handle outside reference fields
+            if field_name in outside_reference_fields:
+                referenced_type = outside_reference_fields[field_name]
+                referenced_schema = self._type_to_schema.get(referenced_type)
+                schema_name = referenced_schema.name if referenced_schema else referenced_type.__name__
+
+                if self._is_container_type(field_type):
+                    field_schema = {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": f"{description} (Paths to yaml files that will be loaded as {schema_name})",
+                    }
+                else:
+                    field_schema = {
+                        "type": "string",
+                        "description": f"{description} (Path to yaml file that will be loaded as {schema_name})",
+                    }
+            else:
+                field_schema = self._get_json_schema_type(field_type)
+                if description:
+                    field_schema["description"] = description
+
+            # Handle default values
+            if field_info.default is not None and str(field_info.default) != "PydanticUndefined":
+                try:
+                    # Try to serialize the default value to ensure it's JSON-serializable
+                    json.dumps(field_info.default)
+                    field_schema["default"] = field_info.default
+                except (TypeError, ValueError):
+                    # If it's not JSON-serializable, convert to string
+                    if isinstance(field_info.default, Enum):
+                        field_schema["default"] = field_info.default.value
+                    else:
+                        field_schema["default"] = str(field_info.default)
+
+            # Handle metadata/constraints
+            if hasattr(field_info, "metadata"):
+                for metadata in field_info.metadata:
+                    # Handle common constraints
+                    if hasattr(metadata, "pattern"):
+                        field_schema["pattern"] = metadata.pattern
+                    if hasattr(metadata, "min_length"):
+                        field_schema["minLength"] = metadata.min_length
+                    if hasattr(metadata, "max_length"):
+                        field_schema["maxLength"] = metadata.max_length
+                    if hasattr(metadata, "ge"):
+                        field_schema["minimum"] = metadata.ge
+                    if hasattr(metadata, "le"):
+                        field_schema["maximum"] = metadata.le
+
+            properties[field_name] = field_schema
+
+            # Check if field is required
+            if field_info.is_required():
+                required.append(field_name)
+
+        result = {
+            "type": "object",
+            "properties": properties,
+        }
+
+        if required:
+            result["required"] = required
+
+        description = self._schema_descriptions.get(cls, schema_doc.description)
+        if description:
+            result["description"] = description
+
+        return result
+
+    def _convert_enum_to_json_schema(self, cls: type[Enum], schema_doc) -> dict:
+        """Convert an Enum to JSON Schema."""
+        enum_values = [member.value for member in cls]
+
+        # Determine the type of enum values
+        if enum_values:
+            first_value = enum_values[0]
+            if isinstance(first_value, str):
+                value_type = "string"
+            elif isinstance(first_value, int):
+                value_type = "integer"
+            elif isinstance(first_value, float):
+                value_type = "number"
+            elif isinstance(first_value, bool):
+                value_type = "boolean"
+            else:
+                value_type = "string"
+        else:
+            value_type = "string"
+
+        result = {"type": value_type, "enum": enum_values}
+
+        description = self._schema_descriptions.get(cls, schema_doc.description)
+        if description:
+            result["description"] = description
+
+        return result
+
+    def _get_json_schema_type(self, field_type: Any) -> dict:
+        """Convert a Python type to JSON Schema type definition."""
+        if field_type is None:
+            return {"type": "null"}
+
+        # Handle primitive types
+        if field_type is str:
+            return {"type": "string"}
+        if field_type is int:
+            return {"type": "integer"}
+        if field_type is float:
+            return {"type": "number"}
+        if field_type is bool:
+            return {"type": "boolean"}
+
+        # Handle type references
+        if isinstance(field_type, type):
+            if issubclass(field_type, BaseModel) or issubclass(field_type, Enum):
+                schema = self._type_to_schema.get(field_type)
+                # Use the resolved name from schema
+                name = (schema.name if schema else None) or field_type.__name__
+                return {"$ref": f"#/definitions/{name}"}
+            elif field_type is dict:
+                return {"type": "object"}
+            elif field_type is list:
+                return {"type": "array"}
+
+        # Handle generic types
+        if hasattr(field_type, "__origin__") and hasattr(field_type, "__args__"):
+            origin = field_type.__origin__
+            if origin in (list, set):
+                item_schema = self._get_json_schema_type(field_type.__args__[0])
+                return {"type": "array", "items": item_schema}
+            elif origin is dict:
+                key_type = field_type.__args__[0]
+                value_type = field_type.__args__[1]
+                key_schema = self._get_json_schema_type(key_type)
+                value_schema = self._get_json_schema_type(value_type)
+
+                return {"type": "object", "propertyNames": key_schema, "additionalProperties": value_schema}
+            elif origin is tuple:
+                items = [self._get_json_schema_type(arg) for arg in field_type.__args__]
+                return {"type": "array", "items": items, "minItems": len(items), "maxItems": len(items)}
+            elif origin is Union:
+                args = field_type.__args__
+                if type(None) in args:
+                    non_none_types = [arg for arg in args if arg is not type(None)]
+                    if len(non_none_types) == 1:
+                        schema = self._get_json_schema_type(non_none_types[0])
+                        if "type" in schema and isinstance(schema["type"], str):
+                            schema["type"] = [schema["type"], "null"]
+                        else:
+                            return {"anyOf": [schema, {"type": "null"}]}
+                        return schema
+
+                schemas = [self._get_json_schema_type(arg) for arg in args]
+                return {"anyOf": schemas}
+
+        return {}

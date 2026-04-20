@@ -53,6 +53,9 @@ class ToolParameterOption(ParameterOption):
     description="The auto generate of the parameter",
 )
 class ParameterAutoGenerate(BaseModel):
+    @docs(
+        description="The type of the auto generate",
+    )
     class Type(StrEnum):
         PROMPT_INSTRUCTION = "prompt_instruction"
 
@@ -70,6 +73,9 @@ class ParameterTemplate(BaseModel):
     description="The type of the parameter",
 )
 class ToolParameter(BaseModel):
+    @docs(
+        description="Tool parameter type (aliases CommonParameterType values)",
+    )
     class ToolParameterType(str, Enum):
         STRING = CommonParameterType.STRING.value
         NUMBER = CommonParameterType.NUMBER.value
@@ -88,6 +94,9 @@ class ToolParameter(BaseModel):
         ARRAY = CommonParameterType.ARRAY.value
         DYNAMIC_SELECT = CommonParameterType.DYNAMIC_SELECT.value
 
+    @docs(
+        description="The form of the parameter",
+    )
     class ToolParameterForm(Enum):
         SCHEMA = "schema"  # should be set while adding tool
         FORM = "form"  # should be set before invoking tool

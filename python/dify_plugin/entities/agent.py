@@ -47,6 +47,9 @@ class AgentStrategyIdentity(ToolIdentity):
     description="The parameter of the agent strategy",
 )
 class AgentStrategyParameter(BaseModel):
+    @docs(
+        description="Agent strategy parameter type (aliases CommonParameterType values)",
+    )
     class ToolParameterType(str, Enum):
         STRING = CommonParameterType.STRING.value
         NUMBER = CommonParameterType.NUMBER.value

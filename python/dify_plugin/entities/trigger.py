@@ -91,6 +91,9 @@ class EventParameter(BaseModel):
     The parameter of the event
     """
 
+    @docs(
+        description="The type options for event parameter",
+    )
     class EventParameterType(StrEnum):
         STRING = CommonParameterType.STRING.value
         NUMBER = CommonParameterType.NUMBER.value
@@ -124,6 +127,9 @@ class EventParameter(BaseModel):
     description: I18nObject | None = None
 
 
+@docs(
+    description="The labels for event",
+)
 class EventLabelEnum(Enum):
     WEBHOOKS = "webhooks"
 
