@@ -357,9 +357,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                                     blob=file_content,
                                                     meta={
                                                         "mime_type": "image/png",
-                                                        "filename": os.path.basename(
+                                                        "filename": pathlib.Path(
                                                             file_info
-                                                        ),
+                                                        ).name,
                                                     },
                                                 )
                                     except Exception:
