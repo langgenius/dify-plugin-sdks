@@ -1,16 +1,29 @@
-## Dify Plugin SDK
+# Dify Plugin SDK
 
-A SDK sets for building plugins for Dify, including the following languages:
-
-- Python
+A Python SDK for building plugins for Dify.
 
 Here is a short introduction to Dify Plugin: <https://docs.dify.ai/plugins/introduction>
 
-## SDK Version Management
+## Version Management
 
-### Python SDK
+This SDK follows Semantic Versioning (a.b.c):
 
-Always follow the [Semantic Versioning](https://semver.org/) for the Python SDK, for more details, please refer to [Python SDK README](./python/README.md).
+- a: Major version - Indicates significant architectural changes or incompatible API modifications
+- b: Minor version - Indicates new feature additions while maintaining backward compatibility
+- c: Patch version - Indicates backward-compatible bug fixes
+
+### For SDK Users
+
+When depending on this SDK, it's recommended to specify version constraints that:
+
+- Allow patch and minor updates for bug fixes and new features
+- Prevent major version updates to avoid breaking changes
+
+Example in your project's dependency management:
+
+```python
+dify_plugin~=0.7
+```
 
 ## Manifest Version Reference
 
