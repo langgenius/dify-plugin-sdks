@@ -2,12 +2,11 @@ import importlib
 import importlib.util
 import sys
 from types import ModuleType
-from typing import AnyStr, TypeVar
-
-T = TypeVar("T")
 
 
-def import_module_from_source(*, module_name: str, py_file_path: AnyStr, use_lazy_loader: bool = False) -> ModuleType:
+def import_module_from_source(
+    *, module_name: str, py_file_path: str | bytes, use_lazy_loader: bool = False
+) -> ModuleType:
     """
     Importing a module from the source file directly
     """
@@ -34,7 +33,7 @@ def import_module_from_source(*, module_name: str, py_file_path: AnyStr, use_laz
         raise e
 
 
-def get_subclasses_from_module(mod: ModuleType, parent_type: type[T]) -> list[type[T]]:
+def get_subclasses_from_module[T](mod: ModuleType, parent_type: type[T]) -> list[type[T]]:
     """
     Get all the subclasses of the parent type from the module
     """
@@ -44,10 +43,10 @@ def get_subclasses_from_module(mod: ModuleType, parent_type: type[T]) -> list[ty
     return classes
 
 
-def load_multi_subclasses_from_source(
+def load_multi_subclasses_from_source[T](
     *,
     module_name: str,
-    script_path: AnyStr,
+    script_path: str | bytes,
     parent_type: type[T],
     use_lazy_loader: bool = False,
 ) -> list[type[T]]:
@@ -63,10 +62,10 @@ def load_multi_subclasses_from_source(
     return subclasses
 
 
-def load_single_subclass_from_source(
+def load_single_subclass_from_source[T](
     *,
     module_name: str,
-    script_path: AnyStr,
+    script_path: str | bytes,
     parent_type: type[T],
     use_lazy_loader: bool = False,
 ) -> type[T]:

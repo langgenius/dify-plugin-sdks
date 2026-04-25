@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from enum import StrEnum
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -12,10 +12,8 @@ from dify_plugin.core.entities.plugin.request import (
     ToolActions,
 )
 
-T = TypeVar("T", bound=BaseModel)
 
-
-class PluginInvokeRequest(BaseModel, Generic[T]):
+class PluginInvokeRequest[T: BaseModel](BaseModel):
     invoke_id: str
     type: PluginInvokeType
     action: AgentActions | ToolActions | ModelActions | EndpointActions

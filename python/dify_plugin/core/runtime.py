@@ -1,9 +1,8 @@
 import uuid
-from abc import ABC
 from collections.abc import Generator, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import Any, Generic, TypeVar, Union
+from typing import Any
 
 import httpx
 from pydantic import BaseModel, Field, TypeAdapter
@@ -203,10 +202,7 @@ class BackwardsInvocationResponseEvent(BaseModel):
     data: dict | None
 
 
-T = TypeVar("T", bound=Union[BaseModel, dict, str])
-
-
-class BackwardsInvocation(Generic[T], ABC):
+class BackwardsInvocation[T: BaseModel | dict | str]:
     def __init__(
         self,
         session: Session | None = None,

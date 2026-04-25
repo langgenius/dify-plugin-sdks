@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from typing import Protocol, TypeVar
+from typing import Protocol
 
 import lark_oapi as lark
 from lark_oapi.api.im.v1.model import UserId
@@ -12,8 +12,6 @@ from lark_oapi.event.dispatcher_handler import EventDispatcherHandlerBuilder
 from werkzeug import Request
 
 from dify_plugin.interfaces.trigger import EventRuntime
-
-EventDataT = TypeVar("EventDataT")
 
 
 def build_raw_request(request: Request) -> RawRequest:
@@ -25,7 +23,7 @@ def build_raw_request(request: Request) -> RawRequest:
     return raw_request
 
 
-def dispatch_single_event(
+def dispatch_single_event[EventDataT](
     request: Request,
     runtime: EventRuntime,
     register_handler: Callable[

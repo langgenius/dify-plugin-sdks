@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
-from typing import Any, Generic, TypeVar, final
+from typing import Any, final
 
 from typing_extensions import deprecated
 from werkzeug import Request
@@ -16,10 +16,8 @@ from dify_plugin.file.entities import FileType
 from dify_plugin.file.file import File
 from dify_plugin.protocol.oauth import OAuthCredentials
 
-T = TypeVar("T", bound=InvokeMessage)
 
-
-class ToolLike(ABC, Generic[T]):
+class ToolLike[T: InvokeMessage](ABC):
     response_type: type[T]
 
     ############################################################

@@ -20,7 +20,7 @@ dependencies = [
     "urllib3>=2.6.3",  # common deps by plugins
     "aiohttp>=3.13.3",  # common deps by plugins
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 readme = "README.md"
 license = { text = "Apache2.0" }
 keywords = ["dify", "plugin", "sdk"]
