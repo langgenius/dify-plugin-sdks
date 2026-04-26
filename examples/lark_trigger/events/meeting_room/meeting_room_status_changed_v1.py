@@ -35,7 +35,8 @@ class MeetingRoomStatusChangedV1Event(Event):
             ),
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict: dict[str, Any] = {

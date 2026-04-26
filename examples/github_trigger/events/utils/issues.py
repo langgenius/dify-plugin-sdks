@@ -12,7 +12,7 @@ def check_labels(issue: Mapping[str, Any], value: object) -> None:
         return
     current = [lbl.get("name") for lbl in issue.get("labels", [])]
     if not any(lbl in current for lbl in labels):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_assignee(issue: Mapping[str, Any], value: object) -> None:
@@ -24,7 +24,7 @@ def check_assignee(issue: Mapping[str, Any], value: object) -> None:
     if login := single.get("login"):
         assigned.add(login)
     if not assigned or not any(a in assigned for a in assignees):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_authors(issue: Mapping[str, Any], value: object) -> None:
@@ -33,7 +33,7 @@ def check_authors(issue: Mapping[str, Any], value: object) -> None:
         return
     login = (issue.get("user") or {}).get("login")
     if login not in authors:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_milestone(issue: Mapping[str, Any], value: object) -> None:
@@ -42,7 +42,7 @@ def check_milestone(issue: Mapping[str, Any], value: object) -> None:
         return
     milestone = (issue.get("milestone") or {}).get("title")
     if milestone not in milestones:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_title_contains(issue: Mapping[str, Any], value: object) -> None:
@@ -51,7 +51,7 @@ def check_title_contains(issue: Mapping[str, Any], value: object) -> None:
         return
     title = (issue.get("title") or "").lower()
     if not any(k in title for k in keywords):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_body_contains(issue: Mapping[str, Any], value: object) -> None:
@@ -60,7 +60,7 @@ def check_body_contains(issue: Mapping[str, Any], value: object) -> None:
         return
     body = (issue.get("body") or "").lower()
     if not any(k in body for k in keywords):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_state(issue: Mapping[str, Any], value: object) -> None:
@@ -69,7 +69,7 @@ def check_state(issue: Mapping[str, Any], value: object) -> None:
     state = (issue.get("state") or "").lower()
     targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
     if targets and state not in targets:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def _normalize_list(raw: object, *, lowercase: bool = False) -> list[str]:

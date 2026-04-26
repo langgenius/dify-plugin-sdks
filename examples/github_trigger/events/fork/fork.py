@@ -21,13 +21,14 @@ class ForkEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         forker = (payload.get("sender") or {}).get("login")
         allowed = parameters.get("forker")
         if allowed:
             users = {u.strip() for u in str(allowed).split(",") if u.strip()}
             if users and forker not in users:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

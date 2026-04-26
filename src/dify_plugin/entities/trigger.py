@@ -314,7 +314,8 @@ class TriggerSubscriptionConstructorConfiguration(BaseModel):
             return data.model_dump()
 
         if not isinstance(data, dict):
-            raise ValueError("subscription_constructor should be defined as a mapping")
+            msg = "subscription_constructor should be defined as a mapping"
+            raise ValueError(msg)
 
         normalised = dict(data)
         original_credentials_schema = normalised.get("credentials_schema", [])
@@ -327,7 +328,8 @@ class TriggerSubscriptionConstructorConfiguration(BaseModel):
         elif isinstance(original_credentials_schema, list):
             normalised["credentials_schema"] = original_credentials_schema
         else:
-            raise ValueError("credentials_schema should be a list or dict")
+            msg = "credentials_schema should be a list or dict"
+            raise ValueError(msg)
 
         return normalised
 
@@ -377,21 +379,24 @@ class TriggerProviderConfiguration(BaseModel):
         elif isinstance(original_credentials_schema, list):
             data["credentials_schema"] = original_credentials_schema
         else:
-            raise ValueError("credentials_schema should be a list or dict")
+            msg = "credentials_schema should be a list or dict"
+            raise ValueError(msg)
         return data
 
     @field_validator("events", mode="before")
     @classmethod
     def validate_events(cls, value: list[object]) -> list[EventConfiguration]:
         if not isinstance(value, list):
-            raise ValueError("events should be a list")
+            msg = "events should be a list"
+            raise ValueError(msg)
 
         events: list[EventConfiguration] = []
 
         for event in value:
             # read from yaml
             if not isinstance(event, str):
-                raise ValueError("event path should be a string")
+                msg = "event path should be a string"
+                raise ValueError(msg)
             try:
                 file = load_yaml_file(event)
                 events.append(
@@ -407,7 +412,8 @@ class TriggerProviderConfiguration(BaseModel):
                     ),
                 )
             except Exception as e:
-                raise ValueError(f"Error loading event configuration: {e!s}") from e
+                msg = f"Error loading event configuration: {e!s}"
+                raise ValueError(msg) from e
 
         return events
 

@@ -34,7 +34,8 @@ class ContactUserDeletedV3Event(Event):
             lambda builder: builder.register_p2_contact_user_deleted_v3,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary with basic user information
         variables_dict = {}

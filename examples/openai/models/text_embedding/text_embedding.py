@@ -104,7 +104,7 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
                 average = embeddings_batch[0]
             else:
                 average = np.average(result, axis=0, weights=num_tokens_in_batch[i])
-            embeddings[i] = (average / np.linalg.norm(average)).tolist()  # type: ignore
+            embeddings[i] = (average / np.linalg.norm(average)).tolist()
 
         # calc usage
         usage = self._calc_response_usage(
@@ -210,7 +210,7 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
                         ),
                     )
                     for data in response.data
-                ],  # type: ignore
+                ],
                 response.usage.total_tokens,
             )
 

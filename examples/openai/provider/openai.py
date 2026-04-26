@@ -32,6 +32,7 @@ class OpenAIProvider(ModelProvider):
             raise
         except Exception:
             logger.exception(
-                f"{self.get_provider_schema().provider} credentials validate failed"
+                "%s credentials validate failed",
+                self.get_provider_schema().provider,
             )
             raise

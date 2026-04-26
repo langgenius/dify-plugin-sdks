@@ -1,5 +1,6 @@
 import base64
 from collections.abc import Generator
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -58,23 +59,27 @@ class GithubRepositoryReadmeTool(Tool):
                 url=url,
             )
             response_data = response.json()
-            if response.status_code == 200:
+            if response.status_code == HTTPStatus.OK:
                 if response_data.get("encoding") != "base64":
                     encoding = response_data.get("encoding")
-                    raise InvokeError(
+                    msg = (
                         "Can not get base64 encoded readme, "
                         f"response encoding is {encoding}"
                     )
+                    raise InvokeError(msg)
                 content = response_data.get("content")
                 if not content:
-                    raise InvokeError("README content is empty")
+                    msg = "README content is empty"
+                    raise InvokeError(msg)
                 decoded_bytes = base64.b64decode(content)
                 decoded_str = decoded_bytes.decode("utf-8")
                 yield self.create_text_message(decoded_str)
             else:
                 message = response_data.get("message")
-                raise InvokeError(f"Request failed: {response.status_code} {message}")
+                msg = f"Request failed: {response.status_code} {message}"
+                raise InvokeError(msg)
         except InvokeError:
             raise
         except Exception as e:
-            raise InvokeError(f"Request failed: {e}") from e
+            msg = f"Request failed: {e}"
+            raise InvokeError(msg) from e

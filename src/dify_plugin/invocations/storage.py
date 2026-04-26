@@ -28,7 +28,8 @@ class StorageInvocation(BackwardsInvocation[dict]):
             if data["data"] == "ok":
                 return
 
-            raise StorageInvocationError(f"unexpected data: {data['data']}")
+            msg = f"unexpected data: {data['data']}"
+            raise StorageInvocationError(msg)
 
     def get(self, key: str) -> bytes:
         """Get a key from persistence storage.
@@ -52,7 +53,8 @@ class StorageInvocation(BackwardsInvocation[dict]):
         ):
             return unhexlify(data["data"])
 
-        raise StorageInvocationError("no data found")
+        msg = "no data found"
+        raise StorageInvocationError(msg)
 
     def delete(self, key: str) -> None:
         """Delete a key from persistence storage.
@@ -74,9 +76,11 @@ class StorageInvocation(BackwardsInvocation[dict]):
             if data["data"] == "ok":
                 return
 
-            raise StorageInvocationError(f"unexpected data: {data['data']}")
+            msg = f"unexpected data: {data['data']}"
+            raise StorageInvocationError(msg)
 
-        raise StorageInvocationError("no data found")
+        msg = "no data found"
+        raise StorageInvocationError(msg)
 
     def exist(self, key: str) -> bool:
         """Check for the existence of a key in persistence storage.
@@ -100,4 +104,5 @@ class StorageInvocation(BackwardsInvocation[dict]):
         ):
             return data["data"]
 
-        raise StorageInvocationError("no data found")
+        msg = "no data found"
+        raise StorageInvocationError(msg)

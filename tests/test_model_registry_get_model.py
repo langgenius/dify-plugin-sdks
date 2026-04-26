@@ -136,7 +136,7 @@ def test_model_registry_get_model(monkeypatch: pytest.MonkeyPatch) -> None:
         provider_configuration = ModelProviderConfiguration(
             provider="test",
             label=I18nObject(zh_Hans="test", en_US="test"),
-            models={},  # type: ignore
+            models={},
             supported_model_types=[ModelType.LLM],
             extra=ModelProviderConfigurationExtra(
                 python=ModelProviderConfigurationExtra.Python(

@@ -72,7 +72,8 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
 
     def write(self, data: str) -> None:
         if not self.alive:
-            raise Exception("connection is dead")
+            msg = "connection is dead"
+            raise Exception(msg)
 
         try:
             if native_socket.socket is gevent_socket.socket:
@@ -125,13 +126,15 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                 data=InitializeMessage.Key(key=self.key).model_dump(),
             )
             self.sock.sendall(handshake_message.model_dump_json().encode() + b"\n")
-            logger.info(f"\033[32mConnected to {self.host}:{self.port}\033[0m")
+            logger.info("\033[32mConnected to %s:%s\033[0m", self.host, self.port)
             if self.on_connected:
                 self.on_connected()
-            logger.info(f"Sent key to {self.host}:{self.port}")
+            logger.info("Sent key to %s:%s", self.host, self.port)
         except OSError:
             logger.exception(
-                f"\033[31mFailed to connect to {self.host}:{self.port}\033[0m",
+                "\033[31mFailed to connect to %s:%s\033[0m",
+                self.host,
+                self.port,
             )
             raise
 
@@ -154,10 +157,13 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                     else:
                         raise
                 if data == b"":
-                    raise Exception("Connection is closed")
+                    msg = "Connection is closed"
+                    raise Exception(msg)
             except Exception:
                 logger.exception(
-                    f"\033[31mFailed to read data from {self.host}:{self.port}\033[0m",
+                    "\033[31mFailed to read data from %s:%s\033[0m",
+                    self.host,
+                    self.port,
                 )
                 self.alive = False
                 time.sleep(self.reconnect_timeout)
@@ -194,8 +200,10 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                     )
                     yield chunk
                     logger.info(
-                        f"Received event: \n{chunk.event}\n session_id: "
-                        f"\n{chunk.session_id}\n data: \n{chunk.data}",
+                        "Received event: \n%s\n session_id: \n%s\n data: \n%s",
+                        chunk.event,
+                        chunk.session_id,
+                        chunk.data,
                     )
                 except Exception:
                     logger.exception(

@@ -21,4 +21,5 @@ class ModerationInvocation(BackwardsInvocation[ModerationResult]):
         ):
             return data.result
 
-        raise Exception("No response from moderation")
+        msg = "No response from moderation"
+        raise Exception(msg)

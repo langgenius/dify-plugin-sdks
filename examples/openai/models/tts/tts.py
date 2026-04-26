@@ -46,7 +46,8 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         """
         voices = self.get_tts_model_voices(model=model, credentials=credentials)
         if not voices:
-            raise InvokeBadRequestError("No voices found for the model")
+            msg = "No voices found for the model"
+            raise InvokeBadRequestError(msg)
 
         if not voice or voice not in [d["value"] for d in voices]:
             voice = self._get_model_default_voice(model, credentials)
@@ -151,7 +152,8 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
                 buffer.seek(0)
 
                 return buffer.read()
-            raise InvokeBadRequestError("No audio bytes found")
+            msg = "No audio bytes found"
+            raise InvokeBadRequestError(msg)
         except Exception as ex:
             raise InvokeBadRequestError(str(ex)) from ex
 
@@ -183,7 +185,8 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
 
             voices = self.get_tts_model_voices(model=model, credentials=credentials)
             if not voices:
-                raise InvokeBadRequestError("No voices found for the model")
+                msg = "No voices found for the model"
+                raise InvokeBadRequestError(msg)
 
             if not voice or voice not in voices:
                 voice = self._get_model_default_voice(model, credentials)
@@ -203,7 +206,7 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
                         model=model,
                         response_format="mp3",
                         input=sentences[i],
-                        voice=voice,  # type: ignore
+                        voice=voice,
                     )
                     for i in range(len(sentences))
                 ]
@@ -215,7 +218,7 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
             else:
                 response = client.audio.speech.with_streaming_response.create(
                     model=model,
-                    voice=voice,  # type: ignore
+                    voice=voice,
                     response_format="mp3",
                     input=content_text.strip(),
                 )

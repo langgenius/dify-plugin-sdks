@@ -42,7 +42,8 @@ class DefaultParameterName(Enum):
         for name in cls:
             if name.value == value:
                 return name
-        raise ValueError(f"invalid parameter name {value}")
+        msg = f"invalid parameter name {value}"
+        raise ValueError(msg)
 
 
 PARAMETER_RULE_TEMPLATE: dict[DefaultParameterName, dict] = {

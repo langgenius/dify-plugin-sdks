@@ -51,7 +51,8 @@ class OnlineDocumentDatasource(ToolLike[DatasourceMessage]):
         """
         Get the pages
         """
-        raise NotImplementedError("This method should be implemented by a subclass")
+        msg = "This method should be implemented by a subclass"
+        raise NotImplementedError(msg)
 
     def get_content(
         self, page: GetOnlineDocumentPageContentRequest
@@ -68,4 +69,5 @@ class OnlineDocumentDatasource(ToolLike[DatasourceMessage]):
         """
         Get the content
         """
-        raise NotImplementedError("This method should be implemented by a subclass")
+        msg = "This method should be implemented by a subclass"
+        raise NotImplementedError(msg)

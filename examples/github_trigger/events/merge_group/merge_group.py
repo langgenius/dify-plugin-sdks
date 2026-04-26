@@ -21,12 +21,13 @@ class MergeGroupUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         mg = payload.get("merge_group")
         if not isinstance(mg, Mapping):
@@ -37,13 +38,13 @@ class MergeGroupUnifiedEvent(Event):
         if base_ref:
             names = {v.strip() for v in str(base_ref).split(",") if v.strip()}
             if names and (mg.get("base_ref") or "") not in names:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         head_sha = parameters.get("head_sha")
         if head_sha:
             allowed = {v.strip().lower() for v in str(head_sha).split(",") if v.strip()}
             sha = (mg.get("head_sha") or "").lower()
             if allowed and sha not in allowed:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

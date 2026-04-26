@@ -102,7 +102,8 @@ class PluginExecutor:
     ) -> dict[str, bool]:
         provider_instance = self.registration.get_tool_provider_cls(data.provider)
         if provider_instance is None:
-            raise ValueError(f"Provider `{data.provider}` not found")
+            msg = f"Provider `{data.provider}` not found"
+            raise ValueError(msg)
 
         provider_instance = provider_instance()
         provider_instance.validate_credentials(data.credentials)
@@ -116,12 +117,14 @@ class PluginExecutor:
     ) -> Generator[object, None, None]:
         provider_cls = self.registration.get_tool_provider_cls(request.provider)
         if provider_cls is None:
-            raise ValueError(f"Provider `{request.provider}` not found")
+            msg = f"Provider `{request.provider}` not found"
+            raise ValueError(msg)
 
         tool_cls = self.registration.get_tool_cls(request.provider, request.tool)
         if tool_cls is None:
+            msg = f"Tool `{request.tool}` not found for provider `{request.provider}`"
             raise ValueError(
-                f"Tool `{request.tool}` not found for provider `{request.provider}`",
+                msg,
             )
 
         # instantiate tool
@@ -148,9 +151,12 @@ class PluginExecutor:
             request.agent_strategy,
         )
         if agent_cls is None:
-            raise ValueError(
+            msg = (
                 f"Agent `{request.agent_strategy}` not found for provider "
-                f"`{request.agent_strategy_provider}`",
+                f"`{request.agent_strategy_provider}`"
+            )
+            raise ValueError(
+                msg,
             )
 
         agent = agent_cls(
@@ -168,13 +174,15 @@ class PluginExecutor:
     ) -> dict[str, object]:
         tool_cls = self.registration.get_tool_cls(data.provider, data.tool)
         if tool_cls is None:
+            msg = f"Tool `{data.tool}` not found for provider `{data.provider}`"
             raise ValueError(
-                f"Tool `{data.tool}` not found for provider `{data.provider}`",
+                msg,
             )
 
         if not tool_cls._is_get_runtime_parameters_overridden():
+            msg = f"Tool `{data.tool}` does not implement runtime parameters"
             raise ValueError(
-                f"Tool `{data.tool}` does not implement runtime parameters",
+                msg,
             )
 
         tool_instance = tool_cls(
@@ -197,7 +205,8 @@ class PluginExecutor:
     ) -> dict[str, object]:
         provider_instance = self.registration.get_model_provider_instance(data.provider)
         if provider_instance is None:
-            raise ValueError(f"Provider `{data.provider}` not found")
+            msg = f"Provider `{data.provider}` not found"
+            raise ValueError(msg)
 
         provider_instance.validate_provider_credentials(data.credentials)
 
@@ -210,15 +219,17 @@ class PluginExecutor:
     ) -> dict[str, object]:
         provider_instance = self.registration.get_model_provider_instance(data.provider)
         if provider_instance is None:
-            raise ValueError(f"Provider `{data.provider}` not found")
+            msg = f"Provider `{data.provider}` not found"
+            raise ValueError(msg)
 
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if model_instance is None:
+            msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
             raise ValueError(
-                f"Model `{data.model_type}` not found for provider `{data.provider}`",
+                msg,
             )
 
         model_instance.validate_credentials(data.model, data.credentials)
@@ -241,8 +252,9 @@ class PluginExecutor:
                 data.stream,
                 data.user_id,
             )
+        msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
-            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+            msg,
         )
 
     def get_llm_num_tokens(
@@ -264,8 +276,9 @@ class PluginExecutor:
                     data.tools,
                 ),
             }
+        msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
-            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+            msg,
         )
 
     def invoke_text_embedding(
@@ -284,8 +297,9 @@ class PluginExecutor:
                 data.texts,
                 data.user_id,
             )
+        msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
-            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+            msg,
         )
 
     def invoke_multimodal_embedding(
@@ -305,8 +319,9 @@ class PluginExecutor:
                 user=data.user_id,
                 input_type=data.input_type,
             )
+        msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
-            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+            msg,
         )
 
     def get_text_embedding_num_tokens(
@@ -326,8 +341,9 @@ class PluginExecutor:
                     data.texts,
                 ),
             }
+        msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
-            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+            msg,
         )
 
     def invoke_rerank(self, session: Session, data: ModelInvokeRerankRequest) -> object:
@@ -345,8 +361,9 @@ class PluginExecutor:
                 data.top_n,
                 data.user_id,
             )
+        msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
-            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+            msg,
         )
 
     def invoke_multimodal_rerank(
@@ -368,8 +385,9 @@ class PluginExecutor:
                 top_n=data.top_n,
                 user=data.user_id,
             )
+        msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
-            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+            msg,
         )
 
     def invoke_tts(
@@ -397,8 +415,9 @@ class PluginExecutor:
             for chunk in b:
                 yield {"result": binascii.hexlify(chunk).decode()}
         else:
+            msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
             raise ValueError(
-                f"Model `{data.model_type}` not found for provider `{data.provider}`",
+                msg,
             )
 
     def get_tts_model_voices(
@@ -418,8 +437,9 @@ class PluginExecutor:
                     data.language,
                 ),
             }
+        msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
-            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+            msg,
         )
 
     def invoke_speech_to_text(
@@ -446,9 +466,12 @@ class PluginExecutor:
                             data.user_id,
                         ),
                     }
-                raise ValueError(
+                msg = (
                     f"Model `{data.model_type}` not found for provider "
-                    f"`{data.provider}`",
+                    f"`{data.provider}`"
+                )
+                raise ValueError(
+                    msg,
                 )
 
     def get_ai_model_schemas(
@@ -467,8 +490,9 @@ class PluginExecutor:
                     data.credentials,
                 ),
             }
+        msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
-            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+            msg,
         )
 
     def invoke_moderation(
@@ -490,8 +514,9 @@ class PluginExecutor:
                     data.user_id,
                 ),
             }
+        msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
-            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+            msg,
         )
 
     def invoke_endpoint(
@@ -562,7 +587,8 @@ class PluginExecutor:
             )
         )
         if oauth_supported_provider is None:
-            raise ValueError(f"Provider `{provider}` does not support OAuth")
+            msg = f"Provider `{provider}` does not support OAuth"
+            raise ValueError(msg)
 
         return oauth_supported_provider
 
@@ -703,7 +729,8 @@ class PluginExecutor:
                 ),
                 session=session,
             )
-        raise ValueError("Cannot find the target to fetch parameter options")
+        msg = "Cannot find the target to fetch parameter options"
+        raise ValueError(msg)
 
     def invoke_trigger_event(
         self,
@@ -847,7 +874,7 @@ class PluginExecutor:
         session: Session,
         request: TriggerRefreshRequest,
     ) -> TriggerRefreshResponse:
-        """Refresh/extend an existing trigger subscription without changing configuration"""
+        """Refresh/extend an existing trigger subscription without changing config."""
         trigger_subscription_constructor_instance: TriggerSubscriptionConstructor = (
             self.registration.get_trigger_subscription_constructor(
                 provider_name=request.provider,

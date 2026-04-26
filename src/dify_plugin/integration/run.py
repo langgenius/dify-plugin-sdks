@@ -3,7 +3,7 @@ import os
 import pathlib
 import shutil
 import signal
-import subprocess
+import subprocess  # noqa: S404
 import tempfile
 import threading
 import uuid
@@ -87,13 +87,13 @@ class PluginRunner:
         if pathlib.Path(plugin_package_path).is_dir():
             logger.info("plugin source directory detected, building plugin")
             with tempfile.TemporaryDirectory(delete=False) as temp_dir:
-                output_path = os.path.join(temp_dir, "plugin.difypkg")
+                output_path = str(pathlib.Path(temp_dir) / "plugin.difypkg")
                 self._build_plugin(plugin_package_path, output_path)
                 self.plugin_package_path = output_path
-                logger.info(f"Plugin built in {self.plugin_package_path}")
+                logger.info("Plugin built in %s", self.plugin_package_path)
                 self.resources_need_to_be_cleaned.append(temp_dir)
 
-        self.process = subprocess.Popen(
+        self.process = subprocess.Popen(  # noqa: S603
             [
                 self.config.dify_cli_path,
                 "plugin",
@@ -108,7 +108,7 @@ class PluginRunner:
             stdin=self.stdin_pipe_read,
         )
 
-        logger.info(f"Plugin process created with pid {self.process.pid}")
+        logger.info("Plugin process created with pid %s", self.process.pid)
 
         # wait for plugin to be ready
         self.ready_semaphore = Semaphore(0)
@@ -128,13 +128,14 @@ class PluginRunner:
 
         # wait for the plugin to be ready with timeout
         if not self.ready_semaphore.acquire(timeout=30):  # 30 seconds timeout
-            raise TimeoutError("Plugin failed to start within 30 seconds")
+            msg = "Plugin failed to start within 30 seconds"
+            raise TimeoutError(msg)
 
         logger.info("Plugin ready")
 
     def _build_plugin(self, package_path: str, output_path: str) -> None:
         # build plugin
-        output = subprocess.check_output(
+        output = subprocess.check_output(  # noqa: S603
             [
                 self.config.dify_cli_path,
                 "plugin",
@@ -178,7 +179,7 @@ class PluginRunner:
         # doesn't make sense.
         b = os.read(fd, 65536)
         if not b:
-            raise PluginStoppedError()
+            raise PluginStoppedError
         return b
 
     def _message_reader(self, pipe: int) -> None:
@@ -231,7 +232,7 @@ class PluginRunner:
                 logger.info("Plugin is ready")
                 self.ready_semaphore.release()
             elif parsed_message.type == ResponseType.ERROR:
-                logger.error(f"Plugin error: {parsed_message.response}")
+                logger.error("Plugin error: %s", parsed_message.response)
                 raise ValueError(parsed_message.response)
             elif parsed_message.type == ResponseType.INFO:
                 logger.info(parsed_message.response)
@@ -263,7 +264,7 @@ class PluginRunner:
     ) -> Generator[R, None, None]:
         with self.stop_flag_lock:
             if self.stop_flag:
-                raise PluginStoppedError()
+                raise PluginStoppedError
 
         invoke_id = uuid.uuid4().hex
         request = PluginInvokeRequest(
@@ -289,9 +290,11 @@ class PluginRunner:
                     elif message.type == ResponseType.ERROR:
                         raise ValueError(message.response)
                     else:
-                        raise ValueError("Invalid response type")
+                        msg = "Invalid response type"
+                        raise ValueError(msg)
                 else:
-                    raise ValueError("Invalid invoke id")
+                    msg = "Invalid invoke id"
+                    raise ValueError(msg)
         finally:
             with self.q_lock:
                 del self.q[invoke_id]

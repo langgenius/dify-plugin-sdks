@@ -37,4 +37,5 @@ class InvokeType(Enum):
         for mode in cls:
             if mode.value == value:
                 return mode
-        raise ValueError(f"invalid type value {value}")
+        msg = f"invalid type value {value}"
+        raise ValueError(msg)

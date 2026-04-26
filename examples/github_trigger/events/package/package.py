@@ -21,22 +21,24 @@ class PackageUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         package = payload.get("package")
         if not isinstance(package, Mapping):
-            raise ValueError("No package in payload")
+            msg = "No package in payload"
+            raise ValueError(msg)
 
         name_filter = parameters.get("name")
         if name_filter:
             names = {v.strip() for v in str(name_filter).split(",") if v.strip()}
             if names and (package.get("name") or "") not in names:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         pkg_type = parameters.get("package_type")
         if pkg_type:
@@ -45,6 +47,6 @@ class PackageUnifiedEvent(Event):
             }
             ptype = (package.get("package_type") or "").lower()
             if allowed_types and ptype not in allowed_types:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

@@ -86,7 +86,8 @@ class LarkTrigger(Trigger):
         verification_token = subscription.properties.get("lark_verification_token")
 
         if not encrypt_key or not verification_token:
-            raise TriggerDispatchError("Encrypt key or verification token not found")
+            msg = "Encrypt key or verification token not found"
+            raise TriggerDispatchError(msg)
 
         self.handler = (
             lark.EventDispatcherHandler

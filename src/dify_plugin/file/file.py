@@ -39,11 +39,12 @@ class File(BaseModel):
                 response.raise_for_status()
                 self._blob = response.content
             except httpx.UnsupportedProtocol as e:
-                raise ValueError(
+                msg = (
                     f"Invalid file URL '{self.url}': {e}. "
                     "Ensure the `FILES_URL` environment variable is set in "
                     "your .env file"
-                ) from e
+                )
+                raise ValueError(msg) from e
 
         assert self._blob is not None
         return self._blob

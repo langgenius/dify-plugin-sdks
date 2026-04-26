@@ -32,4 +32,5 @@ class ParameterExtractorNodeInvocation(BackwardsInvocation[NodeResponse]):
         for data in response:
             return data
 
-        raise Exception("No response from workflow node parameter extractor")
+        msg = "No response from workflow node parameter extractor"
+        raise Exception(msg)

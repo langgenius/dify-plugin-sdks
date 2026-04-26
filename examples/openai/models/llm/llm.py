@@ -283,7 +283,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                         user_message.content,
                     ).replace("{{block}}", response_format),
                 )
-                prompt_messages[i].content += f"Assistant:\n```{response_format}\n"  # type: ignore
+                prompt_messages[i].content += f"Assistant:\n```{response_format}\n"
             else:
                 assert isinstance(user_message.content, str)
 
@@ -294,7 +294,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                     ).replace("{{block}}", response_format),
                 )
 
-                prompt_messages[i].content += f"\n```{response_format}\n"  # type: ignore
+                prompt_messages[i].content += f"\n```{response_format}\n"
 
     def get_num_tokens(
         self,
@@ -353,8 +353,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 remote_models = self.remote_models(credentials)
                 remote_model_map = {model.model: model for model in remote_models}
                 if model not in remote_model_map:
+                    msg = f"Fine-tuned model {model} not found"
                     raise CredentialsValidateFailedError(
-                        f"Fine-tuned model {model} not found",
+                        msg,
                     )
 
             # get model mode
@@ -722,12 +723,12 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         # chat model
         response = client.chat.completions.create(
-            messages=[self._convert_prompt_message_to_dict(m) for m in prompt_messages],  # type: ignore
+            messages=[self._convert_prompt_message_to_dict(m) for m in prompt_messages],
             model=model,
             stream=stream,
             **model_parameters,
             **extra_model_kwargs,
-        )  # type: ignore
+        )
 
         if stream:
             return self._handle_chat_generate_stream_response(
@@ -1131,7 +1132,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 "name": message.tool_call_id,
             }
         else:
-            raise ValueError(f"Got unknown type {message}")
+            msg = f"Got unknown type {message}"
+            raise ValueError(msg)
 
         if message.name:
             message_dict["name"] = message.name
@@ -1226,7 +1228,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
                 if key == "tool_calls":
                     for tool_call in value:
-                        for t_key, t_value in tool_call.items():  # type: ignore
+                        for t_key, t_value in tool_call.items():
                             num_tokens += len(encoding.encode(t_key))
                             if t_key == "function":
                                 for f_key, f_value in t_value.items():
@@ -1277,12 +1279,12 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             num_tokens += len(encoding.encode("parameters"))
             if "title" in parameters:
                 num_tokens += len(encoding.encode("title"))
-                num_tokens += len(encoding.encode(parameters.get("title")))  # type: ignore
+                num_tokens += len(encoding.encode(parameters.get("title")))
             num_tokens += len(encoding.encode("type"))
-            num_tokens += len(encoding.encode(parameters.get("type")))  # type: ignore
+            num_tokens += len(encoding.encode(parameters.get("type")))
             if "properties" in parameters:
                 num_tokens += len(encoding.encode("properties"))
-                for key, value in parameters.get("properties").items():  # type: ignore
+                for key, value in parameters.get("properties").items():
                     num_tokens += len(encoding.encode(key))
                     for field_key, field_value in value.items():
                         num_tokens += len(encoding.encode(field_key))
@@ -1326,7 +1328,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         models = self.predefined_models()
         model_map = {model.model: model for model in models}
         if base_model not in model_map:
-            raise ValueError(f"Base model {base_model} not found")
+            msg = f"Base model {base_model} not found"
+            raise ValueError(msg)
 
         base_model_schema = model_map[base_model]
 

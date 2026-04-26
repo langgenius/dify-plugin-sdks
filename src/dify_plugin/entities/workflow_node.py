@@ -50,7 +50,8 @@ class NodeType(StrEnum):
         for node_type in cls:
             if node_type.value == value:
                 return node_type
-        raise ValueError(f"invalid node type value {value}")
+        msg = f"invalid node type value {value}"
+        raise ValueError(msg)
 
 
 class ModelConfig(BaseModel):

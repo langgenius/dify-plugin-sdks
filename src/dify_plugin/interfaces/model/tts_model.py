@@ -4,7 +4,6 @@ import re
 import uuid
 from abc import abstractmethod
 from collections.abc import Generator
-from typing import Any
 
 from pydantic import ConfigDict
 
@@ -218,9 +217,6 @@ class TTSModel(AIModel):
 
         Returns:
             The return value.
-
-        Yields:
-            Generated values.
         """
         with self.timing_context():
             try:
@@ -232,11 +228,17 @@ class TTSModel(AIModel):
                     content_text=content_text,
                     voice=voice,
                 )
-                if isinstance(result, bytes):
-                    return result
-                elif isinstance(result, Generator):
-                    # NOTE: `yield from` cannot been replaced by `return`
-                    # because of `timing_context`
-                    yield from result
             except Exception as e:
                 raise self._transform_invoke_error(e) from e
+
+        if isinstance(result, bytes):
+            return result
+
+        def generator() -> Generator[bytes, None, None]:
+            with self.timing_context():
+                try:
+                    yield from result
+                except Exception as e:
+                    raise self._transform_invoke_error(e) from e
+
+        return generator()

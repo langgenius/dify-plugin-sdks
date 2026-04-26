@@ -40,12 +40,14 @@ def deserialize_request(raw_data: bytes) -> Request:
         lines = header_data.split(b"\n")
 
     if not lines or not lines[0]:
-        raise ValueError("Empty HTTP request")
+        msg = "Empty HTTP request"
+        raise ValueError(msg)
 
     request_line = lines[0].decode("utf-8", errors="ignore")
     parts = request_line.split(" ", 2)
     if len(parts) < 2:
-        raise ValueError(f"Invalid request line: {request_line}")
+        msg = f"Invalid request line: {request_line}"
+        raise ValueError(msg)
 
     method = parts[0]
     full_path = parts[1]
@@ -136,12 +138,14 @@ def deserialize_response(raw_data: bytes) -> Response:
         lines = header_data.split(b"\n")
 
     if not lines or not lines[0]:
-        raise ValueError("Empty HTTP response")
+        msg = "Empty HTTP response"
+        raise ValueError(msg)
 
     status_line = lines[0].decode("utf-8", errors="ignore")
     parts = status_line.split(" ", 2)
     if len(parts) < 2:
-        raise ValueError(f"Invalid status line: {status_line}")
+        msg = f"Invalid status line: {status_line}"
+        raise ValueError(msg)
 
     status_code = int(parts[1])
 

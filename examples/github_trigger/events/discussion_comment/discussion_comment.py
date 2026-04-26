@@ -21,16 +21,18 @@ class DiscussionCommentUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         comment = payload.get("comment")
         if not isinstance(comment, Mapping):
-            raise ValueError("No comment in payload")
+            msg = "No comment in payload"
+            raise ValueError(msg)
 
         self._check_body_contains(comment, parameters.get("body_contains"))
         self._check_commenter(comment, parameters.get("commenter"))
@@ -45,7 +47,7 @@ class DiscussionCommentUnifiedEvent(Event):
         keywords = {v.strip().lower() for v in str(value).split(",") if v.strip()}
         body = (comment.get("body") or "").lower()
         if keywords and not any(k in body for k in keywords):
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_commenter(self, comment: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -53,4 +55,4 @@ class DiscussionCommentUnifiedEvent(Event):
         allowed = {v.strip() for v in str(value).split(",") if v.strip()}
         login = ((comment.get("user") or {}).get("login") or "").strip()
         if allowed and login not in allowed:
-            raise EventIgnoreError()
+            raise EventIgnoreError

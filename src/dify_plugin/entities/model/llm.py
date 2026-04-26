@@ -33,7 +33,8 @@ class LLMMode(Enum):
         for mode in cls:
             if mode.value == value:
                 return mode
-        raise ValueError(f"invalid mode value {value}")
+        msg = f"invalid mode value {value}"
+        raise ValueError(msg)
 
 
 class LLMUsage(ModelUsage):

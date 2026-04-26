@@ -32,11 +32,13 @@ class ApprovalUpdatedV4Event(Event):
             lambda builder: builder.register_p2_approval_approval_updated_v4,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         approval_data = event_data.object
         if approval_data is None:
-            raise ValueError("approval_data is None")
+            msg = "approval_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict = {

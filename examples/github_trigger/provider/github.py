@@ -8,6 +8,7 @@ import time
 import urllib.parse
 import uuid
 from collections.abc import Mapping
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, cast
 
 import requests
@@ -42,7 +43,8 @@ class GithubTrigger(Trigger):
 
         event_type: str | None = request.headers.get("X-GitHub-Event")
         if not event_type:
-            raise TriggerDispatchError("Missing GitHub event type header")
+            msg = "Missing GitHub event type header"
+            raise TriggerDispatchError(msg)
 
         payload: Mapping[str, Any] = self._validate_payload(request)
         user_id = str(payload.get("sender", {}).get("id", "unknown"))
@@ -76,9 +78,8 @@ class GithubTrigger(Trigger):
 
         if event_type in {"deployment_status", "release"}:
             if not action:
-                raise TriggerDispatchError(
-                    f"GitHub event '{event_type}' missing action in payload"
-                )
+                msg = f"GitHub event '{event_type}' missing action in payload"
+                raise TriggerDispatchError(msg)
             return [f"{event_type}_{action}"]
 
         if event_type == "push":
@@ -162,22 +163,26 @@ class GithubTrigger(Trigger):
             if "application/x-www-form-urlencoded" in content_type:
                 form_data = request.form.get("payload")
                 if not form_data:
-                    raise TriggerDispatchError("Missing payload in form data")
+                    msg = "Missing payload in form data"
+                    raise TriggerDispatchError(msg)
                 payload = json.loads(form_data)
             else:
                 payload = request.get_json(force=True)
             if not payload:
-                raise TriggerDispatchError("Empty request body")
+                msg = "Empty request body"
+                raise TriggerDispatchError(msg)
             return payload
         except TriggerDispatchError:
             raise
         except Exception as exc:  # pragma: no cover - defensive logging path
-            raise TriggerDispatchError(f"Failed to parse payload: {exc}") from exc
+            msg = f"Failed to parse payload: {exc}"
+            raise TriggerDispatchError(msg) from exc
 
     def _validate_signature(self, request: Request, webhook_secret: str) -> None:
         signature = request.headers.get("X-Hub-Signature-256")
         if not signature:
-            raise TriggerValidationError("Missing webhook signature")
+            msg = "Missing webhook signature"
+            raise TriggerValidationError(msg)
 
         expected_signature = (
             "sha256="
@@ -186,7 +191,8 @@ class GithubTrigger(Trigger):
             ).hexdigest()
         )
         if not hmac.compare_digest(signature, expected_signature):
-            raise TriggerValidationError("Invalid webhook signature")
+            msg = "Invalid webhook signature"
+            raise TriggerValidationError(msg)
 
 
 class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
@@ -200,9 +206,8 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
         access_token = credentials.get("access_tokens")
         if not access_token:
-            raise TriggerProviderCredentialValidationError(
-                "GitHub API Access Token is required."
-            )
+            msg = "GitHub API Access Token is required."
+            raise TriggerProviderCredentialValidationError(msg)
 
         headers = {
             "Authorization": f"Bearer {access_token}",
@@ -210,7 +215,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
         try:
             response = requests.get(self._API_USER_URL, headers=headers, timeout=10)
-            if response.status_code != 200:
+            if response.status_code != HTTPStatus.OK:
                 raise TriggerProviderCredentialValidationError(
                     response.json().get("message")
                 )
@@ -236,12 +241,14 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> TriggerOAuthCredentials:
         code = request.args.get("code")
         if not code:
-            raise TriggerProviderOAuthError("No code provided")
+            msg = "No code provided"
+            raise TriggerProviderOAuthError(msg)
 
         if not system_credentials.get("client_id") or not system_credentials.get(
             "client_secret"
         ):
-            raise TriggerProviderOAuthError("Client ID or Client Secret is required")
+            msg = "Client ID or Client Secret is required"
+            raise TriggerProviderOAuthError(msg)
 
         data = {
             "client_id": system_credentials["client_id"],
@@ -256,7 +263,8 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         response_json = response.json()
         access_tokens = response_json.get("access_token")
         if not access_tokens:
-            raise TriggerProviderOAuthError(f"Error in GitHub OAuth: {response_json}")
+            msg = f"Error in GitHub OAuth: {response_json}"
+            raise TriggerProviderOAuthError(msg)
 
         return TriggerOAuthCredentials(
             credentials={"access_tokens": access_tokens}, expires_at=-1
@@ -271,12 +279,14 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> Subscription:
         repository = parameters.get("repository")
         if not repository:
-            raise ValueError("repository is required (format: owner/repo)")
+            msg = "repository is required (format: owner/repo)"
+            raise ValueError(msg)
 
         try:
             owner, repo = repository.split("/")
         except ValueError:
-            raise ValueError("repository must be in format 'owner/repo'") from None
+            msg = "repository must be in format 'owner/repo'"
+            raise ValueError(msg) from None
 
         events: list[str] = parameters.get("events", [])
         webhook_secret = uuid.uuid4().hex
@@ -303,12 +313,13 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                 url, json=webhook_data, headers=headers, timeout=10
             )
         except requests.RequestException as exc:
+            msg = f"Network error while creating webhook: {exc}"
             raise SubscriptionError(
-                f"Network error while creating webhook: {exc}",
+                msg,
                 error_code="NETWORK_ERROR",
             ) from exc
 
-        if response.status_code == 201:
+        if response.status_code == HTTPStatus.CREATED:
             webhook = response.json()
             return Subscription(
                 expires_at=int(time.time()) + self._WEBHOOK_TTL,
@@ -376,13 +387,13 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                 external_response=None,
             ) from exc
 
-        if response.status_code == 204:
+        if response.status_code == HTTPStatus.NO_CONTENT:
             return UnsubscribeResult(
                 success=True,
                 message=f"Successfully removed webhook {external_id} from {repository}",
             )
 
-        if response.status_code == 404:
+        if response.status_code == HTTPStatus.NOT_FOUND:
             raise UnsubscribeError(
                 message=f"Webhook {external_id} not found in repository {repository}",
                 error_code="WEBHOOK_NOT_FOUND",
@@ -422,7 +433,8 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         token = credentials.get("access_tokens")
         if not token:
-            raise ValueError("access_tokens is required to fetch repositories")
+            msg = "access_tokens is required to fetch repositories"
+            raise ValueError(msg)
         return self._fetch_repositories(token)
 
     # ------------------------------------------------------------------
@@ -456,20 +468,22 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                 timeout=10,
             )
 
-            if response.status_code != 200:
+            if response.status_code != HTTPStatus.OK:
                 try:
                     err = response.json()
                     message = err.get("message", str(err))
                 except Exception:  # pragma: no cover - fallback path
                     message = response.text
-                raise ValueError(f"Failed to fetch repositories from GitHub: {message}")
+                msg = f"Failed to fetch repositories from GitHub: {message}"
+                raise ValueError(msg)
 
             raw_repos: Any = response.json() or []
             if not isinstance(raw_repos, list):
-                raise ValueError(
+                msg = (
                     "Unexpected response format from GitHub API when "
                     "fetching repositories"
                 )
+                raise ValueError(msg)
 
             repos = cast(list[dict[str, Any]], raw_repos)
             for repo in repos:

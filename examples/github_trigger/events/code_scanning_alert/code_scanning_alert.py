@@ -21,17 +21,19 @@ class CodeScanningAlertEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         # Actions: created, fixed, reopened, dismissed
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         alert = payload.get("alert")
         if not isinstance(alert, Mapping):
-            raise ValueError("No alert data in payload")
+            msg = "No alert data in payload"
+            raise ValueError(msg)
 
         self._check_severity(alert, parameters.get("severity"))
         self._check_state(alert, parameters.get("state"))
@@ -51,7 +53,7 @@ class CodeScanningAlertEvent(Event):
         ).lower()
         targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
         if targets and sev not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_state(self, alert: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -59,7 +61,7 @@ class CodeScanningAlertEvent(Event):
         state = (alert.get("state") or "").lower()
         targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
         if targets and state not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_rule_id(self, alert: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -67,7 +69,7 @@ class CodeScanningAlertEvent(Event):
         rid = str(alert.get("rule", {}).get("id") or "").strip()
         targets = {s.strip() for s in str(value).split(",") if s.strip()}
         if targets and rid not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_tool_name(self, alert: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -76,7 +78,7 @@ class CodeScanningAlertEvent(Event):
         name = str(tool.get("name") or tool.get("guid") or "").strip()
         targets = {s.strip() for s in str(value).split(",") if s.strip()}
         if targets and name not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_branch(self, alert: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -92,4 +94,4 @@ class CodeScanningAlertEvent(Event):
         # Convert refs/heads/main -> main
         branch = ref.split("/", 2)[-1] if ref.startswith("refs/heads/") else ref
         if branch not in branches:
-            raise EventIgnoreError()
+            raise EventIgnoreError

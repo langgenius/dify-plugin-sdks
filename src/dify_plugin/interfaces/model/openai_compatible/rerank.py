@@ -58,9 +58,11 @@ class OAICompatRerankModel(RerankModel):
         model_name = model
 
         if not server_url:
-            raise CredentialsValidateFailedError("server_url is required")
+            msg = "server_url is required"
+            raise CredentialsValidateFailedError(msg)
         if not model_name:
-            raise CredentialsValidateFailedError("model_name is required")
+            msg = "model_name is required"
+            raise CredentialsValidateFailedError(msg)
 
         url = server_url
         headers = {

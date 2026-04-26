@@ -1,4 +1,5 @@
 import pathlib
+from http import HTTPStatus
 from typing import IO
 from urllib.parse import urljoin
 
@@ -57,7 +58,7 @@ class OAICompatSpeech2TextModel(_CommonOaiApiCompat, Speech2TextModel):
             timeout=(10, 300),
         )
 
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             raise InvokeBadRequestError(response.text)
         response_data = response.json()
         return response_data["text"]

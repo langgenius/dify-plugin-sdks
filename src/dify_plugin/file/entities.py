@@ -13,4 +13,5 @@ class FileType(StrEnum):
         for member in FileType:
             if member.value == value:
                 return member
-        raise ValueError(f"No such file type: {value}")
+        msg = f"No such file type: {value}"
+        raise ValueError(msg)

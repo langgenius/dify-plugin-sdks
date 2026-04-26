@@ -28,7 +28,8 @@ class NotionDataSource(OnlineDocumentDatasource):
         # Get integration token from credentials
         access_token = self.runtime.credentials.get("integration_secret")
         if not access_token:
-            raise ValueError("Access token not found in credentials")
+            msg = "Access token not found in credentials"
+            raise ValueError(msg)
         workspace_name = self.notion_workspace_info(access_token).get(
             "workspace_name", ""
         )
@@ -52,7 +53,8 @@ class NotionDataSource(OnlineDocumentDatasource):
     ) -> Generator[DatasourceMessage, None, None]:
         access_token = self.runtime.credentials.get("integration_secret")
         if not access_token:
-            raise ValueError("Access token not found in credentials")
+            msg = "Access token not found in credentials"
+            raise ValueError(msg)
         try:
             notion_extractor = NotionExtractor(
                 access_token=access_token,

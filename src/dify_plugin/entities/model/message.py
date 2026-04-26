@@ -32,7 +32,8 @@ class PromptMessageRole(Enum):
         for mode in cls:
             if mode.value == value:
                 return mode
-        raise ValueError(f"invalid prompt message type value {value}")
+        msg = f"invalid prompt message type value {value}"
+        raise ValueError(msg)
 
 
 class PromptMessageTool(BaseModel):
@@ -175,7 +176,8 @@ class PromptMessage(BaseModel):
                     result.append(content)
                     continue
                 if not isinstance(content, dict):
-                    raise ValueError("invalid prompt message content")
+                    msg = "invalid prompt message content"
+                    raise ValueError(msg)
                 value_type = content.get("type")
                 match value_type:
                     case PromptMessageContentType.TEXT:
@@ -191,7 +193,8 @@ class PromptMessage(BaseModel):
                             DocumentPromptMessageContent.model_validate(content),
                         )
                     case _:
-                        raise ValueError("invalid prompt message content type")
+                        msg = "invalid prompt message content type"
+                        raise ValueError(msg)
             return result
         return value
 

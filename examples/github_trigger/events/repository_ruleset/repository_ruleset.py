@@ -21,12 +21,13 @@ class RepositoryRulesetEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         name_filter = parameters.get("name")
         if name_filter:
@@ -34,6 +35,6 @@ class RepositoryRulesetEvent(Event):
             name = (ruleset.get("name") or "").strip()
             targets = {s.strip() for s in str(name_filter).split(",") if s.strip()}
             if targets and name not in targets:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

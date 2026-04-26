@@ -196,19 +196,22 @@ class DatasourceProviderManifest(BaseModel):
     @classmethod
     def validate_datasources(cls, value: list[object]) -> list[DatasourceEntity]:
         if not isinstance(value, list):
-            raise ValueError("datasources should be a list")
+            msg = "datasources should be a list"
+            raise ValueError(msg)
 
         datasources: list[DatasourceEntity] = []
 
         for datasource in value:
             if not isinstance(datasource, str):
-                raise ValueError("datasource path should be a string")
+                msg = "datasource path should be a string"
+                raise ValueError(msg)
             try:
                 file = load_yaml_file(datasource)
                 datasources.append(DatasourceEntity(**file))
             except Exception as e:
+                msg = f"Error loading datasource configuration: {e!s}"
                 raise ValueError(
-                    f"Error loading datasource configuration: {e!s}",
+                    msg,
                 ) from e
 
         return datasources

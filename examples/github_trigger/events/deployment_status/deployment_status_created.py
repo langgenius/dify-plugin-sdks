@@ -21,15 +21,17 @@ class DeploymentStatusCreatedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         if payload.get("action") != "created":
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         status = payload.get("deployment_status")
         deployment = payload.get("deployment")
         if not isinstance(status, Mapping) or not isinstance(deployment, Mapping):
-            raise ValueError("Missing deployment or deployment_status in payload")
+            msg = "Missing deployment or deployment_status in payload"
+            raise ValueError(msg)
 
         self._check_environment(deployment, parameters.get("environment"))
         self._check_state(status, parameters.get("state"))
@@ -48,7 +50,7 @@ class DeploymentStatusCreatedEvent(Event):
             return
         env = (deployment.get("environment") or "").strip()
         if env not in envs:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_state(self, status: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -58,7 +60,7 @@ class DeploymentStatusCreatedEvent(Event):
             return
         current = (status.get("state") or "").lower()
         if current not in states:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_ref(self, deployment: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -68,7 +70,7 @@ class DeploymentStatusCreatedEvent(Event):
             return
         current = (deployment.get("ref") or "").strip()
         if current not in refs:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_creator(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -78,4 +80,4 @@ class DeploymentStatusCreatedEvent(Event):
             return
         creator = payload.get("sender", {}).get("login")
         if creator not in users:
-            raise EventIgnoreError()
+            raise EventIgnoreError

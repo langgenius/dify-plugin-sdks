@@ -4,6 +4,7 @@ import logging
 import uuid
 from collections.abc import Generator, Mapping
 from decimal import Decimal
+from http import HTTPStatus
 from typing import Any, cast
 from urllib.parse import urljoin
 
@@ -219,7 +220,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 data["prompt"] = "ping"
                 endpoint_url = urljoin(endpoint_url, "completions")
             else:
-                raise ValueError("Unsupported completion type for model configuration.")
+                msg = "Unsupported completion type for model configuration."
+                raise ValueError(msg)
 
             # ADD stream validate_credentials
             stream_mode_auth = credentials.get("stream_mode_auth", "not_use")
@@ -239,10 +241,13 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     timeout=(10, 300),
                     stream=True,
                 )
-                if response.status_code != 200:
-                    raise CredentialsValidateFailedError(
+                if response.status_code != HTTPStatus.OK:
+                    msg = (
                         "Credentials validation failed with status code "
-                        f"{response.status_code} and response body {response.text}",
+                        f"{response.status_code} and response body {response.text}"
+                    )
+                    raise CredentialsValidateFailedError(
+                        msg,
                     )
                 return
 
@@ -254,18 +259,24 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 timeout=(10, 300),
             )
 
-            if response.status_code != 200:
-                raise CredentialsValidateFailedError(
+            if response.status_code != HTTPStatus.OK:
+                msg = (
                     "Credentials validation failed with status code "
-                    f"{response.status_code} and response body {response.text}",
+                    f"{response.status_code} and response body {response.text}"
+                )
+                raise CredentialsValidateFailedError(
+                    msg,
                 )
 
             try:
                 json_result = response.json()
             except json.JSONDecodeError:
-                raise CredentialsValidateFailedError(
+                msg = (
                     "Credentials validation failed: JSON decode error, "
-                    f"response body {response.text}",
+                    f"response body {response.text}"
+                )
+                raise CredentialsValidateFailedError(
+                    msg,
                 ) from None
 
             if completion_type is LLMMode.CHAT and json_result.get("object", "") == "":
@@ -280,28 +291,38 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 "object" not in json_result
                 or json_result["object"] != "chat.completion"
             ):
-                raise CredentialsValidateFailedError(
+                msg = (
                     f"Credentials validation failed: invalid response object, "
-                    f"must be 'chat.completion', response body {response.text}",
+                    f"must be 'chat.completion', response body {response.text}"
+                )
+                raise CredentialsValidateFailedError(
+                    msg,
                 )
             if completion_type is LLMMode.COMPLETION and (
                 "object" not in json_result
                 or json_result["object"] != "text_completion"
             ):
-                raise CredentialsValidateFailedError(
+                msg = (
                     f"Credentials validation failed: invalid response object, "
-                    f"must be 'text_completion', response body {response.text}",
+                    f"must be 'text_completion', response body {response.text}"
+                )
+                raise CredentialsValidateFailedError(
+                    msg,
                 )
         except CredentialsValidateFailedError:
             raise
         except Exception as ex:
             if response:
-                raise CredentialsValidateFailedError(
+                msg = (
                     "An error occurred during credentials validation: "
-                    f"{ex!s}, response body {response.text}",
+                    f"{ex!s}, response body {response.text}"
+                )
+                raise CredentialsValidateFailedError(
+                    msg,
                 ) from ex
+            msg = f"An error occurred during credentials validation: {ex!s}"
             raise CredentialsValidateFailedError(
-                f"An error occurred during credentials validation: {ex!s}",
+                msg,
             ) from ex
 
     def get_customizable_model_schema(
@@ -454,8 +475,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         elif credentials["mode"] == "completion":
             entity.model_properties[ModelPropertyKey.MODE] = LLMMode.COMPLETION.value
         else:
+            msg = f"Unknown completion type {credentials['completion_type']}"
             raise ValueError(
-                f"Unknown completion type {credentials['completion_type']}",
+                msg,
             )
 
         return entity
@@ -516,15 +538,19 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             if response_format == "json_schema":
                 json_schema = model_parameters.get("json_schema")
                 if not json_schema:
-                    raise ValueError(
+                    msg = (
                         "Must define JSON Schema when the response format is "
-                        "json_schema",
+                        "json_schema"
+                    )
+                    raise ValueError(
+                        msg,
                     )
                 try:
                     schema = TypeAdapter(dict[str, Any]).validate_json(json_schema)
                 except Exception as exc:
+                    msg = f"not correct json_schema format: {json_schema}"
                     raise ValueError(
-                        f"not correct json_schema format: {json_schema}",
+                        msg,
                     ) from exc
                 model_parameters.pop("json_schema")
                 model_parameters["response_format"] = {
@@ -554,7 +580,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             endpoint_url = urljoin(endpoint_url, "completions")
             data["prompt"] = prompt_messages[0].content
         else:
-            raise ValueError("Unsupported completion type for model configuration.")
+            msg = "Unsupported completion type for model configuration."
+            raise ValueError(msg)
 
         # annotate tools with names, descriptions, etc.
         function_calling_type = credentials.get("function_calling_type", "no_call")
@@ -595,10 +622,13 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if response.encoding is None or response.encoding == "ISO-8859-1":
             response.encoding = "utf-8"
 
-        if response.status_code != 200:
-            raise InvokeError(
+        if response.status_code != HTTPStatus.OK:
+            msg = (
                 "API request failed with status code "
-                f"{response.status_code}: {response.text}",
+                f"{response.status_code}: {response.text}"
+            )
+            raise InvokeError(
+                msg,
             )
 
         if stream:
@@ -713,9 +743,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 if chunk_json.get("error") and chunk_json.get("choices") is None:
                     raise ValueError(chunk_json.get("error"))
 
-                if chunk_json:
-                    if u := chunk_json.get("usage"):
-                        usage = u
+                if chunk_json and (u := chunk_json.get("usage")):
+                    usage = u
                 if not chunk_json or len(chunk_json["choices"]) == 0:
                     continue
 
@@ -961,7 +990,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     "name": message.tool_call_id,
                 }
         else:
-            raise ValueError(f"Got unknown type {message}")
+            msg = f"Got unknown type {message}"
+            raise ValueError(msg)
 
         if message.name and message_dict.get("role", "") != "tool":
             message_dict["name"] = message.name

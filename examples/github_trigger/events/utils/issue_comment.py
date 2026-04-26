@@ -12,7 +12,7 @@ def check_comment_body_contains(comment: Mapping[str, Any], value: object) -> No
         return
     body = (comment.get("body") or "").lower()
     if not any(k in body for k in keywords):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_commenter(comment: Mapping[str, Any], value: object) -> None:
@@ -21,7 +21,7 @@ def check_commenter(comment: Mapping[str, Any], value: object) -> None:
         return
     login = (comment.get("user") or {}).get("login")
     if login not in commenters:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_issue_labels(issue: Mapping[str, Any], value: object) -> None:
@@ -30,7 +30,7 @@ def check_issue_labels(issue: Mapping[str, Any], value: object) -> None:
         return
     current = [lbl.get("name") for lbl in issue.get("labels", [])]
     if not any(lbl in current for lbl in labels):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_issue_state(issue: Mapping[str, Any], value: object) -> None:
@@ -39,7 +39,7 @@ def check_issue_state(issue: Mapping[str, Any], value: object) -> None:
     state = (issue.get("state") or "").lower()
     targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
     if targets and state not in targets:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_is_pull_request(issue: Mapping[str, Any], flag: object) -> None:
@@ -47,7 +47,7 @@ def check_is_pull_request(issue: Mapping[str, Any], flag: object) -> None:
         return
     is_pr = "pull_request" in issue
     if bool(flag) != is_pr:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def _normalize_list(raw: object, *, lowercase: bool = False) -> list[str]:

@@ -21,7 +21,8 @@ class RefChangeEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         event_type = (request.headers.get("X-GitHub-Event") or "").lower()
         action = "created" if event_type == "create" else "deleted"
@@ -29,18 +30,18 @@ class RefChangeEvent(Event):
         # Filter by event types
         allowed_types = parameters.get("event_types") or []
         if allowed_types and event_type not in allowed_types:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         ref_type = (payload.get("ref_type") or "").lower()
         allowed_ref_type = parameters.get("ref_type")
         if allowed_ref_type and ref_type != allowed_ref_type:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         ref = payload.get("ref") or ""
         allowed_refs = parameters.get("ref_names")
         if allowed_refs:
             names = {s.strip() for s in str(allowed_refs).split(",") if s.strip()}
             if names and ref not in names:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={"action": action, **payload})

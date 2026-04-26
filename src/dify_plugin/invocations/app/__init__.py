@@ -23,4 +23,5 @@ class FetchAppInvocation(BackwardsInvocation[dict]):
         for data in response:
             return data
 
-        raise Exception("No response")
+        msg = "No response"
+        raise Exception(msg)

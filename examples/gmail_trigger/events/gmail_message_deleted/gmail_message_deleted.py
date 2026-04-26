@@ -23,7 +23,7 @@ class GmailMessageDeletedEvent(Event):
         items: list[dict[str, Any]] = []
         raw_items = payload.get("message_deleted") or payload.get("items")
         if isinstance(raw_items, list):
-            items = [it for it in raw_items if isinstance(it, Mapping)]  # type: ignore[typeddict-item]
+            items = [it for it in raw_items if isinstance(it, Mapping)]
 
         # Fallback to storage when payload not provided
         if not items:
@@ -33,14 +33,14 @@ class GmailMessageDeletedEvent(Event):
             pending_key = f"gmail:{sub_key}:pending:message_deleted"
 
             if not self.runtime.session.storage.exist(pending_key):
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
             raw_bytes: bytes = self.runtime.session.storage.get(pending_key)
             try:
                 data: dict[str, Any] = json.loads(raw_bytes.decode("utf-8"))
             except Exception as err:
                 self.runtime.session.storage.delete(pending_key)
-                raise EventIgnoreError() from err
+                raise EventIgnoreError from err
 
             # Cleanup pending batch
             self.runtime.session.storage.delete(pending_key)
@@ -48,7 +48,7 @@ class GmailMessageDeletedEvent(Event):
             items = data.get("items") or []
 
         if not items:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         # For deleted messages we cannot retrieve content anymore; output ids only
         return Variables(

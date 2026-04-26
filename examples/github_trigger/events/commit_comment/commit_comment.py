@@ -21,16 +21,18 @@ class CommitCommentEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = (payload.get("action") or "created").lower()
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         comment = payload.get("comment")
         if not isinstance(comment, Mapping):
-            raise ValueError("No comment in payload")
+            msg = "No comment in payload"
+            raise ValueError(msg)
 
         self._check_body_contains(comment, parameters.get("body_contains"))
         self._check_commenter(comment, parameters.get("commenter"))
@@ -47,7 +49,7 @@ class CommitCommentEvent(Event):
         keywords = {s.strip().lower() for s in str(value).split(",") if s.strip()}
         body = (comment.get("body") or "").lower()
         if keywords and not any(k in body for k in keywords):
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_commenter(self, comment: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -55,7 +57,7 @@ class CommitCommentEvent(Event):
         allowed = {s.strip() for s in str(value).split(",") if s.strip()}
         login = (comment.get("user", {}) or {}).get("login")
         if allowed and login not in allowed:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_commit_id(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -65,7 +67,7 @@ class CommitCommentEvent(Event):
         )
         targets = {s.strip() for s in str(value).split(",") if s.strip()}
         if targets and (cid not in targets):
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_path(self, comment: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -73,4 +75,4 @@ class CommitCommentEvent(Event):
         path = (comment.get("path") or "").strip()
         targets = {s.strip() for s in str(value).split(",") if s.strip()}
         if targets and path not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError

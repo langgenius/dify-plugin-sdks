@@ -21,11 +21,13 @@ class GollumEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         pages = payload.get("pages")
         if not isinstance(pages, list):
-            raise ValueError("No pages in payload")
+            msg = "No pages in payload"
+            raise ValueError(msg)
 
         actions_filter = set(parameters.get("actions") or [])
         title_filter = parameters.get("title")
@@ -41,6 +43,6 @@ class GollumEvent(Event):
 
         any_match = any(isinstance(p, Mapping) and match_page(p) for p in pages)
         if (actions_filter or title_filter) and not any_match:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         return Variables(variables={**payload})

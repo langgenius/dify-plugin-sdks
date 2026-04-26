@@ -66,7 +66,8 @@ class ReActAgentStrategy(AgentStrategy):
             ],
         )
         if not prompt_entity:
-            raise ValueError("Agent prompt configuration is not set")
+            msg = "Agent prompt configuration is not set"
+            raise ValueError(msg)
         first_prompt = prompt_entity.first_prompt
 
         system_prompt = (
@@ -90,7 +91,8 @@ class ReActAgentStrategy(AgentStrategy):
         try:
             react_params = ReActParams(**parameters)
         except pydantic.ValidationError as e:
-            raise ValueError(f"Invalid parameters: {e!s}") from e
+            msg = f"Invalid parameters: {e!s}"
+            raise ValueError(msg) from e
 
         # Init parameters
         self.query = react_params.query
@@ -383,7 +385,6 @@ class ReActAgentStrategy(AgentStrategy):
         system_message = self._system_prompt_message
 
         # organize current assistant messages
-        agent_scratchpad = agent_scratchpad
         if not agent_scratchpad:
             assistant_messages = []
         else:
@@ -463,7 +464,8 @@ class ReActAgentStrategy(AgentStrategy):
                     if param.form == ToolParameter.ToolParameterForm.LLM
                 ]
                 if len(params) > 1:
-                    raise ValueError("tool call args is not a valid json string") from e
+                    msg = "tool call args is not a valid json string"
+                    raise ValueError(msg) from e
                 tool_call_args = {params[0]: tool_call_args} if len(params) == 1 else {}
         tool_call_args = cast("dict[str, Any]", tool_call_args)
         tool_invoke_parameters = {**tool_instance.runtime_parameters, **tool_call_args}

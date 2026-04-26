@@ -32,10 +32,12 @@ class CrawlDatasource(WebsiteCrawlDatasource):
         """
         source_url = datasource_parameters.get("url")
         if not source_url:
-            raise ValueError("Url is required")
+            msg = "Url is required"
+            raise ValueError(msg)
 
         if not self.runtime.credentials.get("firecrawl_api_key"):
-            raise ToolProviderCredentialValidationError("api key is required")
+            msg = "api key is required"
+            raise ToolProviderCredentialValidationError(msg)
 
         try:
             app = FirecrawlApp(
@@ -89,7 +91,8 @@ class CrawlDatasource(WebsiteCrawlDatasource):
                     yield self.create_crawl_message(crawl_res)
                     break
                 elif status["status"] == "failed":
-                    raise HTTPError(f"Job {crawl_res.job_id} failed: {status['error']}")
+                    msg = f"Job {crawl_res.job_id} failed: {status['error']}"
+                    raise HTTPError(msg)
                 else:
                     crawl_res.status = "processing"
                     crawl_res.total = status["total"] or 0
@@ -98,7 +101,8 @@ class CrawlDatasource(WebsiteCrawlDatasource):
                     time.sleep(5)
 
         except Exception as e:
-            raise ValueError(f"An error occurred: {e!s}") from e
+            msg = f"An error occurred: {e!s}"
+            raise ValueError(msg) from e
 
     @staticmethod
     def _process_completed_job(

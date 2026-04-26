@@ -1,6 +1,7 @@
 import json
 from collections.abc import Generator
 from datetime import datetime
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -73,7 +74,7 @@ class GithubRepositoryIssuesTool(Tool):
                 params=params,
             )
 
-            if response.status_code == 200:
+            if response.status_code == HTTPStatus.OK:
                 response_data = response.json()
 
                 issues = []
@@ -129,8 +130,10 @@ class GithubRepositoryIssuesTool(Tool):
             else:
                 response_data = response.json()
                 message = response_data.get("message", "Unknown error")
-                raise InvokeError(f"Request failed: {response.status_code} {message}")
+                msg = f"Request failed: {response.status_code} {message}"
+                raise InvokeError(msg)
         except InvokeError:
             raise
         except Exception as e:
-            raise InvokeError(f"GitHub API request failed: {e}") from e
+            msg = f"GitHub API request failed: {e}"
+            raise InvokeError(msg) from e

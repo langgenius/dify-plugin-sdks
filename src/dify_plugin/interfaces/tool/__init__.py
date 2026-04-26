@@ -282,10 +282,11 @@ class ToolProvider:
         return self._validate_credentials(credentials)
 
     def _validate_credentials(self, credentials: dict) -> None:
-        raise NotImplementedError(
+        msg = (
             "The tool you are using does not support credentials validation, "
             "please implement `_validate_credentials` method"
         )
+        raise NotImplementedError(msg)
 
     def oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
@@ -305,10 +306,11 @@ class ToolProvider:
     def _oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
     ) -> str:
-        raise NotImplementedError(
+        msg = (
             "The tool you are using does not support OAuth, please implement "
             "`_oauth_get_authorization_url` method"
         )
+        raise NotImplementedError(msg)
 
     def oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
@@ -335,10 +337,11 @@ class ToolProvider:
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> ToolOAuthCredentials:
-        raise NotImplementedError(
+        msg = (
             "The tool you are using does not support OAuth, please implement "
             "`_oauth_get_credentials` method"
         )
+        raise NotImplementedError(msg)
 
     def oauth_refresh_credentials(
         self,
@@ -371,10 +374,11 @@ class ToolProvider:
         system_credentials: Mapping[str, Any],
         credentials: Mapping[str, Any],
     ) -> ToolOAuthCredentials:
-        raise NotImplementedError(
+        msg = (
             "The tool you are using does not support OAuth, please implement "
             "`_oauth_refresh_credentials` method"
         )
+        raise NotImplementedError(msg)
 
 
 class Tool(ToolLike[ToolInvokeMessage]):
@@ -428,10 +432,11 @@ class Tool(ToolLike[ToolInvokeMessage]):
 
         Also, it's optional to implement, that's why it's not an abstract method.
         """
-        raise NotImplementedError(
+        msg = (
             "This plugin should implement `_fetch_parameter_options` method "
             "to enable dynamic select parameter"
         )
+        raise NotImplementedError(msg)
 
     ############################################################
     #                 For executor use only                    #

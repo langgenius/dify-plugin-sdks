@@ -167,7 +167,8 @@ class ContactUserUpdatedV3Event(Event):
             lambda builder: builder.register_p2_contact_user_updated_v3,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         current_snapshot = _build_user_snapshot(event_data.object)
         previous_snapshot = _build_user_snapshot(event_data.old_object)

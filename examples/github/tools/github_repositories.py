@@ -1,6 +1,7 @@
 import json
 from collections.abc import Generator
 from datetime import datetime
+from http import HTTPStatus
 from typing import Any
 from urllib.parse import quote
 
@@ -53,7 +54,7 @@ class GithubRepositoriesTool(Tool):
                 url=f"{api_domain}/search/repositories?q={quote(query)}&sort=stars&per_page={top_n}&order=desc",
             )
             response_data = response.json()
-            if response.status_code == 200 and isinstance(
+            if response.status_code == HTTPStatus.OK and isinstance(
                 response_data.get("items"), list
             ):
                 contents = []

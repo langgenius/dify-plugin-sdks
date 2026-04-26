@@ -166,7 +166,8 @@ class PromptMessageMixin(BaseModel):
     @classmethod
     def convert_prompt_messages(cls, v: list[object]) -> list[PromptMessage]:
         if not isinstance(v, list):
-            raise ValueError("prompt_messages must be a list")
+            msg = "prompt_messages must be a list"
+            raise ValueError(msg)
 
         for i in range(len(v)):
             if isinstance(v[i], PromptMessage):

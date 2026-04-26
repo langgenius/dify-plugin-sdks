@@ -6,6 +6,7 @@ import secrets
 import time
 import urllib.parse
 from collections.abc import Mapping
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Any
 
 import requests
@@ -142,7 +143,8 @@ class GmailTrigger(Trigger):
             (request.headers.get("Authorization") or "").removeprefix("Bearer ").strip()
         )
         if not token:
-            raise TriggerValidationError("Missing OIDC bearer token for Pub/Sub push")
+            msg = "Missing OIDC bearer token for Pub/Sub push"
+            raise TriggerValidationError(msg)
         audience = props.get("oidc_audience") or endpoint
         expected_sa = props.get("oidc_service_account_email")
         self._verify_oidc_token(
@@ -153,21 +155,24 @@ class GmailTrigger(Trigger):
         try:
             envelope: Mapping[str, Any] = request.get_json(force=True)
         except Exception as exc:
-            raise TriggerDispatchError(f"Invalid JSON: {exc}") from exc
+            msg = f"Invalid JSON: {exc}"
+            raise TriggerDispatchError(msg) from exc
         if "message" not in envelope:
-            raise TriggerDispatchError("Missing Pub/Sub message")
+            msg = "Missing Pub/Sub message"
+            raise TriggerDispatchError(msg)
         data_b64: str | None = (envelope.get("message") or {}).get("data")
         if not data_b64:
-            raise TriggerDispatchError("Missing Pub/Sub message.data")
+            msg = "Missing Pub/Sub message.data"
+            raise TriggerDispatchError(msg)
         try:
             decoded = base64.b64decode(data_b64).decode("utf-8")
             notification = json.loads(decoded)
         except Exception as exc:
-            raise TriggerDispatchError(f"Invalid Pub/Sub data: {exc}") from exc
+            msg = f"Invalid Pub/Sub data: {exc}"
+            raise TriggerDispatchError(msg) from exc
         if not notification.get("historyId") or not notification.get("emailAddress"):
-            raise TriggerDispatchError(
-                "Missing historyId or emailAddress in Gmail notification"
-            )
+            msg = "Missing historyId or emailAddress in Gmail notification"
+            raise TriggerDispatchError(msg)
         return notification
 
     def _fetch_history_delta(
@@ -203,7 +208,7 @@ class GmailTrigger(Trigger):
             resp: requests.Response = requests.get(
                 url, headers=headers, params=params, timeout=10
             )
-            if resp.status_code != 200:
+            if resp.status_code != HTTPStatus.OK:
                 # History ID may be invalid/out of range; swallow this batch
                 # and move checkpoint forward by caller.
                 return [], [], [], [], []
@@ -257,17 +262,17 @@ class GmailTrigger(Trigger):
             claims = id_token.verify_oauth2_token(token, req, audience=audience)
             issuer = claims.get("iss")
             if issuer not in {"https://accounts.google.com", "accounts.google.com"}:
-                raise TriggerValidationError("Invalid OIDC token issuer")
+                msg = "Invalid OIDC token issuer"
+                raise TriggerValidationError(msg)
             if expected_email and claims.get("email") != expected_email:
-                raise TriggerValidationError(
-                    "OIDC token service account email mismatch"
-                )
+                msg = "OIDC token service account email mismatch"
+                raise TriggerValidationError(msg)
         except ImportError as exc:
-            raise TriggerValidationError(
-                "google-auth is required for OIDC verification but not installed"
-            ) from exc
+            msg = "google-auth is required for OIDC verification but not installed"
+            raise TriggerValidationError(msg) from exc
         except Exception as exc:  # pragma: no cover - verification failure
-            raise TriggerValidationError(f"OIDC verification failed: {exc}") from exc
+            msg = f"OIDC verification failed: {exc}"
+            raise TriggerValidationError(msg) from exc
 
 
 class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
@@ -288,10 +293,11 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         Raises:
             TriggerProviderCredentialValidationError: If credentials validation fails.
         """
-        raise TriggerProviderCredentialValidationError(
+        msg = (
             "Gmail trigger does not support API Key credentials. "
             "Please use OAuth authorization."
         )
+        raise TriggerProviderCredentialValidationError(msg)
 
     def _oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
@@ -314,12 +320,14 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> TriggerOAuthCredentials:
         code = request.args.get("code")
         if not code:
-            raise TriggerProviderOAuthError("No code provided")
+            msg = "No code provided"
+            raise TriggerProviderOAuthError(msg)
 
         if not system_credentials.get("client_id") or not system_credentials.get(
             "client_secret"
         ):
-            raise TriggerProviderOAuthError("Client ID or Client Secret is required")
+            msg = "Client ID or Client Secret is required"
+            raise TriggerProviderOAuthError(msg)
 
         # 1. Exchange authorization code for OAuth tokens
         data: dict[str, str] = {
@@ -336,7 +344,8 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         payload: dict[str, Any] = resp.json()
         access_token: str | None = payload.get("access_token")
         if not access_token:
-            raise TriggerProviderOAuthError(f"Error in Google OAuth: {payload}")
+            msg = f"Error in Google OAuth: {payload}"
+            raise TriggerProviderOAuthError(msg)
 
         expires_in: int = int(payload.get("expires_in") or 0)
         refresh_token: str | None = payload.get("refresh_token")
@@ -352,15 +361,15 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         # Extract GCP info and store in credentials for later use (required)
         gcp_sa = (system_credentials.get("gcp_service_account_json") or "").strip()
         if not gcp_sa:
-            raise TriggerProviderOAuthError("GCP Service Account JSON is required")
+            msg = "GCP Service Account JSON is required"
+            raise TriggerProviderOAuthError(msg)
 
         try:
             sa_info = _json.loads(gcp_sa)
             gcp_project_id = sa_info.get("project_id")
             if not gcp_project_id:
-                raise TriggerProviderOAuthError(
-                    "GCP Service Account JSON must contain 'project_id' field"
-                )
+                msg = "GCP Service Account JSON must contain 'project_id' field"
+                raise TriggerProviderOAuthError(msg)
 
             # Store GCP configuration in credentials.
             # Pub/Sub will be created in create_subscription.
@@ -374,20 +383,18 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 headers=headers_profile,
                 timeout=10,
             )
-            if prof_resp.status_code != 200:
+            if prof_resp.status_code != HTTPStatus.OK:
                 try:
                     prof_payload: dict[str, Any] = prof_resp.json()
                 except Exception:
                     prof_payload = {"message": prof_resp.text}
-                raise TriggerProviderOAuthError(
-                    f"Failed to fetch Gmail profile: {prof_payload}"
-                )
+                msg = f"Failed to fetch Gmail profile: {prof_payload}"
+                raise TriggerProviderOAuthError(msg)
 
             email_addr = (prof_resp.json() or {}).get("emailAddress") or ""
             if not email_addr:
-                raise TriggerProviderOAuthError(
-                    "Gmail profile response missing 'emailAddress'"
-                )
+                msg = "Gmail profile response missing 'emailAddress'"
+                raise TriggerProviderOAuthError(msg)
             credentials["gmail_email"] = email_addr
 
             import hashlib as _hashlib
@@ -402,13 +409,11 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 )
                 credentials["gcp_topic_path"] = topic_path
             except Exception as exc:
-                raise TriggerProviderOAuthError(
-                    f"Failed to provision Pub/Sub topic: {exc}"
-                ) from exc
+                msg = f"Failed to provision Pub/Sub topic: {exc}"
+                raise TriggerProviderOAuthError(msg) from exc
         except _json.JSONDecodeError as exc:
-            raise TriggerProviderOAuthError(
-                "Invalid GCP Service Account JSON format"
-            ) from exc
+            msg = "Invalid GCP Service Account JSON format"
+            raise TriggerProviderOAuthError(msg) from exc
 
         return TriggerOAuthCredentials(credentials=credentials, expires_at=expires_at)
 
@@ -420,7 +425,8 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> OAuthCredentials:
         refresh_token = credentials.get("refresh_token")
         if not refresh_token:
-            raise TriggerProviderOAuthError("Missing refresh_token for OAuth refresh")
+            msg = "Missing refresh_token for OAuth refresh"
+            raise TriggerProviderOAuthError(msg)
 
         data: dict[str, str] = {
             "client_id": system_credentials["client_id"],
@@ -435,7 +441,8 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         payload: dict[str, Any] = resp.json()
         access_token: str | None = payload.get("access_token")
         if not access_token:
-            raise TriggerProviderOAuthError(f"OAuth refresh failed: {payload}")
+            msg = f"OAuth refresh failed: {payload}"
+            raise TriggerProviderOAuthError(msg)
 
         expires_in: int = int(payload.get("expires_in") or 0)
         expires_at: int = int(time.time()) + expires_in if expires_in else -1
@@ -476,13 +483,16 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         gcp_sa = credentials.get("gcp_service_account_json")
         access_token: str | None = credentials.get("access_token")
         if not gcp_project_id or not gcp_sa:
+            msg = (
+                "GCP configuration not found in credentials. Please re-authorize OAuth."
+            )
             raise SubscriptionError(
-                "GCP configuration not found in credentials. "
-                "Please re-authorize OAuth.",
+                msg,
                 error_code="MISSING_GCP_CREDENTIALS",
             )
         if not access_token:
-            raise SubscriptionError("Missing access_token for Gmail API")
+            msg = "Missing access_token for Gmail API"
+            raise SubscriptionError(msg)
 
         # 1) Resolve Gmail email and build a stable topic per email
         email_addr: str = credentials.get("gmail_email") or ""
@@ -491,20 +501,22 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             prof = requests.get(
                 f"{self._GMAIL_BASE}/users/me/profile", headers=headers_at, timeout=10
             )
-            if prof.status_code != 200:
+            if prof.status_code != HTTPStatus.OK:
                 try:
                     err = prof.json()
                 except Exception:
                     err = {"message": prof.text}
+                msg = f"Failed to get Gmail profile: {err}"
                 raise SubscriptionError(
-                    f"Failed to get Gmail profile: {err}",
+                    msg,
                     error_code="PROFILE_FETCH_FAILED",
                     external_response=err,
                 )
             email_addr = (prof.json() or {}).get("emailAddress") or ""
             if not email_addr:
+                msg = "No emailAddress in Gmail profile"
                 raise SubscriptionError(
-                    "No emailAddress in Gmail profile",
+                    msg,
                     error_code="PROFILE_FETCH_FAILED",
                 )
 
@@ -543,8 +555,9 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 url, headers=headers, json=body, timeout=10
             )
         except requests.RequestException as exc:
+            msg = f"Network error while calling users.watch: {exc}"
             raise SubscriptionError(
-                f"Network error while calling users.watch: {exc}",
+                msg,
                 error_code="NETWORK_ERROR",
             ) from exc
         if resp.status_code not in {200, 201}:
@@ -552,8 +565,9 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 err: dict[str, Any] = resp.json()
             except Exception:
                 err = {"message": resp.text}
+            msg = f"Failed to create Gmail watch: {err}"
             raise SubscriptionError(
-                f"Failed to create Gmail watch: {err}",
+                msg,
                 error_code="WATCH_CREATION_FAILED",
                 external_response=err if isinstance(err, dict) else None,
             )
@@ -616,10 +630,11 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             Forbidden,
             PermissionDenied,
         ) as exc:  # pragma: no cover - permission errors
-            raise TriggerProviderOAuthError(
+            msg = (
                 "Service account lacks Pub/Sub permission to create topic. "
                 "Grant roles/pubsub.admin (or equivalent) and retry."
-            ) from exc
+            )
+            raise TriggerProviderOAuthError(msg) from exc
 
         try:
             policy = publisher.get_iam_policy(request={"resource": topic_path})
@@ -627,10 +642,11 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             Forbidden,
             PermissionDenied,
         ) as exc:  # pragma: no cover - permission errors
-            raise TriggerProviderOAuthError(
+            msg = (
                 "Service account lacks permission to read topic IAM policy. "
                 "Ensure roles/pubsub.admin (or equivalent) is granted."
-            ) from exc
+            )
+            raise TriggerProviderOAuthError(msg) from exc
         member = "serviceAccount:gmail-api-push@system.gserviceaccount.com"
         role = "roles/pubsub.publisher"
         if not any(b.role == role and member in b.members for b in policy.bindings):
@@ -643,10 +659,11 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 Forbidden,
                 PermissionDenied,
             ) as exc:  # pragma: no cover - permission errors
-                raise TriggerProviderOAuthError(
+                msg = (
                     "Service account lacks permission to update topic IAM policy. "
                     "Grant roles/pubsub.admin (or equivalent) and retry."
-                ) from exc
+                )
+                raise TriggerProviderOAuthError(msg) from exc
 
         return topic_path
 
@@ -858,15 +875,15 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         # Re-issue users.watch with previous topic
         access_token = credentials.get("access_token")
         if not access_token:
-            raise SubscriptionError(
-                "Missing access_token for Gmail API", error_code="MISSING_CREDENTIALS"
-            )
+            msg = "Missing access_token for Gmail API"
+            raise SubscriptionError(msg, error_code="MISSING_CREDENTIALS")
 
         topic_name: str | None = (subscription.properties or {}).get("topic_name")
 
         if not topic_name:
+            msg = "Missing topic_name in subscription properties"
             raise SubscriptionError(
-                "Missing topic_name in subscription properties",
+                msg,
                 error_code="INVALID_PROPERTIES",
             )
 
@@ -885,8 +902,9 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 err: dict[str, Any] = resp.json()
             except Exception:
                 err = {"message": resp.text}
+            msg = f"Failed to refresh Gmail watch: {err}"
             raise SubscriptionError(
-                f"Failed to refresh Gmail watch: {err}",
+                msg,
                 error_code="WATCH_REFRESH_FAILED",
                 external_response=err,
             )
@@ -918,19 +936,21 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         access_token = credentials.get("access_token")
         if not access_token:
-            raise ValueError("access_token is required to fetch labels")
+            msg = "access_token is required to fetch labels"
+            raise ValueError(msg)
 
         # List labels for the authenticated user
         headers = {"Authorization": f"Bearer {access_token}"}
         url = f"{self._GMAIL_BASE}/users/me/labels"
         resp = requests.get(url, headers=headers, timeout=10)
-        if resp.status_code != 200:
+        if resp.status_code != HTTPStatus.OK:
             try:
                 err = resp.json()
                 msg = err.get("error", {}).get("message", str(err))
             except Exception:
                 msg = resp.text
-            raise ValueError(f"Failed to fetch Gmail labels: {msg}")
+            message = f"Failed to fetch Gmail labels: {msg}"
+            raise ValueError(message)
 
         labels = resp.json().get("labels", []) or []
         options: list[ParameterOption] = []

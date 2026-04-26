@@ -33,7 +33,7 @@ class PullRequestReviewUnifiedEvent(Event):
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         apply_pull_request_review_filters(review, pull_request, parameters)
         if action == "dismissed":

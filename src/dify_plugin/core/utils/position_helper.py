@@ -1,4 +1,4 @@
-import os
+import pathlib
 from collections import OrderedDict
 from collections.abc import Callable
 from typing import Any
@@ -18,7 +18,7 @@ def get_position_map(
     Returns:
         The return value.
     """
-    position_file_name = os.path.join(folder_path, file_name)
+    position_file_name = str(pathlib.Path(folder_path) / file_name)
     positions = load_yaml_file(position_file_name, ignore_error=True)
     position_map = {}
     index = 0

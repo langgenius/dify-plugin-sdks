@@ -4,6 +4,7 @@ This module provides a unified interface for interacting with the Notion API
 """
 
 import time
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -82,7 +83,7 @@ class NotionClient:
                 )
 
                 # Handle rate limiting
-                if response.status_code == 429:
+                if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
                     retry_after = int(response.headers.get("Retry-After", 1))
                     time.sleep(retry_after)
                     retries += 1
@@ -98,8 +99,9 @@ class NotionClient:
                         error_json = e.response.json()
                         error_message = error_json.get("message", str(e))
                         error_code = error_json.get("code", "unknown_error")
+                        msg = f"Notion API Error: {error_code} - {error_message}"
                         raise requests.exceptions.HTTPError(
-                            f"Notion API Error: {error_code} - {error_message}",
+                            msg,
                             response=e.response,
                         )
                     except ValueError:
@@ -114,7 +116,8 @@ class NotionClient:
                 time.sleep(1)
 
         # This should never happen, but just in case
-        raise Exception("Maximum retries exceeded")
+        msg = "Maximum retries exceeded"
+        raise Exception(msg)
 
     def search(
         self,
@@ -391,7 +394,8 @@ class NotionClient:
             ValueError: If input values are invalid.
         """
         if level not in {1, 2, 3}:
-            raise ValueError("Heading level must be 1, 2, or 3")
+            msg = "Heading level must be 1, 2, or 3"
+            raise ValueError(msg)
 
         heading_type = f"heading_{level}"
 
@@ -471,8 +475,8 @@ class NotionClient:
     def get_authorized_pages(self) -> list[OnlineDocumentPage]:
         pages: list[OnlineDocumentPage] = []
         access_token = self.integration_token
-        page_results = self.notion_page_search(access_token)
-        database_results = self.notion_database_search(access_token)
+        page_results = self._search_authorized_pages(access_token)
+        database_results = self._search_authorized_databases(access_token)
         # get page detail
         for page_result in page_results:
             page_id = page_result["id"]
@@ -503,7 +507,7 @@ class NotionClient:
             parent = page_result["parent"]
             parent_type = parent["type"]
             if parent_type == "block_id":
-                parent_id = self.notion_block_parent_page_id(
+                parent_id = self._resolve_block_parent_page_id(
                     access_token, parent[parent_type]
                 )
             elif parent_type == "workspace":
@@ -546,7 +550,7 @@ class NotionClient:
             parent = database_result["parent"]
             parent_type = parent["type"]
             if parent_type == "block_id":
-                parent_id = self.notion_block_parent_page_id(
+                parent_id = self._resolve_block_parent_page_id(
                     access_token, parent[parent_type]
                 )
             elif parent_type == "workspace":
@@ -564,7 +568,7 @@ class NotionClient:
             pages.append(page)
         return pages
 
-    def notion_page_search(self, access_token: str) -> list[dict[str, Any]]:
+    def _search_authorized_pages(self, access_token: str) -> list[dict[str, Any]]:
         results: list[dict[str, Any]] = []
         next_cursor = None
         has_more = True
@@ -595,7 +599,7 @@ class NotionClient:
 
         return results
 
-    def notion_database_search(self, access_token: str) -> list[dict[str, Any]]:
+    def _search_authorized_databases(self, access_token: str) -> list[dict[str, Any]]:
         results: list[dict[str, Any]] = []
         next_cursor = None
         has_more = True
@@ -625,7 +629,7 @@ class NotionClient:
 
         return results
 
-    def notion_block_parent_page_id(self, access_token: str, block_id: str) -> str:
+    def _resolve_block_parent_page_id(self, access_token: str, block_id: str) -> str:
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Notion-Version": self._API_VERSION,
@@ -636,11 +640,12 @@ class NotionClient:
             timeout=__TIMEOUT_SECONDS__,
         )
         response_json = response.json()
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             message = response_json.get("message", "unknown error")
-            raise ValueError(f"Error fetching block parent page ID: {message}")
+            msg = f"Error fetching block parent page ID: {message}"
+            raise ValueError(msg)
         parent = response_json["parent"]
         parent_type = parent["type"]
         if parent_type == "block_id":
-            return self.notion_block_parent_page_id(access_token, parent[parent_type])
+            return self._resolve_block_parent_page_id(access_token, parent[parent_type])
         return parent[parent_type]

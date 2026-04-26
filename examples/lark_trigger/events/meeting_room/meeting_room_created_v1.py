@@ -33,7 +33,8 @@ class MeetingRoomCreatedV1Event(Event):
             lambda builder: builder.register_p2_meeting_room_meeting_room_created_v1,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict: dict[str, Any] = {

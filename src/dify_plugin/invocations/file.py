@@ -1,4 +1,5 @@
 from enum import StrEnum
+from http import HTTPStatus
 
 import requests
 from pydantic import BaseModel, model_validator
@@ -79,15 +80,20 @@ class File(BackwardsInvocation[dict]):
         ):
             url = response.get("url")
             if not url:
-                raise Exception("upload file failed, could not get signed url")
+                msg = "upload file failed, could not get signed url"
+                raise Exception(msg)
 
             response = requests.post(url, files={"file": (filename, content, mimetype)})
-            if response.status_code != 201:
-                raise Exception(
+            if response.status_code != HTTPStatus.CREATED:
+                msg = (
                     "upload file failed, status code: "
-                    f"{response.status_code}, response: {response.text}",
+                    f"{response.status_code}, response: {response.text}"
+                )
+                raise Exception(
+                    msg,
                 )
 
             return UploadFileResponse(**response.json())
 
-        raise Exception("upload file failed, empty response from server")
+        msg = "upload file failed, empty response from server"
+        raise Exception(msg)

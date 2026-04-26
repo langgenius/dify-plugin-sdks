@@ -21,7 +21,8 @@ class SecurityAndAnalysisUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         changes = payload.get("changes")
 
@@ -32,6 +33,6 @@ class SecurityAndAnalysisUnifiedEvent(Event):
             if isinstance(changes, Mapping):
                 found.update(changes.keys())
             if wanted and not (wanted & found):
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

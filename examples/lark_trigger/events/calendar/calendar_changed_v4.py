@@ -33,7 +33,8 @@ class CalendarChangedV4Event(Event):
             lambda builder: builder.register_p2_calendar_calendar_changed_v4,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary with affected users
         affected_users = serialize_user_list(event_data.user_id_list or [])

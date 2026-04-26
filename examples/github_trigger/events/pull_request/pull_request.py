@@ -26,16 +26,18 @@ class PullRequestUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         pr = payload.get("pull_request")
         if not isinstance(pr, Mapping):
-            raise ValueError("No pull_request in payload")
+            msg = "No pull_request in payload"
+            raise ValueError(msg)
 
         apply_pull_request_common_filters(pr, parameters)
         if action == "closed":

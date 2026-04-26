@@ -37,7 +37,8 @@ class DriveFileBitableRecordChangedV1Event(Event):
             lambda builder: builder.register_p2_drive_file_bitable_record_changed_v1,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict: dict[str, Any] = {

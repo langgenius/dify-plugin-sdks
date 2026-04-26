@@ -21,16 +21,18 @@ class LabelUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         label = payload.get("label")
         if not isinstance(label, Mapping):
-            raise ValueError("No label in payload")
+            msg = "No label in payload"
+            raise ValueError(msg)
 
         self._check_name(label, parameters.get("name"))
         self._check_color(label, parameters.get("color"))
@@ -42,7 +44,7 @@ class LabelUnifiedEvent(Event):
             return
         names = {v.strip() for v in str(value).split(",") if v.strip()}
         if names and (label.get("name") or "") not in names:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_color(self, label: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -50,4 +52,4 @@ class LabelUnifiedEvent(Event):
         colors = {v.strip().lower() for v in str(value).split(",") if v.strip()}
         color = (label.get("color") or "").lower()
         if colors and color not in colors:
-            raise EventIgnoreError()
+            raise EventIgnoreError

@@ -189,10 +189,11 @@ class Trigger(ABC):
             TriggerValidationError: For security validation failures
             TriggerDispatchError: For parsing or routing errors
         """
-        raise NotImplementedError(
+        msg = (
             "This plugin should implement `_dispatch_event` method to enable "
             "event dispatch"
         )
+        raise NotImplementedError(msg)
 
 
 class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
@@ -227,10 +228,11 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         return self._validate_api_key(credentials=credentials)
 
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
-        raise NotImplementedError(
+        msg = (
             "This plugin should implement `_validate_api_key` method to enable "
             "credentials validation"
         )
+        raise NotImplementedError(msg)
 
     def oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
@@ -253,10 +255,11 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
     def _oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
     ) -> str:
-        raise NotImplementedError(
+        msg = (
             "The trigger you are using does not support OAuth, please "
             "implement `_oauth_get_authorization_url` method"
         )
+        raise NotImplementedError(msg)
 
     def oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
@@ -286,10 +289,11 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> TriggerOAuthCredentials:
-        raise NotImplementedError(
+        msg = (
             "The trigger you are using does not support OAuth, please "
             "implement `_oauth_get_credentials` method"
         )
+        raise NotImplementedError(msg)
 
     def oauth_refresh_credentials(
         self,
@@ -321,10 +325,11 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         system_credentials: Mapping[str, Any],
         credentials: Mapping[str, Any],
     ) -> OAuthCredentials:
-        raise NotImplementedError(
+        msg = (
             "The trigger you are using does not support OAuth, please "
             "implement `_oauth_refresh_credentials` method"
         )
+        raise NotImplementedError(msg)
 
     def create_subscription(
         self,
@@ -437,10 +442,11 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
                 invalid credentials)
             ValueError: For programming errors (missing required params)
         """
-        raise NotImplementedError(
+        msg = (
             "This plugin should implement `_create_subscription` method to "
             "enable event subscription"
         )
+        raise NotImplementedError(msg)
 
     def delete_subscription(
         self,
@@ -547,10 +553,11 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             UnsubscribeResult: Always returns result, never raises for
                 operational failures
         """
-        raise NotImplementedError(
+        msg = (
             "This plugin should implement `_delete_subscription` method to "
             "enable event unsubscription"
         )
+        raise NotImplementedError(msg)
 
     def refresh_subscription(
         self,
@@ -662,10 +669,11 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             SubscriptionError: For operational failures (API errors,
                 invalid credentials)
         """
-        raise NotImplementedError(
+        msg = (
             "This plugin should implement `_refresh` method to enable "
             "subscription refresh"
         )
+        raise NotImplementedError(msg)
 
     def fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
         """
@@ -690,15 +698,14 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         When fetching parameter options from an external service, use the
         credentials and credential_type to call the external service API, then
         return the options to Dify for user selection.
+        Implementations should return a list of available options for the
+        parameter.
 
         Args:
             parameter: The parameter name for which to fetch options
             credentials: Authentication credentials for the external service
             credential_type: The type of credentials (e.g., "api-key",
                 "oauth2", "unauthorized")
-
-        Returns:
-            list[ParameterOption]: A list of available options for the parameter
 
         Examples:
             GitHub Repositories:
@@ -717,10 +724,11 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             >>> # [ParameterOption(label="Joel", value="iamjoel", icon="...")]
             >>> print(result)
         """
-        raise NotImplementedError(
+        msg = (
             "This plugin should implement `_fetch_parameter_options` method "
             "to enable dynamic select parameter"
         )
+        raise NotImplementedError(msg)
 
 
 class EventRuntime:
@@ -854,10 +862,11 @@ class Event(ABC):
 
         Also, it's optional to implement, that's why it's not an abstract method.
         """
-        raise NotImplementedError(
+        msg = (
             "This plugin should implement `_fetch_parameter_options` method "
             "to enable dynamic select parameter"
         )
+        raise NotImplementedError(msg)
 
     ############################################################
     #                 For executor use only                    #

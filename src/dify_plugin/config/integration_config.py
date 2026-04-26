@@ -1,7 +1,7 @@
 """This file is used to hold the integration config for plugin testing."""
 
 import shutil
-import subprocess
+import subprocess  # noqa: S404
 
 from packaging.version import Version
 from pydantic import Field, field_validator
@@ -35,19 +35,22 @@ class IntegrationConfig(BaseSettings):
                     break
 
             if not v:
-                raise ValueError("dify cli not found")
+                msg = "dify cli not found"
+                raise ValueError(msg)
 
         # check dify version
-        version = subprocess.check_output([v, "version"]).decode("utf-8")
+        version = subprocess.check_output([v, "version"]).decode("utf-8")  # noqa: S603
 
         try:
             version = Version(version)
         except Exception as e:
-            raise ValueError("dify cli version is not valid") from e
+            msg = "dify cli version is not valid"
+            raise ValueError(msg) from e
 
         if version < Version("0.1.0"):
+            msg = "dify cli version must be greater than 0.1.0 to support plugin run"
             raise ValueError(
-                "dify cli version must be greater than 0.1.0 to support plugin run",
+                msg,
             )
 
         return v

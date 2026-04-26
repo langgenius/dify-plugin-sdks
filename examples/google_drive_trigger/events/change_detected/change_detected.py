@@ -23,9 +23,8 @@ class GoogleDriveChangeDetectedEvent(Event):
         credentials = self.runtime.credentials or {}
         access_token = credentials.get("access_token")
         if not access_token:
-            raise ValueError(
-                "Missing Google Drive OAuth access token in runtime credentials"
-            )
+            msg = "Missing Google Drive OAuth access token in runtime credentials"
+            raise ValueError(msg)
 
         spaces = self._resolve_spaces()
         change_types = self._normalize_string_list(parameters.get("change_types"))
@@ -35,7 +34,8 @@ class GoogleDriveChangeDetectedEvent(Event):
 
         changes = payload.get("changes", [])
         if not changes:
-            raise EventIgnoreError("No Drive changes found in payload")
+            msg = "No Drive changes found in payload"
+            raise EventIgnoreError(msg)
 
         filtered_changes = self._filter_changes(
             changes=changes,
@@ -44,7 +44,8 @@ class GoogleDriveChangeDetectedEvent(Event):
         )
 
         if not filtered_changes:
-            raise EventIgnoreError("No Drive changes matched the configured filters")
+            msg = "No Drive changes matched the configured filters"
+            raise EventIgnoreError(msg)
 
         variables = {
             "changes": filtered_changes,

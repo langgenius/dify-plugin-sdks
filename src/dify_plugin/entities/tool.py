@@ -254,14 +254,16 @@ class ToolProviderConfiguration(BaseModel):
     @classmethod
     def validate_tools(cls, value: list[object]) -> list[ToolConfiguration]:
         if not isinstance(value, list):
-            raise ValueError("tools should be a list")
+            msg = "tools should be a list"
+            raise ValueError(msg)
 
         tools: list[ToolConfiguration] = []
 
         for tool in value:
             # read from yaml
             if not isinstance(tool, str):
-                raise ValueError("tool path should be a string")
+                msg = "tool path should be a string"
+                raise ValueError(msg)
             try:
                 file = load_yaml_file(tool)
                 tools.append(
@@ -277,7 +279,8 @@ class ToolProviderConfiguration(BaseModel):
                     ),
                 )
             except Exception as e:
-                raise ValueError(f"Error loading tool configuration: {e!s}") from e
+                msg = f"Error loading tool configuration: {e!s}"
+                raise ValueError(msg) from e
 
         return tools
 
@@ -308,7 +311,8 @@ class ToolProviderType(Enum):
         for mode in cls:
             if mode.value == value:
                 return mode
-        raise ValueError(f"invalid mode value {value}")
+        msg = f"invalid mode value {value}"
+        raise ValueError(msg)
 
 
 class ToolSelector(BaseModel):

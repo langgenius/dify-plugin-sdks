@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import urllib.parse
 from collections.abc import Mapping, Sequence
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -43,9 +44,8 @@ def get_access_token(runtime: object) -> str:
         credentials = runtime.credentials or {}
     token = credentials.get("access_token")
     if not token:
-        raise ValueError(
-            "Missing Google Calendar OAuth access token in runtime credentials"
-        )
+        msg = "Missing Google Calendar OAuth access token in runtime credentials"
+        raise ValueError(msg)
     return str(token)
 
 
@@ -81,12 +81,12 @@ def enrich_events(
             enriched.append(event)
             continue
 
-        if resp.status_code == 200:
+        if resp.status_code == HTTPStatus.OK:
             try:
                 enriched.append(resp.json() or {})
             except Exception:
                 enriched.append(event)
-        elif resp.status_code == 404 and include_deleted:
+        elif resp.status_code == HTTPStatus.NOT_FOUND and include_deleted:
             enriched.append(event)
         else:
             enriched.append(event)
@@ -98,7 +98,7 @@ def build_variables(
     payload: Mapping[str, Any], calendar_id: str, events: list[dict[str, Any]]
 ) -> Variables:
     if not events:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
     variables = {
         "calendar_id": calendar_id,
@@ -117,7 +117,7 @@ def build_variables(
 
 def ensure_events_or_raise(events: list[dict[str, Any]]) -> None:
     if not events:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def should_enrich_details(runtime: object, parameters: Mapping[str, Any]) -> bool:

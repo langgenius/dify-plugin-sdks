@@ -63,23 +63,14 @@ required-version = '>=0.15'
 [tool.ruff.lint]
 select = ['ALL']
 ignore = [
-    'B901',
-    'F401',
-    'PLW0127',
-    'PTH207',
     'TD004',
     'ARG001',
-    'E501',
     'PLR0904',
     'S113',
-    'S404',
-    'SIM102',
-    'LOG015',
-    'S603',
+    'EM102',
     'ARG003',
     'ARG005',
     'N815',
-    'PLC2701',
     'PLR0911',
     'S104',
     'T201',
@@ -88,25 +79,20 @@ ignore = [
     'PLR6201',
     'TRY300',
     'PLR1702',
-    'PTH122',
-    'FIX002',
     'PLW2901',
     'S105',
     'TD002',
     'TD003',
+    'FIX002',
     'RUF001',
     'PLR0915', # Too broad for orchestration-heavy SDK/example functions.
-    'G004',
-    'PGH003',
-    'F403',
-    'PTH118',
     'DTZ007',
     'PLC1901',
     'E402',
     'SLF001',
     'ERA001',  # False positives are common.
-    'PLR0914',
     'PLR0912',
+    'PLR0914',
     'S101',
     'TRY002',
     'BLE001',
@@ -119,17 +105,12 @@ ignore = [
     'FBT',     # Too strict.
     'TRY004',
     'PLR2004',
-    'INP001',
     'TC',      # Runtime use of typing constructs is common now.
-    'EM102',
     'TID252',  # Too absolute.
-    'RSE102',
     'ARG002',
     'PLR6301', # Violates the usual practice.
-    'EM101',
-    'CPY',     # Covered by the standalone LICENSE file.
-    'TRY003',
     'COM812',  # Conflicts with `ruff format`.
+    'CPY',     # Covered by the standalone LICENSE file.
     'D',       # Too verbose.
 ]
 

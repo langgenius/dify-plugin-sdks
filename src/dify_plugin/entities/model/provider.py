@@ -1,5 +1,3 @@
-import glob
-import os
 import pathlib
 from collections.abc import Sequence
 from enum import Enum
@@ -237,7 +235,8 @@ class ProviderEntity(BaseModel):
     def validate_models(cls, values: dict[str, object]) -> dict[str, object]:
         value = values.get("models", {})
         if not isinstance(value, dict):
-            raise ValueError("models should be a glob path list")
+            msg = "models should be a glob path list"
+            raise ValueError(msg)
 
         cwd = pathlib.Path.cwd()
 
@@ -248,18 +247,19 @@ class ProviderEntity(BaseModel):
                 return
 
             for path in value[model_type].get("predefined", []):
-                yaml_paths = glob.glob(os.path.join(cwd, path))
+                yaml_paths = cwd.glob(path)
                 for yaml_path in yaml_paths:
-                    if yaml_path.endswith("_position.yaml"):
+                    if str(yaml_path).endswith("_position.yaml"):
                         if "position" not in values:
                             values["position"] = {}
 
-                        position = load_yaml_file(yaml_path)
+                        position = load_yaml_file(str(yaml_path))
                         values["position"][model_type] = position
                     else:
-                        model_entity = load_yaml_file(yaml_path)
+                        model_entity = load_yaml_file(str(yaml_path))
                         if not model_entity:
-                            raise ValueError(f"Error loading model entity: {yaml_path}")
+                            msg = f"Error loading model entity: {yaml_path}"
+                            raise ValueError(msg)
 
                         provider_model = AIModelEntity(**model_entity)
                         model_entities.append(provider_model)

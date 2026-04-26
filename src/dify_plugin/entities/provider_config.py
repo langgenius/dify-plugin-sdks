@@ -111,7 +111,8 @@ class ProviderConfig(BaseModel):
             for mode in cls:
                 if mode.value == value:
                     return mode
-            raise ValueError(f"invalid mode value {value}")
+            msg = f"invalid mode value {value}"
+            raise ValueError(msg)
 
     name: str = Field(..., description="The name of the credentials")
     type: Config = Field(..., description="The type of the credentials")

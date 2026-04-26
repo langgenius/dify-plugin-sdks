@@ -44,7 +44,7 @@ def check_comment_body(comment: Mapping[str, Any], value: object) -> None:
 
     body = (comment.get("body") or "").lower()
     if not any(keyword in body for keyword in keywords):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_commenter(comment: Mapping[str, Any], value: object) -> None:
@@ -54,7 +54,7 @@ def check_commenter(comment: Mapping[str, Any], value: object) -> None:
 
     commenter = comment.get("user", {}).get("login")
     if commenter not in commenters:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_path(comment: Mapping[str, Any], value: object) -> None:
@@ -64,7 +64,7 @@ def check_path(comment: Mapping[str, Any], value: object) -> None:
 
     path = comment.get("path") or comment.get("original_path")
     if path not in paths:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_position(comment: Mapping[str, Any], value: object) -> None:
@@ -76,7 +76,7 @@ def check_position(comment: Mapping[str, Any], value: object) -> None:
             int(item.strip()) for item in str(value).split(",") if item.strip()
         }
     except ValueError:
-        raise EventIgnoreError() from None
+        raise EventIgnoreError from None
 
     positions = {
         position
@@ -90,7 +90,7 @@ def check_position(comment: Mapping[str, Any], value: object) -> None:
     }
 
     if not positions or not (positions & target_positions):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_pull_request_author(pull_request: Mapping[str, Any], value: object) -> None:
@@ -100,7 +100,7 @@ def check_pull_request_author(pull_request: Mapping[str, Any], value: object) ->
 
     author = pull_request.get("user", {}).get("login")
     if author not in authors:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_pull_request_numbers(pull_request: Mapping[str, Any], value: object) -> None:
@@ -110,7 +110,7 @@ def check_pull_request_numbers(pull_request: Mapping[str, Any], value: object) -
 
     number = str(pull_request.get("number"))
     if number not in numbers:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_comment_deleter(payload: Mapping[str, Any], value: object) -> None:
@@ -120,7 +120,7 @@ def check_comment_deleter(payload: Mapping[str, Any], value: object) -> None:
 
     actor = payload.get("sender", {}).get("login")
     if actor not in deleters:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def _normalize_list(raw: object, *, lowercase: bool = False) -> list[str]:

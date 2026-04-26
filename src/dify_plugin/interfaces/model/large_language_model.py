@@ -228,8 +228,9 @@ class LargeLanguageModel(AIModel):
                             parameter_rule.default
                         )
                         continue
+                    msg = f"Model Parameter {parameter_name} is required."
                     raise ValueError(
-                        f"Model Parameter {parameter_name} is required.",
+                        msg,
                     )
                 else:
                     continue
@@ -237,46 +238,58 @@ class LargeLanguageModel(AIModel):
             # validate parameter value type
             if parameter_rule.type == ParameterType.INT:
                 if not isinstance(parameter_value, int):
-                    raise ValueError(f"Model Parameter {parameter_name} should be int.")
+                    msg = f"Model Parameter {parameter_name} should be int."
+                    raise ValueError(msg)
 
                 # validate parameter value range
                 if (
                     parameter_rule.min is not None
                     and parameter_value < parameter_rule.min
                 ):
-                    raise ValueError(
+                    msg = (
                         f"Model Parameter {parameter_name} should be greater "
-                        f"than or equal to {parameter_rule.min}.",
+                        f"than or equal to {parameter_rule.min}."
+                    )
+                    raise ValueError(
+                        msg,
                     )
 
                 if (
                     parameter_rule.max is not None
                     and parameter_value > parameter_rule.max
                 ):
-                    raise ValueError(
+                    msg = (
                         f"Model Parameter {parameter_name} should be less "
-                        f"than or equal to {parameter_rule.max}.",
+                        f"than or equal to {parameter_rule.max}."
+                    )
+                    raise ValueError(
+                        msg,
                     )
             elif parameter_rule.type == ParameterType.FLOAT:
                 if not isinstance(parameter_value, float | int):
+                    msg = f"Model Parameter {parameter_name} should be float."
                     raise ValueError(
-                        f"Model Parameter {parameter_name} should be float.",
+                        msg,
                     )
 
                 # validate parameter value precision
                 if parameter_rule.precision is not None:
                     if parameter_rule.precision == 0:
                         if parameter_value != int(parameter_value):
+                            msg = f"Model Parameter {parameter_name} should be int."
                             raise ValueError(
-                                f"Model Parameter {parameter_name} should be int.",
+                                msg,
                             )
                     elif parameter_value != round(
                         parameter_value,
                         parameter_rule.precision,
                     ):
-                        raise ValueError(
+                        msg = (
                             f"Model Parameter {parameter_name} should be round to "
-                            f"{parameter_rule.precision} decimal places.",
+                            f"{parameter_rule.precision} decimal places."
+                        )
+                        raise ValueError(
+                            msg,
                         )
 
                 # validate parameter value range
@@ -284,28 +297,36 @@ class LargeLanguageModel(AIModel):
                     parameter_rule.min is not None
                     and parameter_value < parameter_rule.min
                 ):
-                    raise ValueError(
+                    msg = (
                         f"Model Parameter {parameter_name} should be greater "
-                        f"than or equal to {parameter_rule.min}.",
+                        f"than or equal to {parameter_rule.min}."
+                    )
+                    raise ValueError(
+                        msg,
                     )
 
                 if (
                     parameter_rule.max is not None
                     and parameter_value > parameter_rule.max
                 ):
-                    raise ValueError(
+                    msg = (
                         f"Model Parameter {parameter_name} should be less "
-                        f"than or equal to {parameter_rule.max}.",
+                        f"than or equal to {parameter_rule.max}."
+                    )
+                    raise ValueError(
+                        msg,
                     )
             elif parameter_rule.type == ParameterType.BOOLEAN:
                 if not isinstance(parameter_value, bool):
+                    msg = f"Model Parameter {parameter_name} should be bool."
                     raise ValueError(
-                        f"Model Parameter {parameter_name} should be bool.",
+                        msg,
                     )
             elif parameter_rule.type == ParameterType.STRING:
                 if not isinstance(parameter_value, str):
+                    msg = f"Model Parameter {parameter_name} should be string."
                     raise ValueError(
-                        f"Model Parameter {parameter_name} should be string.",
+                        msg,
                     )
 
                 # validate options
@@ -313,19 +334,26 @@ class LargeLanguageModel(AIModel):
                     parameter_rule.options
                     and parameter_value not in parameter_rule.options
                 ):
-                    raise ValueError(
+                    msg = (
                         f"Model Parameter {parameter_name} should be one of "
-                        f"{parameter_rule.options}.",
+                        f"{parameter_rule.options}."
+                    )
+                    raise ValueError(
+                        msg,
                     )
             elif parameter_rule.type == ParameterType.TEXT:
                 if not isinstance(parameter_value, str):
+                    msg = f"Model Parameter {parameter_name} should be string."
                     raise ValueError(
-                        f"Model Parameter {parameter_name} should be string.",
+                        msg,
                     )
             else:
-                raise ValueError(
+                msg = (
                     f"Model Parameter {parameter_name} type "
-                    f"{parameter_rule.type} is not supported.",
+                    f"{parameter_rule.type} is not supported."
+                )
+                raise ValueError(
+                    msg,
                 )
 
             filtered_model_parameters[parameter_name] = parameter_value

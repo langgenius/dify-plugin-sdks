@@ -29,16 +29,18 @@ def load_yaml_file(file_path: str, ignore_error: bool = False) -> dict[str, Any]
     """
     try:
         if not file_path or not pathlib.Path(file_path).exists():
+            msg = f"Failed to load YAML file {file_path}: file not found"
             raise FileNotFoundError(
-                f"Failed to load YAML file {file_path}: file not found",
+                msg,
             )
 
         with pathlib.Path(file_path).open(encoding="utf-8") as file:
             try:
                 return yaml.safe_load(file)
             except Exception as e:
+                msg = f"Failed to load YAML file {file_path}: {e}"
                 raise yaml.YAMLError(
-                    f"Failed to load YAML file {file_path}: {e}",
+                    msg,
                 ) from e
     except FileNotFoundError as e:
         logger.debug("Failed to load YAML file %s: %s", file_path, e)

@@ -246,7 +246,8 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
         backwards_request_id = self._generate_backwards_request_id()
 
         if not self.session:
-            raise Exception("current tool runtime does not support backwards invoke")
+            msg = "current tool runtime does not support backwards invoke"
+            raise Exception(msg)
         if self.session.install_method in {InstallMethod.Local, InstallMethod.Remote}:
             return self._full_duplex_backwards_invoke(
                 backwards_request_id, type, data_type, data
@@ -275,10 +276,11 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
                 empty_response_count += 1
                 # if consecutive empty responses exceed max timeout count, break
                 if empty_response_count >= max_timeout_count:
-                    raise Exception(
+                    msg = (
                         "invocation exited without response after "
                         f"{max_timeout_count} seconds"
                     )
+                    raise Exception(msg)
                 continue
 
             event = BackwardsInvocationResponseEvent(**chunk.data)
@@ -295,7 +297,8 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
             try:
                 yield data_type(**event.data)
             except Exception as e:
-                raise Exception(f"Failed to parse response: {e!s}") from e
+                msg = f"Failed to parse response: {e!s}"
+                raise Exception(msg) from e
 
     def _http_backwards_invoke(
         self,
@@ -308,7 +311,8 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
         http backwards invoke
         """
         if not self.session or not self.session.dify_plugin_daemon_url:
-            raise Exception("current tool runtime does not support backwards invoke")
+            msg = "current tool runtime does not support backwards invoke"
+            raise Exception(msg)
 
         url = (
             URL(self.session.dify_plugin_daemon_url)
@@ -368,7 +372,8 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
         data: dict,
     ) -> Generator[T, None, None]:
         if not self.session:
-            raise Exception("current tool runtime does not support backwards invoke")
+            msg = "current tool runtime does not support backwards invoke"
+            raise Exception(msg)
 
         self.session.writer.session_message(
             session_id=self.session.session_id,

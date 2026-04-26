@@ -1,6 +1,7 @@
 import secrets
 import urllib.parse
 from collections.abc import Mapping
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -43,7 +44,8 @@ class GithubProvider(ToolProvider):
         """
         code = request.args.get("code")
         if not code:
-            raise ToolProviderOAuthError("No code provided")
+            msg = "No code provided"
+            raise ToolProviderOAuthError(msg)
         # Optionally: validate state here
 
         data = {
@@ -59,7 +61,8 @@ class GithubProvider(ToolProvider):
         response_json = response.json()
         access_tokens = response_json.get("access_token")
         if not access_tokens:
-            raise ToolProviderOAuthError(f"Error in GitHub OAuth: {response_json}")
+            msg = f"Error in GitHub OAuth: {response_json}"
+            raise ToolProviderOAuthError(msg)
 
         return ToolOAuthCredentials(
             credentials={"access_tokens": access_tokens}, expires_at=-1
@@ -82,15 +85,14 @@ class GithubProvider(ToolProvider):
             if "access_tokens" not in credentials or not credentials.get(
                 "access_tokens"
             ):
-                raise ToolProviderCredentialValidationError(
-                    "GitHub API Access Token is required."
-                )
+                msg = "GitHub API Access Token is required."
+                raise ToolProviderCredentialValidationError(msg)
             headers = {
                 "Authorization": f"Bearer {credentials['access_tokens']}",
                 "Accept": "application/vnd.github+json",
             }
             response = requests.get(self._API_USER_URL, headers=headers, timeout=10)
-            if response.status_code != 200:
+            if response.status_code != HTTPStatus.OK:
                 raise ToolProviderCredentialValidationError(
                     response.json().get("message")
                 )

@@ -65,10 +65,11 @@ class AIModel(ABC):
         Context manager for timing requests
         """
         if self.started_at:
-            raise TimingContextRaceConditionError(
+            msg = (
                 "Timing context has been started, DO NOT start it in "
                 "multi-threaded environment."
             )
+            raise TimingContextRaceConditionError(msg)
 
         # initialize started_at
         # NOTE: started_at is not a class variable, it bound to specific instance
@@ -175,7 +176,8 @@ class AIModel(ABC):
 
         # calculate total amount
         if not price_config:
-            raise ValueError(f"Price config not found for model {model}")
+            msg = f"Price config not found for model {model}"
+            raise ValueError(msg)
         total_amount = tokens * unit_price * price_config.unit
         total_amount = total_amount.quantize(
             decimal.Decimal("0.0000001"), rounding=decimal.ROUND_HALF_UP
@@ -354,7 +356,8 @@ class AIModel(ABC):
         default_parameter_rule = PARAMETER_RULE_TEMPLATE.get(name)
 
         if not default_parameter_rule:
-            raise Exception(f"Invalid model parameter rule name {name}")
+            msg = f"Invalid model parameter rule name {name}"
+            raise Exception(msg)
 
         return default_parameter_rule
 

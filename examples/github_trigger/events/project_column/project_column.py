@@ -21,21 +21,23 @@ class ProjectColumnUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         column = payload.get("project_column")
         if not isinstance(column, Mapping):
-            raise ValueError("No project_column in payload")
+            msg = "No project_column in payload"
+            raise ValueError(msg)
 
         name_filter = parameters.get("column_name")
         if name_filter:
             names = {v.strip() for v in str(name_filter).split(",") if v.strip()}
             if names and (column.get("name") or "") not in names:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

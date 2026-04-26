@@ -21,14 +21,16 @@ class ReleasePublishedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         if payload.get("action") != "published":
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         release = payload.get("release")
         if not isinstance(release, Mapping):
-            raise ValueError("No release data in payload")
+            msg = "No release data in payload"
+            raise ValueError(msg)
 
         self._check_tag_name(release, parameters.get("tag_name"))
         self._check_prerelease(release, parameters.get("prerelease"))
@@ -46,21 +48,21 @@ class ReleasePublishedEvent(Event):
             return
         tag = (release.get("tag_name") or "").strip()
         if tag not in names:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_prerelease(self, release: Mapping[str, Any], value: object) -> None:
         if value is None:
             return
         is_pre = bool(release.get("prerelease"))
         if is_pre != bool(value):
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_draft(self, release: Mapping[str, Any], value: object) -> None:
         if value is None:
             return
         is_draft = bool(release.get("draft"))
         if is_draft != bool(value):
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_target_branch(
         self, release: Mapping[str, Any], value: str | None
@@ -72,7 +74,7 @@ class ReleasePublishedEvent(Event):
             return
         target = (release.get("target_commitish") or "").strip()
         if target not in branches:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_creator(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -82,4 +84,4 @@ class ReleasePublishedEvent(Event):
             return
         actor = payload.get("sender", {}).get("login")
         if actor not in users:
-            raise EventIgnoreError()
+            raise EventIgnoreError

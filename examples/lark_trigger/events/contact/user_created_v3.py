@@ -33,11 +33,13 @@ class ContactUserCreatedV3Event(Event):
             lambda builder: builder.register_p2_contact_user_created_v3,
         )
         if event_wrapper.event is None:
-            raise ValueError("event_wrapper.event is None")
+            msg = "event_wrapper.event is None"
+            raise ValueError(msg)
 
         event_data = event_wrapper.event
         if event_data.object is None:
-            raise ValueError("event_data.object is None")
+            msg = "event_data.object is None"
+            raise ValueError(msg)
 
         user_data = event_data.object
 

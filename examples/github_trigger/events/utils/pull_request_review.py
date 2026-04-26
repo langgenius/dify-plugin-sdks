@@ -43,7 +43,7 @@ def check_review_state(review: Mapping[str, Any], value: object) -> None:
 
     current = (review.get("state") or "").lower()
     if current not in states:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_reviewer(review: Mapping[str, Any], value: object) -> None:
@@ -53,7 +53,7 @@ def check_reviewer(review: Mapping[str, Any], value: object) -> None:
 
     reviewer = review.get("user", {}).get("login")
     if reviewer not in reviewers:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_pull_request_author(pull_request: Mapping[str, Any], value: object) -> None:
@@ -63,7 +63,7 @@ def check_pull_request_author(pull_request: Mapping[str, Any], value: object) ->
 
     author = pull_request.get("user", {}).get("login")
     if author not in authors:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_pull_request_numbers(pull_request: Mapping[str, Any], value: object) -> None:
@@ -73,7 +73,7 @@ def check_pull_request_numbers(pull_request: Mapping[str, Any], value: object) -
 
     number = str(pull_request.get("number"))
     if number not in numbers:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_review_body(review: Mapping[str, Any], value: object) -> None:
@@ -83,7 +83,7 @@ def check_review_body(review: Mapping[str, Any], value: object) -> None:
 
     body = (review.get("body") or "").lower()
     if not any(keyword in body for keyword in keywords):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_dismissed_by(payload: Mapping[str, Any], value: object) -> None:
@@ -93,7 +93,7 @@ def check_dismissed_by(payload: Mapping[str, Any], value: object) -> None:
 
     actor = payload.get("sender", {}).get("login")
     if actor not in users:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_dismissal_message(payload: Mapping[str, Any], value: object) -> None:
@@ -103,7 +103,7 @@ def check_dismissal_message(payload: Mapping[str, Any], value: object) -> None:
 
     message = (payload.get("dismissal_message") or "").lower()
     if not any(keyword in message for keyword in keywords):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def _normalize_list(raw: object, *, lowercase: bool = False) -> list[str]:

@@ -15,7 +15,8 @@ class PluginInStreamEvent(Enum):
         for e in cls:
             if e.value == v:
                 return e
-        raise ValueError(f"Invalid value for PluginInStream.Event: {v}")
+        msg = f"Invalid value for PluginInStream.Event: {v}"
+        raise ValueError(msg)
 
 
 class PluginInStreamBase:

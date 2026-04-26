@@ -21,7 +21,8 @@ class CustomPropertyValuesUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         props = payload.get("property_values")
         if props is None:
@@ -38,6 +39,6 @@ class CustomPropertyValuesUnifiedEvent(Event):
                         matched = True
                         break
             if names and not matched:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

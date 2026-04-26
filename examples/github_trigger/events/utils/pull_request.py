@@ -44,7 +44,7 @@ def check_base_branch(pull_request: Mapping[str, Any], value: object) -> None:
 
     current = pull_request.get("base", {}).get("ref")
     if current not in branches:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_head_branch(pull_request: Mapping[str, Any], value: object) -> None:
@@ -54,7 +54,7 @@ def check_head_branch(pull_request: Mapping[str, Any], value: object) -> None:
 
     current = pull_request.get("head", {}).get("ref")
     if current not in branches:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_author(pull_request: Mapping[str, Any], value: object) -> None:
@@ -64,7 +64,7 @@ def check_author(pull_request: Mapping[str, Any], value: object) -> None:
 
     author = pull_request.get("user", {}).get("login")
     if author not in authors:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_draft_state(pull_request: Mapping[str, Any], value: object) -> None:
@@ -73,7 +73,7 @@ def check_draft_state(pull_request: Mapping[str, Any], value: object) -> None:
 
     is_draft = bool(pull_request.get("draft"))
     if is_draft != bool(value):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_labels(pull_request: Mapping[str, Any], value: object) -> None:
@@ -83,7 +83,7 @@ def check_labels(pull_request: Mapping[str, Any], value: object) -> None:
 
     current = [label.get("name") for label in pull_request.get("labels", [])]
     if not any(label in current for label in labels):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_reviewers(pull_request: Mapping[str, Any], value: object) -> None:
@@ -102,7 +102,7 @@ def check_reviewers(pull_request: Mapping[str, Any], value: object) -> None:
             requested.append(slug)
 
     if not requested or not any(r in requested for r in reviewers):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_merged_state(pull_request: Mapping[str, Any], value: object) -> None:
@@ -111,7 +111,7 @@ def check_merged_state(pull_request: Mapping[str, Any], value: object) -> None:
 
     is_merged = bool(pull_request.get("merged"))
     if is_merged != bool(value):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def check_pr_size_threshold(pull_request: Mapping[str, Any], value: object) -> None:
@@ -135,7 +135,7 @@ def check_pr_size_threshold(pull_request: Mapping[str, Any], value: object) -> N
     if isinstance(additions, int) and isinstance(deletions, int):
         total = additions + deletions
         if total > threshold:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
 
 def check_changed_files_glob(pull_request: Mapping[str, Any], value: object) -> None:
@@ -186,7 +186,7 @@ def check_changed_files_glob(pull_request: Mapping[str, Any], value: object) -> 
             break
 
     if not matched:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def _normalize_list(raw: object) -> list[str]:

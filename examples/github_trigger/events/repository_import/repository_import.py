@@ -21,7 +21,8 @@ class RepositoryImportUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         status_filter = parameters.get("status")
         import_obj = payload.get("import")
@@ -31,7 +32,7 @@ class RepositoryImportUnifiedEvent(Event):
             }
             status = (import_obj.get("status") or "").lower()
             if allowed and status not in allowed:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         vcs_filter = parameters.get("vcs")
         if isinstance(import_obj, Mapping) and vcs_filter:
@@ -40,6 +41,6 @@ class RepositoryImportUnifiedEvent(Event):
             }
             vcs = (import_obj.get("vcs") or "").lower()
             if allowed_vcs and vcs not in allowed_vcs:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

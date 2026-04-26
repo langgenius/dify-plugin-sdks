@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -12,7 +13,8 @@ class FirecrawlDatasourceProvider(DatasourceProvider):
         try:
             api_key = credentials.get("firecrawl_api_key", "")
             if not api_key:
-                raise ToolProviderCredentialValidationError("api key is required")
+                msg = "api key is required"
+                raise ToolProviderCredentialValidationError(msg)
 
             base_url = credentials.get("base_url") or "https://api.firecrawl.dev"
             headers = {
@@ -32,9 +34,10 @@ class FirecrawlDatasourceProvider(DatasourceProvider):
                 headers=headers,
                 timeout=10,
             )
-            if response.status_code == 200:
+            if response.status_code == HTTPStatus.OK:
                 return True
-            raise ToolProviderCredentialValidationError("api key is invalid")
+            msg = "api key is invalid"
+            raise ToolProviderCredentialValidationError(msg)
 
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e)) from e

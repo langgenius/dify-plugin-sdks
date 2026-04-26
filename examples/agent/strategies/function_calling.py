@@ -33,6 +33,8 @@ from dify_plugin.interfaces.agent import (
     ToolInvokeMeta,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class FunctionCallingParams(BaseModel):
     query: str
@@ -347,23 +349,27 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     # Try to create a blob message with the file content
                                     try:
                                         # If it's a local file path, try to read it
-                                        if file_info.startswith("/files/"):
-                                            if pathlib.Path(file_info).exists():
-                                                file_content = pathlib.Path(
-                                                    file_info,
-                                                ).read_bytes()
-                                                # Create a blob with the file content.
-                                                yield self.create_blob_message(
-                                                    blob=file_content,
-                                                    meta={
-                                                        "mime_type": "image/png",
-                                                        "filename": pathlib.Path(
-                                                            file_info,
-                                                        ).name,
-                                                    },
-                                                )
+                                        if (
+                                            file_info.startswith(
+                                                "/files/",
+                                            )
+                                            and pathlib.Path(file_info).exists()
+                                        ):
+                                            file_content = pathlib.Path(
+                                                file_info,
+                                            ).read_bytes()
+                                            # Create a blob with the file content.
+                                            yield self.create_blob_message(
+                                                blob=file_content,
+                                                meta={
+                                                    "mime_type": "image/png",
+                                                    "filename": pathlib.Path(
+                                                        file_info,
+                                                    ).name,
+                                                },
+                                            )
                                     except Exception:
-                                        logging.exception(
+                                        logger.exception(
                                             "Failed to create blob message",
                                         )
                                 tool_result += (

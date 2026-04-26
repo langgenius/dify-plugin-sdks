@@ -21,7 +21,8 @@ class StatusEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         self._check_context(payload, parameters.get("context"))
         self._check_state(payload, parameters.get("state"))
@@ -36,7 +37,7 @@ class StatusEvent(Event):
         ctx = (payload.get("context") or "").strip()
         targets = {s.strip() for s in str(value).split(",") if s.strip()}
         if targets and ctx not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_state(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -44,7 +45,7 @@ class StatusEvent(Event):
         st = (payload.get("state") or "").lower()
         targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
         if targets and st not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_branch(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -56,7 +57,7 @@ class StatusEvent(Event):
             name = (br.get("name") or "").strip()
             if name in branches:
                 return
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
     def _check_target_url(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -66,4 +67,4 @@ class StatusEvent(Event):
             return
         url = (payload.get("target_url") or "").lower()
         if not any(s in url for s in substrings):
-            raise EventIgnoreError()
+            raise EventIgnoreError

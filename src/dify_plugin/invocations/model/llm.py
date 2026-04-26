@@ -138,4 +138,5 @@ class SummaryInvocation(BackwardsInvocation[SummaryResult]):
             data = cast(SummaryResult, llm_result)
             return data.summary
 
-        raise Exception("No response from summary")
+        msg = "No response from summary"
+        raise Exception(msg)

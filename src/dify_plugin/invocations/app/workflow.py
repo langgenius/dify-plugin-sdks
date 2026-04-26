@@ -51,4 +51,5 @@ class WorkflowAppInvocation(BackwardsInvocation[dict]):
         for data in response:
             return data
 
-        raise Exception("No response from workflow")
+        msg = "No response from workflow"
+        raise Exception(msg)

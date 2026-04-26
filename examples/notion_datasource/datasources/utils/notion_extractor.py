@@ -41,7 +41,8 @@ class NotionExtractor:
         elif notion_obj_type == "page":
             extractor_result = self._get_notion_block_data(notion_obj_id)
         else:
-            raise ValueError("Notion object type not supported")
+            msg = "Notion object type not supported"
+            raise ValueError(msg)
         return extractor_result
 
     def _get_notion_database_data(self, database_id: str) -> str:

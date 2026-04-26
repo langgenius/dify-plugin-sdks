@@ -1,2 +1,2 @@
 class TimingContextRaceConditionError(RuntimeError):
-    """Error raised when AIModel.timing_context is started in multi-threaded environment."""
+    """Error raised when AIModel.timing_context starts in multiple threads."""

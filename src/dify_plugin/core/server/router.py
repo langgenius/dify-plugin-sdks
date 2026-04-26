@@ -42,7 +42,8 @@ class Router:
         sig = inspect.signature(f)
         parameters = list(sig.parameters.values())
         if len(parameters) == 0:
-            raise ValueError("Route function must have at least one parameter")
+            msg = "Route function must have at least one parameter"
+            raise ValueError(msg)
 
         if instance:
             # get first parameter of func

@@ -21,22 +21,24 @@ class ProjectUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         project = payload.get("project")
         if not isinstance(project, Mapping):
-            raise ValueError("No project in payload")
+            msg = "No project in payload"
+            raise ValueError(msg)
 
         name_filter = parameters.get("project_name")
         if name_filter:
             names = {v.strip() for v in str(name_filter).split(",") if v.strip()}
             if names and (project.get("name") or "") not in names:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         state_filter = parameters.get("state")
         if state_filter:
@@ -44,6 +46,6 @@ class ProjectUnifiedEvent(Event):
                 v.strip().lower() for v in str(state_filter).split(",") if v.strip()
             }
             if states and (str(project.get("state") or "").lower()) not in states:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

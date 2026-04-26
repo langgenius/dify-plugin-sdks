@@ -83,7 +83,8 @@ class ContactDepartmentDeletedV3Event(Event):
             lambda builder: builder.register_p2_contact_department_deleted_v3,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         current_department = _serialize_department(event_data.object)
         previous_department = _serialize_old_department(event_data.old_object)

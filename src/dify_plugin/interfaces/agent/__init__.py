@@ -27,6 +27,8 @@ from dify_plugin.entities.tool import (
 )
 from dify_plugin.interfaces.tool import ToolLike, ToolProvider
 
+logger = logging.getLogger(__name__)
+
 
 class AgentToolIdentity(ToolIdentity):
     provider: str = Field(..., description="The provider of the tool")
@@ -40,7 +42,8 @@ class AgentModelConfig(LLMModelConfig):
     @classmethod
     def convert_prompt_messages(cls, v: list[object]) -> list[PromptMessage]:
         if not isinstance(v, list):
-            raise ValueError("prompt_messages must be a list")
+            msg = "prompt_messages must be a list"
+            raise ValueError(msg)
 
         for i in range(len(v)):
             if v[i]["role"] == PromptMessageRole.USER.value:
@@ -276,7 +279,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
                 prompt_tool = self._convert_tool_to_prompt_message_tool(tool)
             except Exception:
                 # api tool may be deleted
-                logging.exception("Failed to convert tool to prompt message tool")
+                logger.exception("Failed to convert tool to prompt message tool")
                 continue
 
             # save prompt tool

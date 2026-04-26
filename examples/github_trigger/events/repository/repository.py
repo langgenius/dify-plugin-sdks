@@ -37,12 +37,13 @@ class RepositoryUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = set(parameters.get("actions") or [])
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         if action and action not in self._KNOWN_ACTIONS:
             # forward-compatibility: if GitHub adds new actions, allow pass-through
@@ -50,7 +51,8 @@ class RepositoryUnifiedEvent(Event):
 
         repo = payload.get("repository")
         if not isinstance(repo, Mapping):
-            raise ValueError("No repository in payload")
+            msg = "No repository in payload"
+            raise ValueError(msg)
 
         name_contains = parameters.get("name_contains")
         if name_contains:
@@ -60,7 +62,7 @@ class RepositoryUnifiedEvent(Event):
             full_name = (repo.get("full_name") or "").lower()
             name = (repo.get("name") or "").lower()
             if keywords and not any(k in full_name or k in name for k in keywords):
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         visibility_filter = parameters.get("visibility")
         if visibility_filter:
@@ -74,6 +76,6 @@ class RepositoryUnifiedEvent(Event):
                 or ("private" if repo.get("private") else "public")
             ).lower()
             if allowed and visibility not in allowed:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

@@ -1,5 +1,6 @@
 import urllib
 from collections.abc import Mapping
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -43,7 +44,8 @@ class NotionDatasourceProvider(DatasourceProvider):
         """Get the credentials for the Notion OAuth."""
         code = request.args.get("code")
         if not code:
-            raise DatasourceOAuthError("No code provided")
+            msg = "No code provided"
+            raise DatasourceOAuthError(msg)
 
         data = {
             "code": code,
@@ -62,7 +64,8 @@ class NotionDatasourceProvider(DatasourceProvider):
         response_json = response.json()
         access_token = response_json.get("access_token")
         if not access_token:
-            raise DatasourceOAuthError(f"Error in Notion OAuth: {response_json}")
+            msg = f"Error in Notion OAuth: {response_json}"
+            raise DatasourceOAuthError(msg)
 
         workspace_name = response_json.get("workspace_name")
         workspace_icon = response_json.get("workspace_icon")
@@ -98,8 +101,9 @@ class NotionDatasourceProvider(DatasourceProvider):
             if "integration_secret" not in credentials or not credentials.get(
                 "integration_secret",
             ):
+                msg = "Notion Integration Token is required."
                 raise ToolProviderCredentialValidationError(
-                    "Notion Integration Token is required.",
+                    msg,
                 )
 
             # Try to authenticate with Notion API by making a test request
@@ -118,19 +122,24 @@ class NotionDatasourceProvider(DatasourceProvider):
                     headers=headers,
                     timeout=__TIMEOUT_SECONDS__,
                 )
-                if response.status_code == 401:
+                if response.status_code == HTTPStatus.UNAUTHORIZED:
+                    msg = "Invalid Notion Integration Token."
                     raise ToolProviderCredentialValidationError(
-                        "Invalid Notion Integration Token.",
+                        msg,
                     )
-                if response.status_code != 200:
-                    raise ToolProviderCredentialValidationError(
+                if response.status_code != HTTPStatus.OK:
+                    msg = (
                         f"Failed to connect to Notion API: "
-                        f"{response.status_code} {response.text}",
+                        f"{response.status_code} {response.text}"
+                    )
+                    raise ToolProviderCredentialValidationError(
+                        msg,
                     )
                 return True
             except requests.RequestException as e:
+                msg = f"Network error when connecting to Notion API: {e!s}"
                 raise ToolProviderCredentialValidationError(
-                    f"Network error when connecting to Notion API: {e!s}",
+                    msg,
                 ) from e
 
         except Exception as e:

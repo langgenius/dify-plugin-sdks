@@ -42,10 +42,10 @@ def test_launch_serverless_plugin() -> None:
     """
     env = DifyPluginEnv(
         INSTALL_METHOD=InstallMethod.Serverless,
-        SERVERLESS_HOST="0.0.0.0",
+        SERVERLESS_HOST="127.0.0.1",
         SERVERLESS_PORT=8080,
     )
 
     assert InstallMethod.Serverless == env.INSTALL_METHOD
-    assert env.SERVERLESS_HOST == "0.0.0.0"
+    assert env.SERVERLESS_HOST == "127.0.0.1"
     assert env.SERVERLESS_PORT == 8080

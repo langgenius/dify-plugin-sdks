@@ -21,12 +21,13 @@ class IssueDependenciesUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         dependency = payload.get("dependency")
         if not isinstance(dependency, Mapping):
@@ -42,7 +43,7 @@ class IssueDependenciesUnifiedEvent(Event):
             }
             parent = ((dependency.get("dependent_issue") or {}) or {}).get("number")
             if numbers and parent not in numbers:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         child_issue_filter = parameters.get("child_issue")
         if child_issue_filter:
@@ -53,6 +54,6 @@ class IssueDependenciesUnifiedEvent(Event):
             }
             child = ((dependency.get("blocking_issue") or {}) or {}).get("number")
             if numbers and child not in numbers:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

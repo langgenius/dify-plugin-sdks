@@ -7,6 +7,7 @@ import quopri
 import re
 from collections.abc import Mapping
 from html.parser import HTMLParser
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote, urlparse
 
@@ -37,7 +38,7 @@ class GmailMessageAddedEvent(Event):
         items: list[dict[str, Any]] = []
         raw_items = payload.get("message_added") or payload.get("items")
         if isinstance(raw_items, list):
-            items = raw_items  # type: ignore[assignment]
+            items = raw_items
 
         # Fallback to storage (legacy path)
         if not items:
@@ -47,7 +48,7 @@ class GmailMessageAddedEvent(Event):
             pending_key = f"gmail:{sub_key}:pending:message_added"
 
             if not self.runtime.session.storage.exist(pending_key):
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
             raw_bytes = self.runtime.session.storage.get(pending_key)
             try:
@@ -55,7 +56,7 @@ class GmailMessageAddedEvent(Event):
             except Exception as err:
                 # Corrupted payload, cleanup and ignore
                 self.runtime.session.storage.delete(pending_key)
-                raise EventIgnoreError() from err
+                raise EventIgnoreError from err
 
             # Cleanup the pending batch to avoid re-processing
             self.runtime.session.storage.delete(pending_key)
@@ -64,12 +65,13 @@ class GmailMessageAddedEvent(Event):
             history_id = history_id or data.get("historyId")
 
         if not items:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         # Fetch message details for each id
         access_token: str | None = (self.runtime.credentials or {}).get("access_token")
         if not access_token:
-            raise ValueError("Missing access token")
+            msg = "Missing access token"
+            raise ValueError(msg)
         headers: dict[str, str] = {"Authorization": f"Bearer {access_token}"}
 
         # Optional label-based local filtering
@@ -89,7 +91,7 @@ class GmailMessageAddedEvent(Event):
             mresp: requests.Response = requests.get(
                 murl, headers=headers, params=mparams, timeout=10
             )
-            if mresp.status_code != 200:
+            if mresp.status_code != HTTPStatus.OK:
                 continue
             m = mresp.json() or {}
             headers_list = (m.get("payload") or {}).get("headers") or []
@@ -189,7 +191,7 @@ class GmailMessageAddedEvent(Event):
             })
 
         if not messages:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         return Variables(
             variables={"history_id": str(history_id or ""), "messages": messages}
@@ -359,7 +361,7 @@ class GmailMessageAddedEvent(Event):
             response = requests.get(url, headers=headers, timeout=10)
         except requests.RequestException:
             return None, None
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             return None, None
 
         data = response.json() or {}

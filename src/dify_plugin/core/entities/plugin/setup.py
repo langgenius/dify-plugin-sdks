@@ -217,7 +217,8 @@ class PluginConfiguration(BaseModel):
                 Version(v)
                 return v
             except InvalidVersion as e:
-                raise ValueError(f"Invalid version format: {v}") from e
+                msg = f"Invalid version format: {v}"
+                raise ValueError(msg) from e
 
     version: str = Field(...)
     type: PluginType
@@ -240,7 +241,8 @@ class PluginConfiguration(BaseModel):
             Version(v)
             return v
         except InvalidVersion as e:
-            raise ValueError(f"Invalid version format: {v}") from e
+            msg = f"Invalid version format: {v}"
+            raise ValueError(msg) from e
 
 
 @docs(

@@ -59,4 +59,5 @@ class ChatAppInvocation(BackwardsInvocation[dict]):
         for data in response:
             return data
 
-        raise Exception("No response from chat")
+        msg = "No response from chat"
+        raise Exception(msg)

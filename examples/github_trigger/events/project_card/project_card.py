@@ -21,16 +21,18 @@ class ProjectCardUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         card = payload.get("project_card")
         if not isinstance(card, Mapping):
-            raise ValueError("No project_card in payload")
+            msg = "No project_card in payload"
+            raise ValueError(msg)
 
         note_contains = parameters.get("note_contains")
         if note_contains:
@@ -39,6 +41,6 @@ class ProjectCardUnifiedEvent(Event):
                 v.strip().lower() for v in str(note_contains).split(",") if v.strip()
             ]
             if keywords and not any(k in note for k in keywords):
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

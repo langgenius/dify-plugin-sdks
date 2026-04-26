@@ -1,3 +1,4 @@
+import importlib
 import pathlib
 from collections import defaultdict
 from enum import Enum
@@ -6,21 +7,25 @@ from typing import TextIO, Union
 from pydantic import BaseModel
 
 from dify_plugin.core.documentation.schema_doc import list_schema_docs
-from dify_plugin.core.entities import *
-from dify_plugin.core.entities.plugin import *
-from dify_plugin.core.entities.plugin.setup import *
-from dify_plugin.entities import *
-from dify_plugin.entities.agent import *
-from dify_plugin.entities.endpoint import *
-from dify_plugin.entities.model import *
-from dify_plugin.entities.model.llm import *
-from dify_plugin.entities.model.moderation import *
-from dify_plugin.entities.model.provider import *
-from dify_plugin.entities.model.rerank import *
-from dify_plugin.entities.model.speech2text import *
-from dify_plugin.entities.model.text_embedding import *
-from dify_plugin.entities.model.tts import *
-from dify_plugin.entities.tool import *
+
+for module_name in (
+    "dify_plugin.core.entities",
+    "dify_plugin.core.entities.plugin",
+    "dify_plugin.core.entities.plugin.setup",
+    "dify_plugin.entities",
+    "dify_plugin.entities.agent",
+    "dify_plugin.entities.endpoint",
+    "dify_plugin.entities.model",
+    "dify_plugin.entities.model.llm",
+    "dify_plugin.entities.model.moderation",
+    "dify_plugin.entities.model.provider",
+    "dify_plugin.entities.model.rerank",
+    "dify_plugin.entities.model.speech2text",
+    "dify_plugin.entities.model.text_embedding",
+    "dify_plugin.entities.model.tts",
+    "dify_plugin.entities.tool",
+):
+    importlib.import_module(module_name)
 
 
 class SchemaDocumentationGenerator:

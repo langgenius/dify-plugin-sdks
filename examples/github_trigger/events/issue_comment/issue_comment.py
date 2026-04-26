@@ -23,17 +23,19 @@ class IssueCommentUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         comment = payload.get("comment")
         issue = payload.get("issue")
         if not isinstance(comment, Mapping) or not isinstance(issue, Mapping):
-            raise ValueError("Missing comment or issue in payload")
+            msg = "Missing comment or issue in payload"
+            raise ValueError(msg)
 
         icu.check_comment_body_contains(
             comment, parameters.get("comment_body_contains")

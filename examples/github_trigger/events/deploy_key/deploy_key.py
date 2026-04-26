@@ -21,27 +21,29 @@ class DeployKeyUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         key = payload.get("key") or payload.get("deploy_key")
         if not isinstance(key, Mapping):
-            raise ValueError("No deploy key in payload")
+            msg = "No deploy key in payload"
+            raise ValueError(msg)
 
         title_filter = parameters.get("title")
         if title_filter:
             titles = {v.strip() for v in str(title_filter).split(",") if v.strip()}
             if titles and (key.get("title") or "") not in titles:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         fingerprint = parameters.get("fingerprint")
         if fingerprint:
             fps = {v.strip().lower() for v in str(fingerprint).split(",") if v.strip()}
             if fps and (str(key.get("fingerprint") or "").lower()) not in fps:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

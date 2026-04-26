@@ -51,4 +51,5 @@ class WebsiteCrawlDatasource(ABC):
         """
         Get the website crawl result
         """
-        raise NotImplementedError("This method should be implemented by a subclass")
+        msg = "This method should be implemented by a subclass"
+        raise NotImplementedError(msg)

@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from http import HTTPStatus
 from urllib.parse import urljoin
 
 import requests
@@ -85,7 +86,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
                 timeout=(10, 300),
             )
 
-            if response.status_code != 200:
+            if response.status_code != HTTPStatus.OK:
                 raise InvokeBadRequestError(response.text)
 
             # Stream the audio data
@@ -172,7 +173,8 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
             not model_schema
             or ModelPropertyKey.VOICES not in model_schema.model_properties
         ):
-            raise ValueError("this model does not support voice")
+            msg = "this model does not support voice"
+            raise ValueError(msg)
 
         voices = model_schema.model_properties[ModelPropertyKey.VOICES]
 

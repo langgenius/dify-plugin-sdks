@@ -21,14 +21,16 @@ class WorkflowRunInProgressEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         if payload.get("action") != "in_progress":
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         run = payload.get("workflow_run")
         if not isinstance(run, Mapping):
-            raise ValueError("No workflow_run data in payload")
+            msg = "No workflow_run data in payload"
+            raise ValueError(msg)
 
         self._check_name(run, parameters.get("workflow_name"))
         self._check_branch(run, parameters.get("branch"))
@@ -44,7 +46,7 @@ class WorkflowRunInProgressEvent(Event):
             return
         name = run.get("name") or run.get("display_title")
         if name not in names:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_branch(self, run: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -53,7 +55,7 @@ class WorkflowRunInProgressEvent(Event):
         if not branches:
             return
         if run.get("head_branch") not in branches:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_actor(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -63,4 +65,4 @@ class WorkflowRunInProgressEvent(Event):
             return
         actor_login = payload.get("sender", {}).get("login")
         if actor_login not in users:
-            raise EventIgnoreError()
+            raise EventIgnoreError

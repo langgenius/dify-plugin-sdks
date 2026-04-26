@@ -52,7 +52,8 @@ class Plugin(IOServer, Router):
         elif InstallMethod.Serverless == config.INSTALL_METHOD:
             request_reader, response_writer = self._launch_serverless_stream(config)
         else:
-            raise ValueError("Invalid install method")
+            msg = "Invalid install method"
+            raise ValueError(msg)
 
         # set default response writer
         self.default_response_writer = response_writer
@@ -84,10 +85,11 @@ class Plugin(IOServer, Router):
     ) -> tuple[RequestReader, ResponseWriter | None]:
         """Launch remote stream"""
         if not config.REMOTE_INSTALL_KEY:
-            raise ValueError("Missing remote install key")
+            msg = "Missing remote install key"
+            raise ValueError(msg)
 
         install_host, install_port = self._get_remote_install_host_and_port(config)
-        logging.debug("Remote installing to %s:%s", install_host, install_port)
+        logger.debug("Remote installing to %s:%s", install_host, install_port)
 
         tcp_stream = TCPReaderWriter(
             install_host,
@@ -224,15 +226,21 @@ class Plugin(IOServer, Router):
     def _log_configuration(self) -> None:
         """Log plugin configuration"""
         for tool in self.registration.tools_configuration:
-            logger.info(f"Installed tool: {tool.identity.name}")
+            logger.info("Installed tool: %s", tool.identity.name)
         for model in self.registration.models_configuration:
-            logger.info(f"Installed model: {model.provider}")
+            logger.info("Installed model: %s", model.provider)
         for endpoint in self.registration.endpoints_configuration:
-            logger.info(f"Installed endpoint: {[e.path for e in endpoint.endpoints]}")
+            logger.info(
+                "Installed endpoint: %s",
+                [e.path for e in endpoint.endpoints],
+            )
         for agent in self.registration.agent_strategies_configuration:
-            logger.info(f"Installed agent: {agent.identity.name}")
+            logger.info("Installed agent: %s", agent.identity.name)
         for trigger_provider in self.registration.triggers_configuration:
-            logger.info(f"Installed trigger provider: {trigger_provider.identity.name}")
+            logger.info(
+                "Installed trigger provider: %s",
+                trigger_provider.identity.name,
+            )
 
     def _register_request_routes(self) -> None:
         """Register routes"""
@@ -629,9 +637,12 @@ class Plugin(IOServer, Router):
                     host = split[0]
                     port = int(split[1])
             else:
-                raise ValueError(
+                msg = (
                     f"Invalid remote install URL {install_url}, which should "
-                    'be in the format of "host:port"',
+                    'be in the format of "host:port"'
+                )
+                raise ValueError(
+                    msg,
                 )
         else:
             host = config.REMOTE_INSTALL_HOST

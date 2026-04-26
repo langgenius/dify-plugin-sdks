@@ -28,17 +28,19 @@ class TelegramUpdateEvent:
     def _parse_payload(self, request: Request) -> Mapping[str, Any]:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received from Telegram")
+            msg = "No payload received from Telegram"
+            raise ValueError(msg)
         return payload
 
     def _extract_update(
         self, payload: Mapping[str, Any]
     ) -> Mapping[str, Any] | list[Any] | str | int | None:
         if not self.update_key:
-            raise ValueError("update_key must be defined on TelegramUpdateEvent")
+            msg = "update_key must be defined on TelegramUpdateEvent"
+            raise ValueError(msg)
         update = payload.get(self.update_key)
         if update is None:
-            raise EventIgnoreError()
+            raise EventIgnoreError
         return update
 
     def _build_variables(

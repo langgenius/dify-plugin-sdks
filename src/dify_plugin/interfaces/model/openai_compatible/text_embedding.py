@@ -1,6 +1,7 @@
 import json
 import time
 from decimal import Decimal
+from http import HTTPStatus
 from urllib.parse import urljoin
 
 import requests
@@ -184,23 +185,22 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
                 timeout=(10, 300),
             )
 
-            if response.status_code != 200:
-                raise CredentialsValidateFailedError(
+            if response.status_code != HTTPStatus.OK:
+                msg = (
                     "Credentials validation failed with status code "
                     f"{response.status_code}"
                 )
+                raise CredentialsValidateFailedError(msg)
 
             try:
                 json_result = response.json()
             except json.JSONDecodeError as e:
-                raise CredentialsValidateFailedError(
-                    "Credentials validation failed: JSON decode error"
-                ) from e
+                msg = "Credentials validation failed: JSON decode error"
+                raise CredentialsValidateFailedError(msg) from e
 
             if "model" not in json_result:
-                raise CredentialsValidateFailedError(
-                    "Credentials validation failed: invalid response"
-                )
+                msg = "Credentials validation failed: invalid response"
+                raise CredentialsValidateFailedError(msg)
         except CredentialsValidateFailedError:
             raise
         except Exception as ex:

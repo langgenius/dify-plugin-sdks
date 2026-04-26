@@ -1,5 +1,4 @@
 import pathlib
-from os.path import join
 from threading import Lock
 from typing import ClassVar, Protocol
 
@@ -20,9 +19,7 @@ class JinaTokenizer:
             with cls._lock:
                 if cls._tokenizer is None:
                     base_path = pathlib.Path(__file__).resolve()
-                    gpt2_tokenizer_path = join(
-                        pathlib.Path(base_path).parent, "tokenizer"
-                    )
+                    gpt2_tokenizer_path = str(base_path.parent / "tokenizer")
                     cls._tokenizer = AutoTokenizer.from_pretrained(gpt2_tokenizer_path)
         return cls._tokenizer
 

@@ -28,7 +28,8 @@ class GoogleCloudStorageDataSource(OnlineDriveDatasource):
         next_page_parameters = request.next_page_parameters or {}
 
         if not credentials:
-            raise ValueError("Credentials not found")
+            msg = "Credentials not found"
+            raise ValueError(msg)
 
         client = storage.Client.from_service_account_info(json.loads(credentials))
         if not bucket_name:
@@ -95,10 +96,12 @@ class GoogleCloudStorageDataSource(OnlineDriveDatasource):
         key = request.id
 
         if not credentials:
-            raise ValueError("Credentials not found")
+            msg = "Credentials not found"
+            raise ValueError(msg)
 
         if not bucket_name:
-            raise ValueError("Bucket name not found")
+            msg = "Bucket name not found"
+            raise ValueError(msg)
 
         client = storage.Client.from_service_account_info(json.loads(credentials))
         bucket = client.get_bucket(bucket_name)

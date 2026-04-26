@@ -7,6 +7,7 @@ import time
 import urllib.parse
 import uuid
 from collections.abc import Mapping, Sequence
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -61,23 +62,21 @@ class GoogleDriveTrigger(Trigger):
         expected_token = subscription.properties.get("channel_token")
 
         if expected_channel and channel_id and expected_channel != channel_id:
-            raise TriggerValidationError(
-                "Mismatched channel ID in Google Drive notification"
-            )
+            msg = "Mismatched channel ID in Google Drive notification"
+            raise TriggerValidationError(msg)
 
         if expected_resource and resource_id and expected_resource != resource_id:
-            raise TriggerValidationError(
-                "Mismatched resource ID in Google Drive notification"
-            )
+            msg = "Mismatched resource ID in Google Drive notification"
+            raise TriggerValidationError(msg)
 
         if expected_token and channel_token and expected_token != channel_token:
-            raise TriggerValidationError(
-                "Invalid channel token for Google Drive notification"
-            )
+            msg = "Invalid channel token for Google Drive notification"
+            raise TriggerValidationError(msg)
 
         body = request.get_json(silent=True)
         if body and not isinstance(body, Mapping):
-            raise TriggerDispatchError("Invalid JSON payload for Google Drive webhook")
+            msg = "Invalid JSON payload for Google Drive webhook"
+            raise TriggerDispatchError(msg)
 
         request.environ["google_drive.trigger.headers"] = {
             k: v for k, v in headers.items() if v is not None
@@ -92,14 +91,12 @@ class GoogleDriveTrigger(Trigger):
         event_name = subscription.properties.get("event_name", self._EVENT_NAME)
 
         if not self.runtime.credentials:
-            raise TriggerDispatchError(
-                "Missing Google Drive OAuth access token in runtime credentials"
-            )
+            msg = "Missing Google Drive OAuth access token in runtime credentials"
+            raise TriggerDispatchError(msg)
 
         if not subscription.parameters:
-            raise TriggerDispatchError(
-                "Missing Google Drive parameters in subscription"
-            )
+            msg = "Missing Google Drive parameters in subscription"
+            raise TriggerDispatchError(msg)
 
         # fetch changes
         changes = self._fetch_changes(
@@ -180,13 +177,13 @@ class GoogleDriveTrigger(Trigger):
                     self._CHANGES_ENDPOINT, headers=headers, params=params, timeout=10
                 )
             except requests.RequestException as exc:
-                raise ValueError(
-                    f"Failed to fetch Google Drive changes: {exc}"
-                ) from exc
+                msg = f"Failed to fetch Google Drive changes: {exc}"
+                raise ValueError(msg) from exc
 
             payload = response.json() if response.content else {}
-            if response.status_code != 200:
-                raise ValueError(f"Google Drive changes API error: {payload}")
+            if response.status_code != HTTPStatus.OK:
+                msg = f"Google Drive changes API error: {payload}"
+                raise ValueError(msg)
 
             next_page_token = payload.get("nextPageToken")
             new_start_page_token = payload.get("newStartPageToken")
@@ -257,18 +254,16 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
     _DEFAULT_SCOPE = "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.appdata"
 
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
-        raise TriggerProviderCredentialValidationError(
-            "Google Drive trigger only supports OAuth credentials."
-        )
+        msg = "Google Drive trigger only supports OAuth credentials."
+        raise TriggerProviderCredentialValidationError(msg)
 
     def _oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
     ) -> str:
         client_id = system_credentials.get("client_id")
         if not client_id:
-            raise TriggerProviderOAuthError(
-                "Client ID is required to start Google Drive OAuth flow"
-            )
+            msg = "Client ID is required to start Google Drive OAuth flow"
+            raise TriggerProviderOAuthError(msg)
 
         scope = system_credentials.get("scope", self._DEFAULT_SCOPE)
         params = {
@@ -288,14 +283,14 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> TriggerOAuthCredentials:
         code = request.args.get("code")
         if not code:
-            raise TriggerProviderOAuthError(
-                "Missing authorization code in callback request"
-            )
+            msg = "Missing authorization code in callback request"
+            raise TriggerProviderOAuthError(msg)
 
         client_id = system_credentials.get("client_id")
         client_secret = system_credentials.get("client_secret")
         if not client_id or not client_secret:
-            raise TriggerProviderOAuthError("Client ID and Client Secret are required")
+            msg = "Client ID and Client Secret are required"
+            raise TriggerProviderOAuthError(msg)
 
         data = {
             "code": code,
@@ -308,24 +303,21 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         try:
             response = requests.post(self._TOKEN_URL, data=data, timeout=10)
         except requests.RequestException as exc:
-            raise TriggerProviderOAuthError(
-                f"Failed to exchange authorization code: {exc}"
-            ) from exc
+            msg = f"Failed to exchange authorization code: {exc}"
+            raise TriggerProviderOAuthError(msg) from exc
 
         payload = response.json() if response.content else {}
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             error_description = payload.get("error_description") or payload
-            raise TriggerProviderOAuthError(
-                f"Failed to obtain Google Drive OAuth tokens: {error_description}"
-            )
+            msg = f"Failed to obtain Google Drive OAuth tokens: {error_description}"
+            raise TriggerProviderOAuthError(msg)
 
         access_token = payload.get("access_token")
         refresh_token = payload.get("refresh_token")
         expires_in = payload.get("expires_in")
         if not access_token or not refresh_token:
-            raise TriggerProviderOAuthError(
-                "OAuth response does not contain access_token or refresh_token"
-            )
+            msg = "OAuth response does not contain access_token or refresh_token"
+            raise TriggerProviderOAuthError(msg)
 
         expires_at = int(time.time()) + int(expires_in) if expires_in else -1
         profile = self._fetch_about(access_token)
@@ -348,17 +340,17 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> OAuthCredentials:
         refresh_token = credentials.get("refresh_token")
         if not refresh_token:
-            raise TriggerProviderOAuthError(
-                "Refresh token is required to renew Google Drive access token"
-            )
+            msg = "Refresh token is required to renew Google Drive access token"
+            raise TriggerProviderOAuthError(msg)
 
         client_id = system_credentials.get("client_id")
         client_secret = system_credentials.get("client_secret")
         if not client_id or not client_secret:
-            raise TriggerProviderOAuthError(
+            msg = (
                 "Client ID and Client Secret are required to refresh "
                 "Google Drive tokens"
             )
+            raise TriggerProviderOAuthError(msg)
 
         data = {
             "client_id": client_id,
@@ -370,23 +362,20 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         try:
             response = requests.post(self._TOKEN_URL, data=data, timeout=10)
         except requests.RequestException as exc:
-            raise TriggerProviderOAuthError(
-                f"Failed to refresh Google Drive OAuth token: {exc}"
-            ) from exc
+            msg = f"Failed to refresh Google Drive OAuth token: {exc}"
+            raise TriggerProviderOAuthError(msg) from exc
 
         payload = response.json() if response.content else {}
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             error_description = payload.get("error_description") or payload
-            raise TriggerProviderOAuthError(
-                f"Unable to refresh Google Drive OAuth token: {error_description}"
-            )
+            msg = f"Unable to refresh Google Drive OAuth token: {error_description}"
+            raise TriggerProviderOAuthError(msg)
 
         access_token = payload.get("access_token")
         expires_in = payload.get("expires_in")
         if not access_token:
-            raise TriggerProviderOAuthError(
-                "Refresh response does not contain access_token"
-            )
+            msg = "Refresh response does not contain access_token"
+            raise TriggerProviderOAuthError(msg)
 
         expires_at = int(time.time()) + int(expires_in) if expires_in else -1
         refreshed_credentials = {
@@ -412,22 +401,25 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         credential_type: CredentialType,
     ) -> Subscription:
         if credential_type != CredentialType.OAUTH:
+            msg = "Google Drive trigger requires OAuth credentials"
             raise SubscriptionError(
-                "Google Drive trigger requires OAuth credentials",
+                msg,
                 error_code="OAUTH_REQUIRED",
             )
 
         access_token = credentials.get("access_token")
         if not access_token:
+            msg = "Missing Google Drive OAuth access token"
             raise SubscriptionError(
-                "Missing Google Drive OAuth access token",
+                msg,
                 error_code="MISSING_ACCESS_TOKEN",
             )
 
         spaces = self._normalize_spaces(parameters.get("spaces"))
         if not spaces:
+            msg = "At least one Drive space must be selected"
             raise SubscriptionError(
-                "At least one Drive space must be selected",
+                msg,
                 error_code="SPACES_REQUIRED",
             )
 
@@ -471,15 +463,19 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
                 timeout=10,
             )
         except requests.RequestException as exc:
+            msg = f"Network error while creating Google Drive watch: {exc}"
             raise SubscriptionError(
-                f"Network error while creating Google Drive watch: {exc}",
+                msg,
                 error_code="NETWORK_ERROR",
             ) from exc
 
         payload = response.json() if response.content else {}
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
+            msg = (
+                f"Failed to create Google Drive watch: {payload.get('error', payload)}"
+            )
             raise SubscriptionError(
-                f"Failed to create Google Drive watch: {payload.get('error', payload)}",
+                msg,
                 error_code="WATCH_CREATION_FAILED",
                 external_response=payload,
             )
@@ -513,23 +509,26 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         credential_type: CredentialType,
     ) -> UnsubscribeResult:
         if credential_type != CredentialType.OAUTH:
+            msg = "Google Drive trigger requires OAuth credentials to unsubscribe"
             raise UnsubscribeError(
-                "Google Drive trigger requires OAuth credentials to unsubscribe",
+                msg,
                 error_code="OAUTH_REQUIRED",
             )
 
         access_token = credentials.get("access_token")
         if not access_token:
+            msg = "Missing Google Drive OAuth access token"
             raise UnsubscribeError(
-                "Missing Google Drive OAuth access token",
+                msg,
                 error_code="MISSING_ACCESS_TOKEN",
             )
 
         channel_id = subscription.properties.get("channel_id")
         resource_id = subscription.properties.get("resource_id")
         if not channel_id or not resource_id:
+            msg = "Subscription does not contain channel metadata"
             raise UnsubscribeError(
-                "Subscription does not contain channel metadata",
+                msg,
                 error_code="MISSING_CHANNEL",
             )
 
@@ -544,8 +543,9 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
                 self._STOP_URL, headers=headers, json=body, timeout=10
             )
         except requests.RequestException as exc:
+            msg = f"Network error while stopping Google Drive watch: {exc}"
             raise UnsubscribeError(
-                f"Network error while stopping Google Drive watch: {exc}",
+                msg,
                 error_code="NETWORK_ERROR",
             ) from exc
 
@@ -555,8 +555,9 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
             )
 
         payload = response.json() if response.content else {}
+        msg = f"Failed to stop Google Drive watch: {payload.get('error', payload)}"
         raise UnsubscribeError(
-            f"Failed to stop Google Drive watch: {payload.get('error', payload)}",
+            msg,
             error_code="WATCH_STOP_FAILED",
             external_response=payload,
         )
@@ -587,15 +588,15 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
                 self._ABOUT_URL, headers=headers, params=params, timeout=10
             )
         except requests.RequestException as exc:
-            raise TriggerProviderOAuthError(
-                f"Failed to fetch Google Drive profile: {exc}"
-            ) from exc
+            msg = f"Failed to fetch Google Drive profile: {exc}"
+            raise TriggerProviderOAuthError(msg) from exc
 
         payload = response.json() if response.content else {}
-        if response.status_code != 200:
-            raise TriggerProviderOAuthError(
+        if response.status_code != HTTPStatus.OK:
+            msg = (
                 f"Unable to fetch Google Drive profile: {payload.get('error', payload)}"
             )
+            raise TriggerProviderOAuthError(msg)
         return payload
 
     def _fetch_start_page_token(self, access_token: str, spaces: Sequence[str]) -> str:
@@ -606,23 +607,26 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
                 self._START_PAGE_TOKEN_URL, headers=headers, params=params, timeout=10
             )
         except requests.RequestException as exc:
+            msg = f"Network error while fetching startPageToken: {exc}"
             raise SubscriptionError(
-                f"Network error while fetching startPageToken: {exc}",
+                msg,
                 error_code="NETWORK_ERROR",
             ) from exc
 
         payload = response.json() if response.content else {}
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
+            msg = f"Failed to fetch startPageToken: {payload.get('error', payload)}"
             raise SubscriptionError(
-                f"Failed to fetch startPageToken: {payload.get('error', payload)}",
+                msg,
                 error_code="START_TOKEN_FAILED",
                 external_response=payload,
             )
 
         token = payload.get("startPageToken")
         if not token:
+            msg = "startPageToken not present in response"
             raise SubscriptionError(
-                "startPageToken not present in response",
+                msg,
                 error_code="START_TOKEN_MISSING",
             )
         return str(token)
@@ -638,6 +642,5 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
                 item.strip() for item in raw if isinstance(item, str) and item.strip()
             ]
             return normalized
-        raise SubscriptionError(
-            "spaces must be a string or list of strings", error_code="INVALID_SPACES"
-        )
+        msg = "spaces must be a string or list of strings"
+        raise SubscriptionError(msg, error_code="INVALID_SPACES")

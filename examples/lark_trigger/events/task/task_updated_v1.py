@@ -33,7 +33,8 @@ class TaskUpdatedV1Event(Event):
             lambda builder: builder.register_p2_task_task_updated_v1,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict: dict[str, Any] = {

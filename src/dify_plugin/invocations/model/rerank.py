@@ -27,7 +27,8 @@ class RerankInvocation(BackwardsInvocation[RerankResult]):
         ):
             return data
 
-        raise Exception("No response from rerank")
+        msg = "No response from rerank"
+        raise Exception(msg)
 
     def invoke_multimodal(
         self,
@@ -53,4 +54,5 @@ class RerankInvocation(BackwardsInvocation[RerankResult]):
         ):
             return data
 
-        raise Exception("No response from multimodal rerank")
+        msg = "No response from multimodal rerank"
+        raise Exception(msg)

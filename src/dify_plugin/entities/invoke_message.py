@@ -61,8 +61,9 @@ class InvokeMessage(BaseModel):
                 values.get("variable_value"),
                 str,
             ):
+                msg = "When 'stream' is True, 'variable_value' must be a string."
                 raise ValueError(
-                    "When 'stream' is True, 'variable_value' must be a string.",
+                    msg,
                 )
             return values
 
