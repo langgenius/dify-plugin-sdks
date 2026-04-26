@@ -5,6 +5,9 @@ from collections.abc import Generator
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.interfaces.agent import AgentScratchpadUnit
 
+CODE_BLOCK_DELIMITER_COUNT = 3
+TRIM_BOUNDARY_CHARACTERS = frozenset(("\n", " ", ""))
+
 
 class CotAgentOutputParser:
     @classmethod
@@ -30,13 +33,18 @@ class CotAgentOutputParser:
                         action_name = value
 
                 if action_name is not None and action_input is not None:
-                    return AgentScratchpadUnit.Action(
-                        action_name=action_name,
-                        action_input=action_input,
+                    parsed_action: str | AgentScratchpadUnit.Action = (
+                        AgentScratchpadUnit.Action(
+                            action_name=action_name,
+                            action_input=action_input,
+                        )
                     )
-                return json_str or ""
+                else:
+                    parsed_action = json_str or ""
             except Exception:
                 return json_str or ""
+            else:
+                return parsed_action
 
         def extra_json_from_code_block(
             code_block: str,
@@ -102,7 +110,7 @@ class CotAgentOutputParser:
 
                 if not in_code_block and not in_json:
                     if delta.lower() == action_str[action_idx] and action_idx == 0:
-                        if last_character not in {"\n", " ", ""}:
+                        if last_character not in TRIM_BOUNDARY_CHARACTERS:
                             yield_delta = True
                         else:
                             last_character = delta
@@ -129,7 +137,7 @@ class CotAgentOutputParser:
                         action_idx = 0
 
                     if delta.lower() == thought_str[thought_idx] and thought_idx == 0:
-                        if last_character not in {"\n", " ", ""}:
+                        if last_character not in TRIM_BOUNDARY_CHARACTERS:
                             yield_delta = True
                         else:
                             last_character = delta
@@ -161,7 +169,7 @@ class CotAgentOutputParser:
                         yield delta
                         continue
 
-                if code_block_delimiter_count == 3:
+                if code_block_delimiter_count == CODE_BLOCK_DELIMITER_COUNT:
                     if in_code_block:
                         last_character = delta
                         yield from extra_json_from_code_block(code_block_cache)

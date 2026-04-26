@@ -17,7 +17,7 @@ from dify_plugin.errors.tool import (
 
 class GithubProvider(ToolProvider):
     _AUTH_URL = "https://github.com/login/oauth/authorize"
-    _TOKEN_URL = "https://github.com/login/oauth/access_token"
+    _OAUTH_ENDPOINT = "https://github.com/login/oauth/access_token"
     _API_USER_URL = "https://api.github.com/user"
 
     def _oauth_get_authorization_url(
@@ -56,7 +56,7 @@ class GithubProvider(ToolProvider):
         }
         headers = {"Accept": "application/json"}
         response = requests.post(
-            self._TOKEN_URL, data=data, headers=headers, timeout=10
+            self._OAUTH_ENDPOINT, data=data, headers=headers, timeout=10
         )
         response_json = response.json()
         access_tokens = response_json.get("access_token")

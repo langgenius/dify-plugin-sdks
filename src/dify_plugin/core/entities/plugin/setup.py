@@ -215,10 +215,11 @@ class PluginConfiguration(BaseModel):
                 return v
             try:
                 Version(v)
-                return v
             except InvalidVersion as e:
                 msg = f"Invalid version format: {v}"
                 raise ValueError(msg) from e
+            else:
+                return v
 
     version: str = Field(...)
     type: PluginType
@@ -239,10 +240,11 @@ class PluginConfiguration(BaseModel):
     def validate_version(cls, v: str) -> str:
         try:
             Version(v)
-            return v
         except InvalidVersion as e:
             msg = f"Invalid version format: {v}"
             raise ValueError(msg) from e
+        else:
+            return v
 
 
 @docs(

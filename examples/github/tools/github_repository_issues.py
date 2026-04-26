@@ -11,6 +11,8 @@ from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
 
+BODY_PREVIEW_LENGTH = 200
+
 
 class GithubRepositoryIssuesTool(Tool):
     def _invoke(
@@ -86,8 +88,9 @@ class GithubRepositoryIssuesTool(Tool):
                     issue_info = {
                         "number": issue.get("number", 0),
                         "title": issue.get("title", ""),
-                        "body": (issue.get("body", "") or "")[:200] + "..."
-                        if len(issue.get("body", "") or "") > 200
+                        "body": (issue.get("body", "") or "")[:BODY_PREVIEW_LENGTH]
+                        + "..."
+                        if len(issue.get("body", "") or "") > BODY_PREVIEW_LENGTH
                         else (issue.get("body", "") or ""),
                         "state": issue.get("state", ""),
                         "url": issue.get("html_url", ""),

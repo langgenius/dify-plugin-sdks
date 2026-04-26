@@ -56,10 +56,11 @@ class TextEmbeddingModel(AIModel):
     ) -> MultiModalEmbeddingResult:
         """Invoke a multimodal embedding model."""
 
-        raise NotImplementedError(
+        msg = (
             f"{self.__class__.__name__} does not implement `_invoke_multimodal`. "
             "Implement this method to support multimodal embeddings."
         )
+        raise NotImplementedError(msg)
 
     @abstractmethod
     def get_num_tokens(

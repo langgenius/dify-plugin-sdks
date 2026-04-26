@@ -10,6 +10,8 @@ from dify_plugin.errors.trigger import EventIgnoreError
 
 from .common import ensure_action, load_json_payload, require_mapping
 
+EMPTY_FILTER_VALUES = frozenset({None, ""})
+
 
 def load_pull_request_payload(
     request: Request,
@@ -122,7 +124,7 @@ def check_pr_size_threshold(pull_request: Mapping[str, Any], value: object) -> N
     Raises:
         EventIgnoreError: If the event should be ignored.
     """
-    if value in (None, ""):
+    if value in EMPTY_FILTER_VALUES:
         return
 
     try:

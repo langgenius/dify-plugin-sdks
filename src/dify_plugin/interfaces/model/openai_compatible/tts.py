@@ -132,8 +132,8 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         voice_names = credentials.get("voices", "alloy").strip().split(",")
         voices = []
 
-        for voice in voice_names:
-            voice = voice.strip()
+        for voice_name in voice_names:
+            voice = voice_name.strip()
             if not voice:
                 continue
 

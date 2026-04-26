@@ -34,6 +34,11 @@ from dify_plugin.interfaces.agent import (
 )
 
 logger = logging.getLogger(__name__)
+EMPTY_STRING = ""
+IMAGE_RESPONSE_TYPES = frozenset({
+    ToolInvokeMessage.MessageType.IMAGE_LINK,
+    ToolInvokeMessage.MessageType.IMAGE,
+})
 
 
 class FunctionCallingParams(BaseModel):
@@ -336,10 +341,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     + "."
                                     + " please tell user to check it."
                                 )
-                            elif tool_invoke_response.type in {
-                                ToolInvokeMessage.MessageType.IMAGE_LINK,
-                                ToolInvokeMessage.MessageType.IMAGE,
-                            }:
+                            elif tool_invoke_response.type in IMAGE_RESPONSE_TYPES:
                                 # Extract the file path or URL from the message
                                 if hasattr(tool_invoke_response.message, "text"):
                                     file_info = cast(
@@ -507,7 +509,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         tool_calls = []
         for prompt_message in llm_result_chunk.delta.message.tool_calls:
             args = {}
-            if prompt_message.function.arguments != "":
+            if prompt_message.function.arguments != EMPTY_STRING:
                 args = json.loads(prompt_message.function.arguments)
 
             tool_calls.append((
@@ -532,7 +534,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         tool_calls = []
         for prompt_message in llm_result.message.tool_calls:
             args = {}
-            if prompt_message.function.arguments != "":
+            if prompt_message.function.arguments != EMPTY_STRING:
                 args = json.loads(prompt_message.function.arguments)
 
             tool_calls.append((

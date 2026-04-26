@@ -116,7 +116,7 @@ def test_model_registry_get_model(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test model registry get model"""
     config = MagicMock()
 
-    def mock_validate_models(cls: ModelProviderConfiguration, values: dict) -> dict:
+    def mock_validate_models(_cls: ModelProviderConfiguration, values: dict) -> dict:
         """Mock validate models"""
         return values
 
@@ -126,7 +126,7 @@ def test_model_registry_get_model(monkeypatch: pytest.MonkeyPatch) -> None:
         mock_validate_models,
     )
 
-    def mock_load_yaml_file(file_name: str) -> dict:
+    def mock_load_yaml_file(_file_name: str) -> dict:
         """Mock load yaml file"""
         return {}
 

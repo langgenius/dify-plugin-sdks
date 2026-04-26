@@ -10,6 +10,8 @@ from dify_plugin.errors.trigger import EventIgnoreError
 
 from .catalog_data import EVENT_CATALOG
 
+EMPTY_FIELD_VALUES = frozenset({"", None})
+
 _MESSAGE_TOPIC_TO_CHANNEL_TYPE: dict[str, str] = {
     "message.app.home": "app_home",
     "message.channels": "channel",
@@ -58,7 +60,7 @@ class CatalogSlackEvent:
     def _ensure_list(self, value: object) -> list[object]:
         if isinstance(value, list):
             return value
-        if value in ("", None):
+        if value in EMPTY_FIELD_VALUES:
             return []
         return [value]
 

@@ -118,10 +118,7 @@ class PluginRunner:
             target=self._message_reader,
             args=(self.stdout_pipe_read,),
         )
-        try:
-            self.stdout_reader.start()
-        except Exception:
-            raise
+        self.stdout_reader.start()
 
         self.q = dict[str, Queue[PluginGenericResponse | None]]()
         self.q_lock = Lock()
@@ -210,8 +207,8 @@ class PluginRunner:
                 buffer = lines[-1]
 
                 lines = lines[:-1]
-                for line in lines:
-                    line = line.strip()
+                for raw_line in lines:
+                    line = raw_line.strip()
                     if not line:
                         continue
 

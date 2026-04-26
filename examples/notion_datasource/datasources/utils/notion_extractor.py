@@ -9,6 +9,8 @@ HEADING_SPLITTER = {
     "heading_2": "## ",
     "heading_3": "### ",
 }
+TEXT_PROPERTY_TYPES = frozenset({"rich_text", "title"})
+NAMED_PROPERTY_TYPES = frozenset({"select", "status"})
 
 
 class NotionExtractor:
@@ -207,13 +209,13 @@ class NotionExtractor:
         column_type = property_value["type"]
         if column_type == "multi_select":
             return ", ".join(option["name"] for option in property_value[column_type])
-        if column_type in {"rich_text", "title"}:
+        if column_type in TEXT_PROPERTY_TYPES:
             return (
                 property_value[column_type][0]["plain_text"]
                 if property_value[column_type]
                 else ""
             )
-        if column_type in {"select", "status"}:
+        if column_type in NAMED_PROPERTY_TYPES:
             return (
                 property_value[column_type]["name"]
                 if property_value[column_type]

@@ -12,6 +12,8 @@ import requests
 from dify_plugin.entities.datasource import OnlineDocumentPage
 
 __TIMEOUT_SECONDS__ = 60 * 10
+VALID_HEADING_LEVELS = frozenset({1, 2, 3})
+FILE_ICON_TYPES = frozenset({"external", "file"})
 
 
 class NotionClient:
@@ -23,7 +25,7 @@ class NotionClient:
     _API_BASE_URL = "https://api.notion.com/v1"
     _API_VERSION = "2022-06-28"  # Using a stable API version_API_VERSION = "2022-06-28"
     _AUTH_URL = "https://api.notion.com/v1/oauth/authorize"
-    _TOKEN_URL = "https://api.notion.com/v1/oauth/token"
+    _OAUTH_ENDPOINT = "https://api.notion.com/v1/oauth/token"
     _NOTION_PAGE_SEARCH = "https://api.notion.com/v1/search"
     _NOTION_BLOCK_SEARCH = "https://api.notion.com/v1/blocks"
     _NOTION_BOT_USER = "https://api.notion.com/v1/users/me"
@@ -393,7 +395,7 @@ class NotionClient:
         Raises:
             ValueError: If input values are invalid.
         """
-        if level not in {1, 2, 3}:
+        if level not in VALID_HEADING_LEVELS:
             msg = "Heading level must be 1, 2, or 3"
             raise ValueError(msg)
 
@@ -492,7 +494,7 @@ class NotionClient:
             page_icon = page_result["icon"]
             if page_icon:
                 icon_type = page_icon["type"]
-                if icon_type in {"external", "file"}:
+                if icon_type in FILE_ICON_TYPES:
                     url = page_icon[icon_type]["url"]
                     icon = {
                         "type": "url",
@@ -535,7 +537,7 @@ class NotionClient:
             page_icon = database_result["icon"]
             if page_icon:
                 icon_type = page_icon["type"]
-                if icon_type in {"external", "file"}:
+                if icon_type in FILE_ICON_TYPES:
                     url = page_icon[icon_type]["url"]
                     icon = {
                         "type": "url",

@@ -6,7 +6,7 @@ from flask import Flask, Response, jsonify, request
 
 from ..consts.mockserver import OPENAI_MOCK_SERVER_PORT
 
-flask.cli.show_server_banner = lambda *args: None
+flask.cli.show_server_banner = lambda *_args: None
 
 
 def openai_server_mock() -> None:

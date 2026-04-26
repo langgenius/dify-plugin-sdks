@@ -51,20 +51,23 @@ class EndpointProviderConfiguration(BaseModel):
 
         endpoints: list[EndpointConfiguration] = []
 
-        for endpoint in value:
+        for raw_endpoint in value:
             # read from yaml or load directly
-            if isinstance(endpoint, EndpointConfiguration | dict):
-                if isinstance(endpoint, dict):
-                    endpoint = EndpointConfiguration(**endpoint)
-                endpoints.append(endpoint)
+            if isinstance(raw_endpoint, EndpointConfiguration | dict):
+                endpoint_config = (
+                    EndpointConfiguration(**raw_endpoint)
+                    if isinstance(raw_endpoint, dict)
+                    else raw_endpoint
+                )
+                endpoints.append(endpoint_config)
                 continue
 
-            if not isinstance(endpoint, str):
+            if not isinstance(raw_endpoint, str):
                 msg = "endpoint path should be a string"
                 raise ValueError(msg)
 
             try:
-                file = cls._load_yaml_file(endpoint)
+                file = cls._load_yaml_file(raw_endpoint)
                 endpoints.append(EndpointConfiguration(**file))
             except Exception as e:
                 msg = f"Error loading endpoint configuration: {e!s}"

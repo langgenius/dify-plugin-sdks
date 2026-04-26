@@ -1,3 +1,5 @@
+# ruff: noqa: RUF001
+
 import json
 
 from flask import Flask, jsonify, make_response

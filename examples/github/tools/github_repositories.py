@@ -12,6 +12,8 @@ from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+DESCRIPTION_PREVIEW_LENGTH = 100
+
 
 class GithubRepositoriesTool(Tool):
     def _invoke(
@@ -68,8 +70,8 @@ class GithubRepositoriesTool(Tool):
                         content["name"] = item["name"]
                         if item["description"] is not None:
                             content["description"] = (
-                                item["description"][:100] + "..."
-                                if len(item["description"]) > 100
+                                item["description"][:DESCRIPTION_PREVIEW_LENGTH] + "..."
+                                if len(item["description"]) > DESCRIPTION_PREVIEW_LENGTH
                                 else item["description"]
                             )
                         else:

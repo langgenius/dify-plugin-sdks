@@ -11,6 +11,9 @@ from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
 
+CONTENT_DECODE_SIZE_LIMIT = 100_000
+CONTENT_PREVIEW_LENGTH = 2_000
+
 
 class GithubRepositoryContentsTool(Tool):
     def _invoke(
@@ -123,7 +126,7 @@ class GithubRepositoryContentsTool(Tool):
                     if (
                         response_data.get("encoding") == "base64"
                         and response_data.get("content")
-                        and response_data.get("size", 0) < 100000
+                        and response_data.get("size", 0) < CONTENT_DECODE_SIZE_LIMIT
                     ):  # Only decode files < 100KB
                         try:
                             content = response_data.get("content", "").replace(
@@ -134,8 +137,8 @@ class GithubRepositoryContentsTool(Tool):
                                 "utf-8",
                             )
                             file_info["content"] = (
-                                decoded_content[:2000] + "..."
-                                if len(decoded_content) > 2000
+                                decoded_content[:CONTENT_PREVIEW_LENGTH] + "..."
+                                if len(decoded_content) > CONTENT_PREVIEW_LENGTH
                                 else decoded_content
                             )
                         except Exception:

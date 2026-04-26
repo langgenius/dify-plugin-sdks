@@ -70,7 +70,7 @@ class File(BackwardsInvocation[dict]):
         Raises:
             Exception: If the operation fails.
         """
-        for response in self._backwards_invoke(
+        for upload_data in self._backwards_invoke(
             InvokeType.UploadFile,
             dict,
             {
@@ -78,22 +78,25 @@ class File(BackwardsInvocation[dict]):
                 "mimetype": mimetype,
             },
         ):
-            url = response.get("url")
+            url = upload_data.get("url")
             if not url:
                 msg = "upload file failed, could not get signed url"
                 raise Exception(msg)
 
-            response = requests.post(url, files={"file": (filename, content, mimetype)})
-            if response.status_code != HTTPStatus.CREATED:
+            upload_response = requests.post(
+                url,
+                files={"file": (filename, content, mimetype)},
+            )
+            if upload_response.status_code != HTTPStatus.CREATED:
                 msg = (
                     "upload file failed, status code: "
-                    f"{response.status_code}, response: {response.text}"
+                    f"{upload_response.status_code}, response: {upload_response.text}"
                 )
                 raise Exception(
                     msg,
                 )
 
-            return UploadFileResponse(**response.json())
+            return UploadFileResponse(**upload_response.json())
 
         msg = "upload file failed, empty response from server"
         raise Exception(msg)

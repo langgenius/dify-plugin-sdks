@@ -11,6 +11,8 @@ from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
 
+RELEASE_BODY_PREVIEW_LENGTH = 300
+
 
 class GithubRepositoryReleasesTool(Tool):
     def _invoke(
@@ -75,8 +77,12 @@ class GithubRepositoryReleasesTool(Tool):
                         "id": release.get("id", 0),
                         "tag_name": release.get("tag_name", ""),
                         "name": release.get("name", ""),
-                        "body": (release.get("body", "") or "")[:300] + "..."
-                        if len(release.get("body", "") or "") > 300
+                        "body": (release.get("body", "") or "")[
+                            :RELEASE_BODY_PREVIEW_LENGTH
+                        ]
+                        + "..."
+                        if len(release.get("body", "") or "")
+                        > RELEASE_BODY_PREVIEW_LENGTH
                         else (release.get("body", "") or ""),
                         "url": release.get("html_url", ""),
                         "tarball_url": release.get("tarball_url", ""),

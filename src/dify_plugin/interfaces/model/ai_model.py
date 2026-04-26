@@ -27,6 +27,8 @@ if socket.socket is gevent.socket.socket:
 
     threadpool = gevent.threadpool.ThreadPool(1)
 
+TOKEN_ESTIMATION_TEXT_LIMIT = 100_000
+
 
 class AIModel(ABC):
     """
@@ -381,8 +383,8 @@ class AIModel(ABC):
         # ENHANCEMENT:
         # to avoid performance issue, do not calculate the number of tokens
         # for too long text
-        # only to promise text length is less than 100000
-        if len(text) >= 100000:
+        # only to promise text length is less than TOKEN_ESTIMATION_TEXT_LIMIT
+        if len(text) >= TOKEN_ESTIMATION_TEXT_LIMIT:
             return len(text)
 
         # check if gevent is patched to main thread

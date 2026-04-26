@@ -32,7 +32,7 @@ def test_load_endpoint_from_file(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         EndpointProviderConfiguration,
         "_load_yaml_file",
-        lambda x: {
+        lambda _x: {
             "path": "/test",
             "method": "GET",
             "hidden": False,

@@ -31,6 +31,10 @@ if TYPE_CHECKING:
     from dify_plugin.entities.provider_config import CredentialType
 
 _CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
+TRUTHY_STRINGS = frozenset({"true", "1", "yes", "on"})
+FALSY_STRINGS = frozenset({"false", "0", "no", "off"})
+WATCH_SUCCESS_STATUSES = frozenset({HTTPStatus.OK, HTTPStatus.CREATED})
+CHANNEL_STOP_SUCCESS_STATUSES = frozenset({HTTPStatus.OK, HTTPStatus.NO_CONTENT})
 
 
 class SyncTokenExpiredError(TriggerError):
@@ -75,9 +79,9 @@ def _to_bool(value: object, default: bool) -> bool:
         return bool(value)
     if isinstance(value, str):
         normalized = value.strip().lower()
-        if normalized in {"true", "1", "yes", "on"}:
+        if normalized in TRUTHY_STRINGS:
             return True
-        if normalized in {"false", "0", "no", "off"}:
+        if normalized in FALSY_STRINGS:
             return False
     return default
 
@@ -406,7 +410,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
     """Manage Google Calendar trigger subscription lifecycle."""
 
     _AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-    _TOKEN_URL = "https://oauth2.googleapis.com/token"
+    _OAUTH_ENDPOINT = "https://oauth2.googleapis.com/token"
     _CAL_BASE = _CALENDAR_API_BASE
 
     _DEFAULT_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
@@ -466,7 +470,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         try:
             resp = requests.post(
-                self._TOKEN_URL,
+                self._OAUTH_ENDPOINT,
                 data=data,
                 headers=headers,
                 timeout=10,
@@ -545,7 +549,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         try:
             resp = requests.post(
-                self._TOKEN_URL,
+                self._OAUTH_ENDPOINT,
                 data=data,
                 headers=headers,
                 timeout=10,
@@ -626,7 +630,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
                 error_code="NETWORK_ERROR",
             ) from exc
 
-        if resp.status_code not in {200, 201}:
+        if resp.status_code not in WATCH_SUCCESS_STATUSES:
             msg = f"Failed to create calendar watch: {_parse_google_error(resp)}"
             raise SubscriptionError(
                 msg,
@@ -727,7 +731,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
                 error_code="NETWORK_ERROR",
             ) from exc
 
-        if resp.status_code not in {200, 201}:
+        if resp.status_code not in WATCH_SUCCESS_STATUSES:
             msg = f"Failed to refresh calendar watch: {_parse_google_error(resp)}"
             raise SubscriptionError(
                 msg,
@@ -823,7 +827,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         except requests.RequestException:
             return False
 
-        return resp.status_code in {200, 204}
+        return resp.status_code in CHANNEL_STOP_SUCCESS_STATUSES
 
     def _bootstrap_sync_token(self, access_token: str, calendar_id: str) -> str:
         return _retrieve_sync_token(

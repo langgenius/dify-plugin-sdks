@@ -8,6 +8,8 @@ from pydantic import BaseModel
 
 from dify_plugin.core.documentation.schema_doc import list_schema_docs
 
+COLLECTION_ORIGINS = frozenset({list, set})
+
 for module_name in (
     "dify_plugin.core.entities",
     "dify_plugin.core.entities.plugin",
@@ -465,7 +467,7 @@ class SchemaDocumentationGenerator:
 
         if hasattr(field_type, "__origin__") and hasattr(field_type, "__args__"):
             origin = field_type.__origin__
-            if origin in {list, set}:
+            if origin in COLLECTION_ORIGINS:
                 inner_type = self._format_type_name(field_type.__args__[0])
                 return f"{origin.__name__}[{inner_type}]"
             if origin is dict:

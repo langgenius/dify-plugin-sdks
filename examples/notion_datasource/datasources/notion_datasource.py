@@ -17,7 +17,7 @@ from dify_plugin.interfaces.datasource.online_document import OnlineDocumentData
 class NotionDataSource(OnlineDocumentDatasource):
     _API_VERSION = "2022-06-28"
     _AUTH_URL = "https://api.notion.com/v1/oauth/authorize"
-    _TOKEN_URL = "https://api.notion.com/v1/oauth/token"
+    _OAUTH_ENDPOINT = "https://api.notion.com/v1/oauth/token"
     _NOTION_PAGE_SEARCH = "https://api.notion.com/v1/search"
     _NOTION_BLOCK_SEARCH = "https://api.notion.com/v1/blocks"
     _NOTION_BOT_USER = "https://api.notion.com/v1/users/me"

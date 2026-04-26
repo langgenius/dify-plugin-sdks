@@ -9,6 +9,8 @@ from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.trigger import Event
 
+TRUTHY_STRINGS = frozenset({"true", "1", "yes"})
+
 
 class PullRequestReviewThreadUnifiedEvent(Event):
     """Unified PR review thread event (resolved/unresolved/edited/created)."""
@@ -35,7 +37,7 @@ class PullRequestReviewThreadUnifiedEvent(Event):
             raise ValueError(msg)
 
         if parameters.get("is_resolved") is not None:
-            want = str(parameters.get("is_resolved")).lower() in {"true", "1", "yes"}
+            want = str(parameters.get("is_resolved")).lower() in TRUTHY_STRINGS
             if bool(thread.get("is_resolved")) != want:
                 raise EventIgnoreError
 

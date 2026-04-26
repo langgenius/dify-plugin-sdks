@@ -49,6 +49,8 @@ from dify_plugin.errors.model import (
 from ..common_openai import _CommonOpenAI
 
 logger = logging.getLogger(__name__)
+EMPTY_STRING = ""
+STRUCTURED_RESPONSE_FORMATS = frozenset({"JSON", "XML"})
 
 OPENAI_BLOCK_MODE_PROMPT = (
     "You should always follow the instructions and output a valid {{block}} "
@@ -144,9 +146,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         model_mode = self.get_model_mode(base_model, credentials)
 
         # transform response format
-        if "response_format" in model_parameters and model_parameters[
-            "response_format"
-        ] in {"JSON", "XML"}:
+        if (
+            "response_format" in model_parameters
+            and model_parameters["response_format"] in STRUCTURED_RESPONSE_FORMATS
+        ):
             stop = stop or []
             if model_mode == LLMMode.CHAT:
                 # chat model
@@ -600,7 +603,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
             delta = chunk.choices[0]
 
-            if delta.finish_reason is None and (delta.text is None or delta.text == ""):
+            if delta.finish_reason is None and (
+                delta.text is None or delta.text == EMPTY_STRING
+            ):
                 continue
 
             # transform assistant message to prompt message
@@ -861,7 +866,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
             if (
                 not has_finish_reason
-                and (delta.delta.content is None or delta.delta.content == "")
+                and (delta.delta.content is None or delta.delta.content == EMPTY_STRING)
                 and delta.delta.function_call is None
             ):
                 continue
@@ -1201,23 +1206,27 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             tokens_per_message = 3
             tokens_per_name = 1
         else:
-            raise NotImplementedError(
+            msg = (
                 f"get_num_tokens_from_messages() is not presently implemented "
                 f"for model {model}."
                 "See https://github.com/openai/openai-python/blob/main/chatml.md for "
-                "information on how messages are converted to tokens.",
+                "information on how messages are converted to tokens."
+            )
+            raise NotImplementedError(
+                msg,
             )
         num_tokens = 0
         messages_dict = [self._convert_prompt_message_to_dict(m) for m in messages]
         for message in messages_dict:
             num_tokens += tokens_per_message
-            for key, value in message.items():
+            for key, message_value in message.items():
                 # Cast str(value) in case the message value is not a string
                 # This occurs with function messages
                 # TODO: The current token calculation method for the image
                 # type is not implemented, which need to download the image
                 # and then get the resolution for calculation, and will
                 # increase the request delay
+                value = message_value
                 if isinstance(value, list):
                     text = ""
                     for item in value:

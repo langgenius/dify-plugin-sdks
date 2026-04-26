@@ -11,6 +11,7 @@ from dify_plugin.entities.model import ModelPropertyKey, ModelType
 from dify_plugin.interfaces.model.ai_model import AIModel
 
 logger = logging.getLogger(__name__)
+EMPTY_STRING = ""
 
 
 class TTSModel(AIModel):
@@ -177,7 +178,7 @@ class TTSModel(AIModel):
         last_sens = org_text[start:]
         if last_sens:
             one_sentence += last_sens
-        if one_sentence != "":
+        if one_sentence != EMPTY_STRING:
             result.append(one_sentence)
         return result
 

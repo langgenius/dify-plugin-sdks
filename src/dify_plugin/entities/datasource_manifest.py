@@ -125,7 +125,7 @@ class DatasourceEntity(BaseModel):
     def set_parameters(
         cls,
         v: list[DatasourceParameter] | None,
-        validation_info: ValidationInfo,
+        _validation_info: ValidationInfo,
     ) -> list[DatasourceParameter]:
         return v or []
 

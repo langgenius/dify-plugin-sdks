@@ -19,7 +19,7 @@ __TIMEOUT_SECONDS__ = 60 * 10
 class NotionDatasourceProvider(DatasourceProvider):
     API_VERSION = "2022-06-28"  # Using a stable API version
     _AUTH_URL = "https://api.notion.com/v1/oauth/authorize"
-    _TOKEN_URL = "https://api.notion.com/v1/oauth/token"
+    _OAUTH_ENDPOINT = "https://api.notion.com/v1/oauth/token"
 
     def _oauth_get_authorization_url(
         self,
@@ -55,7 +55,7 @@ class NotionDatasourceProvider(DatasourceProvider):
         headers = {"Accept": "application/json"}
         auth = (system_credentials["client_id"], system_credentials["client_secret"])
         response = requests.post(
-            self._TOKEN_URL,
+            self._OAUTH_ENDPOINT,
             data=data,
             auth=auth,
             headers=headers,
@@ -135,12 +135,13 @@ class NotionDatasourceProvider(DatasourceProvider):
                     raise ToolProviderCredentialValidationError(
                         msg,
                     )
-                return True
             except requests.RequestException as e:
                 msg = f"Network error when connecting to Notion API: {e!s}"
                 raise ToolProviderCredentialValidationError(
                     msg,
                 ) from e
+            else:
+                return True
 
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e)) from e

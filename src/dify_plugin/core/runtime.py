@@ -19,6 +19,8 @@ from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.__base.response_writer import ResponseWriter
 from dify_plugin.core.server.tcp.request_reader import TCPReaderWriter
 
+FULL_DUPLEX_INSTALL_METHODS = frozenset({InstallMethod.Local, InstallMethod.Remote})
+
 #################################################
 # Session
 #################################################
@@ -248,7 +250,7 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
         if not self.session:
             msg = "current tool runtime does not support backwards invoke"
             raise Exception(msg)
-        if self.session.install_method in {InstallMethod.Local, InstallMethod.Remote}:
+        if self.session.install_method in FULL_DUPLEX_INSTALL_METHODS:
             return self._full_duplex_backwards_invoke(
                 backwards_request_id, type, data_type, data
             )

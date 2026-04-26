@@ -27,6 +27,12 @@ from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstruct
 if TYPE_CHECKING:
     from dify_plugin.entities.provider_config import CredentialType
 
+GOOGLE_OIDC_ISSUERS = frozenset({
+    "https://accounts.google.com",
+    "accounts.google.com",
+})
+WATCH_SUCCESS_STATUSES = frozenset({HTTPStatus.OK, HTTPStatus.CREATED})
+
 
 class GmailTrigger(Trigger):
     """Handle Gmail Pub/Sub push event dispatch.
@@ -261,7 +267,7 @@ class GmailTrigger(Trigger):
             req = google_requests.Request()
             claims = id_token.verify_oauth2_token(token, req, audience=audience)
             issuer = claims.get("iss")
-            if issuer not in {"https://accounts.google.com", "accounts.google.com"}:
+            if issuer not in GOOGLE_OIDC_ISSUERS:
                 msg = "Invalid OIDC token issuer"
                 raise TriggerValidationError(msg)
             if expected_email and claims.get("email") != expected_email:
@@ -279,7 +285,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
     """Manage Gmail trigger subscriptions (watch/stop/refresh, OAuth)."""
 
     _AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-    _TOKEN_URL = "https://oauth2.googleapis.com/token"
+    _OAUTH_ENDPOINT = "https://oauth2.googleapis.com/token"
     _GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1"
 
     _DEFAULT_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
@@ -339,7 +345,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         resp: requests.Response = requests.post(
-            self._TOKEN_URL, data=data, headers=headers, timeout=10
+            self._OAUTH_ENDPOINT, data=data, headers=headers, timeout=10
         )
         payload: dict[str, Any] = resp.json()
         access_token: str | None = payload.get("access_token")
@@ -436,7 +442,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         resp: requests.Response = requests.post(
-            self._TOKEN_URL, data=data, headers=headers, timeout=10
+            self._OAUTH_ENDPOINT, data=data, headers=headers, timeout=10
         )
         payload: dict[str, Any] = resp.json()
         access_token: str | None = payload.get("access_token")
@@ -560,7 +566,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 msg,
                 error_code="NETWORK_ERROR",
             ) from exc
-        if resp.status_code not in {200, 201}:
+        if resp.status_code not in WATCH_SUCCESS_STATUSES:
             try:
                 err: dict[str, Any] = resp.json()
             except Exception:
@@ -897,7 +903,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         resp: requests.Response = requests.post(
             url, headers=headers, json=body, timeout=10
         )
-        if resp.status_code not in {200, 201}:
+        if resp.status_code not in WATCH_SUCCESS_STATUSES:
             try:
                 err: dict[str, Any] = resp.json()
             except Exception:

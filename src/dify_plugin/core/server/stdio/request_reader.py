@@ -53,8 +53,8 @@ class StdioRequestReader(RequestReader):
                 buffer.write(remaining)
 
             # Process complete lines
-            for line in lines[:-1]:
-                line = line.strip()
+            for raw_line in lines[:-1]:
+                line = raw_line.strip()
                 if not line:
                     continue
 

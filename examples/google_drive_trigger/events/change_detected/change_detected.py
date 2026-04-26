@@ -10,6 +10,10 @@ from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.trigger import Event
 
+EMPTY_STRING = ""
+TRUTHY_STRINGS = frozenset({"true", "1", "yes", "on"})
+FALSY_STRINGS = frozenset({"false", "0", "no", "off"})
+
 
 class GoogleDriveChangeDetectedEvent(Event):
     """Fetch Google Drive change feed entries and expose them to workflows."""
@@ -140,11 +144,11 @@ class GoogleDriveChangeDetectedEvent(Event):
             return bool(value)
         if isinstance(value, str):
             normalized = value.strip().lower()
-            if normalized in {"true", "1", "yes", "on"}:
+            if normalized in TRUTHY_STRINGS:
                 return True
-            if normalized in {"false", "0", "no", "off"}:
+            if normalized in FALSY_STRINGS:
                 return False
-        return default if value == "" else bool(value)
+        return default if value == EMPTY_STRING else bool(value)
 
     @staticmethod
     def _normalize_string_list(value: object) -> list[str]:

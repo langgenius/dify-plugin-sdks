@@ -1,3 +1,5 @@
+# ruff: noqa: RUF001
+
 import codecs
 import json
 import logging
@@ -47,6 +49,7 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from dify_plugin.interfaces.model.openai_compatible.common import _CommonOaiApiCompat
 
 logger = logging.getLogger(__name__)
+EMPTY_STRING = ""
 
 _plugin_config = DifyPluginEnv()
 
@@ -279,11 +282,14 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     msg,
                 ) from None
 
-            if completion_type is LLMMode.CHAT and json_result.get("object", "") == "":
+            if (
+                completion_type is LLMMode.CHAT
+                and json_result.get("object", "") == EMPTY_STRING
+            ):
                 json_result["object"] = "chat.completion"
             elif (
                 completion_type is LLMMode.COMPLETION
-                and json_result.get("object", "") == ""
+                and json_result.get("object", "") == EMPTY_STRING
             ):
                 json_result["object"] = "text_completion"
 
@@ -712,8 +718,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         # delimiter for stream response, need unicode_escape
         delimiter = credentials.get("stream_mode_delimiter", "\n\n")
         delimiter = codecs.decode(delimiter, "unicode_escape")
-        for chunk in response.iter_lines(decode_unicode=True, delimiter=delimiter):
-            chunk = chunk.strip()
+        for raw_chunk in response.iter_lines(decode_unicode=True, delimiter=delimiter):
+            chunk = raw_chunk.strip()
             if chunk:
                 # ignore sse comments
                 if chunk.startswith(":"):
@@ -789,7 +795,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                         )
                         _increase_tool_call(tool_calls, tools_calls)
 
-                    if delta_content is None or delta_content == "":
+                    if delta_content is None or delta_content == EMPTY_STRING:
                         continue
 
                     # transform assistant message to prompt message
@@ -800,7 +806,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     full_assistant_content += delta_content
                 elif "text" in choice:
                     choice_text = choice.get("text", "")
-                    if choice_text == "":
+                    if choice_text == EMPTY_STRING:
                         continue
 
                     # transform assistant message to prompt message
@@ -1051,16 +1057,17 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 #  type is not implemented, which need to download the image
                 #  and then get the resolution for calculation,
                 #  and will increase the request delay
-                if isinstance(value, list):
+                message_value = value
+                if isinstance(message_value, list):
                     text = ""
-                    for item in value:
+                    for item in message_value:
                         if isinstance(item, dict) and item["type"] == "text":
                             text += item["text"]
 
-                    value = text
+                    message_value = text
 
                 if key == "tool_calls":
-                    for tool_call in value or []:
+                    for tool_call in message_value or []:
                         for t_key, t_value in tool_call.items():
                             num_tokens += self._get_num_tokens_by_gpt2(t_key)
                             if t_key == "function":
@@ -1071,7 +1078,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                                 num_tokens += self._get_num_tokens_by_gpt2(t_key)
                                 num_tokens += self._get_num_tokens_by_gpt2(t_value)
                 else:
-                    num_tokens += self._get_num_tokens_by_gpt2(str(value))
+                    num_tokens += self._get_num_tokens_by_gpt2(str(message_value))
 
                 if key == "name":
                     num_tokens += tokens_per_name

@@ -33,7 +33,7 @@ class FormType(Enum):
     """
 
     TEXT_INPUT = "text-input"
-    SECRET_INPUT = "secret-input"
+    SECRET_INPUT = "secret-input"  # noqa: S105
     SELECT = "select"
     RADIO = "radio"
     SWITCH = "switch"

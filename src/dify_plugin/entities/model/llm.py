@@ -90,7 +90,7 @@ class LLMResultChunk(BaseModel):
 
     @field_validator("prompt_messages", mode="before")
     @classmethod
-    def transform_prompt_messages(cls, value: object) -> list[PromptMessage]:
+    def transform_prompt_messages(cls, _value: object) -> list[PromptMessage]:
         """ISSUE:
         - https://github.com/langgenius/dify/issues/17799
         - https://github.com/langgenius/dify-official-plugins/issues/648
@@ -127,7 +127,7 @@ class LLMResult(BaseModel):
 
     @field_validator("prompt_messages", mode="before")
     @classmethod
-    def transform_prompt_messages(cls, value: object) -> list[PromptMessage]:
+    def transform_prompt_messages(cls, _value: object) -> list[PromptMessage]:
         """ISSUE:
         - https://github.com/langgenius/dify/issues/17799
         - https://github.com/langgenius/dify-official-plugins/issues/648

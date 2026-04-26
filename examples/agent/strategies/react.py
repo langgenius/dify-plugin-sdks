@@ -29,6 +29,10 @@ from dify_plugin.interfaces.agent import (
 from examples.agent.output_parser.cot_output_parser import CotAgentOutputParser
 from examples.agent.prompt.template import REACT_PROMPT_TEMPLATES
 
+IMAGE_RESPONSE_TYPES = frozenset({
+    ToolInvokeMessage.MessageType.IMAGE_LINK,
+    ToolInvokeMessage.MessageType.IMAGE,
+})
 ignore_observation_providers = ["wenxin"]
 
 
@@ -492,10 +496,7 @@ class ReActAgentStrategy(AgentStrategy):
                     result += (
                         f"result link: {link_text}." + " please tell user to check it."
                     )
-                elif response.type in {
-                    ToolInvokeMessage.MessageType.IMAGE_LINK,
-                    ToolInvokeMessage.MessageType.IMAGE,
-                }:
+                elif response.type in IMAGE_RESPONSE_TYPES:
                     # Pass through the original image response for upper layers.
                     additional_messages.append(response)
                     # Include the actual file path information for the LLM

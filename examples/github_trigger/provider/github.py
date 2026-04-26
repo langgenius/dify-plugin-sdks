@@ -30,6 +30,56 @@ from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstruct
 if TYPE_CHECKING:
     from dify_plugin.entities.provider_config import CredentialType
 
+CORE_EVENTS = frozenset({"issues", "issue_comment", "pull_request"})
+REVIEW_AND_CI_EVENTS = frozenset({
+    "pull_request_review",
+    "pull_request_review_comment",
+    "check_suite",
+    "check_run",
+    "workflow_run",
+    "workflow_job",
+})
+ACTION_SUFFIX_EVENTS = frozenset({"deployment_status", "release"})
+SECRET_SCANNING_EVENTS = frozenset({
+    "secret_scanning_alert",
+    "secret_scanning_alert_location",
+    "secret_scanning_scan",
+})
+REF_CHANGE_EVENTS = frozenset({"create", "delete"})
+BRANCH_PROTECTION_EVENTS = frozenset({
+    "branch_protection_configuration",
+    "branch_protection_rule",
+})
+ADDITIONAL_UNIFIED_EVENTS = frozenset({
+    "discussion",
+    "discussion_comment",
+    "fork",
+    "gollum",
+    "issue_dependencies",
+    "sub_issues",
+    "label",
+    "member",
+    "merge_group",
+    "meta",
+    "milestone",
+    "package",
+    "registry_package",
+    "page_build",
+    "ping",
+    "project",
+    "project_column",
+    "project_card",
+    "public",
+    "pull_request_review_thread",
+    "repository",
+    "repository_import",
+    "repository_advisory",
+    "security_and_analysis",
+    "custom_property_values",
+    "deploy_key",
+    "watch",
+})
+
 
 class GithubTrigger(Trigger):
     """Handle GitHub webhook event dispatch."""
@@ -62,21 +112,14 @@ class GithubTrigger(Trigger):
         event_type = event_type.lower()
         action: str | None = payload.get("action")
         # Unified core events (breaking change): issues / issue_comment / pull_request
-        if event_type in {"issues", "issue_comment", "pull_request"}:
+        if event_type in CORE_EVENTS:
             return [event_type]
 
         # Unified review & CI events (breaking change)
-        if event_type in {
-            "pull_request_review",
-            "pull_request_review_comment",
-            "check_suite",
-            "check_run",
-            "workflow_run",
-            "workflow_job",
-        }:
+        if event_type in REVIEW_AND_CI_EVENTS:
             return [event_type]
 
-        if event_type in {"deployment_status", "release"}:
+        if event_type in ACTION_SUFFIX_EVENTS:
             if not action:
                 msg = f"GitHub event '{event_type}' missing action in payload"
                 raise TriggerDispatchError(msg)
@@ -92,14 +135,10 @@ class GithubTrigger(Trigger):
         if event_type == "code_scanning_alert":
             return ["code_scanning_alert"]
 
-        if event_type in {
-            "secret_scanning_alert",
-            "secret_scanning_alert_location",
-            "secret_scanning_scan",
-        }:
+        if event_type in SECRET_SCANNING_EVENTS:
             return ["secret_scanning"]
 
-        if event_type in {"create", "delete"}:
+        if event_type in REF_CHANGE_EVENTS:
             return ["ref_change"]
 
         if event_type == "commit_comment":
@@ -117,42 +156,14 @@ class GithubTrigger(Trigger):
         if event_type == "repository_vulnerability_alert":
             return ["repository_vulnerability_alert"]
 
-        if event_type in {"branch_protection_configuration", "branch_protection_rule"}:
+        if event_type in BRANCH_PROTECTION_EVENTS:
             return [event_type]
 
         if event_type == "repository_ruleset":
             return ["repository_ruleset"]
 
         # Additional unified GitHub events (breaking change by design)
-        if event_type in {
-            "discussion",
-            "discussion_comment",
-            "fork",
-            "gollum",
-            "issue_dependencies",
-            "sub_issues",
-            "label",
-            "member",
-            "merge_group",
-            "meta",
-            "milestone",
-            "package",
-            "registry_package",
-            "page_build",
-            "ping",
-            "project",
-            "project_column",
-            "project_card",
-            "public",
-            "pull_request_review_thread",
-            "repository",
-            "repository_import",
-            "repository_advisory",
-            "security_and_analysis",
-            "custom_property_values",
-            "deploy_key",
-            "watch",
-        }:
+        if event_type in ADDITIONAL_UNIFIED_EVENTS:
             return [event_type]
 
         return []
@@ -171,12 +182,13 @@ class GithubTrigger(Trigger):
             if not payload:
                 msg = "Empty request body"
                 raise TriggerDispatchError(msg)
-            return payload
         except TriggerDispatchError:
             raise
         except Exception as exc:  # pragma: no cover - defensive logging path
             msg = f"Failed to parse payload: {exc}"
             raise TriggerDispatchError(msg) from exc
+        else:
+            return payload
 
     def _validate_signature(self, request: Request, webhook_secret: str) -> None:
         signature = request.headers.get("X-Hub-Signature-256")
@@ -199,7 +211,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     """Manage GitHub trigger subscriptions."""
 
     _AUTH_URL = "https://github.com/login/oauth/authorize"
-    _TOKEN_URL = "https://github.com/login/oauth/access_token"
+    _OAUTH_ENDPOINT = "https://github.com/login/oauth/access_token"
     _API_USER_URL = "https://api.github.com/user"
     _WEBHOOK_TTL = 30 * 24 * 60 * 60
 
@@ -258,7 +270,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
         headers = {"Accept": "application/json"}
         response = requests.post(
-            self._TOKEN_URL, data=data, headers=headers, timeout=10
+            self._OAUTH_ENDPOINT, data=data, headers=headers, timeout=10
         )
         response_json = response.json()
         access_tokens = response_json.get("access_token")

@@ -3,6 +3,10 @@ from io import BytesIO
 from werkzeug import Request, Response
 from werkzeug.datastructures import Headers
 
+MIN_REQUEST_LINE_PARTS = 2
+MIN_STATUS_LINE_PARTS = 2
+CONTENT_HEADER_NAMES = frozenset({"CONTENT-TYPE", "CONTENT-LENGTH"})
+
 
 def serialize_request(request: Request) -> bytes:
     method = request.method
@@ -45,13 +49,13 @@ def deserialize_request(raw_data: bytes) -> Request:
 
     request_line = lines[0].decode("utf-8", errors="ignore")
     parts = request_line.split(" ", 2)
-    if len(parts) < 2:
+    if len(parts) < MIN_REQUEST_LINE_PARTS:
         msg = f"Invalid request line: {request_line}"
         raise ValueError(msg)
 
     method = parts[0]
     full_path = parts[1]
-    protocol = parts[2] if len(parts) > 2 else "HTTP/1.1"
+    protocol = parts[2] if len(parts) > MIN_REQUEST_LINE_PARTS else "HTTP/1.1"
 
     if "?" in full_path:
         path, query_string = full_path.split("?", 1)
@@ -96,7 +100,7 @@ def deserialize_request(raw_data: bytes) -> Request:
         environ["CONTENT_LENGTH"] = str(len(body))
 
     for name, value in headers.items():
-        if name.upper() in {"CONTENT-TYPE", "CONTENT-LENGTH"}:
+        if name.upper() in CONTENT_HEADER_NAMES:
             continue
         env_name = f"HTTP_{name.upper().replace('-', '_')}"
         environ[env_name] = value
@@ -143,7 +147,7 @@ def deserialize_response(raw_data: bytes) -> Response:
 
     status_line = lines[0].decode("utf-8", errors="ignore")
     parts = status_line.split(" ", 2)
-    if len(parts) < 2:
+    if len(parts) < MIN_STATUS_LINE_PARTS:
         msg = f"Invalid status line: {status_line}"
         raise ValueError(msg)
 

@@ -28,6 +28,14 @@ from dify_plugin.entities.tool import (
 from dify_plugin.interfaces.tool import ToolLike, ToolProvider
 
 logger = logging.getLogger(__name__)
+FILE_PARAMETER_TYPES = frozenset({
+    ToolParameter.ToolParameterType.FILE,
+    ToolParameter.ToolParameterType.FILES,
+})
+STRING_PARAMETER_TYPES = frozenset({
+    ToolParameter.ToolParameterType.SELECT,
+    ToolParameter.ToolParameterType.SECRET_INPUT,
+})
 
 
 class AgentToolIdentity(ToolIdentity):
@@ -139,7 +147,7 @@ class ToolEntity(BaseModel):
     def set_parameters(
         cls,
         v: list[ToolParameter] | None,
-        validation_info: ValidationInfo,
+        _validation_info: ValidationInfo,
     ) -> list[ToolParameter]:
         return v or []
 
@@ -308,15 +316,9 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
                 continue
 
             parameter_type = parameter.type
-            if parameter.type in {
-                ToolParameter.ToolParameterType.FILE,
-                ToolParameter.ToolParameterType.FILES,
-            }:
+            if parameter.type in FILE_PARAMETER_TYPES:
                 continue
-            if parameter.type in {
-                ToolParameter.ToolParameterType.SELECT,
-                ToolParameter.ToolParameterType.SECRET_INPUT,
-            }:
+            if parameter.type in STRING_PARAMETER_TYPES:
                 parameter_type = ToolParameter.ToolParameterType.STRING
             enum = []
             if parameter.type == ToolParameter.ToolParameterType.SELECT:
@@ -357,15 +359,9 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
                 continue
 
             parameter_type = parameter.type
-            if parameter.type in {
-                ToolParameter.ToolParameterType.FILE,
-                ToolParameter.ToolParameterType.FILES,
-            }:
+            if parameter.type in FILE_PARAMETER_TYPES:
                 continue
-            if parameter.type in {
-                ToolParameter.ToolParameterType.SELECT,
-                ToolParameter.ToolParameterType.SECRET_INPUT,
-            }:
+            if parameter.type in STRING_PARAMETER_TYPES:
                 parameter_type = ToolParameter.ToolParameterType.STRING
             enum = []
             if parameter.type == ToolParameter.ToolParameterType.SELECT:

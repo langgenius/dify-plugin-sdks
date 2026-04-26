@@ -13,6 +13,8 @@ from dify_plugin.entities.datasource import (
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.interfaces.datasource.website import WebsiteCrawlDatasource
 
+EMPTY_FILTER_VALUES = frozenset({None, ""})
+
 
 class CrawlDatasource(WebsiteCrawlDatasource):
     def _get_website_crawl(
@@ -52,7 +54,7 @@ class CrawlDatasource(WebsiteCrawlDatasource):
                 "onlyMainContent": datasource_parameters.get("only_main_content", True)
             }
             scrape_options = {
-                k: v for k, v in scrape_options.items() if v not in (None, "")
+                k: v for k, v in scrape_options.items() if v not in EMPTY_FILTER_VALUES
             }
 
             payload = {
@@ -70,7 +72,7 @@ class CrawlDatasource(WebsiteCrawlDatasource):
                 else datasource_parameters.get("limit", 5),
                 "scrapeOptions": scrape_options or None,
             }
-            payload = {k: v for k, v in payload.items() if v not in (None, "")}
+            payload = {k: v for k, v in payload.items() if v not in EMPTY_FILTER_VALUES}
 
             crawl_res = WebSiteInfo(web_info_list=[], status="", total=0, completed=0)
 

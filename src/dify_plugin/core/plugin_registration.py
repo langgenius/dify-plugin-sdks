@@ -746,10 +746,11 @@ class PluginRegistration:
         adapter = self.endpoints.bind_to_environ(request.environ)
         try:
             endpoint, values = adapter.match()
-            return endpoint, values
         except werkzeug.exceptions.HTTPException as e:
             msg = f"Failed to dispatch endpoint request: {e!s}"
             raise ValueError(msg) from e
+        else:
+            return endpoint, values
 
     def get_online_drive_datasource_cls(
         self, provider: str, datasource: str

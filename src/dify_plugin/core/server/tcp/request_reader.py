@@ -49,7 +49,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         self.opt_lock = Lock()
 
         # handle SIGINT to exit the program smoothly due to the gevent limitation
-        signal.signal(signal.SIGINT, lambda *args, **kwargs: os._exit(0))
+        signal.signal(signal.SIGINT, lambda *_args, **_kwargs: os._exit(0))
 
     def launch(self) -> None:
         """Launch the connection"""

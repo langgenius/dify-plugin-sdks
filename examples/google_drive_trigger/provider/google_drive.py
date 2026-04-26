@@ -26,6 +26,9 @@ from dify_plugin.errors.trigger import (
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
 
+VALID_WEBHOOK_METHODS = frozenset({"POST", "GET"})
+CHANNEL_STOP_SUCCESS_STATUSES = frozenset({HTTPStatus.OK, HTTPStatus.NO_CONTENT})
+
 
 class GoogleDriveTrigger(Trigger):
     """Validate Google Drive webhook headers and dispatch change events."""
@@ -37,7 +40,7 @@ class GoogleDriveTrigger(Trigger):
     def _dispatch_event(
         self, subscription: Subscription, request: Request
     ) -> EventDispatch:
-        if request.method not in {"POST", "GET"}:
+        if request.method not in VALID_WEBHOOK_METHODS:
             return EventDispatch(events=[], response=self._ok_response())
 
         headers = {
@@ -246,9 +249,9 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
     """Manage Google Drive change notification channels."""
 
     _AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-    _TOKEN_URL = "https://oauth2.googleapis.com/token"
+    _OAUTH_ENDPOINT = "https://oauth2.googleapis.com/token"
     _ABOUT_URL = "https://www.googleapis.com/drive/v3/about"
-    _START_PAGE_TOKEN_URL = "https://www.googleapis.com/drive/v3/changes/startPageToken"
+    _START_PAGE_ENDPOINT = "https://www.googleapis.com/drive/v3/changes/startPageToken"
     _WATCH_URL = "https://www.googleapis.com/drive/v3/changes/watch"
     _STOP_URL = "https://www.googleapis.com/drive/v3/channels/stop"
     _DEFAULT_SCOPE = "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.appdata"
@@ -301,7 +304,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
 
         try:
-            response = requests.post(self._TOKEN_URL, data=data, timeout=10)
+            response = requests.post(self._OAUTH_ENDPOINT, data=data, timeout=10)
         except requests.RequestException as exc:
             msg = f"Failed to exchange authorization code: {exc}"
             raise TriggerProviderOAuthError(msg) from exc
@@ -360,7 +363,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
 
         try:
-            response = requests.post(self._TOKEN_URL, data=data, timeout=10)
+            response = requests.post(self._OAUTH_ENDPOINT, data=data, timeout=10)
         except requests.RequestException as exc:
             msg = f"Failed to refresh Google Drive OAuth token: {exc}"
             raise TriggerProviderOAuthError(msg) from exc
@@ -549,7 +552,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
                 error_code="NETWORK_ERROR",
             ) from exc
 
-        if response.status_code in {200, 204}:
+        if response.status_code in CHANNEL_STOP_SUCCESS_STATUSES:
             return UnsubscribeResult(
                 success=True, message="Google Drive watch channel stopped successfully"
             )
@@ -604,7 +607,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         params = {"spaces": ",".join(spaces)}
         try:
             response = requests.get(
-                self._START_PAGE_TOKEN_URL, headers=headers, params=params, timeout=10
+                self._START_PAGE_ENDPOINT, headers=headers, params=params, timeout=10
             )
         except requests.RequestException as exc:
             msg = f"Network error while fetching startPageToken: {exc}"

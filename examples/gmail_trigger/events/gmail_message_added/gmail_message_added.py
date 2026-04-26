@@ -21,6 +21,9 @@ from dify_plugin.interfaces.trigger import Event
 if TYPE_CHECKING:
     from dify_plugin.invocations.file import UploadFileResponse
 
+INLINE_MIME_TYPES = frozenset({"text/plain", "text/html"})
+URL_FILENAME_PLACEHOLDERS = frozenset({"view", "open", "download", "uc"})
+
 
 class GmailMessageAddedEvent(Event):
     _GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1"
@@ -135,7 +138,7 @@ class GmailMessageAddedEvent(Event):
                         "original_url": original_url,
                         "inline_data": inline_data,
                     })
-                elif mime_type in {"text/plain", "text/html"}:
+                elif mime_type in INLINE_MIME_TYPES:
                     inline_data = body.get("data")
                     if inline_data:
                         inline_parts.append({
@@ -500,6 +503,6 @@ class GmailMessageAddedEvent(Event):
         parsed = urlparse(url)
         candidate = parsed.path.rsplit("/", 1)[-1] if parsed.path else ""
         candidate = unquote(candidate)
-        if candidate and candidate not in {"view", "open", "download", "uc"}:
+        if candidate and candidate not in URL_FILENAME_PLACEHOLDERS:
             return candidate
         return "attachment"

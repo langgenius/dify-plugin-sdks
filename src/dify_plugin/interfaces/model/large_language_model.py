@@ -32,6 +32,9 @@ from dify_plugin.interfaces.model.ai_model import AIModel
 
 logger = logging.getLogger(__name__)
 
+CODE_FENCE_BACKTICK_COUNT = 3
+STRUCTURED_RESPONSE_FORMATS = frozenset({"JSON", "XML"})
+
 
 class LargeLanguageModel(AIModel):
     """Model class for large language model."""
@@ -517,18 +520,17 @@ class LargeLanguageModel(AIModel):
         """
         state = "normal"
         backtick_count = 0
-        for piece in input_generator:
-            if piece.delta.message.content:
-                content = piece.delta.message.content
-                piece.delta.message.content = ""
-                yield piece
-                piece = content
+        for chunk in input_generator:
+            if chunk.delta.message.content:
+                content = chunk.delta.message.content
+                chunk.delta.message.content = ""
+                yield chunk
             else:
-                yield piece
+                yield chunk
                 continue
             new_piece: str = ""
-            for char in piece:
-                char = str(char)
+            for raw_char in content:
+                char = str(raw_char)
                 if state == "normal":
                     if char == "`":
                         state = "in_backticks"
@@ -538,7 +540,7 @@ class LargeLanguageModel(AIModel):
                 elif state == "in_backticks":
                     if char == "`":
                         backtick_count += 1
-                        if backtick_count == 3:
+                        if backtick_count == CODE_FENCE_BACKTICK_COUNT:
                             state = "skip_content"
                             backtick_count = 0
                     else:
@@ -582,30 +584,29 @@ class LargeLanguageModel(AIModel):
         state = "search_start"
         backtick_count = 0
 
-        for piece in input_generator:
-            if piece.delta.message.content:
-                content = piece.delta.message.content
+        for chunk in input_generator:
+            if chunk.delta.message.content:
+                content = chunk.delta.message.content
                 # Reset content to ensure we're only processing and yielding
                 # the relevant parts
-                piece.delta.message.content = ""
+                chunk.delta.message.content = ""
                 # Yield a piece with cleared content before processing it
                 # to maintain the generator structure
-                yield piece
-                piece = content
+                yield chunk
             else:
                 # Yield pieces without content directly
-                yield piece
+                yield chunk
                 continue
 
             if state == "done":
                 continue
 
             new_piece: str = ""
-            for char in piece:
+            for char in content:
                 if state == "search_start":
                     if char == "`":
                         backtick_count += 1
-                        if backtick_count == 3:
+                        if backtick_count == CODE_FENCE_BACKTICK_COUNT:
                             state = "skip_language"
                             backtick_count = 0
                     else:
@@ -618,7 +619,7 @@ class LargeLanguageModel(AIModel):
                 elif state == "in_code_block":
                     if char == "`":
                         backtick_count += 1
-                        if backtick_count == 3:
+                        if backtick_count == CODE_FENCE_BACKTICK_COUNT:
                             state = "done"
                             break
                     else:
@@ -721,9 +722,11 @@ class LargeLanguageModel(AIModel):
 
         with self.timing_context():
             try:
-                if "response_format" in model_parameters and model_parameters[
-                    "response_format"
-                ] in {"JSON", "XML"}:
+                if (
+                    "response_format" in model_parameters
+                    and model_parameters["response_format"]
+                    in STRUCTURED_RESPONSE_FORMATS
+                ):
                     result = self._code_block_mode_wrapper(
                         model=model,
                         credentials=credentials,
