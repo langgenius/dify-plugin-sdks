@@ -1,6 +1,6 @@
 import json
 from collections.abc import Generator
-from datetime import datetime
+from datetime import UTC, datetime
 from http import HTTPStatus
 from typing import Any
 
@@ -12,6 +12,13 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
 
 RELEASE_BODY_PREVIEW_LENGTH = 300
+GITHUB_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+DISPLAY_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+def _format_github_timestamp(value: str) -> str:
+    parsed = datetime.strptime(value, GITHUB_TIMESTAMP_FORMAT).replace(tzinfo=UTC)
+    return parsed.strftime(DISPLAY_DATETIME_FORMAT)
 
 
 class GithubRepositoryReleasesTool(Tool):
@@ -99,14 +106,14 @@ class GithubRepositoryReleasesTool(Tool):
                             }
                             for asset in release.get("assets", [])
                         ],
-                        "created_at": datetime.strptime(
-                            release.get("created_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                        ).strftime("%Y-%m-%d %H:%M:%S")
+                        "created_at": _format_github_timestamp(
+                            release.get("created_at", "")
+                        )
                         if release.get("created_at")
                         else "",
-                        "published_at": datetime.strptime(
-                            release.get("published_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                        ).strftime("%Y-%m-%d %H:%M:%S")
+                        "published_at": _format_github_timestamp(
+                            release.get("published_at", "")
+                        )
                         if release.get("published_at")
                         else "",
                     }

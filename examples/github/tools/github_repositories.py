@@ -1,6 +1,6 @@
 import json
 from collections.abc import Generator
-from datetime import datetime
+from datetime import UTC, datetime
 from http import HTTPStatus
 from typing import Any
 from urllib.parse import quote
@@ -13,6 +13,13 @@ from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 
 DESCRIPTION_PREVIEW_LENGTH = 100
+GITHUB_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+DISPLAY_DATE_FORMAT = "%Y-%m-%d"
+
+
+def _format_github_date(value: str) -> str:
+    parsed = datetime.strptime(value, GITHUB_TIMESTAMP_FORMAT).replace(tzinfo=UTC)
+    return parsed.strftime(DISPLAY_DATE_FORMAT)
 
 
 class GithubRepositoriesTool(Tool):
@@ -63,9 +70,6 @@ class GithubRepositoriesTool(Tool):
                 if len(response_data.get("items")) > 0:
                     for item in response_data.get("items"):
                         content = {}
-                        updated_at_object = datetime.strptime(
-                            item["updated_at"], "%Y-%m-%dT%H:%M:%SZ"
-                        )
                         content["owner"] = item["owner"]["login"]
                         content["name"] = item["name"]
                         if item["description"] is not None:
@@ -79,7 +83,7 @@ class GithubRepositoriesTool(Tool):
                         content["url"] = item["html_url"]
                         content["star"] = item["watchers"]
                         content["forks"] = item["forks"]
-                        content["updated"] = updated_at_object.strftime("%Y-%m-%d")
+                        content["updated"] = _format_github_date(item["updated_at"])
                         contents.append(content)
                     s.close()
                     yield self.create_text_message(

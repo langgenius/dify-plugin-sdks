@@ -86,6 +86,7 @@ class File(BackwardsInvocation[dict]):
             upload_response = requests.post(
                 url,
                 files={"file": (filename, content, mimetype)},
+                timeout=10,
             )
             if upload_response.status_code != HTTPStatus.CREATED:
                 msg = (

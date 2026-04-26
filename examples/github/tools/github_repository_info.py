@@ -1,6 +1,6 @@
 import json
 from collections.abc import Generator
-from datetime import datetime
+from datetime import UTC, datetime
 from http import HTTPStatus
 from typing import Any
 
@@ -10,6 +10,14 @@ from dify_plugin import Tool
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
+
+GITHUB_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+DISPLAY_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+def _format_github_timestamp(value: str) -> str:
+    parsed = datetime.strptime(value, GITHUB_TIMESTAMP_FORMAT).replace(tzinfo=UTC)
+    return parsed.strftime(DISPLAY_DATETIME_FORMAT)
 
 
 class GithubRepositoryInfoTool(Tool):
@@ -85,19 +93,19 @@ class GithubRepositoryInfoTool(Tool):
                     "license": response_data.get("license", {}).get("name", "")
                     if response_data.get("license")
                     else "",
-                    "created_at": datetime.strptime(
-                        response_data.get("created_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                    ).strftime("%Y-%m-%d %H:%M:%S")
+                    "created_at": _format_github_timestamp(
+                        response_data.get("created_at", "")
+                    )
                     if response_data.get("created_at")
                     else "",
-                    "updated_at": datetime.strptime(
-                        response_data.get("updated_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                    ).strftime("%Y-%m-%d %H:%M:%S")
+                    "updated_at": _format_github_timestamp(
+                        response_data.get("updated_at", "")
+                    )
                     if response_data.get("updated_at")
                     else "",
-                    "pushed_at": datetime.strptime(
-                        response_data.get("pushed_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                    ).strftime("%Y-%m-%d %H:%M:%S")
+                    "pushed_at": _format_github_timestamp(
+                        response_data.get("pushed_at", "")
+                    )
                     if response_data.get("pushed_at")
                     else "",
                     "topics": response_data.get("topics", []),

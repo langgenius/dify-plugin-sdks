@@ -1,6 +1,6 @@
 import json
 from collections.abc import Generator
-from datetime import datetime
+from datetime import UTC, datetime
 from http import HTTPStatus
 from typing import Any
 
@@ -12,6 +12,13 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
 
 BODY_PREVIEW_LENGTH = 200
+GITHUB_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+DISPLAY_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+def _format_github_timestamp(value: str) -> str:
+    parsed = datetime.strptime(value, GITHUB_TIMESTAMP_FORMAT).replace(tzinfo=UTC)
+    return parsed.strftime(DISPLAY_DATETIME_FORMAT)
 
 
 class GithubRepositoryIssuesTool(Tool):
@@ -102,14 +109,14 @@ class GithubRepositoryIssuesTool(Tool):
                             label.get("name", "") for label in issue.get("labels", [])
                         ],
                         "comments": issue.get("comments", 0),
-                        "created_at": datetime.strptime(
-                            issue.get("created_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                        ).strftime("%Y-%m-%d %H:%M:%S")
+                        "created_at": _format_github_timestamp(
+                            issue.get("created_at", "")
+                        )
                         if issue.get("created_at")
                         else "",
-                        "updated_at": datetime.strptime(
-                            issue.get("updated_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                        ).strftime("%Y-%m-%d %H:%M:%S")
+                        "updated_at": _format_github_timestamp(
+                            issue.get("updated_at", "")
+                        )
                         if issue.get("updated_at")
                         else "",
                     }

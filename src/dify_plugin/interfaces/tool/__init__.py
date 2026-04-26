@@ -411,7 +411,7 @@ class Tool(ToolLike[ToolInvokeMessage]):
             runtime=ToolRuntime(
                 credentials=credentials, user_id=user_id, session_id=None
             ),
-            session=Session.empty_session(),  # TODO could not fetch session here
+            session=Session.empty_session(),  # TODO: could not fetch session here
         )
 
     ############################################################

@@ -64,9 +64,7 @@ required-version = '>=0.15'
 select = ['ALL']
 ignore = [
     'PLR0904',
-    'TD004',
     'S104',
-    'S113',
     'N815',
     'PLR0911',
     'T201',
@@ -76,7 +74,6 @@ ignore = [
     'TD002',
     'TD003',
     'PLR0915', # Too broad for orchestration-heavy SDK/example functions.
-    'DTZ007',
     'E402',
     'SLF001',
     'ERA001',  # False positives are common.
