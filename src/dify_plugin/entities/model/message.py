@@ -22,6 +22,12 @@ class PromptMessageRole(Enum):
 
         :param value: mode value
         :return: mode
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         for mode in cls:
             if mode.value == value:
@@ -125,6 +131,9 @@ class PromptMessage(BaseModel):
         """Check if prompt message is empty.
 
         :return: True if prompt message is empty, False otherwise
+
+        Returns:
+            The return value.
         """
         return not self.content
 
@@ -135,6 +144,9 @@ class PromptMessage(BaseModel):
         extracting only the text parts from the message.
 
         :return: Text content as string, empty string if no text content
+
+        Returns:
+            The return value.
         """
         if isinstance(self.content, str):
             return self.content
@@ -229,6 +241,9 @@ class AssistantPromptMessage(PromptMessage):
         """Check if prompt message is empty.
 
         :return: True if prompt message is empty, False otherwise
+
+        Returns:
+            The return value.
         """
         return not (not super().is_empty() and not self.tool_calls)
 
@@ -255,5 +270,8 @@ class ToolPromptMessage(PromptMessage):
         """Check if prompt message is empty.
 
         :return: True if prompt message is empty, False otherwise
+
+        Returns:
+            The return value.
         """
         return not (not super().is_empty() and not self.tool_call_id)

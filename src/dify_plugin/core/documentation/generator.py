@@ -443,6 +443,9 @@ class SchemaDocumentationGenerator:
 
         For BaseModel and Enum types, use their schema name if available.
         For container types (list, dict, etc), recursively format their type arguments.
+
+        Returns:
+            The return value.
         """
         if field_type is None:
             return "Any"

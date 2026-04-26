@@ -118,6 +118,9 @@ def check_pr_size_threshold(pull_request: Mapping[str, Any], value: object) -> N
     """Filter by PR size: additions+deletions must be <= threshold.
 
     If threshold cannot be parsed or counts are missing, this filter is ignored.
+
+    Raises:
+        EventIgnoreError: If the event should be ignored.
     """
     if value in (None, ""):
         return
@@ -143,6 +146,9 @@ def check_changed_files_glob(pull_request: Mapping[str, Any], value: object) -> 
     Supported payload keys: 'files' (list[str]) or 'changed_files_detail'
     (list[Mapping] with 'filename').
     Multiple patterns can be provided (comma-separated).
+
+    Raises:
+        EventIgnoreError: If the event should be ignored.
     """
     patterns = _normalize_list(value)
     if not patterns:

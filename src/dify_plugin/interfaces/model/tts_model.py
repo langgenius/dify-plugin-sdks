@@ -61,6 +61,9 @@ class TTSModel(AIModel):
         :param model: model name
         :param credentials: model credentials
         :return: voices lists
+
+        Returns:
+            The return value.
         """
         model_schema = self.get_model_schema(model, credentials)
 
@@ -89,6 +92,9 @@ class TTSModel(AIModel):
         :param model: model name
         :param credentials: model credentials
         :return: voice
+
+        Returns:
+            The return value.
         """
         model_schema = self.get_model_schema(model, credentials)
 
@@ -105,6 +111,9 @@ class TTSModel(AIModel):
         :param model: model name
         :param credentials: model credentials
         :return: voice
+
+        Returns:
+            The return value.
         """
         model_schema = self.get_model_schema(model, credentials)
 
@@ -118,6 +127,9 @@ class TTSModel(AIModel):
     def _get_model_word_limit(self, model: str, credentials: dict) -> int | None:
         """Get audio type for given tts model
         :return: audio type
+
+        Returns:
+            The return value.
         """
         model_schema = self.get_model_schema(model, credentials)
 
@@ -131,6 +143,9 @@ class TTSModel(AIModel):
     def _get_model_workers_limit(self, model: str, credentials: dict) -> int | None:
         """Get audio max workers for given tts model
         :return: audio type
+
+        Returns:
+            The return value.
         """
         model_schema = self.get_model_schema(model, credentials)
 
@@ -200,6 +215,12 @@ class TTSModel(AIModel):
         :param streaming: output is streaming
         :param user: unique user id
         :return: translated audio file
+
+        Returns:
+            The return value.
+
+        Yields:
+            Generated values.
         """
         with self.timing_context():
             try:

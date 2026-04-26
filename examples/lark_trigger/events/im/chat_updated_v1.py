@@ -21,6 +21,12 @@ class ChatUpdatedV1Event(Event):
 
         This event is triggered when a chat group's information is modified,
         such as name, description, or settings.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

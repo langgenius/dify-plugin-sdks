@@ -20,6 +20,12 @@ class MessageReactionDeletedV1Event(Event):
         Handle message reaction deletion event.
 
         This event is triggered when a reaction is removed from a message.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

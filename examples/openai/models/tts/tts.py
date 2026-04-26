@@ -37,6 +37,12 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         :param voice: model timbre
         :param user: unique user id
         :return: text translated to audio file
+
+        Returns:
+            The return value.
+
+        Raises:
+            InvokeBadRequestError: If model invocation fails.
         """
         voices = self.get_tts_model_voices(model=model, credentials=credentials)
         if not voices:
@@ -65,6 +71,9 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         :param credentials: model credentials
         :param user: unique user id
         :return: text translated to audio file
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             self._tts_invoke(
@@ -90,6 +99,12 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         :param content_text: text content to be translated
         :param voice: model timbre
         :return: text translated to audio file
+
+        Returns:
+            The return value.
+
+        Raises:
+            InvokeBadRequestError: If model invocation fails.
         """
         audio_type = self._get_model_audio_type(model, credentials)
         word_limit = self._get_model_word_limit(model, credentials) or 500
@@ -154,6 +169,12 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         :param content_text: text content to be translated
         :param voice: model timbre
         :return: text translated to audio file
+
+        Yields:
+            Generated values.
+
+        Raises:
+            InvokeBadRequestError: If model invocation fails.
         """
         try:
             # doc: https://platform.openai.com/docs/guides/text-to-speech
@@ -218,6 +239,9 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         :param voice: model timbre
         :param sentence: text content to be translated
         :return: text translated to audio file
+
+        Returns:
+            The return value.
         """
         # transform credentials to kwargs for model instance
         credentials_kwargs = self._to_credential_kwargs(credentials)

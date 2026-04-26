@@ -61,6 +61,11 @@ class NotionClient:
 
         Returns:
             Response data as dictionary
+
+        Raises:
+            Exception: If the operation fails.
+            HTTPError: If the HTTP request fails.
+            RequestException: If the HTTP request fails.
         """
         url = f"{self._API_BASE_URL}{endpoint}"
         retries = 0
@@ -381,6 +386,9 @@ class NotionClient:
 
         Returns:
             Heading block for use with Notion API
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         if level not in {1, 2, 3}:
             raise ValueError("Heading level must be 1, 2, or 3")

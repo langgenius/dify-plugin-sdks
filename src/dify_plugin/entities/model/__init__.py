@@ -32,6 +32,12 @@ class DefaultParameterName(Enum):
 
         :param value: parameter value
         :return: parameter name
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         for name in cls:
             if name.value == value:

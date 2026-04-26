@@ -16,6 +16,9 @@ class StorageInvocation(BackwardsInvocation[dict]):
 
         :raises:
             StorageInvocationError: If the invocation returns an invalid data.
+
+        Raises:
+            StorageInvocationError: If the storage invocation fails.
         """
         for data in self._backwards_invoke(
             InvokeType.Storage,
@@ -32,6 +35,12 @@ class StorageInvocation(BackwardsInvocation[dict]):
 
         :raises:
             NotFoundError: If the caller gets a key that does not exist.
+
+        Returns:
+            The return value.
+
+        Raises:
+            StorageInvocationError: If the storage invocation fails.
         """
         for data in self._backwards_invoke(
             InvokeType.Storage,
@@ -50,6 +59,9 @@ class StorageInvocation(BackwardsInvocation[dict]):
 
         :raises:
             StorageInvocationError: If the invocation returns an invalid data.
+
+        Raises:
+            StorageInvocationError: If the storage invocation fails.
         """
         for data in self._backwards_invoke(
             InvokeType.Storage,
@@ -71,6 +83,12 @@ class StorageInvocation(BackwardsInvocation[dict]):
 
         :raises:
             StorageInvocationError: If the invocation does not return any data.
+
+        Returns:
+            The return value.
+
+        Raises:
+            StorageInvocationError: If the storage invocation fails.
         """
         for data in self._backwards_invoke(
             InvokeType.Storage,

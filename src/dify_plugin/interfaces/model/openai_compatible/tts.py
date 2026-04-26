@@ -42,6 +42,12 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         :param voice: model voice/speaker
         :param user: unique user id
         :return: audio data as bytes iterator
+
+        Yields:
+            Generated values.
+
+        Raises:
+            InvokeBadRequestError: If model invocation fails.
         """
         # Set up headers with authentication if provided
         headers = {}
@@ -94,6 +100,9 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             # Get default voice for validation

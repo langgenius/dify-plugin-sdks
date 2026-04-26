@@ -149,6 +149,12 @@ class GoogleDriveTrigger(Trigger):
             include_items_from_all_drives: Whether to include items from all drives.
             supports_all_drives: Whether to support all drives.
             subscription: The subscription to fetch changes from.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         headers = {"Authorization": f"Bearer {access_token}"}
         changes: list[dict[str, Any]] = []
@@ -221,6 +227,9 @@ class GoogleDriveTrigger(Trigger):
         Get the maximum page token from the storage.
 
         If the storage is not found, return 0.
+
+        Returns:
+            The return value.
         """
         try:
             return self.runtime.session.storage.get(self._STORAGE_KEY).decode() or "0"

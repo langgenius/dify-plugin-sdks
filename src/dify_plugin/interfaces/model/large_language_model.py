@@ -103,6 +103,9 @@ class LargeLanguageModel(AIModel):
         :param model: model name
         :param credentials: model credentials
         :return: parameter rules
+
+        Returns:
+            The return value.
         """
         model_schema = self.get_model_schema(model, credentials)
         if model_schema:
@@ -116,6 +119,9 @@ class LargeLanguageModel(AIModel):
         :param model: model name
         :param credentials: model credentials
         :return: model mode
+
+        Returns:
+            The return value.
         """
         model_schema = self.get_model_schema(model, credentials)
 
@@ -141,6 +147,9 @@ class LargeLanguageModel(AIModel):
         :param prompt_tokens: prompt tokens
         :param completion_tokens: completion tokens
         :return: usage
+
+        Returns:
+            The return value.
         """
         # get prompt price info
         prompt_price_info = self.get_price(
@@ -191,6 +200,12 @@ class LargeLanguageModel(AIModel):
         :param model_parameters: model parameters
         :param credentials: model credentials
         :return:
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         parameter_rules = self.get_parameter_rules(model, credentials)
 
@@ -341,6 +356,9 @@ class LargeLanguageModel(AIModel):
         :param user: unique user id
         :param callbacks: callbacks
         :return: full response or stream response chunk generator result
+
+        Returns:
+            The return value.
         """
         block_prompts = (
             "You should always follow the instructions and output a valid "
@@ -465,6 +483,9 @@ class LargeLanguageModel(AIModel):
         :param prompt_messages: prompt messages
         :param input_generator: input generator
         :return: output generator
+
+        Yields:
+            Generated values.
         """
         state = "normal"
         backtick_count = 0
@@ -526,6 +547,9 @@ class LargeLanguageModel(AIModel):
         :param prompt_messages: prompt messages
         :param input_generator: input generator
         :return: output generator
+
+        Yields:
+            Generated values.
         """
         state = "search_start"
         backtick_count = 0
@@ -604,6 +628,9 @@ class LargeLanguageModel(AIModel):
         :param delta: delta dictionary from LLM streaming response
         :param is_reasoning: is reasoning
         :return: tuple of (processed_content, is_reasoning)
+
+        Returns:
+            The return value.
         """
         content = delta.get("content") or ""
         reasoning_content = delta.get("reasoning_content")
@@ -650,6 +677,9 @@ class LargeLanguageModel(AIModel):
         :param user: unique user id
         :param callbacks: callbacks
         :return: full response or stream response chunk generator result
+
+        Yields:
+            Generated values.
         """
         # validate and filter model parameters
         if model_parameters is None:

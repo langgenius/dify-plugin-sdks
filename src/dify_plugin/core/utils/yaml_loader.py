@@ -19,6 +19,13 @@ def load_yaml_file(file_path: str, ignore_error: bool = False) -> dict[str, Any]
         logged in warning level
         if False, raise error if error occurs
     :return: a dict of the YAML content
+
+    Returns:
+        The return value.
+
+    Raises:
+        FileNotFoundError: If the YAML file cannot be loaded.
+        YAMLError: If the YAML file cannot be loaded.
     """
     try:
         if not file_path or not pathlib.Path(file_path).exists():

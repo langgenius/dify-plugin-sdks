@@ -101,6 +101,12 @@ class ProviderConfig(BaseModel):
 
             :param value: mode value
             :return: mode
+
+            Returns:
+                The return value.
+
+            Raises:
+                ValueError: If input values are invalid.
             """
             for mode in cls:
                 if mode.value == value:

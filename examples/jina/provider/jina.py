@@ -11,6 +11,9 @@ class JinaProvider(ModelProvider):
 
         :param credentials: provider credentials, credentials form defined in
             `provider_credential_schema`.
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             model_instance = self.get_model_instance(ModelType.TEXT_EMBEDDING)

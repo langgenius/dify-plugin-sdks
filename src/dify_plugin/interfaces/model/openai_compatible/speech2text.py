@@ -29,6 +29,12 @@ class OAICompatSpeech2TextModel(_CommonOaiApiCompat, Speech2TextModel):
         :param file: audio file
         :param user: unique user id
         :return: text for given audio file
+
+        Returns:
+            The return value.
+
+        Raises:
+            InvokeBadRequestError: If model invocation fails.
         """
         headers = {}
 
@@ -62,6 +68,9 @@ class OAICompatSpeech2TextModel(_CommonOaiApiCompat, Speech2TextModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             audio_file_path = self._get_demo_file_path()

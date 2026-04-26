@@ -228,6 +228,9 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
         generate a unique request id for backwards invocation
 
         :return: request id
+
+        Returns:
+            The return value.
         """
         return uuid.uuid4().hex
 

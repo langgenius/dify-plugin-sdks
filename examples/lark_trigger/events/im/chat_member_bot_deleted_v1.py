@@ -20,6 +20,12 @@ class ChatMemberBotDeletedV1Event(Event):
         Handle the event when a bot is removed from a chat group.
 
         This event is triggered when a bot is removed from a group chat.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

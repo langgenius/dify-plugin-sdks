@@ -27,6 +27,12 @@ class InvokeType(Enum):
 
         :param value: type
         :return: mode
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         for mode in cls:
             if mode.value == value:

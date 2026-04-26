@@ -20,6 +20,12 @@ class VcJoinMeetingV1Event(Event):
         Handle video conference join meeting event.
 
         This event is triggered when a user joins a video conference meeting.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

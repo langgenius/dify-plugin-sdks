@@ -49,6 +49,17 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         :param texts: texts to embed
         :param user: unique user id
         :return: embeddings result
+
+        Returns:
+            The return value.
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
+            InvokeAuthorizationError: If model invocation fails.
+            InvokeBadRequestError: If model invocation fails.
+            InvokeConnectionError: If model invocation fails.
+            InvokeRateLimitError: If model invocation fails.
+            InvokeServerUnavailableError: If model invocation fails.
         """
         api_key = credentials["api_key"]
         if not api_key:
@@ -128,6 +139,9 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         :param credentials: model credentials
         :param texts: texts to embed
         :return:
+
+        Returns:
+            The return value.
         """
         # use JinaTokenizer to get num tokens
         return [JinaTokenizer.get_num_tokens(text) for text in texts]
@@ -138,6 +152,9 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             self._invoke(model=model, credentials=credentials, texts=["ping"])
@@ -168,6 +185,9 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         :param credentials: model credentials
         :param tokens: input tokens
         :return: usage
+
+        Returns:
+            The return value.
         """
         # get input price info
         input_price_info = self.get_price(

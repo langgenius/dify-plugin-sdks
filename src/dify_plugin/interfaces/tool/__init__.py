@@ -47,6 +47,9 @@ class ToolLike[T: InvokeMessage](ABC):
 
         :param image: the url of the image
         :return: the image message
+
+        Returns:
+            The return value.
         """
         return self.response_type(
             type=InvokeMessage.MessageType.IMAGE,
@@ -59,6 +62,9 @@ class ToolLike[T: InvokeMessage](ABC):
 
         :param link: the url of the link
         :return: the link message
+
+        Returns:
+            The return value.
         """
         return self.response_type(
             type=InvokeMessage.MessageType.LINK,
@@ -71,6 +77,9 @@ class ToolLike[T: InvokeMessage](ABC):
 
         :param blob: the blob
         :return: the blob message
+
+        Returns:
+            The return value.
         """
         return self.response_type(
             type=InvokeMessage.MessageType.BLOB,
@@ -85,6 +94,9 @@ class ToolLike[T: InvokeMessage](ABC):
         :param variable_name: the name of the variable
         :param variable_value: the value of the variable
         :return: the variable message
+
+        Returns:
+            The return value.
         """
         return self.response_type(
             type=InvokeMessage.MessageType.VARIABLE,
@@ -104,6 +116,9 @@ class ToolLike[T: InvokeMessage](ABC):
         :param variable_name: the name of the variable
         :param variable_value: the value of the variable
         :return: the variable message
+
+        Returns:
+            The return value.
         """
         return self.response_type(
             type=InvokeMessage.MessageType.VARIABLE,
@@ -193,6 +208,9 @@ class ToolLike[T: InvokeMessage](ABC):
         get the runtime parameters of the tool
 
         :return: the runtime parameters
+
+        Returns:
+            The return value.
         """
         return []
 
@@ -202,6 +220,9 @@ class ToolLike[T: InvokeMessage](ABC):
         check if the _get_runtime_parameters method is overridden by subclass
 
         :return: True if overridden, False otherwise
+
+        Returns:
+            The return value.
         """
         return "_get_runtime_parameters" in cls.__dict__
 
@@ -275,6 +296,9 @@ class ToolProvider:
         :param redirect_uri: redirect uri
         :param system_credentials: system credentials
         :return: authorization url
+
+        Returns:
+            The return value.
         """
         return self._oauth_get_authorization_url(redirect_uri, system_credentials)
 
@@ -296,6 +320,9 @@ class ToolProvider:
         :param system_credentials: system credentials
         :param request: raw http request
         :return: credentials
+
+        Returns:
+            The return value.
         """
         tool_oauth_credentials = self._oauth_get_credentials(
             redirect_uri, system_credentials, request
@@ -326,6 +353,9 @@ class ToolProvider:
         :param system_credentials: system credentials
         :param credentials: credentials
         :return: refreshed credentials
+
+        Returns:
+            The return value.
         """
         tool_oauth_credentials = self._oauth_refresh_credentials(
             redirect_uri, system_credentials, credentials
@@ -424,5 +454,7 @@ class Tool(ToolLike[ToolInvokeMessage]):
 
         To be implemented by subclasses.
 
+        Returns:
+            The return value.
         """
         return self._fetch_parameter_options(parameter)

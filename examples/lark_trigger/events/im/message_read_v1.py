@@ -20,6 +20,12 @@ class MessageReadV1Event(Event):
         Handle the event when messages are marked as read.
 
         This event is triggered when a user reads one or more messages.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

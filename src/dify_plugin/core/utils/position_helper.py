@@ -14,6 +14,9 @@ def get_position_map(
     :param folder_path:
     :param file_name: the YAML file name, default to '_position.yaml'
     :return: a dict with name as key and index as value
+
+    Returns:
+        The return value.
     """
     position_file_name = os.path.join(folder_path, file_name)
     positions = load_yaml_file(position_file_name, ignore_error=True)
@@ -38,6 +41,9 @@ def sort_by_position_map(
     :param name_func: the function to get the name of the object
     :param data: the data to be sorted
     :return: the sorted objects
+
+    Returns:
+        The return value.
     """
     if not position_map or not data:
         return data
@@ -57,6 +63,9 @@ def sort_to_dict_by_position_map(
     :param name_func: the function to get the name of the object
     :param data: the data to be sorted
     :return: an OrderedDict with the sorted pairs of name and object
+
+    Returns:
+        The return value.
     """
     sorted_items = sort_by_position_map(position_map, data, name_func)
     return OrderedDict([(name_func(item), item) for item in sorted_items])

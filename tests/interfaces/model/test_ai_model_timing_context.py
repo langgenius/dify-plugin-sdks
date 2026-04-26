@@ -22,6 +22,9 @@ class MockAIModel(AIModel):
         """Map model invoke error to unified error
 
         :return: Invoke error mapping
+
+        Returns:
+            The return value.
         """
         return {}
 

@@ -296,6 +296,9 @@ class PluginRegistration:
         """
         walk through all the trigger providers and triggers and load the
         classes from sources
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         for provider in self.triggers_configuration:
             # load provider class
@@ -476,6 +479,9 @@ class PluginRegistration:
         get the tool provider class by provider name
         :param provider: provider name
         :return: tool provider class
+
+        Returns:
+            The return value.
         """
         for provider_registration in self.tools_mapping:
             if provider_registration == provider:
@@ -488,6 +494,9 @@ class PluginRegistration:
         :param provider: provider name
         :param tool: tool name
         :return: tool class
+
+        Returns:
+            The return value.
         """
         for provider_registration in self.tools_mapping:
             if provider_registration == provider:
@@ -504,6 +513,9 @@ class PluginRegistration:
         get the agent provider class by provider name
         :param provider: provider name
         :return: agent provider class
+
+        Returns:
+            The return value.
         """
         for provider_registration in self.agent_strategies_mapping:
             if provider_registration == provider:
@@ -520,6 +532,9 @@ class PluginRegistration:
         :param provider: provider name
         :param agent: agent name
         :return: agent class
+
+        Returns:
+            The return value.
         """
         for provider_registration in self.agent_strategies_mapping:
             if provider_registration == provider:
@@ -535,6 +550,9 @@ class PluginRegistration:
         get the model provider class by provider name
         :param provider: provider name
         :return: model provider class
+
+        Returns:
+            The return value.
         """
         for provider_registration in self.models_mapping:
             if provider_registration == provider:
@@ -551,6 +569,9 @@ class PluginRegistration:
         :param provider: provider name
         :param model: model name
         :return: model class
+
+        Returns:
+            The return value.
         """
         for provider_registration in self.models_mapping:
             if provider_registration == provider:
@@ -608,6 +629,9 @@ class PluginRegistration:
         get provider which supports oauth
         :param provider: provider name
         :return: supported oauth providers
+
+        Returns:
+            The return value.
         """
         try:
             configuration = self.trigger_factory.get_configuration(provider)
@@ -648,6 +672,12 @@ class PluginRegistration:
         get the datasource provider class by provider name
         :param provider: provider name
         :return: datasource provider class
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         if provider in self.datasource_mapping:
             return self.datasource_mapping[provider].provider_cls
@@ -661,6 +691,12 @@ class PluginRegistration:
         :param provider: provider name
         :param datasource: datasource name
         :return: website crawl datasource class
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         if provider in self.datasource_mapping and (
             result := self.datasource_mapping[
@@ -680,6 +716,12 @@ class PluginRegistration:
         :param provider: provider name
         :param datasource: datasource name
         :return: online document datasource class
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         if provider in self.datasource_mapping and (
             result := self.datasource_mapping[
@@ -698,6 +740,12 @@ class PluginRegistration:
         dispatch endpoint request, match the request to the registered endpoints
 
         returns the endpoint and the values
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         adapter = self.endpoints.bind_to_environ(request.environ)
         try:
@@ -714,6 +762,12 @@ class PluginRegistration:
         :param provider: provider name
         :param datasource: datasource name
         :return: online drive datasource class
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         if provider in self.datasource_mapping and (
             result := self.datasource_mapping[

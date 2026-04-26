@@ -20,6 +20,12 @@ class DriveFileReadV1Event(Event):
         Handle file read event.
 
         This event is triggered when a file is read/viewed.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

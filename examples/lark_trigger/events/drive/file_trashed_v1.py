@@ -24,6 +24,12 @@ class DriveFileTrashedV1Event(Event):
         Handle file moved to trash event.
 
         This event is triggered when a file is moved to the trash/recycle bin.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

@@ -31,7 +31,7 @@ class File(BaseModel):
             ValueError: If the URL uses an unsupported protocol
                         (e.g., missing 'http://' or 'https://'), suggesting
                         configuration of the FILES_URL environment variable.
-            httpx.HTTPStatusError: If the request to fetch the file fails.
+
         """
         if self._blob is None:
             try:

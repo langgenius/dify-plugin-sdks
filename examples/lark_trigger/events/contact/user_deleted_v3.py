@@ -21,6 +21,12 @@ class ContactUserDeletedV3Event(Event):
 
         This event is triggered when an employee is deleted from the
         organization or leaves.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

@@ -20,6 +20,12 @@ class TaskUpdatedV1Event(Event):
         Handle task updated event.
 
         This event is triggered when a task is created or updated.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

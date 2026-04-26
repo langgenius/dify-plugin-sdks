@@ -61,6 +61,9 @@ class MockLLM(AIModel):
         :param stream: is stream response
         :param user: unique user id
         :return: full response or stream response chunk generator result
+
+        Yields:
+            Generated values.
         """
         yield LLMResultChunk(
             model="test",
@@ -85,6 +88,9 @@ class MockLLM(AIModel):
         :param prompt_messages: prompt messages
         :param tools: tools
         :return: number of tokens
+
+        Returns:
+            The return value.
         """
         return 0
 
@@ -99,6 +105,9 @@ class MockLLM(AIModel):
         """Map model invoke error to unified error
 
         :return: Invoke error mapping
+
+        Returns:
+            The return value.
         """
         return {}
 

@@ -564,6 +564,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         """As for now, gpt supports both fc and vision at the first iteration.
         We need to remove image messages from the prompt messages at the
         first iteration.
+
+        Returns:
+            The return value.
         """
         prompt_messages = deepcopy(prompt_messages)
 

@@ -21,6 +21,12 @@ class MessageReceiveV1Event(Event):
 
         This event is triggered when a message is sent to a group chat where
         the bot is a member.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

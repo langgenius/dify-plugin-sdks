@@ -20,6 +20,12 @@ class ContactUserCreatedV3Event(Event):
         Handle new employee onboarding event.
 
         This event is triggered when a new employee is added to the organization.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_wrapper = dispatch_single_event(
             request,

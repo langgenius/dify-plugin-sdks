@@ -51,6 +51,9 @@ class MockLLM(LargeLanguageModel):
         :param stream: is stream response
         :param user: unique user id
         :return: full response or stream response chunk generator result
+
+        Yields:
+            Generated values.
         """
         time.sleep(1)
         yield LLMResultChunk(
@@ -90,6 +93,9 @@ class MockLLM(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :param tools: tools
         :return: number of tokens
+
+        Returns:
+            The return value.
         """
         return 0
 

@@ -652,6 +652,12 @@ class PluginExecutor:
         :param session: session
         :param data: data
         :return: dynamic parameter provider class
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         if data.provider_action and data.provider_action == "provider":
             trigger_provider: TriggerSubscriptionConstructor = (

@@ -20,6 +20,12 @@ class MeetingRoomCreatedV1Event(Event):
         Handle meeting room created event.
 
         This event is triggered when a new meeting room is created.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

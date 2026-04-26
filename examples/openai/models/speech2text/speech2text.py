@@ -26,6 +26,9 @@ class OpenAISpeech2TextModel(_CommonOpenAI, Speech2TextModel):
         :param file: audio file
         :param user: unique user id
         :return: text for given audio file
+
+        Returns:
+            The return value.
         """
         return self._speech2text_invoke(model, credentials, file)
 
@@ -35,6 +38,9 @@ class OpenAISpeech2TextModel(_CommonOpenAI, Speech2TextModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             audio_file_path = self._get_demo_file_path()
@@ -56,6 +62,9 @@ class OpenAISpeech2TextModel(_CommonOpenAI, Speech2TextModel):
         :param credentials: model credentials
         :param file: audio file
         :return: text for given audio file
+
+        Returns:
+            The return value.
         """
         # transform credentials to kwargs for model instance
         credentials_kwargs = self._to_credential_kwargs(credentials)

@@ -21,6 +21,12 @@ class ChatMemberUserRemovedV1Event(Event):
 
         This event is triggered when one or more users leave or are removed
         from a chat group.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

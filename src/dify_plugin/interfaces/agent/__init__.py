@@ -252,6 +252,9 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         :param text: plain text of prompt. You need to convert the original
             message to plain text
         :return: number of tokens
+
+        Returns:
+            The return value.
         """
         import tiktoken
 

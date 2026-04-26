@@ -37,11 +37,11 @@ def docs(
     Args:
         description: Description of the schema
         name: Optional name override for the schema
-        example: Optional example instance
-        reference: Optional reference to another schema
-        dynamic_fields: Optional dynamic field descriptions
         top: Whether this schema should be placed at the top of the documentation
         ignore_fields: List of field names to ignore in documentation
+
+    Returns:
+        The return value.
     """
 
     def decorator(cls_or_func: object) -> object | None:

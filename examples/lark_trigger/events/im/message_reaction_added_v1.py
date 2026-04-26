@@ -20,6 +20,12 @@ class MessageReactionAddedV1Event(Event):
         Handle the event when someone reacts to a message.
 
         This event is triggered when a user adds an emoji reaction to a message.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

@@ -20,6 +20,12 @@ class ChatMemberUserAddedV1Event(Event):
         Handle the event when new members join a chat group.
 
         This event is triggered when one or more users are added to a chat group.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

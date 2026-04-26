@@ -437,6 +437,12 @@ class ReActAgentStrategy(AgentStrategy):
         :param message_file_ids: message file ids
         :param trace_manager: trace manager
         :return: observation, meta
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         # action is tool call, invoke tool
         tool_call_name = action.action_name

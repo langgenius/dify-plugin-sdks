@@ -19,6 +19,12 @@ class ApprovalUpdatedV4Event(Event):
         Handle approval process updates.
 
         This event is triggered when an approval request status changes.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

@@ -69,6 +69,9 @@ def _increase_tool_call(
 
         :param tool_call_id: tool call ID
         :return: existing or new tool call
+
+        Returns:
+            The return value.
         """
         if not tool_call_id:
             return existing_tools_calls[-1]
@@ -136,6 +139,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :param stream: is stream response
         :param user: unique user id
         :return: full response or stream response chunk generator result
+
+        Returns:
+            The return value.
         """
         # text completion model
         return self._generate(
@@ -163,6 +169,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :param prompt_messages:
         :param tools: tools for tool calling
         :return:
+
+        Returns:
+            The return value.
         """
         return self._num_tokens_from_messages(prompt_messages, tools, credentials)
 
@@ -173,6 +182,10 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
+            ValueError: If input values are invalid.
         """
         response: requests.Response | None = None
         try:
@@ -471,6 +484,13 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :param stream: is stream response
         :param user: unique user id
         :return: full response or stream response chunk generator result
+
+        Returns:
+            The return value.
+
+        Raises:
+            InvokeError: If model invocation fails.
+            ValueError: If input values are invalid.
         """
         headers = {
             "Content-Type": "application/json",
@@ -649,6 +669,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :param response: streamed response
         :param prompt_messages: prompt messages
         :return: llm response chunk generator
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         chunk_index = 0
         full_assistant_content = ""
@@ -955,6 +978,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :param text: prompt text
         :param tools: tools for tool calling
         :return: number of tokens
+
+        Returns:
+            The return value.
         """
         if isinstance(text, str):
             full_text = text
@@ -1033,6 +1059,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         :param tools: tools for tool calling
         :return: number of tokens
+
+        Returns:
+            The return value.
         """
         num_tokens = 0
         for tool in tools:
@@ -1088,6 +1117,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         :param response_tool_calls: response tool calls
         :return: list of tool calls
+
+        Returns:
+            The return value.
         """
         tool_calls = []
         if response_tool_calls:
@@ -1119,6 +1151,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         :param response_function_call: response function call
         :return: tool call
+
+        Returns:
+            The return value.
         """
         tool_call = None
         if response_function_call:

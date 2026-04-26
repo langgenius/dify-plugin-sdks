@@ -20,6 +20,12 @@ class ContactScopeUpdatedV3Event(Event):
         Handle contact scope updated event.
 
         This event is triggered when contact visibility scope is updated.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

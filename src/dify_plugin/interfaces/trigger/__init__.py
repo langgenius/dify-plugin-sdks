@@ -130,10 +130,6 @@ class Trigger(ABC):
                             (each triggers its workflow)
                           - response: HTTP response to return to the webhook caller
 
-        Raises:
-            TriggerValidationError: If signature validation fails
-            TriggerDispatchError: If event cannot be parsed or routed
-
         Example:
             >>> # GitHub webhook dispatch
             >>> def _dispatch_event(self, subscription, request):
@@ -157,6 +153,7 @@ class Trigger(ABC):
             ...         events=["issue_opened", "issue_labeled"],  # Multiple Events
             ...         response=Response("OK", status=200)
             ...     )
+
         """
         return self._dispatch_event(subscription=subscription, request=request)
 
@@ -245,6 +242,9 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         :param system_credentials: system credentials including client_id and
             client_secret which oauth schema defined
         :return: authorization url
+
+        Returns:
+            The return value.
         """
         return self._oauth_get_authorization_url(
             redirect_uri=redirect_uri, system_credentials=system_credentials
@@ -269,6 +269,9 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             client_secret which oauth schema defined
         :param request: raw http request
         :return: credentials
+
+        Returns:
+            The return value.
         """
         credentials: TriggerOAuthCredentials = self._oauth_get_credentials(
             redirect_uri=redirect_uri,
@@ -302,6 +305,9 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             client_secret which oauth schema defined
         :param credentials: credentials
         :return: refreshed credentials
+
+        Returns:
+            The return value.
         """
         return self._oauth_refresh_credentials(
             redirect_uri=redirect_uri,
@@ -368,11 +374,6 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
                          - parameters: The parameters of the subscription
                          - properties: Provider-specific configuration and metadata
 
-        Raises:
-            SubscriptionError: If subscription fails (e.g., invalid
-                credentials, API errors)
-            ValueError: If required parameters are missing or invalid
-
         Examples:
             GitHub webhook subscription:
             >>> result = provider.subscribe(
@@ -387,6 +388,7 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             ... )
             >>> print(result.endpoint)  # "https://dify.ai/webhooks/sub_123"
             >>> print(result.properties["external_id"])  # GitHub webhook ID
+
         """
         return self._create_subscription(
             endpoint=endpoint,
@@ -590,10 +592,6 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
                          - properties: New properties for this subscription
                            or same properties if no need to update
 
-        Raises:
-            SubscriptionError: If refresh fails (e.g., invalid credentials, API errors)
-            ValueError: If required parameters are missing or invalid
-
         Examples:
             Refresh webhook subscription:
             >>> current_sub = Subscription(
@@ -613,6 +611,7 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             >>> print(result.expires_at)  # Extended timestamp
             >>> # New or unchanged properties for this subscription
             >>> print(result.properties)
+
         """
         return self._refresh_subscription(
             subscription=subscription,

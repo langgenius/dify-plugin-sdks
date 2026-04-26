@@ -24,6 +24,12 @@ class DriveFileBitableRecordChangedV1Event(Event):
         Handle bitable record changed event.
 
         This event is triggered when a record in a bitable (database table) is changed.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

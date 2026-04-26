@@ -74,12 +74,10 @@ ignore = [
     'S113',
     'S404',
     'SIM102',
-    'DOC102',
     'LOG015',
     'S603',
     'ARG003',
     'ARG005',
-    'DOC502',
     'N815',
     'PLC2701',
     'PLR0911',
@@ -89,7 +87,6 @@ ignore = [
     'B903',
     'PLR6201',
     'TRY300',
-    'DOC402',
     'PLR1702',
     'PTH122',
     'FIX002',
@@ -122,10 +119,8 @@ ignore = [
     'FBT',     # Too strict.
     'TRY004',
     'PLR2004',
-    'DOC501',
     'INP001',
     'TC',      # Runtime use of typing constructs is common now.
-    'DOC201',
     'EM102',
     'TID252',  # Too absolute.
     'RSE102',

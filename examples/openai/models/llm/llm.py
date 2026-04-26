@@ -88,6 +88,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param stream: is stream response
         :param user: unique user id
         :return: full response or stream response chunk generator result
+
+        Returns:
+            The return value.
         """
         # handle fine tune remote models
         base_model = model
@@ -307,6 +310,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param prompt_messages: prompt messages
         :param tools: tools for tool calling
         :return:
+
+        Returns:
+            The return value.
         """
         # handle fine tune remote models
         base_model = model.removeprefix("ft:")
@@ -328,6 +334,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             # transform credentials to kwargs for model instance
@@ -377,6 +386,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         :param credentials: provider credentials
         :return:
+
+        Returns:
+            The return value.
         """
         # get predefined models
         predefined_models = self.predefined_models()
@@ -448,6 +460,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param stream: is stream response
         :param user: unique user id
         :return: full response or stream response chunk generator result
+
+        Returns:
+            The return value.
         """
         # transform credentials to kwargs for model instance
         credentials_kwargs = self._to_credential_kwargs(credentials)
@@ -508,6 +523,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param response: response
         :param prompt_messages: prompt messages
         :return: llm result
+
+        Returns:
+            The return value.
         """
         assistant_text = response.choices[0].text
 
@@ -654,6 +672,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param stream: is stream response
         :param user: unique user id
         :return: full response or stream response chunk generator result
+
+        Returns:
+            The return value.
         """
         # transform credentials to kwargs for model instance
         credentials_kwargs = self._to_credential_kwargs(credentials)
@@ -741,6 +762,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param prompt_messages: prompt messages
         :param tools: tools for tool calling
         :return: llm response
+
+        Returns:
+            The return value.
         """
         assistant_message = response.choices[0].message
         # assistant_message_tool_calls = assistant_message.tool_calls
@@ -949,6 +973,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         :param response_tool_calls: response tool calls
         :return: list of tool calls
+
+        Returns:
+            The return value.
         """
         tool_calls = []
         if response_tool_calls:
@@ -980,6 +1007,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         :param response_function_call: response function call
         :return: tool call
+
+        Returns:
+            The return value.
         """
         tool_call = None
         if response_function_call:
@@ -1011,6 +1041,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param model: model name
         :param prompt_messages: prompt messages
         :return: cleaned prompt messages
+
+        Returns:
+            The return value.
         """
         checklist = ["gpt-4-turbo", "gpt-4-turbo-2024-04-09"]
 
@@ -1117,6 +1150,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param text: prompt text
         :param tools: tools for tool calling
         :return: number of tokens
+
+        Returns:
+            The return value.
         """
         try:
             encoding = tiktoken.encoding_for_model(model)
@@ -1140,6 +1176,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         Official documentation: https://github.com/openai/openai-cookbook/blob/
         main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
+
+        Returns:
+            The return value.
         """
         if model.startswith("ft:"):
             model = model.split(":")[1]
@@ -1220,6 +1259,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param encoding: encoding
         :param tools: tools for tool calling
         :return: number of tokens
+
+        Returns:
+            The return value.
         """
         num_tokens = 0
         for tool in tools:
@@ -1271,6 +1313,12 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param credentials: credentials
 
         :return: model schema
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         base_model = model.removeprefix("ft:")
 

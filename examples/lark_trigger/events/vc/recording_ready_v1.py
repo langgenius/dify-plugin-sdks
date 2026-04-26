@@ -20,6 +20,12 @@ class VcRecordingReadyV1Event(Event):
         Handle video conference recording ready event.
 
         This event is triggered when a meeting recording is ready for download.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

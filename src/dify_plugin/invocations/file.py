@@ -62,6 +62,12 @@ class File(BackwardsInvocation[dict]):
         :param mimetype: file mime type
 
         :return: file id
+
+        Returns:
+            The return value.
+
+        Raises:
+            Exception: If the operation fails.
         """
         for response in self._backwards_invoke(
             InvokeType.UploadFile,

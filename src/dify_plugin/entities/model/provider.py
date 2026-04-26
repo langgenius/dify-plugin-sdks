@@ -219,6 +219,9 @@ class ProviderEntity(BaseModel):
         Convert to simple provider.
 
         :return: simple provider
+
+        Returns:
+            The return value.
         """
         return SimpleProviderEntity(
             provider=self.provider,

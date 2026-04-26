@@ -21,6 +21,14 @@ class CrawlDatasource(WebsiteCrawlDatasource):
         """
         the api doc:
         https://docs.firecrawl.dev/api-reference/endpoint/crawl
+
+        Yields:
+            Generated values.
+
+        Raises:
+            HTTPError: If the HTTP request fails.
+            ToolProviderCredentialValidationError: If credentials validation fails.
+            ValueError: If input values are invalid.
         """
         source_url = datasource_parameters.get("url")
         if not source_url:

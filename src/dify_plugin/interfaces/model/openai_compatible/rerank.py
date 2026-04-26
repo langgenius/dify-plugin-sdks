@@ -43,6 +43,13 @@ class OAICompatRerankModel(RerankModel):
         :param top_n: top n documents to return
         :param user: unique user id
         :return: rerank result
+
+        Returns:
+            The return value.
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
+            InvokeServerUnavailableError: If model invocation fails.
         """
         if len(docs) == 0:
             return RerankResult(model=model, docs=[])
@@ -130,6 +137,9 @@ class OAICompatRerankModel(RerankModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             self._invoke(

@@ -61,6 +61,9 @@ class DatasourceProvider:
         :param system_credentials: system credentials
         :param credentials: credentials
         :return: refreshed credentials
+
+        Returns:
+            The return value.
         """
         datasource_credentials = self._oauth_refresh_credentials(
             redirect_uri, system_credentials, credentials

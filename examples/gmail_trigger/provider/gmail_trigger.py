@@ -186,6 +186,9 @@ class GmailTrigger(Trigger):
 
         If the start_history_id is invalid/out-of-date, reset the pointer and
         return empty changes.
+
+        Returns:
+            The return value.
         """
         added: list[dict[str, Any]] = []
         deleted: list[dict[str, Any]] = []
@@ -281,6 +284,9 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         """Gmail trigger does not support API Key credentials.
 
         Raise a friendly validation error to guide users to OAuth.
+
+        Raises:
+            TriggerProviderCredentialValidationError: If credentials validation fails.
         """
         raise TriggerProviderCredentialValidationError(
             "Gmail trigger does not support API Key credentials. "
@@ -798,6 +804,9 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         Returns a short message describing the action taken, or empty string if
         no action.
+
+        Returns:
+            The return value.
         """
         if not topic_id:
             return ""

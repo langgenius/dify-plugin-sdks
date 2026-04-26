@@ -608,6 +608,12 @@ class Plugin(IOServer, Router):
         """Get host and port for remote installation
         :param config: Dify plugin env config
         :return: host and port
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         install_url = config.REMOTE_INSTALL_URL
         if install_url is not None:

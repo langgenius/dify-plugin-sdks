@@ -34,6 +34,9 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
         :param texts: texts to embed
         :param user: unique user id
         :return: embeddings result
+
+        Returns:
+            The return value.
         """
         # transform credentials to kwargs for model instance
         credentials_kwargs = self._to_credential_kwargs(credentials)
@@ -124,6 +127,9 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
         :param credentials: model credentials
         :param texts: texts to embed
         :return:
+
+        Returns:
+            The return value.
         """
         if len(texts) == 0:
             return []
@@ -147,6 +153,9 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             # transform credentials to kwargs for model instance
@@ -177,6 +186,9 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
         :param texts: texts to embed
         :param extra_model_kwargs: extra model kwargs
         :return: embeddings and used tokens
+
+        Returns:
+            The return value.
         """
         # call embedding model
         response = client.embeddings.create(
@@ -216,6 +228,9 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
         :param credentials: model credentials
         :param tokens: input tokens
         :return: usage
+
+        Returns:
+            The return value.
         """
         # get input price info
         input_price_info = self.get_price(

@@ -48,6 +48,9 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         :param user: unique user id
         :param input_type: input type
         :return: embeddings result
+
+        Returns:
+            The return value.
         """
 
         # Prepare headers and payload for the request
@@ -138,6 +141,9 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         :param credentials: model credentials
         :param texts: texts to embed
         :return:
+
+        Returns:
+            The return value.
         """
         return [self._get_num_tokens_by_gpt2(text) for text in texts]
 
@@ -148,6 +154,9 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             headers = {"Content-Type": "application/json"}
@@ -232,6 +241,9 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         :param credentials: model credentials
         :param tokens: input tokens
         :return: usage
+
+        Returns:
+            The return value.
         """
         # get input price info
         input_price_info = self.get_price(

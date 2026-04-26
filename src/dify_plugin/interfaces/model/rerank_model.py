@@ -85,6 +85,9 @@ class RerankModel(AIModel):
         :param top_n: top n
         :param user: unique user id
         :return: rerank result
+
+        Returns:
+            The return value.
         """
 
         with self.timing_context():

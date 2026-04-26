@@ -24,6 +24,9 @@ class OpenAIModerationModel(_CommonOpenAI, ModerationModel):
         :param text: text to moderate
         :param user: unique user id
         :return: false if text is safe, true otherwise
+
+        Returns:
+            The return value.
         """
         # transform credentials to kwargs for model instance
         credentials_kwargs = self._to_credential_kwargs(credentials)
@@ -59,6 +62,9 @@ class OpenAIModerationModel(_CommonOpenAI, ModerationModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             # transform credentials to kwargs for model instance
@@ -84,6 +90,9 @@ class OpenAIModerationModel(_CommonOpenAI, ModerationModel):
         :param client: model client
         :param texts: texts to moderate
         :return: false if text is safe, true otherwise
+
+        Returns:
+            The return value.
         """
         # call moderation model
         return client.moderations.create(model=model, input=texts)
@@ -95,6 +104,9 @@ class OpenAIModerationModel(_CommonOpenAI, ModerationModel):
         :param model: model name
         :param credentials: model credentials
         :return: max characters per chunk
+
+        Returns:
+            The return value.
         """
         model_schema = self.get_model_schema(model, credentials)
 
@@ -116,6 +128,9 @@ class OpenAIModerationModel(_CommonOpenAI, ModerationModel):
         :param model: model name
         :param credentials: model credentials
         :return: max chunks
+
+        Returns:
+            The return value.
         """
         model_schema = self.get_model_schema(model, credentials)
 

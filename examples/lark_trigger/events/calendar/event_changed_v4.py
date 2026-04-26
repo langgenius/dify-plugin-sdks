@@ -19,6 +19,12 @@ class CalendarEventChangedV4Event(Event):
         Handle calendar event changes.
 
         This event is triggered when a calendar event is created, updated, or deleted.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

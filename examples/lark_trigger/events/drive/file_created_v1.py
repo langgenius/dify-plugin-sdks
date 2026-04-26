@@ -20,6 +20,12 @@ class DriveFileCreatedV1Event(Event):
         Handle file creation in drive.
 
         This event is triggered when a new file is created in a folder.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,

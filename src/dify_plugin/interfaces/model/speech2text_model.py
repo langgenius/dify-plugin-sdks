@@ -47,6 +47,9 @@ class Speech2TextModel(AIModel):
         Get demo file for given model
 
         :return: demo file
+
+        Returns:
+            The return value.
         """
         # Get the directory of the current file
         current_dir = pathlib.Path(pathlib.Path(__file__).resolve()).parent
@@ -69,6 +72,9 @@ class Speech2TextModel(AIModel):
         :param file: audio file
         :param user: unique user id
         :return: text for given audio file
+
+        Returns:
+            The return value.
         """
         with self.timing_context():
             try:

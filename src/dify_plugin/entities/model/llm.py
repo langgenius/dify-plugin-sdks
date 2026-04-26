@@ -23,6 +23,12 @@ class LLMMode(Enum):
 
         :param value: mode value
         :return: mode
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         for mode in cls:
             if mode.value == value:
@@ -92,6 +98,9 @@ class LLMResultChunk(BaseModel):
         we need to always set it to an empty list.
 
         NOTE: just do not use it anymore, it will be removed in the future.
+
+        Returns:
+            The return value.
         """
         return []
 
@@ -126,6 +135,9 @@ class LLMResult(BaseModel):
         we need to always set it to an empty list.
 
         NOTE: just do not use it anymore, it will be removed in the future.
+
+        Returns:
+            The return value.
         """
         return []
 

@@ -298,6 +298,12 @@ class ToolProviderType(Enum):
 
         :param value: mode value
         :return: mode
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         for mode in cls:
             if mode.value == value:
@@ -332,6 +338,9 @@ class ToolSelector(BaseModel):
     def to_prompt_message(self) -> PromptMessageTool:
         """Convert tool selector to prompt message tool, based on openai
         function calling schema.
+
+        Returns:
+            The return value.
         """
         tool = PromptMessageTool(
             name=self.tool_name,

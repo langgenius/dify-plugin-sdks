@@ -31,6 +31,9 @@ class ModelFactory:
 
         :param model_type: model type
         :return: model instance
+
+        Returns:
+            The return value.
         """
         return self.models[model_type](self.provider.models)
 
@@ -40,5 +43,8 @@ class ModelFactory:
 
         :param model_type: model type
         :return: model class
+
+        Returns:
+            The return value.
         """
         return self.models[model_type]

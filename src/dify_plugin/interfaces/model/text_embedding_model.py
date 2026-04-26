@@ -86,6 +86,9 @@ class TextEmbeddingModel(AIModel):
         :param model: model name
         :param credentials: model credentials
         :return: context size
+
+        Returns:
+            The return value.
         """
         model_schema = self.get_model_schema(model, credentials)
 
@@ -104,6 +107,9 @@ class TextEmbeddingModel(AIModel):
         :param model: model name
         :param credentials: model credentials
         :return: max chunks
+
+        Returns:
+            The return value.
         """
         model_schema = self.get_model_schema(model, credentials)
 
@@ -136,6 +142,9 @@ class TextEmbeddingModel(AIModel):
         :param user: unique user id
         :param input_type: embedding input type
         :return: embeddings result
+
+        Returns:
+            The return value.
         """
         with self.timing_context():
             try:

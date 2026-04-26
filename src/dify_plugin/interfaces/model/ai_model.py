@@ -107,6 +107,9 @@ class AIModel(ABC):
 
         :param error: model invoke error
         :return: unified error
+
+        Returns:
+            The return value.
         """
         provider_name = self.__class__.__module__.split(".")[-3]
 
@@ -139,6 +142,12 @@ class AIModel(ABC):
         :param price_type: price type
         :param tokens: number of tokens
         :return: price info
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         # get model schema
         model_schema = self.get_model_schema(model, credentials)
@@ -184,6 +193,9 @@ class AIModel(ABC):
         Get all predefined models for given provider.
 
         :return:
+
+        Returns:
+            The return value.
         """
         return self.model_schemas
 
@@ -196,6 +208,9 @@ class AIModel(ABC):
         :param model: model name
         :param credentials: model credentials
         :return: model schema
+
+        Returns:
+            The return value.
         """
         # get predefined models (predefined_models)
         models = self.predefined_models()
@@ -222,6 +237,9 @@ class AIModel(ABC):
         :param model: model name
         :param credentials: model credentials
         :return: model schema
+
+        Returns:
+            The return value.
         """
         return self._get_customizable_model_schema(model, credentials)
 
@@ -312,6 +330,9 @@ class AIModel(ABC):
         :param model: model name
         :param credentials: model credentials
         :return: model schema
+
+        Returns:
+            The return value.
         """
         return None
 
@@ -323,6 +344,12 @@ class AIModel(ABC):
 
         :param name: parameter name
         :return: parameter rule
+
+        Returns:
+            The return value.
+
+        Raises:
+            Exception: If the operation fails.
         """
         default_parameter_rule = PARAMETER_RULE_TEMPLATE.get(name)
 
@@ -343,6 +370,9 @@ class AIModel(ABC):
         :param text: plain text of prompt. You need to convert the original
             message to plain text
         :return: number of tokens
+
+        Returns:
+            The return value.
         """
 
         # ENHANCEMENT:

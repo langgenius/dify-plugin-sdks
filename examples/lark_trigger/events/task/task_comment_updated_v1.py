@@ -20,6 +20,12 @@ class TaskCommentUpdatedV1Event(Event):
         Handle task comment updated event.
 
         This event is triggered when a comment on a task is added or updated.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,
