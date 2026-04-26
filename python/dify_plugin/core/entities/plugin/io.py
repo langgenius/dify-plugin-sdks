@@ -30,6 +30,7 @@ class PluginInStreamBase:
         app_id: str | None = None,
         endpoint_id: str | None = None,
         context: dict | None = None,
+        passthrough: str | None = None,
     ) -> None:
         self.session_id = session_id
         self.event = event
@@ -39,6 +40,7 @@ class PluginInStreamBase:
         self.app_id = app_id
         self.endpoint_id = endpoint_id
         self.context = context
+        self.passthrough = passthrough
 
 
 class PluginInStream(PluginInStreamBase):
@@ -54,7 +56,18 @@ class PluginInStream(PluginInStreamBase):
         app_id: str | None = None,
         endpoint_id: str | None = None,
         context: dict | None = None,
+        passthrough: str | None = None,
     ):
         self.reader = reader
         self.writer = writer
-        super().__init__(session_id, event, data, conversation_id, message_id, app_id, endpoint_id, context)
+        super().__init__(
+            session_id,
+            event,
+            data,
+            conversation_id,
+            message_id,
+            app_id,
+            endpoint_id,
+            context,
+            passthrough,
+        )
