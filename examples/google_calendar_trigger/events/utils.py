@@ -23,7 +23,7 @@ def collect_events(payload: Mapping[str, Any], key: str) -> list[dict[str, Any]]
 
 
 def resolve_calendar_id(
-    runtime: Any, payload: Mapping[str, Any], parameters: Mapping[str, Any]
+    runtime: object, payload: Mapping[str, Any], parameters: Mapping[str, Any]
 ) -> str:
     subscription_params: Mapping[str, Any] = {}
     if getattr(runtime, "subscription", None):
@@ -37,7 +37,7 @@ def resolve_calendar_id(
     return str(calendar_id)
 
 
-def get_access_token(runtime: Any) -> str:
+def get_access_token(runtime: object) -> str:
     credentials: Mapping[str, Any] = {}
     if getattr(runtime, "credentials", None):
         credentials = runtime.credentials or {}
@@ -50,7 +50,7 @@ def get_access_token(runtime: Any) -> str:
 
 
 def enrich_events(
-    runtime: Any,
+    runtime: object,
     *,
     calendar_id: str,
     events: list[dict[str, Any]],
@@ -120,7 +120,7 @@ def ensure_events_or_raise(events: list[dict[str, Any]]) -> None:
         raise EventIgnoreError()
 
 
-def should_enrich_details(runtime: Any, parameters: Mapping[str, Any]) -> bool:
+def should_enrich_details(runtime: object, parameters: Mapping[str, Any]) -> bool:
     if "enrich_event_details" in parameters:
         return bool(parameters.get("enrich_event_details"))
 

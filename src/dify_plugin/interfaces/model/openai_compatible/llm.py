@@ -2,7 +2,7 @@ import codecs
 import json
 import logging
 import uuid
-from collections.abc import Generator
+from collections.abc import Generator, Mapping
 from decimal import Decimal
 from typing import Any, cast
 from urllib.parse import urljoin
@@ -57,14 +57,14 @@ def _gen_tool_call_id() -> str:
 def _increase_tool_call(
     new_tool_calls: list[AssistantPromptMessage.ToolCall],
     existing_tools_calls: list[AssistantPromptMessage.ToolCall],
-):
+) -> None:
     """Merge incremental tool call updates into existing tool calls.
 
     :param new_tool_calls: List of new tool call deltas to be merged.
     :param existing_tools_calls: List of existing tool calls to be modified IN-PLACE.
     """
 
-    def get_tool_call(tool_call_id: str):
+    def get_tool_call(tool_call_id: str) -> AssistantPromptMessage.ToolCall:
         """Get or create a tool call by ID
 
         :param tool_call_id: tool call ID
@@ -1113,7 +1113,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
     def _extract_response_function_call(
         self,
-        response_function_call,
+        response_function_call: Mapping[str, object] | None,
     ) -> AssistantPromptMessage.ToolCall | None:
         """Extract function call from response
 

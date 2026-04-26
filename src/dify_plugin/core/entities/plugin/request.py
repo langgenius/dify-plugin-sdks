@@ -164,7 +164,7 @@ class PromptMessageMixin(BaseModel):
 
     @field_validator("prompt_messages", mode="before")
     @classmethod
-    def convert_prompt_messages(cls, v):
+    def convert_prompt_messages(cls, v: list[object]) -> list[PromptMessage]:
         if not isinstance(v, list):
             raise ValueError("prompt_messages must be a list")
 

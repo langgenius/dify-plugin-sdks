@@ -124,7 +124,7 @@ class DatasourceEntity(BaseModel):
     @classmethod
     def set_parameters(
         cls,
-        v,
+        v: list[DatasourceParameter] | None,
         validation_info: ValidationInfo,
     ) -> list[DatasourceParameter]:
         return v or []
@@ -194,7 +194,7 @@ class DatasourceProviderManifest(BaseModel):
 
     @field_validator("datasources", mode="before")
     @classmethod
-    def validate_datasources(cls, value) -> list[DatasourceEntity]:
+    def validate_datasources(cls, value: list[object]) -> list[DatasourceEntity]:
         if not isinstance(value, list):
             raise ValueError("datasources should be a list")
 

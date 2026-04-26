@@ -223,7 +223,7 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
         """
         self.session = session
 
-    def _generate_backwards_request_id(self):
+    def _generate_backwards_request_id(self) -> str:
         """
         generate a unique request id for backwards invocation
 
@@ -343,7 +343,7 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
             ) as response,
         ):
 
-            def generator():
+            def generator() -> Generator[PluginInStreamBase, None, None]:
                 for line in response.iter_lines():
                     if not line:
                         continue

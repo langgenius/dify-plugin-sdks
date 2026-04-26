@@ -48,7 +48,7 @@ class MockTriggerProvider(Trigger):
 class MockTriggerSubscriptionConstructor(TriggerSubscriptionConstructor):
     """Mock Trigger Subscription Constructor"""
 
-    def _validate_api_key(self, credentials: dict):
+    def _validate_api_key(self, credentials: dict) -> None:
         """Validate API key"""
 
     def _create_subscription(
@@ -119,7 +119,7 @@ class MockEventHandler(Event):
         )
 
 
-def test_trigger_factory_register_and_get_provider():
+def test_trigger_factory_register_and_get_provider() -> None:
     """Test trigger factory registration and retrieval of provider"""
     factory = TriggerFactory()
     session = MagicMock(spec=Session)
@@ -189,7 +189,7 @@ def test_trigger_factory_register_and_get_provider():
     assert config == provider_config
 
 
-def test_trigger_factory_subscription_constructor():
+def test_trigger_factory_subscription_constructor() -> None:
     """Test trigger factory subscription constructor"""
     factory = TriggerFactory()
     runtime = TriggerSubscriptionConstructorRuntime(
@@ -241,7 +241,7 @@ def test_trigger_factory_subscription_constructor():
     assert constructor_cls == MockTriggerSubscriptionConstructor
 
 
-def test_trigger_factory_trigger_events():
+def test_trigger_factory_trigger_events() -> None:
     """Test trigger factory trigger event handling"""
     factory = TriggerFactory()
     session = MagicMock(spec=Session)
@@ -318,7 +318,7 @@ def test_trigger_factory_trigger_events():
     assert events["test_event"][1] == MockEventHandler
 
 
-def test_trigger_factory_error_handling():
+def test_trigger_factory_error_handling() -> None:
     """Test trigger factory error handling"""
     factory = TriggerFactory()
     session = MagicMock(spec=Session)

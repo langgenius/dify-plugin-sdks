@@ -79,7 +79,7 @@ class MultiModalPromptMessageContent(PromptMessageContent):
     filename: str = Field(default="", description="the filename of multi-modal file")
 
     @property
-    def data(self):
+    def data(self) -> str:
         return self.url or f"data:{self.mime_type};base64,{self.base64_data}"
 
 
@@ -214,7 +214,7 @@ class AssistantPromptMessage(PromptMessage):
 
         @field_validator("id", mode="before")
         @classmethod
-        def transform_id_to_str(cls, value) -> str:
+        def transform_id_to_str(cls, value: object) -> str:
             if value is None:
                 return ""
             if not isinstance(value, str):

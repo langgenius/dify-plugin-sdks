@@ -37,7 +37,7 @@ def apply_pull_request_review_comment_filters(
     check_pull_request_numbers(pull_request, parameters.get("pull_request_numbers"))
 
 
-def check_comment_body(comment: Mapping[str, Any], value: Any) -> None:
+def check_comment_body(comment: Mapping[str, Any], value: object) -> None:
     keywords = _normalize_list(value, lowercase=True)
     if not keywords:
         return
@@ -47,7 +47,7 @@ def check_comment_body(comment: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_commenter(comment: Mapping[str, Any], value: Any) -> None:
+def check_commenter(comment: Mapping[str, Any], value: object) -> None:
     commenters = _normalize_list(value)
     if not commenters:
         return
@@ -57,7 +57,7 @@ def check_commenter(comment: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_path(comment: Mapping[str, Any], value: Any) -> None:
+def check_path(comment: Mapping[str, Any], value: object) -> None:
     paths = _normalize_list(value)
     if not paths:
         return
@@ -67,7 +67,7 @@ def check_path(comment: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_position(comment: Mapping[str, Any], value: Any) -> None:
+def check_position(comment: Mapping[str, Any], value: object) -> None:
     if value in (None, ""):
         return
 
@@ -93,7 +93,7 @@ def check_position(comment: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_pull_request_author(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_pull_request_author(pull_request: Mapping[str, Any], value: object) -> None:
     authors = _normalize_list(value)
     if not authors:
         return
@@ -103,7 +103,7 @@ def check_pull_request_author(pull_request: Mapping[str, Any], value: Any) -> No
         raise EventIgnoreError()
 
 
-def check_pull_request_numbers(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_pull_request_numbers(pull_request: Mapping[str, Any], value: object) -> None:
     numbers = _normalize_list(value)
     if not numbers:
         return
@@ -113,7 +113,7 @@ def check_pull_request_numbers(pull_request: Mapping[str, Any], value: Any) -> N
         raise EventIgnoreError()
 
 
-def check_comment_deleter(payload: Mapping[str, Any], value: Any) -> None:
+def check_comment_deleter(payload: Mapping[str, Any], value: object) -> None:
     deleters = _normalize_list(value)
     if not deleters:
         return
@@ -123,7 +123,7 @@ def check_comment_deleter(payload: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def _normalize_list(raw: Any, *, lowercase: bool = False) -> list[str]:
+def _normalize_list(raw: object, *, lowercase: bool = False) -> list[str]:
     if raw is None:
         return []
 

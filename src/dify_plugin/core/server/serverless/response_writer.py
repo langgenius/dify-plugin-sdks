@@ -14,5 +14,5 @@ class ServerlessResponseWriter(ResponseWriter):
     def write(self, data: bytes) -> None:
         self.q.put(data)
 
-    def done(self):
+    def done(self) -> None:
         self.q.put(None)

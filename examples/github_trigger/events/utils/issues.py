@@ -6,7 +6,7 @@ from typing import Any
 from dify_plugin.errors.trigger import EventIgnoreError
 
 
-def check_labels(issue: Mapping[str, Any], value: Any) -> None:
+def check_labels(issue: Mapping[str, Any], value: object) -> None:
     labels = _normalize_list(value)
     if not labels:
         return
@@ -15,7 +15,7 @@ def check_labels(issue: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_assignee(issue: Mapping[str, Any], value: Any) -> None:
+def check_assignee(issue: Mapping[str, Any], value: object) -> None:
     assignees = _normalize_list(value)
     if not assignees:
         return
@@ -27,7 +27,7 @@ def check_assignee(issue: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_authors(issue: Mapping[str, Any], value: Any) -> None:
+def check_authors(issue: Mapping[str, Any], value: object) -> None:
     authors = _normalize_list(value)
     if not authors:
         return
@@ -36,7 +36,7 @@ def check_authors(issue: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_milestone(issue: Mapping[str, Any], value: Any) -> None:
+def check_milestone(issue: Mapping[str, Any], value: object) -> None:
     milestones = _normalize_list(value)
     if not milestones:
         return
@@ -45,7 +45,7 @@ def check_milestone(issue: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_title_contains(issue: Mapping[str, Any], value: Any) -> None:
+def check_title_contains(issue: Mapping[str, Any], value: object) -> None:
     keywords = _normalize_list(value, lowercase=True)
     if not keywords:
         return
@@ -54,7 +54,7 @@ def check_title_contains(issue: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_body_contains(issue: Mapping[str, Any], value: Any) -> None:
+def check_body_contains(issue: Mapping[str, Any], value: object) -> None:
     keywords = _normalize_list(value, lowercase=True)
     if not keywords:
         return
@@ -63,7 +63,7 @@ def check_body_contains(issue: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_state(issue: Mapping[str, Any], value: Any) -> None:
+def check_state(issue: Mapping[str, Any], value: object) -> None:
     if not value:
         return
     state = (issue.get("state") or "").lower()
@@ -72,7 +72,7 @@ def check_state(issue: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def _normalize_list(raw: Any, *, lowercase: bool = False) -> list[str]:
+def _normalize_list(raw: object, *, lowercase: bool = False) -> list[str]:
     if raw is None:
         return []
     if isinstance(raw, (list, tuple)):

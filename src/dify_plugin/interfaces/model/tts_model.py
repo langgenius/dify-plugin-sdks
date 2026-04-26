@@ -79,7 +79,11 @@ class TTSModel(AIModel):
     #            For plugin implementation use only            #
     ############################################################
 
-    def _get_model_default_voice(self, model: str, credentials: dict) -> Any:
+    def _get_model_default_voice(
+        self,
+        model: str,
+        credentials: dict,
+    ) -> object | None:
         """Get voice for given tts model
 
         :param model: model name
@@ -138,7 +142,11 @@ class TTSModel(AIModel):
         return None
 
     @staticmethod
-    def _split_text_into_sentences(org_text, max_length=2000, pattern=r"[。.!?]"):
+    def _split_text_into_sentences(
+        org_text: str,
+        max_length: int = 2000,
+        pattern: str = r"[。.!?]",
+    ) -> list[str]:
         match = re.compile(pattern)
         tx = match.finditer(org_text)
         start = 0

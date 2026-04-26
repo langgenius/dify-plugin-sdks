@@ -17,7 +17,7 @@ class FirecrawlApp:
         if not self.api_key:
             raise ValueError("API key is required")
 
-    def _prepare_headers(self, idempotency_key: str | None = None):
+    def _prepare_headers(self, idempotency_key: str | None = None) -> dict[str, str]:
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
@@ -54,7 +54,7 @@ class FirecrawlApp:
                     raise
         return None
 
-    def scrape_url(self, url: str, **kwargs):
+    def scrape_url(self, url: str, **kwargs: object) -> Mapping[str, Any]:
         endpoint = f"{self.base_url}/v1/scrape"
         data = {"url": url, **kwargs}
         logger.debug("Sent request to %s body=%s", endpoint, data)
@@ -63,7 +63,7 @@ class FirecrawlApp:
             raise HTTPError("Failed to scrape URL after multiple retries")
         return response
 
-    def map(self, url: str, **kwargs):
+    def map(self, url: str, **kwargs: object) -> Mapping[str, Any]:
         endpoint = f"{self.base_url}/v1/map"
         data = {"url": url, **kwargs}
         logger.debug("Sent request to %s body=%s", endpoint, data)
@@ -78,8 +78,8 @@ class FirecrawlApp:
         wait: bool = True,
         poll_interval: int = 2,
         idempotency_key: str | None = None,
-        **kwargs,
-    ):
+        **kwargs: object,
+    ) -> Mapping[str, Any]:
         endpoint = f"{self.base_url}/v1/crawl"
         headers = self._prepare_headers(idempotency_key)
         data = {"url": url, **kwargs}
@@ -94,7 +94,7 @@ class FirecrawlApp:
             return self._monitor_job_status(job_id=job_id, poll_interval=poll_interval)
         return response
 
-    def check_crawl_status(self, job_id: str):
+    def check_crawl_status(self, job_id: str) -> Mapping[str, Any]:
         endpoint = f"{self.base_url}/v1/crawl/{job_id}"
         response = self._request("GET", endpoint)
         if response is None:
@@ -103,14 +103,18 @@ class FirecrawlApp:
             )
         return response
 
-    def cancel_crawl_job(self, job_id: str):
+    def cancel_crawl_job(self, job_id: str) -> Mapping[str, Any]:
         endpoint = f"{self.base_url}/v1/crawl/{job_id}"
         response = self._request("DELETE", endpoint)
         if response is None:
             raise HTTPError(f"Failed to cancel job {job_id} after multiple retries")
         return response
 
-    def _monitor_job_status(self, job_id: str, poll_interval: int):
+    def _monitor_job_status(
+        self,
+        job_id: str,
+        poll_interval: int,
+    ) -> dict[str, Any]:
         while True:
             status = self.check_crawl_status(job_id)
             if status["status"] == "completed":
@@ -146,14 +150,14 @@ class FirecrawlApp:
         }
 
 
-def get_array_params(tool_parameters: dict[str, Any], key):
+def get_array_params(tool_parameters: dict[str, Any], key: str) -> list[str] | None:
     param = tool_parameters.get(key)
     if param:
         return param.split(",")
     return None
 
 
-def get_json_params(tool_parameters: dict[str, Any], key):
+def get_json_params(tool_parameters: dict[str, Any], key: str) -> object | None:
     param = tool_parameters.get(key)
     if param:
         try:

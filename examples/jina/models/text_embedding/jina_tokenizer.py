@@ -1,16 +1,21 @@
 import pathlib
-from os.path import abspath, dirname, join
+from os.path import join
 from threading import Lock
+from typing import ClassVar, Protocol
 
 from transformers import AutoTokenizer
 
 
+class _Tokenizer(Protocol):
+    def encode(self, text: str) -> list[int]: ...
+
+
 class JinaTokenizer:
-    _tokenizer = None
-    _lock = Lock()
+    _tokenizer: ClassVar[_Tokenizer | None] = None
+    _lock: ClassVar[Lock] = Lock()
 
     @classmethod
-    def _get_tokenizer(cls):
+    def _get_tokenizer(cls) -> _Tokenizer:
         if cls._tokenizer is None:
             with cls._lock:
                 if cls._tokenizer is None:

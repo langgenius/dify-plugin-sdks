@@ -15,7 +15,7 @@ from dify_plugin.interfaces.datasource.online_document import OnlineDocumentData
 from dify_plugin.interfaces.datasource.website import WebsiteCrawlDatasource
 
 
-def test_construct_website_crawl_datasource():
+def test_construct_website_crawl_datasource() -> None:
     """
     Test WebsiteCrawlDatasource can be constructed in specific session
     """
@@ -47,7 +47,7 @@ def test_construct_website_crawl_datasource():
     assert datasource is not None
 
 
-def test_construct_online_document_datasource():
+def test_construct_online_document_datasource() -> None:
     """
     Test OnlineDocumentDatasource can be constructed in specific session
     """

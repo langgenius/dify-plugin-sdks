@@ -1,5 +1,4 @@
 import json
-import os
 import pathlib
 from collections.abc import Generator, Mapping
 from typing import Any

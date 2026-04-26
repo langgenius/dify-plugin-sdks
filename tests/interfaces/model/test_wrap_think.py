@@ -37,7 +37,7 @@ class MockLLM(LargeLanguageModel):
 
 
 class TestWrapThinking(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         # Create a dummy model schema to satisfy AIModel.__init__
         dummy_schema = AIModelEntity(
             model="mock_model",
@@ -54,7 +54,7 @@ class TestWrapThinking(unittest.TestCase):
         )
         self.llm = MockLLM(model_schemas=[dummy_schema])
 
-    def test_wrap_thinking_logic_closure(self):
+    def test_wrap_thinking_logic_closure(self) -> None:
         """
         Test that when reasoning_content ends, even if content is empty
         (e.g. followed immediately by tool_calls),
@@ -111,7 +111,7 @@ class TestWrapThinking(unittest.TestCase):
         expected_part = "Thinking started. Still thinking.\n</think>"
         assert expected_part in full_output
 
-    def test_standard_reasoning_flow(self):
+    def test_standard_reasoning_flow(self) -> None:
         """Test standard reasoning -> text flow"""
         chunks = [
             {"reasoning_content": "Thinking.", "content": ""},

@@ -12,10 +12,10 @@ class DatasourceProvider:
     A provider for a datasource
     """
 
-    def validate_credentials(self, credentials: Mapping[str, Any]):
+    def validate_credentials(self, credentials: Mapping[str, Any]) -> None:
         return self._validate_credentials(credentials)
 
-    def _validate_credentials(self, credentials: Mapping[str, Any]):
+    def _validate_credentials(self, credentials: Mapping[str, Any]) -> None:
         raise NotImplementedError("This method should be implemented by a subclass")
 
     def oauth_get_authorization_url(

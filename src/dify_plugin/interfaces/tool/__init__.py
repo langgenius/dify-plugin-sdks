@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
-from typing import Any, final
+from typing import Any, Self, final
 
 from typing_extensions import deprecated
 from werkzeug import Request
@@ -78,7 +78,7 @@ class ToolLike[T: InvokeMessage](ABC):
             meta=meta,
         )
 
-    def create_variable_message(self, variable_name: str, variable_value: Any) -> T:
+    def create_variable_message(self, variable_name: str, variable_value: object) -> T:
         """
         create a variable message
 
@@ -257,10 +257,10 @@ class ToolLike[T: InvokeMessage](ABC):
 
 
 class ToolProvider:
-    def validate_credentials(self, credentials: dict):
+    def validate_credentials(self, credentials: dict) -> None:
         return self._validate_credentials(credentials)
 
-    def _validate_credentials(self, credentials: dict):
+    def _validate_credentials(self, credentials: dict) -> None:
         raise NotImplementedError(
             "The tool you are using does not support credentials validation, "
             "please implement `_validate_credentials` method"
@@ -372,7 +372,7 @@ class Tool(ToolLike[ToolInvokeMessage]):
         cls,
         credentials: dict,
         user_id: str | None = None,
-    ):
+    ) -> Self:
         return cls(
             runtime=ToolRuntime(
                 credentials=credentials, user_id=user_id, session_id=None

@@ -1,7 +1,8 @@
 import queue
 from collections.abc import Callable, Generator
 from queue import Queue
-from typing import overload
+from types import TracebackType
+from typing import Self, overload
 
 from dify_plugin.core.entities.plugin.io import PluginInStream
 
@@ -43,17 +44,22 @@ class FilterReader:
             except Exception:
                 break
 
-    def close(self):
+    def close(self) -> None:
         if self.close_callback:
             self.close_callback()
 
         self.queue.put(None)
 
-    def write(self, data: PluginInStream):
+    def write(self, data: PluginInStream) -> None:
         self.queue.put(data)
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         self.close()

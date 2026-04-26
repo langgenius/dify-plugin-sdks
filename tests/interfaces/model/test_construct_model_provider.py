@@ -7,7 +7,7 @@ from dify_plugin.entities.model.provider import ProviderEntity
 from dify_plugin.interfaces.model import ModelProvider
 
 
-def test_construct_model_provider():
+def test_construct_model_provider() -> None:
     """
     Ensure ModelProvider constructor is intact and usable.
     This guards against overriding or changing __init__ signature.

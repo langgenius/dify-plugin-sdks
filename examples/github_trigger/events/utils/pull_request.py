@@ -37,7 +37,7 @@ def apply_pull_request_common_filters(
     check_changed_files_glob(pull_request, parameters.get("changed_files_glob"))
 
 
-def check_base_branch(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_base_branch(pull_request: Mapping[str, Any], value: object) -> None:
     branches = _normalize_list(value)
     if not branches:
         return
@@ -47,7 +47,7 @@ def check_base_branch(pull_request: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_head_branch(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_head_branch(pull_request: Mapping[str, Any], value: object) -> None:
     branches = _normalize_list(value)
     if not branches:
         return
@@ -57,7 +57,7 @@ def check_head_branch(pull_request: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_author(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_author(pull_request: Mapping[str, Any], value: object) -> None:
     authors = _normalize_list(value)
     if not authors:
         return
@@ -67,7 +67,7 @@ def check_author(pull_request: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_draft_state(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_draft_state(pull_request: Mapping[str, Any], value: object) -> None:
     if value is None:
         return
 
@@ -76,7 +76,7 @@ def check_draft_state(pull_request: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_labels(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_labels(pull_request: Mapping[str, Any], value: object) -> None:
     labels = _normalize_list(value)
     if not labels:
         return
@@ -86,7 +86,7 @@ def check_labels(pull_request: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_reviewers(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_reviewers(pull_request: Mapping[str, Any], value: object) -> None:
     reviewers = _normalize_list(value)
     if not reviewers:
         return
@@ -105,7 +105,7 @@ def check_reviewers(pull_request: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_merged_state(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_merged_state(pull_request: Mapping[str, Any], value: object) -> None:
     if value is None:
         return
 
@@ -114,7 +114,7 @@ def check_merged_state(pull_request: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_pr_size_threshold(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_pr_size_threshold(pull_request: Mapping[str, Any], value: object) -> None:
     """Filter by PR size: additions+deletions must be <= threshold.
 
     If threshold cannot be parsed or counts are missing, this filter is ignored.
@@ -135,7 +135,7 @@ def check_pr_size_threshold(pull_request: Mapping[str, Any], value: Any) -> None
             raise EventIgnoreError()
 
 
-def check_changed_files_glob(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_changed_files_glob(pull_request: Mapping[str, Any], value: object) -> None:
     """Filter by changed file patterns.
 
     This requires file paths to be present in the payload. If not present,
@@ -183,7 +183,7 @@ def check_changed_files_glob(pull_request: Mapping[str, Any], value: Any) -> Non
         raise EventIgnoreError()
 
 
-def _normalize_list(raw: Any) -> list[str]:
+def _normalize_list(raw: object) -> list[str]:
     if raw is None:
         return []
 

@@ -1,4 +1,5 @@
 import json
+from collections.abc import Generator
 
 import flask.cli
 from flask import Flask, Response, jsonify, request
@@ -8,15 +9,15 @@ from ..consts.mockserver import OPENAI_MOCK_SERVER_PORT
 flask.cli.show_server_banner = lambda *args: None
 
 
-def openai_server_mock():
+def openai_server_mock() -> None:
     app = Flask(__name__)
 
     @app.route("/v1/chat/completions", methods=["POST"])
-    def chat_completions():
+    def chat_completions() -> Response:
         request_body = request.get_json(force=True)
         if request_body.get("stream"):
 
-            def stream_response():
+            def stream_response() -> Generator[str, None, None]:
                 yield "data: "
                 yield json.dumps({
                     "choices": [{"message": {"content": "Hello, world!"}}],

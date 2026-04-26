@@ -103,7 +103,7 @@ class Plugin(IOServer, Router):
     def _initialize_tcp_stream(
         self,
         tcp_stream: TCPReaderWriter,
-    ):
+    ) -> None:
         class List(RootModel):
             root: list[Any]
 
@@ -221,7 +221,7 @@ class Plugin(IOServer, Router):
 
         return serverless, None
 
-    def _log_configuration(self):
+    def _log_configuration(self) -> None:
         """Log plugin configuration"""
         for tool in self.registration.tools_configuration:
             logger.info(f"Installed tool: {tool.identity.name}")
@@ -234,7 +234,7 @@ class Plugin(IOServer, Router):
         for trigger_provider in self.registration.triggers_configuration:
             logger.info(f"Installed trigger provider: {trigger_provider.identity.name}")
 
-    def _register_request_routes(self):
+    def _register_request_routes(self) -> None:
         """Register routes"""
         self.register_route(
             self.plugin_executer.invoke_tool,
@@ -524,7 +524,7 @@ class Plugin(IOServer, Router):
         app_id: str | None = None,
         endpoint_id: str | None = None,
         context: dict | None = None,
-    ):
+    ) -> None:
         """Accept requests and execute
         :param session_id: session id, unique for each request
         :param data: request data

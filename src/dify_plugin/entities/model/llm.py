@@ -47,7 +47,7 @@ class LLMUsage(ModelUsage):
     latency: float
 
     @classmethod
-    def empty_usage(cls):
+    def empty_usage(cls) -> "LLMUsage":
         return cls(
             prompt_tokens=0,
             prompt_unit_price=Decimal("0.0"),
@@ -83,7 +83,7 @@ class LLMResultChunk(BaseModel):
 
     @field_validator("prompt_messages", mode="before")
     @classmethod
-    def transform_prompt_messages(cls, value):
+    def transform_prompt_messages(cls, value: object) -> list[PromptMessage]:
         """ISSUE:
         - https://github.com/langgenius/dify/issues/17799
         - https://github.com/langgenius/dify-official-plugins/issues/648
@@ -117,7 +117,7 @@ class LLMResult(BaseModel):
 
     @field_validator("prompt_messages", mode="before")
     @classmethod
-    def transform_prompt_messages(cls, value):
+    def transform_prompt_messages(cls, value: object) -> list[PromptMessage]:
         """ISSUE:
         - https://github.com/langgenius/dify/issues/17799
         - https://github.com/langgenius/dify-official-plugins/issues/648

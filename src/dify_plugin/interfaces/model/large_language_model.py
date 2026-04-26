@@ -430,7 +430,7 @@ class LargeLanguageModel(AIModel):
         if isinstance(response, Generator):
             first_chunk = next(response)
 
-            def new_generator():
+            def new_generator() -> Generator[LLMResultChunk, None, None]:
                 yield first_chunk
                 yield from response
 

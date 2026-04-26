@@ -44,7 +44,7 @@ class CatalogSlackEvent:
             raise ValueError(f"Unknown Slack event key: {self.EVENT_KEY}") from exc
         return metadata
 
-    def _sanitize(self, value: Any) -> Any:
+    def _sanitize(self, value: object) -> object:
         if value is None:
             return ""
         if isinstance(value, Mapping):
@@ -53,7 +53,7 @@ class CatalogSlackEvent:
             return [self._sanitize(item) for item in value]
         return value
 
-    def _ensure_list(self, value: Any) -> list[Any]:
+    def _ensure_list(self, value: object) -> list[object]:
         if isinstance(value, list):
             return value
         if value in ("", None):

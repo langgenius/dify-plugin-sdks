@@ -133,7 +133,7 @@ class GoogleDriveTrigger(Trigger):
         include_items_from_all_drives: bool,
         supports_all_drives: bool,
         subscription: Subscription,
-    ):
+    ) -> list[dict[str, Any]]:
         """
         Fetch changes from Google Drive.
 
@@ -619,7 +619,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         return str(token)
 
     @staticmethod
-    def _normalize_spaces(raw: Any) -> list[str]:
+    def _normalize_spaces(raw: object) -> list[str]:
         if not raw:
             return []
         if isinstance(raw, str):

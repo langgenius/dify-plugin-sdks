@@ -175,7 +175,13 @@ class GmailTrigger(Trigger):
         headers: Mapping[str, str],
         user_id: str,
         start_history_id: str,
-    ):
+    ) -> tuple[
+        list[dict[str, Any]],
+        list[dict[str, Any]],
+        list[dict[str, Any]],
+        list[dict[str, Any]],
+        list[dict[str, Any]],
+    ]:
         """Fetch Gmail history delta and return categorized changes.
 
         If the start_history_id is invalid/out-of-date, reset the pointer and

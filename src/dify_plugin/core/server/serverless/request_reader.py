@@ -45,7 +45,7 @@ class ServerlessRequestReader(RequestReader):
         while True:
             yield self.request_queue.get()
 
-    def handler(self):
+    def handler(self) -> tuple[Generator[str, None, None], int] | tuple[str, int]:
         try:
             queue = Queue[str]()
             data = request.get_json()
@@ -66,7 +66,7 @@ class ServerlessRequestReader(RequestReader):
             self.request_queue.put(plugin_in)
 
             # wait for response
-            def generate():
+            def generate() -> Generator[str, None, None]:
                 refresh_time = time.time()
                 while True:
                     try:
@@ -91,10 +91,10 @@ class ServerlessRequestReader(RequestReader):
         except Exception as e:
             return str(e), 500
 
-    def health(self):
+    def health(self) -> tuple[str, int]:
         return "OK", 200
 
-    def _run(self):
+    def _run(self) -> None:
         self.app.route("/invoke", methods=["POST"])(self.handler)
         self.app.route("/health", methods=["GET"])(self.health)
 
@@ -116,7 +116,7 @@ class ServerlessRequestReader(RequestReader):
         else:
             self.app.run(host=self.host, port=self.port, threaded=True)
 
-    def launch(self):
+    def launch(self) -> None:
         """
         Launch server
         """

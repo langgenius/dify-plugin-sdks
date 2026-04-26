@@ -10,7 +10,7 @@ from dify_plugin.entities.tool import ToolInvokeMessage, ToolRuntime
 from dify_plugin.interfaces.tool import Tool
 
 
-def test_construct_tool():
+def test_construct_tool() -> None:
     """
     Test the constructor of Tool
     NOTE:
@@ -38,7 +38,7 @@ def test_construct_tool():
     assert tool is not None
 
 
-def test_construct_tool_default_credential_type():
+def test_construct_tool_default_credential_type() -> None:
     """
     Test the constructor of Tool with default credential type
     """
@@ -65,7 +65,7 @@ def test_construct_tool_default_credential_type():
     assert tool.runtime.credential_type == CredentialType.API_KEY
 
 
-def test_fetch_parameter_options():
+def test_fetch_parameter_options() -> None:
     """
     Test that the Tool can fetch the parameter options
     """

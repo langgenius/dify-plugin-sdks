@@ -27,7 +27,7 @@ def _mock_backwards_invoke(
     yield data
 
 
-def test_chat_app_invoke_should_pass_user_in_payload():
+def test_chat_app_invoke_should_pass_user_in_payload() -> None:
     session = _build_session()
 
     with patch.object(
@@ -46,7 +46,7 @@ def test_chat_app_invoke_should_pass_user_in_payload():
     assert response["conversation_id"] == "conversation-id"
 
 
-def test_completion_app_invoke_should_pass_user_in_payload():
+def test_completion_app_invoke_should_pass_user_in_payload() -> None:
     session = _build_session()
 
     with patch.object(
@@ -62,7 +62,7 @@ def test_completion_app_invoke_should_pass_user_in_payload():
     assert response["user"] == "user-123"
 
 
-def test_workflow_app_invoke_should_pass_user_in_payload():
+def test_workflow_app_invoke_should_pass_user_in_payload() -> None:
     session = _build_session()
 
     with patch.object(

@@ -1,6 +1,8 @@
 from collections.abc import Generator, Mapping
 from unittest.mock import MagicMock
 
+import pytest
+
 from dify_plugin.core.model_factory import ModelFactory
 from dify_plugin.core.plugin_registration import PluginRegistration
 from dify_plugin.entities import I18nObject
@@ -101,7 +103,7 @@ class MockLLM(AIModel):
         return {}
 
 
-def test_model_registry_get_model(monkeypatch):
+def test_model_registry_get_model(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test model registry get model"""
     config = MagicMock()
 
@@ -119,7 +121,7 @@ def test_model_registry_get_model(monkeypatch):
         """Mock load yaml file"""
         return {}
 
-    def mock_resolve_plugin_cls(self: PluginRegistration):
+    def mock_resolve_plugin_cls(self: PluginRegistration) -> None:
         """Mock resolve plugin cls"""
         # add MockLLM to models_mapping
         provider_configuration = ModelProviderConfiguration(
@@ -158,7 +160,7 @@ def test_model_registry_get_model(monkeypatch):
             ),
         }
 
-    def mock_load_plugin_assets(_):
+    def mock_load_plugin_assets(_: PluginRegistration) -> None:
         """Mock load plugin assets"""
 
     monkeypatch.setattr(

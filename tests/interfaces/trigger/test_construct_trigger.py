@@ -12,7 +12,7 @@ from dify_plugin.entities.trigger import Subscription, Variables
 from dify_plugin.interfaces.trigger import Event, EventRuntime
 
 
-def test_construct_trigger():
+def test_construct_trigger() -> None:
     """
     Test the constructor of Event
 

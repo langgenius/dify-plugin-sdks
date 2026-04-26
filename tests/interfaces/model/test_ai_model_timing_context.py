@@ -32,12 +32,12 @@ class MockAIModel(AIModel):
             return time.perf_counter() - self.started_at
 
 
-def test_ai_model_timing_context_with_race_condition():
+def test_ai_model_timing_context_with_race_condition() -> None:
     model = MockAIModel(model_schemas=[])
 
     concurrency = 2
 
-    def task(_):
+    def task(_: int) -> None:
         """Task to be executed in thread pool"""
         model.invoke()
 
@@ -48,7 +48,7 @@ def test_ai_model_timing_context_with_race_condition():
         list(pool.map(task, range(concurrency)))
 
 
-def test_ai_model_timing_context_multiple_sequential_uses():
+def test_ai_model_timing_context_multiple_sequential_uses() -> None:
     """Check if multiple sequential uses of the timing context are correct"""
     model = MockAIModel(model_schemas=[])
 
@@ -62,10 +62,10 @@ def test_ai_model_timing_context_multiple_sequential_uses():
     assert model.started_at == 0
 
 
-def test_ai_model_timing_context_check_latency():
+def test_ai_model_timing_context_check_latency() -> None:
     concurrency = 10
 
-    def task(_):
+    def task(_: int) -> None:
         """Check if race condition is raised"""
         model = MockAIModel(model_schemas=[])
         time_cost = model.invoke()

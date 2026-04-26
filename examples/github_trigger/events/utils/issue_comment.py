@@ -6,7 +6,7 @@ from typing import Any
 from dify_plugin.errors.trigger import EventIgnoreError
 
 
-def check_comment_body_contains(comment: Mapping[str, Any], value: Any) -> None:
+def check_comment_body_contains(comment: Mapping[str, Any], value: object) -> None:
     keywords = _normalize_list(value, lowercase=True)
     if not keywords:
         return
@@ -15,7 +15,7 @@ def check_comment_body_contains(comment: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_commenter(comment: Mapping[str, Any], value: Any) -> None:
+def check_commenter(comment: Mapping[str, Any], value: object) -> None:
     commenters = _normalize_list(value)
     if not commenters:
         return
@@ -24,7 +24,7 @@ def check_commenter(comment: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_issue_labels(issue: Mapping[str, Any], value: Any) -> None:
+def check_issue_labels(issue: Mapping[str, Any], value: object) -> None:
     labels = _normalize_list(value)
     if not labels:
         return
@@ -33,7 +33,7 @@ def check_issue_labels(issue: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_issue_state(issue: Mapping[str, Any], value: Any) -> None:
+def check_issue_state(issue: Mapping[str, Any], value: object) -> None:
     if not value:
         return
     state = (issue.get("state") or "").lower()
@@ -42,7 +42,7 @@ def check_issue_state(issue: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_is_pull_request(issue: Mapping[str, Any], flag: Any) -> None:
+def check_is_pull_request(issue: Mapping[str, Any], flag: object) -> None:
     if flag is None:
         return
     is_pr = "pull_request" in issue
@@ -50,7 +50,7 @@ def check_is_pull_request(issue: Mapping[str, Any], flag: Any) -> None:
         raise EventIgnoreError()
 
 
-def _normalize_list(raw: Any, *, lowercase: bool = False) -> list[str]:
+def _normalize_list(raw: object, *, lowercase: bool = False) -> list[str]:
     if raw is None:
         return []
     if isinstance(raw, (list, tuple)):

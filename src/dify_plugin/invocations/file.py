@@ -15,7 +15,7 @@ class UploadFileResponse(BaseModel):
         AUDIO = "audio"
 
         @classmethod
-        def from_mime_type(cls, mime_type: str):
+        def from_mime_type(cls, mime_type: str) -> "UploadFileResponse.Type":
             if mime_type.startswith("image/"):
                 return cls.IMAGE
             if mime_type.startswith("video/"):
@@ -35,7 +35,7 @@ class UploadFileResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_type(cls, d):
+    def validate_type(cls, d: dict[str, object]) -> dict[str, object]:
         if "type" not in d:
             d["type"] = cls.Type.from_mime_type(d.get("mime_type", ""))
         return d

@@ -252,7 +252,7 @@ class ToolProviderConfiguration(BaseModel):
 
     @field_validator("tools", mode="before")
     @classmethod
-    def validate_tools(cls, value) -> list[ToolConfiguration]:
+    def validate_tools(cls, value: list[object]) -> list[ToolConfiguration]:
         if not isinstance(value, list):
             raise ValueError("tools should be a list")
 

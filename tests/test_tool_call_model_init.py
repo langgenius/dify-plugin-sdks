@@ -3,7 +3,7 @@ import pytest
 from dify_plugin.entities.model.message import AssistantPromptMessage
 
 
-def test_tool_call_model_init_with_explicit_none_fields():
+def test_tool_call_model_init_with_explicit_none_fields() -> None:
     response_tool_call = {
         "function": {
             "name": None,

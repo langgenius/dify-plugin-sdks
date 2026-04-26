@@ -1,5 +1,4 @@
 from collections.abc import Callable, Mapping
-from typing import Any
 
 from pydantic import BaseModel
 
@@ -31,7 +30,7 @@ def docs(
     top: bool = False,
     ignore_fields: list[str] | None = None,
     outside_reference_fields: Mapping[str, type[BaseModel]] | None = None,
-) -> Callable:
+) -> Callable[[object], object | None]:
     """
     Decorator to add schema documentation to a class
 
@@ -45,7 +44,7 @@ def docs(
         ignore_fields: List of field names to ignore in documentation
     """
 
-    def decorator(cls_or_func: Any) -> Any:
+    def decorator(cls_or_func: object) -> object | None:
         # check if cls_or_func is a class
         if isinstance(cls_or_func, type):
             nonlocal name

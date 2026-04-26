@@ -20,13 +20,13 @@ class InvokeMessage(BaseModel):
     class TextMessage(BaseModel):
         text: str
 
-        def to_dict(self):
+        def to_dict(self) -> dict[str, str]:
             return {"text": self.text}
 
     class JsonMessage(BaseModel):
         json_object: Mapping | list
 
-        def to_dict(self):
+        def to_dict(self) -> dict[str, Mapping | list]:
             return {"json_object": self.json_object}
 
     class BlobMessage(BaseModel):
@@ -52,7 +52,7 @@ class InvokeMessage(BaseModel):
 
         @model_validator(mode="before")
         @classmethod
-        def validate_variable_value_and_stream(cls, values):
+        def validate_variable_value_and_stream(cls, values: object) -> object:
             # skip validation if values is not a dict
             if not isinstance(values, dict):
                 return values
@@ -147,14 +147,14 @@ class InvokeMessage(BaseModel):
 
     @field_validator("message", mode="before")
     @classmethod
-    def decode_blob_message(cls, v):
+    def decode_blob_message(cls, v: object) -> object:
         if isinstance(v, dict) and "blob" in v:
             with contextlib.suppress(Exception):
                 v["blob"] = base64.b64decode(v["blob"])
         return v
 
     @field_serializer("message")
-    def serialize_message(self, v):
+    def serialize_message(self, v: object) -> object:
         if isinstance(v, self.BlobMessage):
             return {"blob": base64.b64encode(v.blob).decode("utf-8")}
         if isinstance(v, self.BlobChunkMessage):

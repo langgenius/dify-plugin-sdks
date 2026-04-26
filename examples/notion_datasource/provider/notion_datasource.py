@@ -92,7 +92,7 @@ class NotionDatasourceProvider(DatasourceProvider):
         OAuth flow.
         """
 
-    def _validate_credentials(self, credentials: Mapping[str, Any]):
+    def _validate_credentials(self, credentials: Mapping[str, Any]) -> bool | None:
         try:
             # Check if integration_token is provided
             if "integration_secret" not in credentials or not credentials.get(

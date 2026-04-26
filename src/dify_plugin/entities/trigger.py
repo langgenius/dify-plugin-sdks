@@ -306,7 +306,7 @@ class TriggerSubscriptionConstructorConfiguration(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def normalize_credentials_schema(cls, data: Any) -> dict[str, Any]:
+    def normalize_credentials_schema(cls, data: object) -> dict[str, Any]:
         if data is None:
             return {}
 
@@ -382,7 +382,7 @@ class TriggerProviderConfiguration(BaseModel):
 
     @field_validator("events", mode="before")
     @classmethod
-    def validate_events(cls, value) -> list[EventConfiguration]:
+    def validate_events(cls, value: list[object]) -> list[EventConfiguration]:
         if not isinstance(value, list):
             raise ValueError("events should be a list")
 

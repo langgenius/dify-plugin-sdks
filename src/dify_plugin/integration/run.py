@@ -10,7 +10,8 @@ import uuid
 from collections.abc import Generator
 from queue import Queue
 from threading import Lock, Semaphore
-from typing import TypeVar
+from types import TracebackType
+from typing import Self, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -131,7 +132,7 @@ class PluginRunner:
 
         logger.info("Plugin ready")
 
-    def _build_plugin(self, package_path: str, output_path: str):
+    def _build_plugin(self, package_path: str, output_path: str) -> None:
         # build plugin
         output = subprocess.check_output(
             [
@@ -145,7 +146,7 @@ class PluginRunner:
         )
         logger.info(output.decode("utf-8"))
 
-    def _close(self):
+    def _close(self) -> None:
         with self.stop_flag_lock:
             if self.stop_flag:
                 return
@@ -180,7 +181,7 @@ class PluginRunner:
             raise PluginStoppedError()
         return b
 
-    def _message_reader(self, pipe: int):
+    def _message_reader(self, pipe: int) -> None:
         import time
 
         # create a scanner to read the message line by line
@@ -217,7 +218,7 @@ class PluginRunner:
         finally:
             self._close()
 
-    def _publish_message(self, message: str):
+    def _publish_message(self, message: str) -> None:
         # parse the message
         try:
             parsed_message = PluginGenericResponse.model_validate_json(message)
@@ -244,7 +245,7 @@ class PluginRunner:
             else:
                 self.q[parsed_message.invoke_id].put(parsed_message)
 
-    def _write_to_pipe(self, data: bytes):
+    def _write_to_pipe(self, data: bytes) -> None:
         # split the data into chunks of 4096 bytes
         chunks = [data[i : i + 4096] for i in range(0, len(data), 4096)]
         # A lock is needed to avoid race conditions when multiple threads
@@ -295,10 +296,15 @@ class PluginRunner:
             with self.q_lock:
                 del self.q[invoke_id]
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         self._close()
 
         for resource in self.resources_need_to_be_cleaned:

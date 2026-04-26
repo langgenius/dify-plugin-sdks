@@ -5,7 +5,7 @@ from dify_plugin.core.entities.plugin.setup import (
 )
 
 
-def test_optional_minimum_dify_required():
+def test_optional_minimum_dify_required() -> None:
     meta = PluginConfiguration.Meta(
         version="1.0.0",
         arch=[PluginArch.AMD64, PluginArch.ARM64],

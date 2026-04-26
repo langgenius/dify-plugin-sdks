@@ -48,14 +48,14 @@ class ReleasePublishedEvent(Event):
         if tag not in names:
             raise EventIgnoreError()
 
-    def _check_prerelease(self, release: Mapping[str, Any], value: Any) -> None:
+    def _check_prerelease(self, release: Mapping[str, Any], value: object) -> None:
         if value is None:
             return
         is_pre = bool(release.get("prerelease"))
         if is_pre != bool(value):
             raise EventIgnoreError()
 
-    def _check_draft(self, release: Mapping[str, Any], value: Any) -> None:
+    def _check_draft(self, release: Mapping[str, Any], value: object) -> None:
         if value is None:
             return
         is_draft = bool(release.get("draft"))

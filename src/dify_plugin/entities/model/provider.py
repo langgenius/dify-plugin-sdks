@@ -67,7 +67,7 @@ class FormOption(BaseModel):
     value: str
     show_on: list[FormShowOnObject] = Field(default_factory=list)
 
-    def __init__(self, **data) -> None:
+    def __init__(self, **data: object) -> None:
         super().__init__(**data)
         if not self.label:
             self.label = I18nObject(en_US=self.value)
@@ -231,7 +231,7 @@ class ProviderEntity(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_models(cls, values) -> dict:
+    def validate_models(cls, values: dict[str, object]) -> dict[str, object]:
         value = values.get("models", {})
         if not isinstance(value, dict):
             raise ValueError("models should be a glob path list")
@@ -240,7 +240,7 @@ class ProviderEntity(BaseModel):
 
         model_entities = []
 
-        def load_models(model_type: str):
+        def load_models(model_type: str) -> None:
             if model_type not in value:
                 return
 

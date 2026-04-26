@@ -38,7 +38,7 @@ class AgentModelConfig(LLMModelConfig):
 
     @field_validator("history_prompt_messages", mode="before")
     @classmethod
-    def convert_prompt_messages(cls, v):
+    def convert_prompt_messages(cls, v: list[object]) -> list[PromptMessage]:
         if not isinstance(v, list):
             raise ValueError("prompt_messages must be a list")
 
@@ -133,15 +133,19 @@ class ToolEntity(BaseModel):
 
     @field_validator("parameters", mode="before")
     @classmethod
-    def set_parameters(cls, v, validation_info: ValidationInfo) -> list[ToolParameter]:
+    def set_parameters(
+        cls,
+        v: list[ToolParameter] | None,
+        validation_info: ValidationInfo,
+    ) -> list[ToolParameter]:
         return v or []
 
 
 class AgentProvider(ToolProvider):
-    def validate_credentials(self, credentials: dict):
+    def validate_credentials(self, credentials: dict) -> None:
         """Always permit the agent to run"""
 
-    def _validate_credentials(self, credentials: dict):
+    def _validate_credentials(self, credentials: dict) -> None:
         pass
 
 
@@ -183,7 +187,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         self,
         final_llm_usage_dict: dict[str, LLMUsage | None],
         usage: LLMUsage,
-    ):
+    ) -> None:
         if not final_llm_usage_dict["usage"]:
             final_llm_usage_dict["usage"] = usage
         else:
@@ -200,7 +204,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         model_entity: AIModelEntity,
         prompt_messages: list[PromptMessage],
         parameters: dict,
-    ):
+    ) -> int | None:
         # recalc max_tokens if sum(prompt_token +  max_tokens) over model token limit
 
         model_context_tokens = model_entity.model_properties.get(

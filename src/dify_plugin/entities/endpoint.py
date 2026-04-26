@@ -44,7 +44,7 @@ class EndpointProviderConfiguration(BaseModel):
 
     @field_validator("endpoints", mode="before")
     @classmethod
-    def validate_endpoints(cls, value) -> list[EndpointConfiguration]:
+    def validate_endpoints(cls, value: list[object]) -> list[EndpointConfiguration]:
         if not isinstance(value, list):
             raise ValueError("endpoints should be a list")
 

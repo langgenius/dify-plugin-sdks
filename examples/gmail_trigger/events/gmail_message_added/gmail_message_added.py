@@ -106,7 +106,7 @@ class GmailMessageAddedEvent(Event):
                 mid_str: str = mid_str,
                 attachments_meta: list[Mapping[str, Any]] = attachments_meta,
                 inline_parts: list[Mapping[str, Any]] = inline_parts,
-            ):
+            ) -> None:
                 nonlocal has_attachments
                 if not part:
                     return

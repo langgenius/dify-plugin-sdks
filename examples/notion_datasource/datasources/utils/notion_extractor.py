@@ -1,3 +1,4 @@
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from datasources.utils.notion_client import NotionClient
@@ -200,7 +201,7 @@ class NotionExtractor:
 
         return self._generate_markdown_table(headers, rows)
 
-    def _extract_property_value(self, property_value: dict) -> Any:
+    def _extract_property_value(self, property_value: dict[str, Any]) -> object:
         """Extract the value of a Notion property."""
         column_type = property_value["type"]
         if column_type == "multi_select":
@@ -262,9 +263,13 @@ class NotionExtractor:
         )
         return "\n".join(markdown)
 
-    def _paginate(self, fetch_function, **kwargs) -> list[dict]:
+    def _paginate(
+        self,
+        fetch_function: Callable[..., Mapping[str, Any]],
+        **kwargs: object,
+    ) -> list[dict[str, Any]]:
         """Handle pagination for Notion API requests."""
-        results = []
+        results: list[dict[str, Any]] = []
         start_cursor = None
         while True:
             query_dict = kwargs.copy()

@@ -26,7 +26,7 @@ class IntegrationConfig(BaseSettings):
 
     @field_validator("dify_cli_path")
     @classmethod
-    def validate_dify_cli_path(cls, v):
+    def validate_dify_cli_path(cls, v: str) -> str:
         # find the dify cli path
         if not v:
             for plugin_name in _PLUGIN_NAMES:

@@ -69,7 +69,7 @@ class NotionDataSource(OnlineDocumentDatasource):
             "workspace_id", online_document_res["workspace_id"]
         )
 
-    def notion_workspace_info(self, access_token: str):
+    def notion_workspace_info(self, access_token: str) -> dict[str, str]:
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Notion-Version": self._API_VERSION,

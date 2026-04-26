@@ -268,7 +268,7 @@ class NotionClient:
         return self._make_request("get", f"/databases/{database_id}")
 
     def create_property_filter(
-        self, property_name: str, property_type: str, condition: str, value: Any
+        self, property_name: str, property_type: str, condition: str, value: object
     ) -> dict[str, Any]:
         """
         Create a property filter for database queries.
@@ -460,8 +460,8 @@ class NotionClient:
         """
         return self.create_rich_text(content)
 
-    def get_authorized_pages(self):
-        pages = []
+    def get_authorized_pages(self) -> list[OnlineDocumentPage]:
+        pages: list[OnlineDocumentPage] = []
         access_token = self.integration_token
         page_results = self.notion_page_search(access_token)
         database_results = self.notion_database_search(access_token)
@@ -556,8 +556,8 @@ class NotionClient:
             pages.append(page)
         return pages
 
-    def notion_page_search(self, access_token: str):
-        results = []
+    def notion_page_search(self, access_token: str) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
         next_cursor = None
         has_more = True
 
@@ -587,8 +587,8 @@ class NotionClient:
 
         return results
 
-    def notion_database_search(self, access_token: str):
-        results = []
+    def notion_database_search(self, access_token: str) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
         next_cursor = None
         has_more = True
 
@@ -617,7 +617,7 @@ class NotionClient:
 
         return results
 
-    def notion_block_parent_page_id(self, access_token: str, block_id: str):
+    def notion_block_parent_page_id(self, access_token: str, block_id: str) -> str:
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Notion-Version": self._API_VERSION,

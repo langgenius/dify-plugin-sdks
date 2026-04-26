@@ -63,7 +63,7 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
             "Content-Type": "application/json",
         }
 
-        def transform_jina_input_text(model, text):
+        def transform_jina_input_text(model: str, text: str) -> str | dict[str, str]:
             if model == "jina-clip-v1":
                 return {"text": text}
             return text

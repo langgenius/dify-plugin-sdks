@@ -28,7 +28,7 @@ class RequestReader(ABC):
         """
         raise NotImplementedError
 
-    def event_loop(self):
+    def event_loop(self) -> None:
         # read line by line
         while True:
             try:
@@ -38,7 +38,7 @@ class RequestReader(ABC):
                 logger.exception("Error in event loop")
                 time.sleep(0.01)  # Prevent high CPU usage
 
-    def _process_line(self, data: "PluginInStream"):
+    def _process_line(self, data: "PluginInStream") -> None:
         try:
             session_id = data.session_id
             readers_to_process = []
@@ -77,7 +77,7 @@ class RequestReader(ABC):
             )
 
     def read(self, filter: Callable[["PluginInStream"], bool]) -> FilterReader:  # noqa: A002
-        def close(reader: FilterReader):
+        def close(reader: FilterReader) -> None:
             self.lock.acquire()
             try:
                 if reader in self.readers:
@@ -95,7 +95,7 @@ class RequestReader(ABC):
 
         return reader
 
-    def close(self):
+    def close(self) -> None:
         """
         close stdin processing
         """

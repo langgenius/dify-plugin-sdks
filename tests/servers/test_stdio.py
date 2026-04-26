@@ -1,10 +1,12 @@
 import json
 
+import pytest
+
 from dify_plugin.core.entities.plugin.io import PluginInStreamEvent
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 
 
-def test_stdio(monkeypatch):
+def test_stdio(monkeypatch: pytest.MonkeyPatch) -> None:
     payload = {
         "session_id": "1",
         "conversation_id": "2",
@@ -24,7 +26,7 @@ def test_stdio(monkeypatch):
         dataflow_bytes[i : i + 65536] for i in range(0, len(dataflow_bytes), 65536)
     ]
 
-    def mock_read_async():
+    def mock_read_async() -> bytes:
         return dataflow_chunks.pop(0)
 
     # mock reader._read_async
@@ -46,7 +48,7 @@ def test_stdio(monkeypatch):
     assert iters == 200
 
 
-def test_stdio_with_empty_line(monkeypatch):
+def test_stdio_with_empty_line(monkeypatch: pytest.MonkeyPatch) -> None:
     payload = {
         "session_id": "1",
         "conversation_id": "2",
@@ -71,7 +73,7 @@ def test_stdio_with_empty_line(monkeypatch):
     ])
     dataflow_bytes += b"\n"
 
-    def mock_read_async():
+    def mock_read_async() -> bytes:
         return dataflow_bytes
 
     monkeypatch.setattr(reader, "_read_async", mock_read_async)

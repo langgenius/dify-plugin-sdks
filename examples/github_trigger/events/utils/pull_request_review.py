@@ -36,7 +36,7 @@ def apply_pull_request_review_filters(
     check_review_body(review, parameters.get("body_contains"))
 
 
-def check_review_state(review: Mapping[str, Any], value: Any) -> None:
+def check_review_state(review: Mapping[str, Any], value: object) -> None:
     states = _normalize_list(value)
     if not states:
         return
@@ -46,7 +46,7 @@ def check_review_state(review: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_reviewer(review: Mapping[str, Any], value: Any) -> None:
+def check_reviewer(review: Mapping[str, Any], value: object) -> None:
     reviewers = _normalize_list(value)
     if not reviewers:
         return
@@ -56,7 +56,7 @@ def check_reviewer(review: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_pull_request_author(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_pull_request_author(pull_request: Mapping[str, Any], value: object) -> None:
     authors = _normalize_list(value)
     if not authors:
         return
@@ -66,7 +66,7 @@ def check_pull_request_author(pull_request: Mapping[str, Any], value: Any) -> No
         raise EventIgnoreError()
 
 
-def check_pull_request_numbers(pull_request: Mapping[str, Any], value: Any) -> None:
+def check_pull_request_numbers(pull_request: Mapping[str, Any], value: object) -> None:
     numbers = _normalize_list(value)
     if not numbers:
         return
@@ -76,7 +76,7 @@ def check_pull_request_numbers(pull_request: Mapping[str, Any], value: Any) -> N
         raise EventIgnoreError()
 
 
-def check_review_body(review: Mapping[str, Any], value: Any) -> None:
+def check_review_body(review: Mapping[str, Any], value: object) -> None:
     keywords = _normalize_list(value, lowercase=True)
     if not keywords:
         return
@@ -86,7 +86,7 @@ def check_review_body(review: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_dismissed_by(payload: Mapping[str, Any], value: Any) -> None:
+def check_dismissed_by(payload: Mapping[str, Any], value: object) -> None:
     users = _normalize_list(value)
     if not users:
         return
@@ -96,7 +96,7 @@ def check_dismissed_by(payload: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_dismissal_message(payload: Mapping[str, Any], value: Any) -> None:
+def check_dismissal_message(payload: Mapping[str, Any], value: object) -> None:
     keywords = _normalize_list(value, lowercase=True)
     if not keywords:
         return
@@ -106,7 +106,7 @@ def check_dismissal_message(payload: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def _normalize_list(raw: Any, *, lowercase: bool = False) -> list[str]:
+def _normalize_list(raw: object, *, lowercase: bool = False) -> list[str]:
     if raw is None:
         return []
 

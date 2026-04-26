@@ -13,7 +13,7 @@ class CotAgentOutputParser:
         llm_response: Generator[LLMResultChunk, None, None],
         usage_dict: dict,
     ) -> Generator[str | AgentScratchpadUnit.Action, None, None]:
-        def parse_action(json_str):
+        def parse_action(json_str: str) -> str | AgentScratchpadUnit.Action:
             try:
                 action = json.loads(json_str, strict=False)
                 action_name = None
@@ -39,7 +39,7 @@ class CotAgentOutputParser:
                 return json_str or ""
 
         def extra_json_from_code_block(
-            code_block,
+            code_block: str,
         ) -> Generator[str | AgentScratchpadUnit.Action, None, None]:
             code_blocks = re.findall(r"```(.*?)```", code_block, re.DOTALL)
             if not code_blocks:

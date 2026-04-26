@@ -51,17 +51,17 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         # handle SIGINT to exit the program smoothly due to the gevent limitation
         signal.signal(signal.SIGINT, lambda *args, **kwargs: os._exit(0))
 
-    def launch(self):
+    def launch(self) -> None:
         """Launch the connection"""
         self._launch()
 
-    def close(self):
+    def close(self) -> None:
         """Close the connection"""
         if self.alive:
             self.sock.close()
             self.alive = False
 
-    def _write_to_sock(self, data: bytes):
+    def _write_to_sock(self, data: bytes) -> int:
         """Write data to the socket"""
         with self.opt_lock:
             return self.sock.send(data)
@@ -70,7 +70,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         """Receive data from the socket"""
         return self.sock.recv(size)
 
-    def write(self, data: str):
+    def write(self, data: str) -> None:
         if not self.alive:
             raise Exception("connection is dead")
 
@@ -95,10 +95,10 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             logger.exception("Failed to write data")
             self._launch()
 
-    def done(self):
+    def done(self) -> None:
         pass
 
-    def _launch(self):
+    def _launch(self) -> None:
         """Connect to the target, try to reconnect if failed"""
         attempts = 0
         while attempts < self.reconnect_attempts:
@@ -112,7 +112,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
 
                 time.sleep(self.reconnect_timeout)
 
-    def _connect(self):
+    def _connect(self) -> None:
         """Connect to the target"""
         try:
             if native_socket.socket is gevent_socket.socket:

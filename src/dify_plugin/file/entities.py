@@ -9,7 +9,7 @@ class FileType(StrEnum):
     CUSTOM = "custom"
 
     @staticmethod
-    def value_of(value):
+    def value_of(value: str) -> "FileType":
         for member in FileType:
             if member.value == value:
                 return member

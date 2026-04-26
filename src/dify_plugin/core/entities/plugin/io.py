@@ -11,7 +11,7 @@ class PluginInStreamEvent(Enum):
     BackwardInvocationResponse = "backwards_response"
 
     @classmethod
-    def value_of(cls, v: str):
+    def value_of(cls, v: str) -> "PluginInStreamEvent":
         for e in cls:
             if e.value == v:
                 return e

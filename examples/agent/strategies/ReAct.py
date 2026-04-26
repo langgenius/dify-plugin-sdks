@@ -365,7 +365,7 @@ class ReActAgentStrategy(AgentStrategy):
 
     def _organize_user_query(
         self,
-        query,
+        query: str,
         prompt_messages: list[PromptMessage],
     ) -> list[PromptMessage]:
         """Organize user query"""

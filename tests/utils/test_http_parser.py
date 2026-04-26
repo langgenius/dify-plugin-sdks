@@ -2,6 +2,7 @@ import json
 
 from flask import Flask, jsonify, make_response
 from flask import request as flask_request
+from flask.typing import ResponseReturnValue
 
 from dify_plugin.core.utils.http_parser import (
     deserialize_request,
@@ -11,12 +12,12 @@ from dify_plugin.core.utils.http_parser import (
 )
 
 
-def test_http_request_roundtrip():
+def test_http_request_roundtrip() -> None:
     """Test all HTTP request attributes are preserved through serialization"""
     app = Flask(__name__)
 
     @app.route("/webhook", methods=["POST"])
-    def webhook():
+    def webhook() -> ResponseReturnValue:
         original = flask_request
         raw = serialize_request(original)
         reconstructed = deserialize_request(raw)
@@ -53,12 +54,12 @@ def test_http_request_roundtrip():
         assert response.status_code == 200
 
 
-def test_http_response_roundtrip():
+def test_http_response_roundtrip() -> None:
     """Test all HTTP response attributes are preserved through serialization"""
     app = Flask(__name__)
 
     @app.route("/api/<path:path>")
-    def api(path):
+    def api(path: str) -> ResponseReturnValue:
         if path == "error":
             response = make_response(jsonify({"error": "Not found"}), 404)
             response.headers["X-Error"] = "NOTFOUND"
@@ -87,12 +88,12 @@ def test_http_response_roundtrip():
         assert "X-Error" in reconstructed_error.headers
 
 
-def test_form_and_binary_data():
+def test_form_and_binary_data() -> None:
     """Test form data and binary content preservation"""
     app = Flask(__name__)
 
     @app.route("/upload", methods=["POST"])
-    def upload():
+    def upload() -> ResponseReturnValue:
         raw = serialize_request(flask_request)
         reconstructed = deserialize_request(raw)
 
@@ -122,12 +123,12 @@ def test_form_and_binary_data():
         assert len(reconstructed.get_data()) == 256
 
 
-def test_special_cases():
+def test_special_cases() -> None:
     """Test edge cases and special characters"""
     app = Flask(__name__)
 
     @app.route("/test", methods=["GET", "POST"])
-    def test():
+    def test() -> ResponseReturnValue:
         if flask_request.method == "GET":
             return "", 204
 

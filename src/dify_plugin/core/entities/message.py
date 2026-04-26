@@ -13,7 +13,7 @@ class SessionMessage(BaseModel):
     type: Type
     data: dict
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, object]:
         return {"type": self.type.value, "data": self.data}
 
 

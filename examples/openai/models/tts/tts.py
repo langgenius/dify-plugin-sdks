@@ -204,7 +204,13 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         except Exception as ex:
             raise InvokeBadRequestError(str(ex)) from ex
 
-    def _process_sentence(self, sentence: str, model: str, voice, credentials: dict):
+    def _process_sentence(
+        self,
+        sentence: str,
+        model: str,
+        voice: str,
+        credentials: dict,
+    ) -> bytes | None:
         """_tts_invoke openai text2speech model api
 
         :param model: model name

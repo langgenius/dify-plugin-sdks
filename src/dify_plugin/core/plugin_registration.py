@@ -129,7 +129,7 @@ class PluginRegistration:
         # load plugin assets
         self._load_plugin_assets()
 
-    def _load_plugin_assets(self):
+    def _load_plugin_assets(self) -> None:
         """
         load plugin assets
         """
@@ -142,7 +142,7 @@ class PluginRegistration:
                         PluginAsset(filename=entry.name, data=entry_bytes)
                     )
 
-    def _load_plugin_configuration(self):
+    def _load_plugin_configuration(self) -> None:
         """
         load basic plugin configuration from manifest.yaml
         """
@@ -178,7 +178,7 @@ class PluginRegistration:
         except Exception as e:
             raise ValueError(f"Error loading plugin configuration: {e!s}") from e
 
-    def _resolve_tool_providers(self):
+    def _resolve_tool_providers(self) -> None:
         """
         walk through all the tool providers and tools and load the classes from sources
         """
@@ -214,7 +214,7 @@ class PluginRegistration:
 
             self.tools_mapping[provider.identity.name] = (provider, cls, tools)
 
-    def _resolve_agent_providers(self):
+    def _resolve_agent_providers(self) -> None:
         """
         walk through all the agent providers and strategies and load the
         classes from sources
@@ -238,7 +238,7 @@ class PluginRegistration:
                 strategies,
             )
 
-    def _resolve_datasource_providers(self):
+    def _resolve_datasource_providers(self) -> None:
         """
         walk through all the datasource providers and datasources and load the
         classes from sources
@@ -292,7 +292,7 @@ class PluginRegistration:
                 ][1],
             )
 
-    def _resolve_trigger_providers(self):
+    def _resolve_trigger_providers(self) -> None:
         """
         walk through all the trigger providers and triggers and load the
         classes from sources
@@ -377,7 +377,7 @@ class PluginRegistration:
         """
         return any(issubclass(cls, parent) and cls != parent for parent in parent_cls)
 
-    def _resolve_model_providers(self):
+    def _resolve_model_providers(self) -> None:
         """
         walk through all the model providers and models and load the classes
         from sources
@@ -426,7 +426,7 @@ class PluginRegistration:
                 model_factory,
             )
 
-    def _resolve_endpoints(self):
+    def _resolve_endpoints(self) -> None:
         """
         load endpoints
         """
@@ -449,7 +449,7 @@ class PluginRegistration:
                     )
                 )
 
-    def _resolve_plugin_cls(self):
+    def _resolve_plugin_cls(self) -> None:
         """
         register all plugin extensions
         """
@@ -471,7 +471,7 @@ class PluginRegistration:
         # load trigger providers and triggers
         self._resolve_trigger_providers()
 
-    def get_tool_provider_cls(self, provider: str):
+    def get_tool_provider_cls(self, provider: str) -> type[ToolProvider] | None:
         """
         get the tool provider class by provider name
         :param provider: provider name
@@ -482,7 +482,7 @@ class PluginRegistration:
                 return self.tools_mapping[provider_registration][1]
         return None
 
-    def get_tool_cls(self, provider: str, tool: str):
+    def get_tool_cls(self, provider: str, tool: str) -> type[Tool] | None:
         """
         get the tool class by provider
         :param provider: provider name
@@ -496,7 +496,10 @@ class PluginRegistration:
                     return registration[1]
         return None
 
-    def get_agent_provider_cls(self, provider: str):
+    def get_agent_provider_cls(
+        self,
+        provider: str,
+    ) -> dict[str, tuple[AgentStrategyConfiguration, type[AgentStrategy]]] | None:
         """
         get the agent provider class by provider name
         :param provider: provider name
@@ -507,7 +510,11 @@ class PluginRegistration:
                 return self.agent_strategies_mapping[provider_registration][1]
         return None
 
-    def get_agent_strategy_cls(self, provider: str, agent: str):
+    def get_agent_strategy_cls(
+        self,
+        provider: str,
+        agent: str,
+    ) -> type[AgentStrategy] | None:
         """
         get the agent class by provider
         :param provider: provider name
@@ -523,7 +530,7 @@ class PluginRegistration:
                     return registration[1]
         return None
 
-    def get_model_provider_instance(self, provider: str):
+    def get_model_provider_instance(self, provider: str) -> ModelProvider | None:
         """
         get the model provider class by provider name
         :param provider: provider name
@@ -534,7 +541,11 @@ class PluginRegistration:
                 return self.models_mapping[provider_registration][1]
         return None
 
-    def get_model_instance(self, provider: str, model_type: ModelType):
+    def get_model_instance(
+        self,
+        provider: str,
+        model_type: ModelType,
+    ) -> AIModel | None:
         """
         get the model class by provider
         :param provider: provider name

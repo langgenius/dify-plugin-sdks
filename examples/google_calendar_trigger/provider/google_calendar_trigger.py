@@ -65,7 +65,7 @@ def _parse_google_error(resp: requests.Response) -> str:
     return resp.text or f"HTTP {resp.status_code}"
 
 
-def _to_bool(value: Any, default: bool) -> bool:
+def _to_bool(value: object, default: bool) -> bool:
     if value is None:
         return default
     if isinstance(value, bool):
@@ -131,7 +131,7 @@ def _retrieve_sync_token(
     return next_sync_token
 
 
-def _parse_rfc3339(value: Any) -> datetime.datetime | None:
+def _parse_rfc3339(value: object) -> datetime.datetime | None:
     if not isinstance(value, str) or not value:
         return None
     try:

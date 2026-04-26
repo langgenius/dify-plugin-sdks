@@ -153,7 +153,10 @@ class AgentStrategyProviderConfiguration(BaseModel):
 
     @field_validator("strategies", mode="before")
     @classmethod
-    def validate_strategies(cls, value) -> list[AgentStrategyConfiguration]:
+    def validate_strategies(
+        cls,
+        value: list[object],
+    ) -> list[AgentStrategyConfiguration]:
         if not isinstance(value, list):
             raise ValueError("strategies should be a list")
 

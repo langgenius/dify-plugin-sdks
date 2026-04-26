@@ -1,7 +1,7 @@
 import pathlib
 from collections import defaultdict
 from enum import Enum
-from typing import Any, Union
+from typing import TextIO, Union
 
 from pydantic import BaseModel
 
@@ -31,12 +31,12 @@ class SchemaDocumentationGenerator:
         self._field_descriptions: dict[tuple[type, str], str] = {}
         self._schema_descriptions: dict[type, str] = {}
         self._processed_field_types: set[type] = set()
-        self._type_to_schema: dict[type, Any] = {}
+        self._type_to_schema: dict[type, object] = {}
         self._type_blocks: dict[type, int] = {}
         self._blocks: list[list] = []
         self._types: set[type] = set()
 
-    def _organize_toc(self) -> list[tuple[type, list[Any]]]:
+    def _organize_toc(self) -> list[tuple[type, list[object]]]:
         """Organize types into a hierarchical structure for table of contents.
 
         The hierarchy is built based on the following rules:
@@ -68,7 +68,10 @@ class SchemaDocumentationGenerator:
                 if ref in referenced_by:
                     referenced_by[ref].add(t)
 
-        def build_subtree(type_: type, processed: set[type]) -> tuple[type, list[Any]]:
+        def build_subtree(
+            type_: type,
+            processed: set[type],
+        ) -> tuple[type, list[object]]:
             """Recursively build a subtree for a type and its references.
 
             Args:
@@ -83,7 +86,7 @@ class SchemaDocumentationGenerator:
                 return type_, []
 
             processed.add(type_)
-            children = []
+            children: list[object] = []
 
             # Find all types that are only referenced by this type
             for ref_type in self._reference_graph.get(type_, set()):
@@ -125,7 +128,7 @@ class SchemaDocumentationGenerator:
 
         return hierarchy
 
-    def generate_docs(self, output_file: str):
+    def generate_docs(self, output_file: str) -> None:
         with pathlib.Path(output_file).open("w", encoding="utf-8") as f:
             # Write header
             f.write("# Dify Plugin SDK Schema Documentation\n\n")
@@ -150,7 +153,10 @@ class SchemaDocumentationGenerator:
             f.write("## Table of Contents\n\n")
             hierarchy = self._organize_toc()
 
-            def write_toc_item(node: tuple[type, list[Any]], indent: int = 0):
+            def write_toc_item(
+                node: tuple[type, list[object]],
+                indent: int = 0,
+            ) -> None:
                 type_, children = node
                 schema = self._type_to_schema[type_]
                 name = schema.name or type_.__name__
@@ -238,9 +244,9 @@ class SchemaDocumentationGenerator:
                 ):
                     self._field_descriptions[key] = description
 
-    def _extract_referenced_types(self, field_type):
+    def _extract_referenced_types(self, field_type: object) -> set[type]:
         """Recursively extract all referenced BaseModel and Enum types."""
-        referenced = set()
+        referenced: set[type] = set()
         if field_type is None:
             return referenced
 
@@ -327,7 +333,11 @@ class SchemaDocumentationGenerator:
             top_block = self._blocks[0]
             self._blocks.sort(key=lambda block: 0 if block is top_block else 1)
 
-    def _is_container_type(self, field_type: Any, container_types=(list, set)) -> bool:
+    def _is_container_type(
+        self,
+        field_type: object,
+        container_types: tuple[type, ...] = (list, set),
+    ) -> bool:
         """Check if a field type is a container type (list, set, etc)."""
         try:
             return (
@@ -338,7 +348,7 @@ class SchemaDocumentationGenerator:
         except Exception:
             return False
 
-    def _get_container_name(self, field_type: Any) -> str:
+    def _get_container_name(self, field_type: object) -> str:
         """Get the name of a container type."""
         try:
             origin = getattr(field_type, "__origin__", None)
@@ -346,7 +356,7 @@ class SchemaDocumentationGenerator:
         except Exception:
             return str(field_type)
 
-    def _write_schema_doc(self, f, type_) -> None:
+    def _write_schema_doc(self, f: TextIO, type_: type) -> None:
         """Write documentation for a single schema."""
         schema = self._type_to_schema[type_]
         name = schema.name or type_.__name__
@@ -425,11 +435,10 @@ class SchemaDocumentationGenerator:
 
         elif issubclass(type_, Enum):
             f.write("### Values\n\n")
-            for member in type_:
-                f.write(f"- `{member.name}`: {member.value}\n")
+            f.writelines(f"- `{member.name}`: {member.value}\n" for member in type_)
             f.write("\n")
 
-    def _format_type_name(self, field_type: Any) -> str:
+    def _format_type_name(self, field_type: object) -> str:
         """Format the type name for display, handling complex types and references.
 
         For BaseModel and Enum types, use their schema name if available.

@@ -2,7 +2,7 @@ import decimal
 import socket
 import time
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from typing import final
 
@@ -60,7 +60,7 @@ class AIModel(ABC):
         ]
 
     @contextmanager
-    def timing_context(self):
+    def timing_context(self) -> Generator[None, None, None]:
         """
         Context manager for timing requests
         """

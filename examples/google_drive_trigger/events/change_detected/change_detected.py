@@ -122,7 +122,7 @@ class GoogleDriveChangeDetectedEvent(Event):
         return ["drive"]
 
     @staticmethod
-    def _safe_int(value: Any, default: int, minimum: int, maximum: int) -> int:
+    def _safe_int(value: object, default: int, minimum: int, maximum: int) -> int:
         try:
             integer = int(value)
         except (TypeError, ValueError):
@@ -130,7 +130,7 @@ class GoogleDriveChangeDetectedEvent(Event):
         return max(minimum, min(maximum, integer))
 
     @staticmethod
-    def _to_bool(value: Any, default: bool) -> bool:
+    def _to_bool(value: object, default: bool) -> bool:
         if value is None:
             return default
         if isinstance(value, bool):
@@ -146,7 +146,7 @@ class GoogleDriveChangeDetectedEvent(Event):
         return default if value == "" else bool(value)
 
     @staticmethod
-    def _normalize_string_list(value: Any) -> list[str]:
+    def _normalize_string_list(value: object) -> list[str]:
         if value is None:
             return []
         if isinstance(value, str):

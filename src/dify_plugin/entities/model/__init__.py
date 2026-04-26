@@ -26,7 +26,7 @@ class DefaultParameterName(Enum):
     JSON_SCHEMA = "json_schema"
 
     @classmethod
-    def value_of(cls, value: Any) -> "DefaultParameterName":
+    def value_of(cls, value: object) -> "DefaultParameterName":
         """
         Get parameter name from value.
 

@@ -16,7 +16,7 @@ from dify_plugin.integration.run import PluginRunner
 _MARKETPLACE_API_URL = "https://marketplace.dify.ai"
 
 
-def test_invoke_llm(openai_mock_server: str):
+def test_invoke_llm(openai_mock_server: str) -> None:
     import requests
 
     # download latest langgenius-openai plugin

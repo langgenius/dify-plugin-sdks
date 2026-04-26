@@ -1,5 +1,4 @@
 from collections.abc import Generator
-from typing import Any
 
 import pytest
 
@@ -10,7 +9,7 @@ from dify_plugin.invocations.storage import (
 )
 
 
-def test_error_hierarchy():
+def test_error_hierarchy() -> None:
     assert issubclass(StorageInvocationError, Exception)
 
 
@@ -21,7 +20,7 @@ class DummyStorageInvocation(StorageInvocation):
     def _backwards_invoke(
         self,
         type: InvokeType,  # noqa: A002
-        data_type: Any,
+        data_type: type[dict],
         data: dict,
     ) -> Generator[dict, None, None]:
         _ = type
@@ -31,46 +30,50 @@ class DummyStorageInvocation(StorageInvocation):
 
 
 class TestStorageInvocationExceptionRaises:
-    def test_get_should_raise_not_found_error_if_key_not_exist(self):
+    def test_get_should_raise_not_found_error_if_key_not_exist(self) -> None:
         storage = DummyStorageInvocation([])
         with pytest.raises(StorageInvocationError):
             storage.get("test_key")
 
-    def test_set_should_raise_storage_invocation_error_if_data_is_invalid(self):
+    def test_set_should_raise_storage_invocation_error_if_data_is_invalid(self) -> None:
         storage = DummyStorageInvocation([{"data": "invalid_data"}])
         with pytest.raises(StorageInvocationError):
             storage.set("test_key", b"test_value")
 
-    def test_delete_should_raise_storage_invocation_error_if_data_is_invalid(self):
+    def test_delete_should_raise_storage_invocation_error_if_data_is_invalid(
+        self,
+    ) -> None:
         storage = DummyStorageInvocation([{"data": "invalid_data"}])
         with pytest.raises(StorageInvocationError):
             storage.delete("test_key")
 
-    def test_delete_should_raise_not_found_error_if_key_not_exist(self):
+    def test_delete_should_raise_not_found_error_if_key_not_exist(self) -> None:
         storage = DummyStorageInvocation([])
         with pytest.raises(StorageInvocationError):
             storage.delete("test_key")
 
-    def test_exist_should_raise_storage_invocation_error_if_data_is_invalid(self):
+    def test_exist_should_raise_storage_invocation_error_if_data_is_invalid(
+        self,
+    ) -> None:
         storage = DummyStorageInvocation([])
         with pytest.raises(StorageInvocationError):
             storage.exist("test_key")
 
 
 class TestStorageInvocation:
-    def test_get_should_return_value(self):
+    def test_get_should_return_value(self) -> None:
         storage = DummyStorageInvocation([{"data": b"68656c6c6f"}])
         assert storage.get("test_key") == b"hello"
 
-    def test_set_should_set_value(self):
+    def test_set_should_set_value(self) -> None:
         storage = DummyStorageInvocation([{"data": "ok"}])
         storage.set("test_key", b"test_value")
 
-    def test_delete(self):
+    def test_delete(self) -> None:
         storage = DummyStorageInvocation([{"data": "ok"}])
         storage.delete("test_key")
 
-    def test_exist(self):
+    def test_exist(self) -> None:
         storage = DummyStorageInvocation([{"data": True}])
         assert storage.exist("test_key")
 
