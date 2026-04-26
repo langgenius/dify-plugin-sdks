@@ -11,27 +11,22 @@ from dify_plugin.interfaces.model.ai_model import AIModel
 
 class MockAIModel(AIModel):
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
-        """
-        Validate model credentials
+        """Validate model credentials
 
         :param model: model name
         :param credentials: model credentials
         :return: None
         """
-        pass
 
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
-        """
-        Map model invoke error to unified error
+        """Map model invoke error to unified error
 
         :return: Invoke error mapping
         """
         return {}
 
     def invoke(self) -> float:
-        """
-        Invoke model
-        """
+        """Invoke model"""
         with self.timing_context():
             time.sleep(1)
             return time.perf_counter() - self.started_at
@@ -43,9 +38,7 @@ def test_ai_model_timing_context_with_race_condition():
     concurrency = 2
 
     def task(_):
-        """
-        Task to be executed in thread pool
-        """
+        """Task to be executed in thread pool"""
         model.invoke()
 
     with (
@@ -56,9 +49,7 @@ def test_ai_model_timing_context_with_race_condition():
 
 
 def test_ai_model_timing_context_multiple_sequential_uses():
-    """
-    Check if multiple sequential uses of the timing context are correct
-    """
+    """Check if multiple sequential uses of the timing context are correct"""
     model = MockAIModel(model_schemas=[])
 
     time_cost = model.invoke()
@@ -75,9 +66,7 @@ def test_ai_model_timing_context_check_latency():
     concurrency = 10
 
     def task(_):
-        """
-        Check if race condition is raised
-        """
+        """Check if race condition is raised"""
         model = MockAIModel(model_schemas=[])
         time_cost = model.invoke()
         assert time_cost > 0

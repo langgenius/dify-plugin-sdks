@@ -16,7 +16,7 @@ class ModelProvider(ABC):
         self,
         provider_schemas: ProviderEntity,
         model_factory: ModelFactory,
-    ):
+    ) -> None:
         """
         Initialize model provider
 
@@ -64,10 +64,9 @@ class ModelProvider(ABC):
         model_instance = self.get_model_instance(model_type)
 
         # get predefined models (predefined_models)
-        models = model_instance.predefined_models()
+        return model_instance.predefined_models()
 
         # return models
-        return models
 
     def get_model_instance(self, model_type: ModelType) -> AIModel:
         """

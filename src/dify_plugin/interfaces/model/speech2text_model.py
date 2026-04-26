@@ -1,4 +1,5 @@
 import os
+import pathlib
 from abc import abstractmethod
 from typing import IO
 
@@ -48,7 +49,7 @@ class Speech2TextModel(AIModel):
         :return: demo file
         """
         # Get the directory of the current file
-        current_dir = os.path.dirname(os.path.abspath(__file__))
+        current_dir = pathlib.Path(pathlib.Path(__file__).resolve()).parent
 
         # Construct the path to the audio file
         return os.path.join(current_dir, "audio.mp3")

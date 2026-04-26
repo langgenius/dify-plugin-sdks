@@ -78,33 +78,35 @@ class ChatUpdatedV1Event(Event):
         if event_data.moderator_list:
             moderator_changes = {}
             if event_data.moderator_list.added_member_list:
-                added = []
-                for mod in event_data.moderator_list.added_member_list:
-                    if mod:
-                        added.append({
-                            "user_id": mod.user_id
-                            if hasattr(mod, "user_id") and mod.user_id
-                            else "",
-                            "tenant_key": mod.tenant_key
-                            if hasattr(mod, "tenant_key") and mod.tenant_key
-                            else "",
-                        })
+                added = [
+                    {
+                        "user_id": mod.user_id
+                        if hasattr(mod, "user_id") and mod.user_id
+                        else "",
+                        "tenant_key": mod.tenant_key
+                        if hasattr(mod, "tenant_key") and mod.tenant_key
+                        else "",
+                    }
+                    for mod in event_data.moderator_list.added_member_list
+                    if mod
+                ]
                 moderator_changes["added"] = added
             else:
                 moderator_changes["added"] = []
 
             if event_data.moderator_list.removed_member_list:
-                removed = []
-                for mod in event_data.moderator_list.removed_member_list:
-                    if mod:
-                        removed.append({
-                            "user_id": mod.user_id
-                            if hasattr(mod, "user_id") and mod.user_id
-                            else "",
-                            "tenant_key": mod.tenant_key
-                            if hasattr(mod, "tenant_key") and mod.tenant_key
-                            else "",
-                        })
+                removed = [
+                    {
+                        "user_id": mod.user_id
+                        if hasattr(mod, "user_id") and mod.user_id
+                        else "",
+                        "tenant_key": mod.tenant_key
+                        if hasattr(mod, "tenant_key") and mod.tenant_key
+                        else "",
+                    }
+                    for mod in event_data.moderator_list.removed_member_list
+                    if mod
+                ]
                 moderator_changes["removed"] = removed
             else:
                 moderator_changes["removed"] = []

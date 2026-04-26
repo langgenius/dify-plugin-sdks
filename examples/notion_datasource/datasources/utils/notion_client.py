@@ -27,7 +27,7 @@ class NotionClient:
     _NOTION_BLOCK_SEARCH = "https://api.notion.com/v1/blocks"
     _NOTION_BOT_USER = "https://api.notion.com/v1/users/me"
 
-    def __init__(self, integration_token: str):
+    def __init__(self, integration_token: str) -> None:
         """
         Initialize the Notion client with an integration token.
 
@@ -382,7 +382,7 @@ class NotionClient:
         Returns:
             Heading block for use with Notion API
         """
-        if level not in [1, 2, 3]:
+        if level not in {1, 2, 3}:
             raise ValueError("Heading level must be 1, 2, or 3")
 
         heading_type = f"heading_{level}"

@@ -1,5 +1,6 @@
 import logging
 import os
+import pathlib
 import shutil
 import signal
 import subprocess
@@ -31,8 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class PluginRunner:
-    """
-    A class that runs a plugin locally.
+    """A class that runs a plugin locally.
 
     Usage:
     ```python
@@ -62,7 +62,7 @@ class PluginRunner:
         config: IntegrationConfig,
         plugin_package_path: str,
         extra_args: list[str] | None = None,
-    ):
+    ) -> None:
         self.config = config
         self.plugin_package_path = plugin_package_path
         self.extra_args = extra_args or []
@@ -80,10 +80,10 @@ class PluginRunner:
         self.stop_flag = False
         self.stop_flag_lock = Lock()
 
-        logger.info(f"Running plugin from {plugin_package_path}")
+        logger.info("Running plugin from %s", plugin_package_path)
 
         # check if plugin is a directory
-        if os.path.isdir(plugin_package_path):
+        if pathlib.Path(plugin_package_path).is_dir():
             logger.info("plugin source directory detected, building plugin")
             with tempfile.TemporaryDirectory(delete=False) as temp_dir:
                 output_path = os.path.join(temp_dir, "plugin.difypkg")
@@ -92,7 +92,7 @@ class PluginRunner:
                 logger.info(f"Plugin built in {self.plugin_package_path}")
                 self.resources_need_to_be_cleaned.append(temp_dir)
 
-        self.process = subprocess.Popen(  # noqa: S603
+        self.process = subprocess.Popen(
             [
                 self.config.dify_cli_path,
                 "plugin",
@@ -114,12 +114,13 @@ class PluginRunner:
 
         # create a thread to read the stdout and stderr
         self.stdout_reader = threading.Thread(
-            target=self._message_reader, args=(self.stdout_pipe_read,)
+            target=self._message_reader,
+            args=(self.stdout_pipe_read,),
         )
         try:
             self.stdout_reader.start()
-        except Exception as e:
-            raise e
+        except Exception:
+            raise
 
         self.q = dict[str, Queue[PluginGenericResponse | None]]()
         self.q_lock = Lock()
@@ -132,7 +133,7 @@ class PluginRunner:
 
     def _build_plugin(self, package_path: str, output_path: str):
         # build plugin
-        output = subprocess.check_output(  # noqa: S603
+        output = subprocess.check_output(
             [
                 self.config.dify_cli_path,
                 "plugin",
@@ -221,7 +222,7 @@ class PluginRunner:
         try:
             parsed_message = PluginGenericResponse.model_validate_json(message)
         except ValidationError:
-            logger.warning(f"Failed to parse message: {message}")
+            logger.warning("Failed to parse message: %s", message)
             return
 
         if not parsed_message.invoke_id:

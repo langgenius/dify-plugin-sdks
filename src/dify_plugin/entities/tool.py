@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from enum import Enum, StrEnum
-from typing import Any, Union
+from typing import Any
 
 from pydantic import (
     BaseModel,
@@ -96,24 +96,28 @@ class ToolParameter(BaseModel):
     name: str = Field(..., description="The name of the parameter")
     label: I18nObject = Field(..., description="The label presented to the user")
     human_description: I18nObject = Field(
-        ..., description="The description presented to the user"
+        ...,
+        description="The description presented to the user",
     )
     type: ToolParameterType = Field(..., description="The type of the parameter")
     auto_generate: ParameterAutoGenerate | None = Field(
-        default=None, description="The auto generate of the parameter"
+        default=None,
+        description="The auto generate of the parameter",
     )
     template: ParameterTemplate | None = Field(
-        default=None, description="The template of the parameter"
+        default=None,
+        description="The template of the parameter",
     )
     scope: str | None = None
     form: ToolParameterForm = Field(
-        ..., description="The form of the parameter, schema/form/llm"
+        ...,
+        description="The form of the parameter, schema/form/llm",
     )
     llm_description: str | None = None
     required: bool | None = False
-    default: Union[int, float, str] | None = None
-    min: Union[float, int] | None = None
-    max: Union[float, int] | None = None
+    default: int | float | str | None = None
+    min: float | int | None = None
+    max: float | int | None = None
     precision: int | None = None
     options: list[ToolParameterOption] | None = None
     # MCP object and array type parameters use this field to store the schema
@@ -146,12 +150,14 @@ class ToolConfigurationExtra(BaseModel):
 class ToolConfiguration(BaseModel):
     identity: ToolIdentity
     parameters: list[ToolParameter] = Field(
-        default=[], description="The parameters of the tool"
+        default=[],
+        description="The parameters of the tool",
     )
     description: ToolDescription
     extra: ToolConfigurationExtra
     has_runtime_parameters: bool = Field(
-        default=False, description="Whether the tool has runtime parameters"
+        default=False,
+        description="Whether the tool has runtime parameters",
     )
     output_schema: Mapping[str, Any] | None = None
 
@@ -223,7 +229,8 @@ class ToolProviderConfiguration(BaseModel):
         description="The OAuth schema of the tool provider if OAuth is supported",
     )
     tools: list[ToolConfiguration] = Field(
-        default=[], description="The tools of the tool provider"
+        default=[],
+        description="The tools of the tool provider",
     )
     extra: ToolProviderConfigurationExtra
 
@@ -231,7 +238,8 @@ class ToolProviderConfiguration(BaseModel):
     @classmethod
     def validate_credentials_schema(cls, data: dict) -> dict:
         original_credentials_for_provider: dict[str, dict] = data.get(
-            "credentials_for_provider", {}
+            "credentials_for_provider",
+            {},
         )
 
         credentials_for_provider: list[dict[str, Any]] = []
@@ -266,7 +274,7 @@ class ToolProviderConfiguration(BaseModel):
                         description=ToolDescription(**file["description"]),
                         extra=ToolConfigurationExtra(**file.get("extra", {})),
                         output_schema=file.get("output_schema", None),
-                    )
+                    ),
                 )
             except Exception as e:
                 raise ValueError(f"Error loading tool configuration: {e!s}") from e
@@ -275,9 +283,7 @@ class ToolProviderConfiguration(BaseModel):
 
 
 class ToolProviderType(Enum):
-    """
-    Enum class for tool provider
-    """
+    """Enum class for tool provider"""
 
     BUILT_IN = "builtin"
     WORKFLOW = "workflow"
@@ -288,8 +294,7 @@ class ToolProviderType(Enum):
 
     @classmethod
     def value_of(cls, value: str) -> "ToolProviderType":
-        """
-        Get value of given mode.
+        """Get value of given mode.
 
         :param value: mode value
         :return: mode
@@ -304,26 +309,28 @@ class ToolSelector(BaseModel):
     class Parameter(BaseModel):
         name: str = Field(..., description="The name of the parameter")
         type: ToolParameter.ToolParameterType = Field(
-            ..., description="The type of the parameter"
+            ...,
+            description="The type of the parameter",
         )
         required: bool = Field(..., description="Whether the parameter is required")
         description: str = Field(..., description="The description of the parameter")
-        default: Union[int, float, str] | None = None
+        default: int | float | str | None = None
         options: list[ToolParameterOption] | None = None
 
     provider_id: str = Field(..., description="The id of the provider")
     tool_name: str = Field(..., description="The name of the tool")
     tool_description: str = Field(..., description="The description of the tool")
     tool_configuration: Mapping[str, Any] = Field(
-        ..., description="Configuration, type form"
+        ...,
+        description="Configuration, type form",
     )
     tool_parameters: Mapping[str, Parameter] = Field(
-        ..., description="Parameters, type llm"
+        ...,
+        description="Parameters, type llm",
     )
 
     def to_prompt_message(self) -> PromptMessageTool:
-        """
-        Convert tool selector to prompt message tool, based on openai
+        """Convert tool selector to prompt message tool, based on openai
         function calling schema.
         """
         tool = PromptMessageTool(

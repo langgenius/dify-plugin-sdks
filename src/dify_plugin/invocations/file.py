@@ -50,10 +50,12 @@ class UploadFileResponse(BaseModel):
 
 class File(BackwardsInvocation[dict]):
     def upload(
-        self, filename: str, content: bytes, mimetype: str
+        self,
+        filename: str,
+        content: bytes,
+        mimetype: str,
     ) -> UploadFileResponse:
-        """
-        Upload a file
+        """Upload a file
 
         :param filename: file name
         :param content: file content
@@ -73,11 +75,11 @@ class File(BackwardsInvocation[dict]):
             if not url:
                 raise Exception("upload file failed, could not get signed url")
 
-            response = requests.post(url, files={"file": (filename, content, mimetype)})  # noqa: S113
+            response = requests.post(url, files={"file": (filename, content, mimetype)})
             if response.status_code != 201:
                 raise Exception(
                     "upload file failed, status code: "
-                    f"{response.status_code}, response: {response.text}"
+                    f"{response.status_code}, response: {response.text}",
                 )
 
             return UploadFileResponse(**response.json())

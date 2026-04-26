@@ -69,7 +69,6 @@ class CrawlDatasource(WebsiteCrawlDatasource):
             )
             job_id = crawl_result["id"]
             crawl_res.status = "processing"
-            print(crawl_res)
             yield self.create_crawl_message(crawl_res)
 
             while True:
@@ -94,7 +93,9 @@ class CrawlDatasource(WebsiteCrawlDatasource):
             raise ValueError(f"An error occurred: {e!s}") from e
 
     @staticmethod
-    def _process_completed_job(app: FirecrawlApp, status: dict, crawl_res: WebSiteInfo):
+    def _process_completed_job(
+        app: FirecrawlApp, status: dict, crawl_res: WebSiteInfo
+    ) -> None:
         format_res = app.format_crawl_status_response(status["status"], status)
 
         crawl_res.web_info_list = [

@@ -23,15 +23,10 @@ class MockLLM(LargeLanguageModel):
     model_type = ModelType.LLM
 
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
-        """
-        Validate model credentials
-        """
-        pass
+        """Validate model credentials"""
 
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
-        """
-        Map model invoke error to unified error
-        """
+        """Map model invoke error to unified error"""
         return {}
 
     def _invoke(
@@ -45,8 +40,7 @@ class MockLLM(LargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator[LLMResultChunk, None, None]:
-        """
-        Invoke large language model
+        """Invoke large language model
 
         :param model: model name
         :param credentials: model credentials
@@ -89,8 +83,7 @@ class MockLLM(LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> int:
-        """
-        Get number of tokens
+        """Get number of tokens
 
         :param model: model name
         :param credentials: model credentials
@@ -102,10 +95,7 @@ class MockLLM(LargeLanguageModel):
 
 
 def test_llm_timing_context():
-    """
-    Check if timing context is correct in single-threaded environment
-    """
-
+    """Check if timing context is correct in single-threaded environment"""
     model = MockLLM(model_schemas=[])
     for result in model.invoke(
         model="test",
@@ -119,8 +109,7 @@ def test_llm_timing_context():
 
 
 def test_multithreaded_llm_timing_context():
-    """
-    Check if timing context is correct in multi-threaded environment
+    """Check if timing context is correct in multi-threaded environment
 
     NOTE: Singleton model is not supported.
     """

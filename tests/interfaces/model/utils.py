@@ -11,7 +11,7 @@ from dify_plugin.interfaces.model.ai_model import AIModel
 
 
 def prepare_model_factory(models: Mapping[ModelType, type[AIModel]]) -> ModelFactory:
-    model_factory = ModelFactory(
+    return ModelFactory(
         ModelProviderConfiguration(
             provider="test",
             label=I18nObject(en_US="test"),
@@ -26,5 +26,3 @@ def prepare_model_factory(models: Mapping[ModelType, type[AIModel]]) -> ModelFac
         ),
         models=dict(models),
     )
-
-    return model_factory

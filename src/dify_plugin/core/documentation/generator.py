@@ -1,3 +1,4 @@
+import pathlib
 from collections import defaultdict
 from enum import Enum
 from typing import Any, Union
@@ -5,25 +6,25 @@ from typing import Any, Union
 from pydantic import BaseModel
 
 from dify_plugin.core.documentation.schema_doc import list_schema_docs
-from dify_plugin.core.entities import *  # noqa: F403
-from dify_plugin.core.entities.plugin import *  # noqa: F403
-from dify_plugin.core.entities.plugin.setup import *  # noqa: F403
-from dify_plugin.entities import *  # noqa: F403
-from dify_plugin.entities.agent import *  # noqa: F403
-from dify_plugin.entities.endpoint import *  # noqa: F403
-from dify_plugin.entities.model import *  # noqa: F403
-from dify_plugin.entities.model.llm import *  # noqa: F403
-from dify_plugin.entities.model.moderation import *  # noqa: F403
-from dify_plugin.entities.model.provider import *  # noqa: F403
-from dify_plugin.entities.model.rerank import *  # noqa: F403
-from dify_plugin.entities.model.speech2text import *  # noqa: F403
-from dify_plugin.entities.model.text_embedding import *  # noqa: F403
-from dify_plugin.entities.model.tts import *  # noqa: F403
-from dify_plugin.entities.tool import *  # noqa: F403
+from dify_plugin.core.entities import *
+from dify_plugin.core.entities.plugin import *
+from dify_plugin.core.entities.plugin.setup import *
+from dify_plugin.entities import *
+from dify_plugin.entities.agent import *
+from dify_plugin.entities.endpoint import *
+from dify_plugin.entities.model import *
+from dify_plugin.entities.model.llm import *
+from dify_plugin.entities.model.moderation import *
+from dify_plugin.entities.model.provider import *
+from dify_plugin.entities.model.rerank import *
+from dify_plugin.entities.model.speech2text import *
+from dify_plugin.entities.model.text_embedding import *
+from dify_plugin.entities.model.tts import *
+from dify_plugin.entities.tool import *
 
 
 class SchemaDocumentationGenerator:
-    def __init__(self):
+    def __init__(self) -> None:
         self._reference_counts: dict[type, int] = {}
         self._reference_graph: dict[type, set[type]] = defaultdict(set)
         self._processed_types: set[type] = set()
@@ -58,6 +59,7 @@ class SchemaDocumentationGenerator:
             List[Tuple[Type, List[Any]]]: A list of tuples, where each tuple contains:
                 - A parent type
                 - A list of its child nodes, each being a tuple of (Type, List[Any])
+
         """
         # Build a reverse reference map: type -> set of types that reference it
         referenced_by = {t: set() for t in self._types}
@@ -75,6 +77,7 @@ class SchemaDocumentationGenerator:
 
             Returns:
                 Tuple[Type, List[Any]]: The type and its nested children
+
             """
             if type_ in processed:
                 return type_, []
@@ -123,7 +126,7 @@ class SchemaDocumentationGenerator:
         return hierarchy
 
     def generate_docs(self, output_file: str):
-        with open(output_file, "w") as f:
+        with pathlib.Path(output_file).open("w", encoding="utf-8") as f:
             # Write header
             f.write("# Dify Plugin SDK Schema Documentation\n\n")
 
@@ -174,7 +177,7 @@ class SchemaDocumentationGenerator:
 
             # Store schema description
             if cls not in self._schema_descriptions or len(schema.description) > len(
-                self._schema_descriptions[cls]
+                self._schema_descriptions[cls],
             ):
                 self._schema_descriptions[cls] = schema.description
 
@@ -231,7 +234,7 @@ class SchemaDocumentationGenerator:
 
                 # Store the most detailed description
                 if key not in self._field_descriptions or len(description) > len(
-                    self._field_descriptions[key]
+                    self._field_descriptions[key],
                 ):
                     self._field_descriptions[key] = description
 
@@ -387,7 +390,8 @@ class SchemaDocumentationGenerator:
 
                 # Get the most detailed description
                 description = self._field_descriptions.get(
-                    (type_, field_name), field_info.description or ""
+                    (type_, field_name),
+                    field_info.description or "",
                 )
 
                 # Format type name
@@ -414,7 +418,7 @@ class SchemaDocumentationGenerator:
 
                 f.write(
                     f"| {field_name} | {type_name} | {description} | "
-                    f"{default} | {extra} |\n"
+                    f"{default} | {extra} |\n",
                 )
 
             f.write("\n")
@@ -444,17 +448,17 @@ class SchemaDocumentationGenerator:
 
         if hasattr(field_type, "__origin__") and hasattr(field_type, "__args__"):
             origin = field_type.__origin__
-            if origin in (list, set):
+            if origin in {list, set}:
                 inner_type = self._format_type_name(field_type.__args__[0])
                 return f"{origin.__name__}[{inner_type}]"
-            elif origin is dict:
+            if origin is dict:
                 key_type = self._format_type_name(field_type.__args__[0])
                 value_type = self._format_type_name(field_type.__args__[1])
                 return f"dict[{key_type}, {value_type}]"
-            elif origin is tuple:
+            if origin is tuple:
                 types = [self._format_type_name(arg) for arg in field_type.__args__]
                 return f"tuple[{', '.join(types)}]"
-            elif origin is Union:
+            if origin is Union:
                 types = [self._format_type_name(arg) for arg in field_type.__args__]
                 return f"Union[{', '.join(types)}]"
 

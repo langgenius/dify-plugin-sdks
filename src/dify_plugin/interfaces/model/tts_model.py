@@ -15,9 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class TTSModel(AIModel):
-    """
-    Model class for ttstext model.
-    """
+    """Model class for ttstext model."""
 
     model_type: ModelType = ModelType.TTS
 
@@ -38,8 +36,7 @@ class TTSModel(AIModel):
         voice: str,
         user: str | None = None,
     ) -> bytes | Generator[bytes, None, None]:
-        """
-        Invoke large language model
+        """Invoke large language model
 
         :param model: model name
         :param tenant_id: user tenant id
@@ -53,10 +50,12 @@ class TTSModel(AIModel):
         raise NotImplementedError
 
     def get_tts_model_voices(
-        self, model: str, credentials: dict, language: str | None = None
+        self,
+        model: str,
+        credentials: dict,
+        language: str | None = None,
     ) -> list | None:
-        """
-        Get voice for given tts model voices
+        """Get voice for given tts model voices
 
         :param language: tts language
         :param model: model name
@@ -73,16 +72,15 @@ class TTSModel(AIModel):
                     for d in voices
                     if language and language in d.get("language")
                 ]
-            else:
-                return [{"name": d["name"], "value": d["mode"]} for d in voices]
+            return [{"name": d["name"], "value": d["mode"]} for d in voices]
+        return None
 
     ############################################################
     #            For plugin implementation use only            #
     ############################################################
 
     def _get_model_default_voice(self, model: str, credentials: dict) -> Any:
-        """
-        Get voice for given tts model
+        """Get voice for given tts model
 
         :param model: model name
         :param credentials: model credentials
@@ -95,10 +93,10 @@ class TTSModel(AIModel):
             and ModelPropertyKey.DEFAULT_VOICE in model_schema.model_properties
         ):
             return model_schema.model_properties[ModelPropertyKey.DEFAULT_VOICE]
+        return None
 
     def _get_model_audio_type(self, model: str, credentials: dict) -> str | None:
-        """
-        Get audio type for given tts model
+        """Get audio type for given tts model
 
         :param model: model name
         :param credentials: model credentials
@@ -111,10 +109,10 @@ class TTSModel(AIModel):
             and ModelPropertyKey.AUDIO_TYPE in model_schema.model_properties
         ):
             return model_schema.model_properties[ModelPropertyKey.AUDIO_TYPE]
+        return None
 
     def _get_model_word_limit(self, model: str, credentials: dict) -> int | None:
-        """
-        Get audio type for given tts model
+        """Get audio type for given tts model
         :return: audio type
         """
         model_schema = self.get_model_schema(model, credentials)
@@ -124,10 +122,10 @@ class TTSModel(AIModel):
             and ModelPropertyKey.WORD_LIMIT in model_schema.model_properties
         ):
             return model_schema.model_properties[ModelPropertyKey.WORD_LIMIT]
+        return None
 
     def _get_model_workers_limit(self, model: str, credentials: dict) -> int | None:
-        """
-        Get audio max workers for given tts model
+        """Get audio max workers for given tts model
         :return: audio type
         """
         model_schema = self.get_model_schema(model, credentials)
@@ -137,6 +135,7 @@ class TTSModel(AIModel):
             and ModelPropertyKey.MAX_WORKERS in model_schema.model_properties
         ):
             return model_schema.model_properties[ModelPropertyKey.MAX_WORKERS]
+        return None
 
     @staticmethod
     def _split_text_into_sentences(org_text, max_length=2000, pattern=r"[。.!?]"):
@@ -160,7 +159,7 @@ class TTSModel(AIModel):
             result.append(one_sentence)
         return result
 
-    # Todo: To improve the streaming function
+    # TODO: To improve the streaming function
     @staticmethod
     def _get_file_name(file_content: str) -> str:
         hash_object = hashlib.sha256(file_content.encode())
@@ -183,8 +182,7 @@ class TTSModel(AIModel):
         voice: str,
         user: str | None = None,
     ) -> bytes | Generator[bytes, None, None]:
-        """
-        Invoke large language model
+        """Invoke large language model
 
         :param model: model name
         :param tenant_id: user tenant id

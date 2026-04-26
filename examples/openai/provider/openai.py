@@ -25,10 +25,10 @@ class OpenAIProvider(ModelProvider):
             model_instance.validate_credentials(
                 model="gpt-3.5-turbo", credentials=credentials
             )
-        except CredentialsValidateFailedError as ex:
-            raise ex
-        except Exception as ex:
+        except CredentialsValidateFailedError:
+            raise
+        except Exception:
             logger.exception(
                 f"{self.get_provider_schema().provider} credentials validate failed"
             )
-            raise ex
+            raise

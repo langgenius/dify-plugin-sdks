@@ -15,7 +15,7 @@ class ModelFactory:
         self,
         provider: ModelProviderConfiguration,
         models: dict[ModelType, type[AIModel]],
-    ):
+    ) -> None:
         """
         Initialize model instance factory
 

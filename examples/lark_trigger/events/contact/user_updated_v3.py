@@ -40,30 +40,32 @@ def _serialize_status(status: UserStatus | None) -> dict[str, bool]:
 
 
 def _serialize_positions(positions: list[UserPosition] | None) -> list[dict[str, Any]]:
-    serialized: list[dict[str, Any]] = []
-    for position in positions or []:
-        serialized.append({
+    serialized: list[dict[str, Any]] = [
+        {
             "position_code": position.position_code or "",
             "position_name": position.position_name or "",
             "department_id": position.department_id or "",
             "leader_user_id": position.leader_user_id or "",
             "leader_position_code": position.leader_position_code or "",
             "is_major": bool(position.is_major),
-        })
+        }
+        for position in positions or []
+    ]
     return serialized
 
 
 def _serialize_orders(orders: list[UserOrder] | None) -> list[dict[str, Any]]:
-    serialized: list[dict[str, Any]] = []
-    for order in orders or []:
-        serialized.append({
+    serialized: list[dict[str, Any]] = [
+        {
             "department_id": order.department_id or "",
             "user_order": order.user_order if order.user_order is not None else 0,
             "department_order": order.department_order
             if order.department_order is not None
             else 0,
             "is_primary_dept": bool(order.is_primary_dept),
-        })
+        }
+        for order in orders or []
+    ]
     return serialized
 
 
@@ -94,13 +96,14 @@ def _serialize_custom_attr_value(value: UserCustomAttrValue | None) -> dict[str,
 def _serialize_custom_attrs(
     custom_attrs: list[UserCustomAttr] | None,
 ) -> list[dict[str, Any]]:
-    serialized: list[dict[str, Any]] = []
-    for attr in custom_attrs or []:
-        serialized.append({
+    serialized: list[dict[str, Any]] = [
+        {
             "type": attr.type or "",
             "id": attr.id or "",
             "value": _serialize_custom_attr_value(attr.value),
-        })
+        }
+        for attr in custom_attrs or []
+    ]
     return serialized
 
 

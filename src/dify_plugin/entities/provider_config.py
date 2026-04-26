@@ -1,5 +1,4 @@
 from enum import Enum, StrEnum
-from typing import Union
 
 from pydantic import BaseModel, Field
 
@@ -98,8 +97,7 @@ class ProviderConfig(BaseModel):
 
         @classmethod
         def value_of(cls, value: str) -> "ProviderConfig.Config":
-            """
-            Get value of given mode.
+            """Get value of given mode.
 
             :param value: mode value
             :return: mode
@@ -113,7 +111,7 @@ class ProviderConfig(BaseModel):
     type: Config = Field(..., description="The type of the credentials")
     scope: str | None = None
     required: bool = False
-    default: Union[int, float, str, bool, list] | None = None
+    default: int | float | str | bool | list | None = None
     options: list[ConfigOption] | None = None
     multiple: bool | None = False
     label: I18nObject

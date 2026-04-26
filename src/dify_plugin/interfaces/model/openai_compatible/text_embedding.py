@@ -203,7 +203,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         """
         generate custom model entities from credentials
         """
-        entity = AIModelEntity(
+        return AIModelEntity(
             model=model,
             label=I18nObject(en_US=model),
             model_type=ModelType.TEXT_EMBEDDING,
@@ -221,8 +221,6 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
                 currency=credentials.get("currency", "USD"),
             ),
         )
-
-        return entity
 
     def _calc_response_usage(
         self, model: str, credentials: dict, tokens: int
@@ -244,7 +242,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         )
 
         # transform usage
-        usage = EmbeddingUsage(
+        return EmbeddingUsage(
             tokens=tokens,
             total_tokens=tokens,
             unit_price=input_price_info.unit_price,
@@ -253,5 +251,3 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             currency=input_price_info.currency,
             latency=time.perf_counter() - self.started_at,
         )
-
-        return usage

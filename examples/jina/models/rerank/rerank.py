@@ -105,13 +105,17 @@ class JinaRerankModel(RerankModel):
                 credentials=credentials,
                 query="What is the capital of the United States?",
                 docs=[
-                    "Carson City is the capital city of the American state of "
-                    "Nevada. At the 2010 United States "
-                    "Census, Carson City had a population of 55,274.",
-                    "The Commonwealth of the Northern Mariana Islands is a "
-                    "group of islands in the Pacific Ocean that are a "
-                    "political division controlled by the United States. Its "
-                    "capital is Saipan.",
+                    (
+                        "Carson City is the capital city of the American state of "
+                        "Nevada. At the 2010 United States "
+                        "Census, Carson City had a population of 55,274."
+                    ),
+                    (
+                        "The Commonwealth of the Northern Mariana Islands is a "
+                        "group of islands in the Pacific Ocean that are a "
+                        "political division controlled by the United States. Its "
+                        "capital is Saipan."
+                    ),
                 ],
                 score_threshold=0.8,
             )
@@ -137,7 +141,7 @@ class JinaRerankModel(RerankModel):
         """
         generate custom model entities from credentials
         """
-        entity = AIModelEntity(
+        return AIModelEntity(
             model=model,
             label=I18nObject(en_US=model),
             model_type=ModelType.RERANK,
@@ -146,5 +150,3 @@ class JinaRerankModel(RerankModel):
                 ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size") or 0)
             },
         )
-
-        return entity

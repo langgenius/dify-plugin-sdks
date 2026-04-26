@@ -12,17 +12,14 @@ from dify_plugin.entities.model.message import (
 
 
 class LLMMode(Enum):
-    """
-    Enum class for large language model mode.
-    """
+    """Enum class for large language model mode."""
 
     COMPLETION = "completion"
     CHAT = "chat"
 
     @classmethod
     def value_of(cls, value: str) -> "LLMMode":
-        """
-        Get value of given mode.
+        """Get value of given mode.
 
         :param value: mode value
         :return: mode
@@ -34,9 +31,7 @@ class LLMMode(Enum):
 
 
 class LLMUsage(ModelUsage):
-    """
-    Model class for llm usage.
-    """
+    """Model class for llm usage."""
 
     prompt_tokens: int
     prompt_unit_price: Decimal
@@ -70,9 +65,7 @@ class LLMUsage(ModelUsage):
 
 
 class LLMResultChunkDelta(BaseModel):
-    """
-    Model class for llm result chunk delta.
-    """
+    """Model class for llm result chunk delta."""
 
     index: int
     message: AssistantPromptMessage
@@ -81,9 +74,7 @@ class LLMResultChunkDelta(BaseModel):
 
 
 class LLMResultChunk(BaseModel):
-    """
-    Model class for llm result chunk.
-    """
+    """Model class for llm result chunk."""
 
     model: str
     prompt_messages: list[PromptMessage] = Field(default_factory=list)
@@ -93,8 +84,7 @@ class LLMResultChunk(BaseModel):
     @field_validator("prompt_messages", mode="before")
     @classmethod
     def transform_prompt_messages(cls, value):
-        """
-        ISSUE:
+        """ISSUE:
         - https://github.com/langgenius/dify/issues/17799
         - https://github.com/langgenius/dify-official-plugins/issues/648
 
@@ -107,25 +97,17 @@ class LLMResultChunk(BaseModel):
 
 
 class LLMStructuredOutput(BaseModel):
-    """
-    Model class for llm structured output.
-    """
+    """Model class for llm structured output."""
 
     structured_output: Mapping | None = None
 
 
 class LLMResultChunkWithStructuredOutput(LLMResultChunk, LLMStructuredOutput):
-    """
-    Model class for llm result chunk with structured output.
-    """
-
-    pass
+    """Model class for llm result chunk with structured output."""
 
 
 class LLMResult(BaseModel):
-    """
-    Model class for llm result.
-    """
+    """Model class for llm result."""
 
     model: str
     prompt_messages: list[PromptMessage] = Field(default_factory=list)
@@ -136,8 +118,7 @@ class LLMResult(BaseModel):
     @field_validator("prompt_messages", mode="before")
     @classmethod
     def transform_prompt_messages(cls, value):
-        """
-        ISSUE:
+        """ISSUE:
         - https://github.com/langgenius/dify/issues/17799
         - https://github.com/langgenius/dify-official-plugins/issues/648
 
@@ -162,9 +143,7 @@ class LLMResult(BaseModel):
 
 
 class LLMResultWithStructuredOutput(LLMResult, LLMStructuredOutput):
-    """
-    Model class for llm result with structured output.
-    """
+    """Model class for llm result with structured output."""
 
     def to_llm_result_chunk_with_structured_output(
         self,
@@ -183,25 +162,19 @@ class LLMResultWithStructuredOutput(LLMResult, LLMStructuredOutput):
 
 
 class SummaryResult(BaseModel):
-    """
-    Model class for summary result.
-    """
+    """Model class for summary result."""
 
     summary: str
 
 
 class NumTokensResult(PriceInfo):
-    """
-    Model class for number of tokens result.
-    """
+    """Model class for number of tokens result."""
 
     tokens: int
 
 
 class LLMModelConfig(BaseModelConfig):
-    """
-    Model class for llm model config.
-    """
+    """Model class for llm model config."""
 
     model_type: ModelType = ModelType.LLM
     mode: str

@@ -41,9 +41,7 @@ logger.addHandler(plugin_logger_handler)
 
 class Plugin(IOServer, Router):
     def __init__(self, config: DifyPluginEnv) -> None:
-        """
-        Initialize plugin
-        """
+        """Initialize plugin"""
         # load plugin configuration
         self.registration = PluginRegistration(config)
 
@@ -69,11 +67,10 @@ class Plugin(IOServer, Router):
         self._register_request_routes()
 
     def _launch_local_stream(
-        self, config: DifyPluginEnv
+        self,
+        config: DifyPluginEnv,
     ) -> tuple[RequestReader, ResponseWriter | None]:
-        """
-        Launch local stream
-        """
+        """Launch local stream"""
         reader = StdioRequestReader()
         writer = StdioResponseWriter()
         writer.write(self.registration.configuration.model_dump_json() + "\n\n")
@@ -82,16 +79,15 @@ class Plugin(IOServer, Router):
         return reader, writer
 
     def _launch_remote_stream(
-        self, config: DifyPluginEnv
+        self,
+        config: DifyPluginEnv,
     ) -> tuple[RequestReader, ResponseWriter | None]:
-        """
-        Launch remote stream
-        """
+        """Launch remote stream"""
         if not config.REMOTE_INSTALL_KEY:
             raise ValueError("Missing remote install key")
 
         install_host, install_port = self._get_remote_install_host_and_port(config)
-        logging.debug(f"Remote installing to {install_host}:{install_port}")
+        logging.debug("Remote installing to %s:%s", install_host, install_port)
 
         tcp_stream = TCPReaderWriter(
             install_host,
@@ -116,7 +112,7 @@ class Plugin(IOServer, Router):
                 type=InitializeMessage.Type.MANIFEST_DECLARATION,
                 data=self.registration.configuration.model_dump(),
             ).model_dump_json()
-            + "\n\n"
+            + "\n\n",
         )
 
         if self.registration.tools_configuration:
@@ -125,7 +121,7 @@ class Plugin(IOServer, Router):
                     type=InitializeMessage.Type.TOOL_DECLARATION,
                     data=List(root=self.registration.tools_configuration).model_dump(),
                 ).model_dump_json()
-                + "\n\n"
+                + "\n\n",
             )
 
         if self.registration.models_configuration:
@@ -134,7 +130,7 @@ class Plugin(IOServer, Router):
                     type=InitializeMessage.Type.MODEL_DECLARATION,
                     data=List(root=self.registration.models_configuration).model_dump(),
                 ).model_dump_json()
-                + "\n\n"
+                + "\n\n",
             )
 
         if self.registration.endpoints_configuration:
@@ -142,10 +138,10 @@ class Plugin(IOServer, Router):
                 InitializeMessage(
                     type=InitializeMessage.Type.ENDPOINT_DECLARATION,
                     data=List(
-                        root=self.registration.endpoints_configuration
+                        root=self.registration.endpoints_configuration,
                     ).model_dump(),
                 ).model_dump_json()
-                + "\n\n"
+                + "\n\n",
             )
 
         if self.registration.agent_strategies_configuration:
@@ -153,10 +149,10 @@ class Plugin(IOServer, Router):
                 InitializeMessage(
                     type=InitializeMessage.Type.AGENT_STRATEGY_DECLARATION,
                     data=List(
-                        root=self.registration.agent_strategies_configuration
+                        root=self.registration.agent_strategies_configuration,
                     ).model_dump(),
                 ).model_dump_json()
-                + "\n\n"
+                + "\n\n",
             )
 
         if self.registration.datasource_configuration:
@@ -164,10 +160,10 @@ class Plugin(IOServer, Router):
                 InitializeMessage(
                     type=InitializeMessage.Type.DATASOURCE_DECLARATION,
                     data=List(
-                        root=self.registration.datasource_configuration
+                        root=self.registration.datasource_configuration,
                     ).model_dump(),
                 ).model_dump_json()
-                + "\n\n"
+                + "\n\n",
             )
 
         if self.registration.triggers_configuration:
@@ -175,10 +171,10 @@ class Plugin(IOServer, Router):
                 InitializeMessage(
                     type=InitializeMessage.Type.TRIGGER_DECLARATION,
                     data=List(
-                        root=self.registration.triggers_configuration
+                        root=self.registration.triggers_configuration,
                     ).model_dump(),
                 ).model_dump_json()
-                + "\n\n"
+                + "\n\n",
             )
 
         for file in self.registration.files:
@@ -194,7 +190,7 @@ class Plugin(IOServer, Router):
                             end=sequence == len(chunks) - 1,
                         ).model_dump(),
                     ).model_dump_json()
-                    + "\n\n"
+                    + "\n\n",
                 )
 
         tcp_stream.write(
@@ -202,17 +198,16 @@ class Plugin(IOServer, Router):
                 type=InitializeMessage.Type.END,
                 data={},
             ).model_dump_json()
-            + "\n\n"
+            + "\n\n",
         )
 
         self._log_configuration()
 
     def _launch_serverless_stream(
-        self, config: DifyPluginEnv
+        self,
+        config: DifyPluginEnv,
     ) -> tuple[RequestReader, ResponseWriter | None]:
-        """
-        Launch Serverless stream
-        """
+        """Launch Serverless stream"""
         serverless = ServerlessRequestReader(
             host=config.SERVERLESS_HOST,
             port=config.SERVERLESS_PORT,
@@ -227,9 +222,7 @@ class Plugin(IOServer, Router):
         return serverless, None
 
     def _log_configuration(self):
-        """
-        Log plugin configuration
-        """
+        """Log plugin configuration"""
         for tool in self.registration.tools_configuration:
             logger.info(f"Installed tool: {tool.identity.name}")
         for model in self.registration.models_configuration:
@@ -242,9 +235,7 @@ class Plugin(IOServer, Router):
             logger.info(f"Installed trigger provider: {trigger_provider.identity.name}")
 
     def _register_request_routes(self):
-        """
-        Register routes
-        """
+        """Register routes"""
         self.register_route(
             self.plugin_executer.invoke_tool,
             lambda data: (
@@ -534,12 +525,10 @@ class Plugin(IOServer, Router):
         endpoint_id: str | None = None,
         context: dict | None = None,
     ):
-        """
-        accept requests and execute
+        """Accept requests and execute
         :param session_id: session id, unique for each request
         :param data: request data
         """
-
         session = Session(
             session_id=session_id,
             executor=self.executer,
@@ -559,7 +548,8 @@ class Plugin(IOServer, Router):
             if isinstance(response, Generator):
                 for message in response:
                     if isinstance(message, ToolInvokeMessage) and isinstance(
-                        message.message, ToolInvokeMessage.BlobMessage
+                        message.message,
+                        ToolInvokeMessage.BlobMessage,
                     ):
                         # convert blob to file chunks
                         id_ = uuid.uuid4().hex
@@ -599,7 +589,7 @@ class Plugin(IOServer, Router):
                                         end=True,
                                     ),
                                     meta=message.meta,
-                                )
+                                ),
                             ),
                         )
                     else:
@@ -615,8 +605,7 @@ class Plugin(IOServer, Router):
 
     @staticmethod
     def _get_remote_install_host_and_port(config: DifyPluginEnv) -> tuple[str, int]:
-        """
-        Get host and port for remote installation
+        """Get host and port for remote installation
         :param config: Dify plugin env config
         :return: host and port
         """
@@ -636,7 +625,7 @@ class Plugin(IOServer, Router):
             else:
                 raise ValueError(
                     f"Invalid remote install URL {install_url}, which should "
-                    'be in the format of "host:port"'
+                    'be in the format of "host:port"',
                 )
         else:
             host = config.REMOTE_INSTALL_HOST

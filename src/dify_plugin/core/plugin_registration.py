@@ -191,7 +191,7 @@ class PluginRegistration:
             module_source = module_source.replace("/", ".")
             cls = load_single_subclass_from_source(
                 module_name=module_source,
-                script_path=os.path.join(os.getcwd(), source),
+                script_path=os.path.join(Path.cwd(), source),
                 parent_type=ToolProvider,
             )
 
@@ -203,7 +203,7 @@ class PluginRegistration:
                 tool_module_source = tool_module_source.replace("/", ".")
                 tool_cls = load_single_subclass_from_source(
                     module_name=tool_module_source,
-                    script_path=os.path.join(os.getcwd(), tool_source),
+                    script_path=os.path.join(Path.cwd(), tool_source),
                     parent_type=Tool,
                 )
 
@@ -227,7 +227,7 @@ class PluginRegistration:
                 strategy_module_source = strategy_module_source.replace("/", ".")
                 strategy_cls = load_single_subclass_from_source(
                     module_name=strategy_module_source,
-                    script_path=os.path.join(os.getcwd(), strategy_source),
+                    script_path=os.path.join(Path.cwd(), strategy_source),
                     parent_type=AgentStrategy,
                 )
 
@@ -252,7 +252,7 @@ class PluginRegistration:
             module_source = module_source.replace("/", ".")
             provider_cls = load_single_subclass_from_source(
                 module_name=module_source,
-                script_path=os.path.join(os.getcwd(), source),
+                script_path=os.path.join(Path.cwd(), source),
                 parent_type=DatasourceProvider,
             )
 
@@ -271,7 +271,7 @@ class PluginRegistration:
                     cls = load_single_subclass_from_source(
                         module_name=module_source,
                         script_path=os.path.join(
-                            os.getcwd(), datasource.extra.python.source
+                            Path.cwd(), datasource.extra.python.source
                         ),
                         parent_type=parent_type,
                     )
@@ -306,13 +306,13 @@ class PluginRegistration:
             module_source = module_source.replace("/", ".")
             provider_cls = load_single_subclass_from_source(
                 module_name=module_source,
-                script_path=os.path.join(os.getcwd(), source),
+                script_path=os.path.join(Path.cwd(), source),
                 parent_type=Trigger,
             )
 
             subscription_constructor_cls_candidates = load_multi_subclasses_from_source(
                 module_name=module_source,
-                script_path=os.path.join(os.getcwd(), source),
+                script_path=os.path.join(Path.cwd(), source),
                 parent_type=TriggerSubscriptionConstructor,
             )
 
@@ -348,7 +348,7 @@ class PluginRegistration:
                 trigger_module_source = trigger_module_source.replace("/", ".")
                 trigger_cls = load_single_subclass_from_source(
                     module_name=trigger_module_source,
-                    script_path=os.path.join(os.getcwd(), trigger_source),
+                    script_path=os.path.join(Path.cwd(), trigger_source),
                     parent_type=Event,
                 )
                 trigger_registrations.append((
@@ -391,7 +391,7 @@ class PluginRegistration:
             module_source = module_source.replace("/", ".")
             cls = load_single_subclass_from_source(
                 module_name=module_source,
-                script_path=os.path.join(os.getcwd(), source),
+                script_path=os.path.join(Path.cwd(), source),
                 parent_type=ModelProvider,
             )
 
@@ -402,7 +402,7 @@ class PluginRegistration:
                 model_module_source = model_module_source.replace("/", ".")
                 model_classes = load_multi_subclasses_from_source(
                     module_name=model_module_source,
-                    script_path=os.path.join(os.getcwd(), model_source),
+                    script_path=os.path.join(Path.cwd(), model_source),
                     parent_type=AIModel,
                 )
 
@@ -439,7 +439,7 @@ class PluginRegistration:
                 module_source = module_source.replace("/", ".")
                 endpoint_cls = load_single_subclass_from_source(
                     module_name=module_source,
-                    script_path=os.path.join(os.getcwd(), endpoint.extra.python.source),
+                    script_path=os.path.join(Path.cwd(), endpoint.extra.python.source),
                     parent_type=Endpoint,
                 )
 
@@ -480,6 +480,7 @@ class PluginRegistration:
         for provider_registration in self.tools_mapping:
             if provider_registration == provider:
                 return self.tools_mapping[provider_registration][1]
+        return None
 
     def get_tool_cls(self, provider: str, tool: str):
         """
@@ -493,6 +494,7 @@ class PluginRegistration:
                 registration = self.tools_mapping[provider_registration][2].get(tool)
                 if registration:
                     return registration[1]
+        return None
 
     def get_agent_provider_cls(self, provider: str):
         """
@@ -503,6 +505,7 @@ class PluginRegistration:
         for provider_registration in self.agent_strategies_mapping:
             if provider_registration == provider:
                 return self.agent_strategies_mapping[provider_registration][1]
+        return None
 
     def get_agent_strategy_cls(self, provider: str, agent: str):
         """
@@ -518,6 +521,7 @@ class PluginRegistration:
                 ].get(agent)
                 if registration:
                     return registration[1]
+        return None
 
     def get_model_provider_instance(self, provider: str):
         """
@@ -528,6 +532,7 @@ class PluginRegistration:
         for provider_registration in self.models_mapping:
             if provider_registration == provider:
                 return self.models_mapping[provider_registration][1]
+        return None
 
     def get_model_instance(self, provider: str, model_type: ModelType):
         """
@@ -540,6 +545,7 @@ class PluginRegistration:
             if provider_registration == provider:
                 model_factory = self.models_mapping[provider_registration][2]
                 return model_factory.get_instance(model_type)
+        return None
 
     def get_trigger_provider(
         self,

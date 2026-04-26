@@ -9,13 +9,10 @@ class StorageInvocationError(Exception):
     when an issue occurs during the execution of a storage invocation.
     """
 
-    pass
-
 
 class StorageInvocation(BackwardsInvocation[dict]):
     def set(self, key: str, val: bytes) -> None:
-        """
-        set a value into persistence storage.
+        """Set a value into persistence storage.
 
         :raises:
             StorageInvocationError: If the invocation returns an invalid data.
@@ -31,12 +28,11 @@ class StorageInvocation(BackwardsInvocation[dict]):
             raise StorageInvocationError(f"unexpected data: {data['data']}")
 
     def get(self, key: str) -> bytes:
-        """get a key from persistence storage.
+        """Get a key from persistence storage.
 
         :raises:
             NotFoundError: If the caller gets a key that does not exist.
         """
-
         for data in self._backwards_invoke(
             InvokeType.Storage,
             dict,
@@ -50,7 +46,7 @@ class StorageInvocation(BackwardsInvocation[dict]):
         raise StorageInvocationError("no data found")
 
     def delete(self, key: str) -> None:
-        """delete a key from persistence storage.
+        """Delete a key from persistence storage.
 
         :raises:
             StorageInvocationError: If the invocation returns an invalid data.

@@ -61,92 +61,97 @@ preview = true
 required-version = '>=0.15'
 
 [tool.ruff.lint]
-select = [
-    'B',       # flake8-bugbear rules
-    'C4',      # flake8-comprehensions
-    'E',       # pycodestyle E rules
-    'F',       # pyflakes rules
-    'FURB',    # refurb rules
-    'I',       # isort rules
-    'N',       # pep8-naming
-    'PT',      # flake8-pytest-style rules
-    'PLC0208', # iteration-over-set
-    'PLC0414', # useless-import-alias
-    'PLR0402', # manual-from-import
-    'PLR1711', # useless-return
-    'PLR1714', # repeated-equality-comparison
-    'RUF013',  # implicit-optional
-    'RUF019',  # unnecessary-key-check
-    'RUF100',  # unused-noqa
-    'RUF101',  # redirected-noqa
-    'RUF200',  # invalid-pyproject-toml
-    'S506',    # unsafe-yaml-load
-    'SIM',     # flake8-simplify rules
-    'TRY400',  # error-instead-of-exception
-    'TRY401',  # verbose-log-message
-    'UP',      # pyupgrade rules
-    'W191',    # tab-indentation
-    'W605',    # invalid-escape-sequence
-
-    # Security related linting rules
-    # https://docs.astral.sh/ruff/rules/#flake8-bandit-s
-    'S',
-
-    # avoid shadowing builtins
-    # https://docs.astral.sh/ruff/rules/#flake8-builtins-a
-    'A',
-
-    # prohibit calls to `breakpoint()` in committed code
-    # https://docs.astral.sh/ruff/rules/#flake8-debugger-t10
-    'T10',
-
-    # disallow calling functions with boolean positional
-    # arguments.
-    #
-    # https://docs.astral.sh/ruff/rules/boolean-positional-value-in-call/
-    'FBT003',
-
-    # Pycodestyle's warning
-    # https://docs.astral.sh/ruff/rules/#warning-w
-    'W',
-
-    # Ruff specific rules
-    # https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf
-    'RUF',
-]
-
+select = ['ALL']
 ignore = [
-# ===================== Ruff-specific rules (RUF) =====================
-    # ambiguous-unicode-character-string,
-    # disabled beacause of false positives
-    # ref: https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-string/
-    'RUF001',
-
-    # ===================== flake8-bandit (S) rules =====================
-    'S101', # use of assert detected, https://docs.astral.sh/ruff/rules/assert/
-    # hardcoded-bind-all-interfaces, https://docs.astral.sh/ruff/rules/hardcoded-bind-all-interfaces/
-    # disabled beacause of false positives
+    'ANN002',
+    'B901',
+    'PLW0127',
+    'PTH207',
+    'SIM102',
+    'TD004',
+    'PLR0904',
+    'S113',
+    'S404',
+    'ANN205',
+    'F401',
+    'DOC102',
+    'LOG015',
+    'S603',
+    'ARG001',
+    'ARG003',
+    'ARG005',
+    'B903',
+    'DOC502',
+    'N815',
+    'PLC2701',
+    'PLR0911',
     'S104',
-    # hardcoded-password-string, https://docs.astral.sh/ruff/rules/hardcoded-password-string/
-    # disabled beacause of false positives
+    'TRY203',
+    'T201',
+    'ANN204',
+    'PLR6201',
+    'ANN003',
+    'TRY300',
+    'DOC402',
+    'PLR1702',
+    'PTH122',
+    'FIX002',
+    'PLW2901',
     'S105',
-    'S404', # subprocess-import
-
-    'B901', # return-in-generator
-    'B903', # class-as-data-structure
-    'E402', # module-import-not-at-top-of-file
-    'N815', # mixed-case-variable-in-class-scope
-
-    # Several package __init__ modules intentionally expose implementation
-    # classes and runtime setup for the public SDK surface.
+    'TD002',
+    'TD003',
+    'RUF001',
+    'ANN206',
+    'PLR0915', # Too broad for orchestration-heavy SDK/example functions.
+    'G004',
+    'PGH003',
+    'F403',
+    'PTH118',
+    'DTZ007',
+    'PLC1901',
+    'E402',
+    'SLF001',
+    'E501',
+    'ERA001',  # False positives are common.
+    'PLR0914',
+    'PLR0912',
+    'S101',
+    'TRY002',
+    'BLE001',
     'RUF067',
-
-    # Disable UP007 for now due to the significant number of
-    # violations in the current codebase.
-    #
-    # Reference: https://docs.astral.sh/ruff/rules/non-pep604-annotation-union/
-    'UP007',
+    'TRY301',
+    'PLR0913', # Explicit is better than implicit.
+    'PLR0917', # Complex is better than complicated.
+    'C901',
+    'PLC0415',
+    'FBT',     # Too strict.
+    'ANN001',
+    'TRY004',
+    'ANN401',  # We hope to enforce this, but typing is still evolving.
+    'PLR2004',
+    'ANN202',
+    'DOC501',
+    'ANN201',
+    'INP001',
+    'TC',      # Runtime use of typing constructs is common now.
+    'DOC201',
+    'EM102',
+    'TID252',  # Too absolute.
+    'RSE102',
+    'ARG002',
+    'PLR6301', # Violates the usual practice.
+    'EM101',
+    'CPY',     # Covered by the standalone LICENSE file.
+    'TRY003',
+    'COM812',  # Conflicts with `ruff format`.
+    'D',       # Too verbose.
 ]
 
-[tool.ruff.lint.pyflakes]
-extend-generics = ['_pytest.monkeypatch', 'tests.integration_tests']
+[tool.ruff.lint.pydoclint]
+ignore-one-line-docstrings = true
+
+[tool.ruff.lint.per-file-ignores]
+'tests/**/*.py' = [
+    'S101',    # Assert statements used for pytest.
+    'PLR2004', # Magic value used in test cases.
+]

@@ -1,5 +1,6 @@
 import json
 import os
+import pathlib
 from collections.abc import Generator, Mapping
 from typing import Any
 
@@ -18,7 +19,8 @@ from dify_plugin.interfaces.datasource.online_drive import OnlineDriveDatasource
 
 class GoogleCloudStorageDataSource(OnlineDriveDatasource):
     def _browse_files(
-        self, request: OnlineDriveBrowseFilesRequest
+        self,
+        request: OnlineDriveBrowseFilesRequest,
     ) -> OnlineDriveBrowseFilesResponse:
         credentials = self.runtime.credentials.get("credentials")
         bucket_name = request.bucket
@@ -42,52 +44,52 @@ class GoogleCloudStorageDataSource(OnlineDriveDatasource):
                 for bucket in buckets
             ]
             return OnlineDriveBrowseFilesResponse(result=file_buckets)
-        else:
-            if not next_page_parameters and prefix:
-                max_keys = max_keys + 1
-            blobs = client.list_blobs(
-                bucket_name,
-                prefix=prefix,
-                max_results=max_keys,
-                page_token=next_page_parameters.get("page_token"),
-                delimiter="/",
+        if not next_page_parameters and prefix:
+            max_keys += 1
+        blobs = client.list_blobs(
+            bucket_name,
+            prefix=prefix,
+            max_results=max_keys,
+            page_token=next_page_parameters.get("page_token"),
+            delimiter="/",
+        )
+        is_truncated = blobs.next_page_token is not None
+        next_page_parameters = (
+            {"page_token": blobs.next_page_token} if blobs.next_page_token else {}
+        )
+        files = []
+        files.extend([
+            OnlineDriveFile(
+                id=blob.name,
+                name=pathlib.Path(blob.name).name,
+                size=blob.size,
+                type="file",
             )
-            is_truncated = blobs.next_page_token is not None
-            next_page_parameters = (
-                {"page_token": blobs.next_page_token} if blobs.next_page_token else {}
-            )
-            files = []
-            files.extend([
+            for blob in blobs
+            if blob.name != prefix
+        ])
+        for prefix in blobs.prefixes:
+            if next_page_parameters and next_page_parameters == prefix:
+                continue
+            files.append(
                 OnlineDriveFile(
-                    id=blob.name,
-                    name=os.path.basename(blob.name),
-                    size=blob.size,
-                    type="file",
-                )
-                for blob in blobs
-                if blob.name != prefix
-            ])
-            for prefix in blobs.prefixes:
-                if next_page_parameters and next_page_parameters == prefix:
-                    continue
-                files.append(
-                    OnlineDriveFile(
-                        id=prefix,
-                        name=os.path.basename(prefix.rstrip("/")),
-                        size=0,
-                        type="folder",
-                    )
-                )
-            file_bucket = OnlineDriveFileBucket(
-                bucket=bucket_name,
-                files=sorted(files, key=lambda x: x.id),
-                is_truncated=is_truncated,
-                next_page_parameters=next_page_parameters,
+                    id=prefix,
+                    name=pathlib.Path(prefix.rstrip("/")).name,
+                    size=0,
+                    type="folder",
+                ),
             )
-            return OnlineDriveBrowseFilesResponse(result=[file_bucket])
+        file_bucket = OnlineDriveFileBucket(
+            bucket=bucket_name,
+            files=sorted(files, key=lambda x: x.id),
+            is_truncated=is_truncated,
+            next_page_parameters=next_page_parameters,
+        )
+        return OnlineDriveBrowseFilesResponse(result=[file_bucket])
 
     def _download_file(
-        self, request: OnlineDriveDownloadFileRequest
+        self,
+        request: OnlineDriveDownloadFileRequest,
     ) -> Generator[DatasourceMessage, None, None]:
         credentials = self.runtime.credentials.get("credentials")
         bucket_name = request.bucket
@@ -104,7 +106,8 @@ class GoogleCloudStorageDataSource(OnlineDriveDatasource):
         blob = bucket.blob(key)
         b64bytes = blob.download_as_bytes()
         yield self.create_blob_message(
-            b64bytes, meta={"file_name": key, "mime_type": blob.content_type}
+            b64bytes,
+            meta={"file_name": key, "mime_type": blob.content_type},
         )
 
     def _get_service_account_obj(self, credentials: Mapping[str, Any]) -> dict:

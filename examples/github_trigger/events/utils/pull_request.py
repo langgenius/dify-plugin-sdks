@@ -160,11 +160,11 @@ def check_changed_files_glob(pull_request: Mapping[str, Any], value: Any) -> Non
     if not file_paths:
         details = pull_request.get("changed_files_detail")
         if isinstance(details, list):
-            for entry in details:
-                if isinstance(entry, Mapping) and isinstance(
-                    entry.get("filename"), str
-                ):
-                    file_paths.append(entry.get("filename"))
+            file_paths.extend(
+                entry.get("filename")
+                for entry in details
+                if isinstance(entry, Mapping) and isinstance(entry.get("filename"), str)
+            )
 
     if not file_paths:
         # Cannot evaluate; skip filter

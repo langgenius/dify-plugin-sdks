@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Generator
 from decimal import Decimal
-from typing import Union, cast
+from typing import cast
 
 import tiktoken
 from openai import OpenAI, Stream
@@ -64,9 +64,7 @@ OPENAI_BLOCK_MODE_PROMPT = (
 
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
-    """
-    Model class for OpenAI large language model.
-    """
+    """Model class for OpenAI large language model."""
 
     def _invoke(
         self,
@@ -78,9 +76,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         stop: list[str] | None = None,
         stream: bool = True,
         user: str | None = None,
-    ) -> Union[LLMResult, Generator]:
-        """
-        Invoke large language model
+    ) -> LLMResult | Generator:
+        """Invoke large language model
 
         :param model: model name
         :param credentials: model credentials
@@ -112,17 +109,16 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 stream=stream,
                 user=user,
             )
-        else:
-            # text completion model
-            return self._generate(
-                model=model,
-                credentials=credentials,
-                prompt_messages=prompt_messages,
-                model_parameters=model_parameters,
-                stop=stop,
-                stream=stream,
-                user=user,
-            )
+        # text completion model
+        return self._generate(
+            model=model,
+            credentials=credentials,
+            prompt_messages=prompt_messages,
+            model_parameters=model_parameters,
+            stop=stop,
+            stream=stream,
+            user=user,
+        )
 
     def _code_block_mode_wrapper(
         self,
@@ -134,10 +130,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         stop: list[str] | None = None,
         stream: bool = True,
         user: str | None = None,
-    ) -> Union[LLMResult, Generator]:
-        """
-        Code block mode wrapper for invoking large language model
-        """
+    ) -> LLMResult | Generator:
+        """Code block mode wrapper for invoking large language model"""
         # handle fine tune remote models
         base_model = model
         if model.startswith("ft:"):
@@ -149,7 +143,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         # transform response format
         if "response_format" in model_parameters and model_parameters[
             "response_format"
-        ] in ["JSON", "XML"]:
+        ] in {"JSON", "XML"}:
             stop = stop or []
             if model_mode == LLMMode.CHAT:
                 # chat model
@@ -201,9 +195,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         user: str | None = None,
         response_format: str = "JSON",
     ) -> None:
-        """
-        Transform json prompts
-        """
+        """Transform json prompts"""
         stop = stop or []
 
         if "```\n" not in stop:
@@ -213,17 +205,19 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         # check if there is a system message
         if len(prompt_messages) > 0 and isinstance(
-            prompt_messages[0], SystemPromptMessage
+            prompt_messages[0],
+            SystemPromptMessage,
         ):
             assert isinstance(prompt_messages[0].content, str)
             # override the system message
             prompt_messages[0] = SystemPromptMessage(
                 content=OPENAI_BLOCK_MODE_PROMPT.replace(
-                    "{{instructions}}", prompt_messages[0].content
-                ).replace("{{block}}", response_format)
+                    "{{instructions}}",
+                    prompt_messages[0].content,
+                ).replace("{{block}}", response_format),
             )
             prompt_messages.append(
-                AssistantPromptMessage(content=f"\n```{response_format}\n")
+                AssistantPromptMessage(content=f"\n```{response_format}\n"),
             )
         else:
             # insert the system message
@@ -233,11 +227,11 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                     content=OPENAI_BLOCK_MODE_PROMPT.replace(
                         "{{instructions}}",
                         f"Please output a valid {response_format} object.",
-                    ).replace("{{block}}", response_format)
+                    ).replace("{{block}}", response_format),
                 ),
             )
             prompt_messages.append(
-                AssistantPromptMessage(content=f"\n```{response_format}")
+                AssistantPromptMessage(content=f"\n```{response_format}"),
             )
 
     def _transform_completion_json_prompts(
@@ -252,9 +246,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         user: str | None = None,
         response_format: str = "JSON",
     ) -> None:
-        """
-        Transform json prompts
-        """
+        """Transform json prompts"""
         stop = stop or []
 
         if "```\n" not in stop:
@@ -284,8 +276,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 prompt_messages[i].content = content[:-11]
                 prompt_messages[i] = UserPromptMessage(
                     content=OPENAI_BLOCK_MODE_PROMPT.replace(
-                        "{{instructions}}", user_message.content
-                    ).replace("{{block}}", response_format)
+                        "{{instructions}}",
+                        user_message.content,
+                    ).replace("{{block}}", response_format),
                 )
                 prompt_messages[i].content += f"Assistant:\n```{response_format}\n"  # type: ignore
             else:
@@ -293,8 +286,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
                 prompt_messages[i] = UserPromptMessage(
                     content=OPENAI_BLOCK_MODE_PROMPT.replace(
-                        "{{instructions}}", user_message.content
-                    ).replace("{{block}}", response_format)
+                        "{{instructions}}",
+                        user_message.content,
+                    ).replace("{{block}}", response_format),
                 )
 
                 prompt_messages[i].content += f"\n```{response_format}\n"  # type: ignore
@@ -306,8 +300,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> int:
-        """
-        Get number of tokens for given prompt messages
+        """Get number of tokens for given prompt messages
 
         :param model: model name
         :param credentials: model credentials
@@ -324,15 +317,13 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         if model_mode == LLMMode.CHAT:
             # chat model
             return self._num_tokens_from_messages(base_model, prompt_messages, tools)
-        else:
-            # text completion model, do not support tool calling
-            content = prompt_messages[0].content
-            assert isinstance(content, str)
-            return self._num_tokens_from_string(base_model, content)
+        # text completion model, do not support tool calling
+        content = prompt_messages[0].content
+        assert isinstance(content, str)
+        return self._num_tokens_from_string(base_model, content)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        """
-        Validate model credentials
+        """Validate model credentials
 
         :param model: model name
         :param credentials: model credentials
@@ -354,7 +345,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 remote_model_map = {model.model: model for model in remote_models}
                 if model not in remote_model_map:
                     raise CredentialsValidateFailedError(
-                        f"Fine-tuned model {model} not found"
+                        f"Fine-tuned model {model} not found",
                     )
 
             # get model mode
@@ -382,8 +373,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             raise CredentialsValidateFailedError(str(ex)) from ex
 
     def remote_models(self, credentials: dict) -> list[AIModelEntity]:
-        """
-        Return remote models if credentials are provided.
+        """Return remote models if credentials are provided.
 
         :param credentials: provider credentials
         :return:
@@ -447,9 +437,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         stop: list[str] | None = None,
         stream: bool = True,
         user: str | None = None,
-    ) -> Union[LLMResult, Generator]:
-        """
-        Invoke llm completion model
+    ) -> LLMResult | Generator:
+        """Invoke llm completion model
 
         :param model: model name
         :param credentials: credentials
@@ -491,12 +480,18 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         if stream:
             assert isinstance(response, Stream)
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages
+                model,
+                credentials,
+                response,
+                prompt_messages,
             )
 
         assert isinstance(response, Completion)
         return self._handle_generate_response(
-            model, credentials, response, prompt_messages
+            model,
+            credentials,
+            response,
+            prompt_messages,
         )
 
     def _handle_generate_response(
@@ -506,8 +501,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         response: Completion,
         prompt_messages: list[PromptMessage],
     ) -> LLMResult:
-        """
-        Handle llm completion response
+        """Handle llm completion response
 
         :param model: model name
         :param credentials: model credentials
@@ -529,24 +523,26 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             # calculate num tokens
             assert isinstance(prompt_messages[0].content, str)
             prompt_tokens = self._num_tokens_from_string(
-                model, prompt_messages[0].content
+                model,
+                prompt_messages[0].content,
             )
             completion_tokens = self._num_tokens_from_string(model, assistant_text)
 
         # transform usage
         usage = self._calc_response_usage(
-            model, credentials, prompt_tokens, completion_tokens
+            model,
+            credentials,
+            prompt_tokens,
+            completion_tokens,
         )
 
         # transform response
-        result = LLMResult(
+        return LLMResult(
             model=response.model,
             message=assistant_prompt_message,
             usage=usage,
             system_fingerprint=response.system_fingerprint,
         )
-
-        return result
 
     def _handle_generate_stream_response(
         self,
@@ -555,8 +551,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         response: Stream[Completion],
         prompt_messages: list[PromptMessage],
     ) -> Generator:
-        """
-        Handle llm completion stream response
+        """Handle llm completion stream response
 
         :param model: model name
         :param credentials: model credentials
@@ -618,7 +613,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         if not prompt_tokens:
             assert isinstance(prompt_messages[0].content, str)
             prompt_tokens = self._num_tokens_from_string(
-                model, prompt_messages[0].content
+                model,
+                prompt_messages[0].content,
             )
 
         if not completion_tokens:
@@ -626,7 +622,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         # transform usage
         usage = self._calc_response_usage(
-            model, credentials, prompt_tokens, completion_tokens
+            model,
+            credentials,
+            prompt_tokens,
+            completion_tokens,
         )
 
         final_chunk.delta.usage = usage
@@ -643,9 +642,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         stop: list[str] | None = None,
         stream: bool = True,
         user: str | None = None,
-    ) -> Union[LLMResult, Generator]:
-        """
-        Invoke llm chat model
+    ) -> LLMResult | Generator:
+        """Invoke llm chat model
 
         :param model: model name
         :param credentials: credentials
@@ -712,11 +710,19 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         if stream:
             return self._handle_chat_generate_stream_response(
-                model, credentials, response, prompt_messages, tools
+                model,
+                credentials,
+                response,
+                prompt_messages,
+                tools,
             )
 
         return self._handle_chat_generate_response(
-            model, credentials, response, prompt_messages, tools
+            model,
+            credentials,
+            response,
+            prompt_messages,
+            tools,
         )
 
     def _handle_chat_generate_response(
@@ -727,8 +733,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> LLMResult:
-        """
-        Handle llm chat response
+        """Handle llm chat response
 
         :param model: model name
         :param credentials: credentials
@@ -744,13 +749,14 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         # extract tool calls from response
         # tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)
         function_call = self._extract_response_function_call(
-            assistant_message_function_call
+            assistant_message_function_call,
         )
         tool_calls = [function_call] if function_call else []
 
         # transform assistant message to prompt message
         assistant_prompt_message = AssistantPromptMessage(
-            content=assistant_message.content, tool_calls=tool_calls
+            content=assistant_message.content,
+            tool_calls=tool_calls,
         )
 
         # calculate num tokens
@@ -761,15 +767,21 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         else:
             # calculate num tokens
             prompt_tokens = self._num_tokens_from_messages(
-                model, prompt_messages, tools
+                model,
+                prompt_messages,
+                tools,
             )
             completion_tokens = self._num_tokens_from_messages(
-                model, [assistant_prompt_message]
+                model,
+                [assistant_prompt_message],
             )
 
         # transform usage
         usage = self._calc_response_usage(
-            model, credentials, prompt_tokens, completion_tokens
+            model,
+            credentials,
+            prompt_tokens,
+            completion_tokens,
         )
 
         # transform response
@@ -788,8 +800,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> Generator:
-        """
-        Handle llm chat stream response
+        """Handle llm chat stream response
 
         :param model: model name
         :param response: response
@@ -839,7 +850,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 if assistant_message_function_call:
                     # message has not ended ever
                     assert isinstance(
-                        delta_assistant_message_function_call_storage.arguments, str
+                        delta_assistant_message_function_call_storage.arguments,
+                        str,
                     )
                     assert isinstance(assistant_message_function_call.arguments, str)
 
@@ -853,22 +865,21 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                         delta_assistant_message_function_call_storage
                     )
                     delta_assistant_message_function_call_storage = None
-            else:
-                if assistant_message_function_call:
-                    # start of stream function call
-                    delta_assistant_message_function_call_storage = (
-                        assistant_message_function_call
-                    )
-                    if delta_assistant_message_function_call_storage.arguments is None:
-                        delta_assistant_message_function_call_storage.arguments = ""
-                    if not has_finish_reason:
-                        continue
+            elif assistant_message_function_call:
+                # start of stream function call
+                delta_assistant_message_function_call_storage = (
+                    assistant_message_function_call
+                )
+                if delta_assistant_message_function_call_storage.arguments is None:
+                    delta_assistant_message_function_call_storage.arguments = ""
+                if not has_finish_reason:
+                    continue
 
             # tool_calls = self._extract_response_tool_calls(
             #     assistant_message_tool_calls
             # )
             function_call = self._extract_response_function_call(
-                assistant_message_function_call
+                assistant_message_function_call,
             )
             tool_calls = [function_call] if function_call else []
             if tool_calls:
@@ -904,20 +915,27 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         if not prompt_tokens:
             prompt_tokens = self._num_tokens_from_messages(
-                model, prompt_messages, tools
+                model,
+                prompt_messages,
+                tools,
             )
 
         if not completion_tokens:
             full_assistant_prompt_message = AssistantPromptMessage(
-                content=full_assistant_content, tool_calls=final_tool_calls
+                content=full_assistant_content,
+                tool_calls=final_tool_calls,
             )
             completion_tokens = self._num_tokens_from_messages(
-                model, [full_assistant_prompt_message]
+                model,
+                [full_assistant_prompt_message],
             )
 
         # transform usage
         usage = self._calc_response_usage(
-            model, credentials, prompt_tokens, completion_tokens
+            model,
+            credentials,
+            prompt_tokens,
+            completion_tokens,
         )
         final_chunk.delta.usage = usage
 
@@ -927,8 +945,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         self,
         response_tool_calls: list[ChatCompletionMessageToolCall | ChoiceDeltaToolCall],
     ) -> list[AssistantPromptMessage.ToolCall]:
-        """
-        Extract tool calls from response
+        """Extract tool calls from response
 
         :param response_tool_calls: response tool calls
         :return: list of tool calls
@@ -956,10 +973,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         return tool_calls
 
     def _extract_response_function_call(
-        self, response_function_call: FunctionCall | ChoiceDeltaFunctionCall | None
+        self,
+        response_function_call: FunctionCall | ChoiceDeltaFunctionCall | None,
     ) -> AssistantPromptMessage.ToolCall | None:
-        """
-        Extract function call from response
+        """Extract function call from response
 
         :param response_function_call: response function call
         :return: tool call
@@ -967,7 +984,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         tool_call = None
         if response_function_call:
             assert isinstance(
-                response_function_call, (FunctionCall, ChoiceDeltaFunctionCall)
+                response_function_call,
+                (FunctionCall, ChoiceDeltaFunctionCall),
             )
 
             function = AssistantPromptMessage.ToolCall.ToolCallFunction(
@@ -976,16 +994,19 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             )
 
             tool_call = AssistantPromptMessage.ToolCall(
-                id=response_function_call.name or "", type="function", function=function
+                id=response_function_call.name or "",
+                type="function",
+                function=function,
             )
 
         return tool_call
 
     def _clear_illegal_prompt_messages(
-        self, model: str, prompt_messages: list[PromptMessage]
+        self,
+        model: str,
+        prompt_messages: list[PromptMessage],
     ) -> list[PromptMessage]:
-        """
-        Clear illegal prompt messages for OpenAI API
+        """Clear illegal prompt messages for OpenAI API
 
         :param model: model name
         :param prompt_messages: prompt messages
@@ -1001,7 +1022,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             if user_message_count > 1:
                 for prompt_message in prompt_messages:
                     if isinstance(prompt_message, UserPromptMessage) and isinstance(
-                        prompt_message.content, list
+                        prompt_message.content,
+                        list,
                     ):
                         prompt_message.content = "\n".join([
                             item.data
@@ -1015,11 +1037,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         return prompt_messages
 
     def _convert_prompt_message_to_dict(self, message: PromptMessage) -> dict:
-        """
-        Convert PromptMessage to dict for OpenAI API
-        """
+        """Convert PromptMessage to dict for OpenAI API"""
         if isinstance(message, UserPromptMessage):
-            message = cast(UserPromptMessage, message)
+            message = cast("UserPromptMessage", message)
             if isinstance(message.content, str):
                 message_dict = {"role": "user", "content": message.content}
             else:
@@ -1028,7 +1048,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 for message_content in message.content:
                     if message_content.type == PromptMessageContentType.TEXT:
                         message_content = cast(
-                            TextPromptMessageContent, message_content
+                            "TextPromptMessageContent",
+                            message_content,
                         )
                         sub_message_dict = {
                             "type": "text",
@@ -1037,7 +1058,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                         sub_messages.append(sub_message_dict)
                     elif message_content.type == PromptMessageContentType.IMAGE:
                         message_content = cast(
-                            ImagePromptMessageContent, message_content
+                            "ImagePromptMessageContent",
+                            message_content,
                         )
                         sub_message_dict = {
                             "type": "image_url",
@@ -1050,7 +1072,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
                 message_dict = {"role": "user", "content": sub_messages}
         elif isinstance(message, AssistantPromptMessage):
-            message = cast(AssistantPromptMessage, message)
+            message = cast("AssistantPromptMessage", message)
             message_dict = {"role": "assistant", "content": message.content}
             if message.tool_calls:
                 # message_dict["tool_calls"] = [tool_call.dict() for tool_call in
@@ -1061,10 +1083,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                     "arguments": function_call.function.arguments,
                 }
         elif isinstance(message, SystemPromptMessage):
-            message = cast(SystemPromptMessage, message)
+            message = cast("SystemPromptMessage", message)
             message_dict = {"role": "system", "content": message.content}
         elif isinstance(message, ToolPromptMessage):
-            message = cast(ToolPromptMessage, message)
+            message = cast("ToolPromptMessage", message)
             # message_dict = {
             #     "role": "tool",
             #     "content": message.content,
@@ -1084,10 +1106,12 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         return message_dict
 
     def _num_tokens_from_string(
-        self, model: str, text: str, tools: list[PromptMessageTool] | None = None
+        self,
+        model: str,
+        text: str,
+        tools: list[PromptMessageTool] | None = None,
     ) -> int:
-        """
-        Calculate num tokens for text completion model with tiktoken package.
+        """Calculate num tokens for text completion model with tiktoken package.
 
         :param model: model name
         :param text: prompt text
@@ -1115,7 +1139,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         """Calculate num tokens for gpt-3.5-turbo and gpt-4 with tiktoken package.
 
         Official documentation: https://github.com/openai/openai-cookbook/blob/
-        main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb"""
+        main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
+        """
         if model.startswith("ft:"):
             model = model.split(":")[1]
 
@@ -1131,7 +1156,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             tokens_per_message = 4
             # if there's a name, the role is omitted
             tokens_per_name = -1
-        elif model.startswith("gpt-3.5-turbo") or model.startswith("gpt-4"):
+        elif model.startswith(("gpt-3.5-turbo", "gpt-4")):
             tokens_per_message = 3
             tokens_per_name = 1
         else:
@@ -1139,7 +1164,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 f"get_num_tokens_from_messages() is not presently implemented "
                 f"for model {model}."
                 "See https://github.com/openai/openai-python/blob/main/chatml.md for "
-                "information on how messages are converted to tokens."
+                "information on how messages are converted to tokens.",
             )
         num_tokens = 0
         messages_dict = [self._convert_prompt_message_to_dict(m) for m in messages]
@@ -1186,10 +1211,11 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         return num_tokens
 
     def _num_tokens_for_tools(
-        self, encoding: tiktoken.Encoding, tools: list[PromptMessageTool]
+        self,
+        encoding: tiktoken.Encoding,
+        tools: list[PromptMessageTool],
     ) -> int:
-        """
-        Calculate num tokens for tool calling with tiktoken package.
+        """Calculate num tokens for tool calling with tiktoken package.
 
         :param encoding: encoding
         :param tools: tools for tool calling
@@ -1234,10 +1260,11 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         return num_tokens
 
     def get_customizable_model_schema(
-        self, model: str, credentials: dict
+        self,
+        model: str,
+        credentials: dict,
     ) -> AIModelEntity:
-        """
-        OpenAI supports fine-tuning of their models. This method returns the
+        """OpenAI supports fine-tuning of their models. This method returns the
         schema of the base model but renamed to the fine-tuned model name.
 
         :param model: model name
@@ -1259,7 +1286,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         base_model_schema_model_properties = base_model_schema.model_properties or {}
         base_model_schema_parameters_rules = base_model_schema.parameter_rules or []
 
-        entity = AIModelEntity(
+        return AIModelEntity(
             model=model,
             label=I18nObject(zh_Hans=model, en_US=model),
             model_type=ModelType.LLM,
@@ -1269,5 +1296,3 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             parameter_rules=list(base_model_schema_parameters_rules),
             pricing=base_model_schema.pricing,
         )
-
-        return entity

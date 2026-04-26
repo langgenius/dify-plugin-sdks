@@ -7,7 +7,7 @@ from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.__base.response_writer import ResponseWriter
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class Route:
@@ -85,3 +85,4 @@ class Router:
         for route in self.routes:
             if route.filter(data):
                 return route.func(session, data)
+        return None

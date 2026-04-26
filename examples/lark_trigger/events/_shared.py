@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import lark_oapi as lark
 from lark_oapi.api.im.v1.model import UserId
@@ -11,7 +11,8 @@ from lark_oapi.core.http import RawRequest
 from lark_oapi.event.dispatcher_handler import EventDispatcherHandlerBuilder
 from werkzeug import Request
 
-from dify_plugin.interfaces.trigger import EventRuntime
+if TYPE_CHECKING:
+    from dify_plugin.interfaces.trigger import EventRuntime
 
 
 def build_raw_request(request: Request) -> RawRequest:

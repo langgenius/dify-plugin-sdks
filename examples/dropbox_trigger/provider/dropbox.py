@@ -200,9 +200,7 @@ class DropboxTrigger(Trigger):
         new_cursor = str(data.get("cursor") or cursor)
         normalized: list[Mapping[str, Any]] = []
         if isinstance(entries, Sequence):
-            for e in entries:
-                if isinstance(e, Mapping):
-                    normalized.append(e)
+            normalized.extend(e for e in entries if isinstance(e, Mapping))
         return list(normalized), new_cursor, has_more
 
     # ---------------- Entry formatting and storage -----------------

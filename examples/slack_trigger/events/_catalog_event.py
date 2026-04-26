@@ -36,7 +36,7 @@ class CatalogSlackEvent:
     def _get_metadata(self) -> Mapping[str, Any]:
         if not self.EVENT_KEY:
             raise ValueError(
-                "EVENT_KEY must be defined on CatalogSlackEvent subclasses"
+                "EVENT_KEY must be defined on CatalogSlackEvent subclasses",
             )
         try:
             metadata = EVENT_CATALOG[self.EVENT_KEY]
@@ -83,15 +83,15 @@ class CatalogSlackEvent:
             if subtype and subtype in _MESSAGE_IGNORE_SUBTYPES:
                 raise EventIgnoreError()
             expected_channel_type = _MESSAGE_TOPIC_TO_CHANNEL_TYPE.get(
-                metadata["topic"], ""
+                metadata["topic"],
+                "",
             )
             if expected_channel_type:
                 channel_type = str(event.get("channel_type") or "")
                 if channel_type != expected_channel_type:
                     raise EventIgnoreError()
-        else:
-            if event_type != expected_event_type:
-                raise EventIgnoreError()
+        elif event_type != expected_event_type:
+            raise EventIgnoreError()
 
         sanitized_payload = self._sanitize(payload)
         sanitized_event = self._sanitize(event)
@@ -120,7 +120,7 @@ class CatalogSlackEvent:
             "authed_users": authed_users,
             "authed_teams": authed_teams,
             "is_ext_shared_channel": bool(
-                sanitized_event.get("is_ext_shared_channel", False)
+                sanitized_event.get("is_ext_shared_channel", False),
             ),
             "channel_type": channel_type,
             "summary": str(metadata.get("summary") or metadata.get("label") or ""),

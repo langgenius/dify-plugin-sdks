@@ -7,7 +7,7 @@ import quopri
 import re
 from collections.abc import Mapping
 from html.parser import HTMLParser
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote, urlparse
 
 import requests
@@ -16,7 +16,9 @@ from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.trigger import Event
-from dify_plugin.invocations.file import UploadFileResponse
+
+if TYPE_CHECKING:
+    from dify_plugin.invocations.file import UploadFileResponse
 
 
 class GmailMessageAddedEvent(Event):
@@ -427,7 +429,7 @@ class GmailMessageAddedEvent(Event):
 
     def _extract_links_from_html(self, html: str) -> list[tuple[str, str | None]]:
         class _AttachmentLinkParser(HTMLParser):
-            def __init__(self):
+            def __init__(self) -> None:
                 super().__init__()
                 self.links: list[tuple[str, str | None]] = []
                 self._current_href: str | None = None

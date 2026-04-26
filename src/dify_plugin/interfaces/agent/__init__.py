@@ -1,7 +1,7 @@
 import logging
 from abc import abstractmethod
 from collections.abc import Generator, Mapping
-from typing import Any, Union, final
+from typing import Any, final
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
@@ -58,22 +58,16 @@ class AgentModelConfig(LLMModelConfig):
 
 
 class AgentScratchpadUnit(BaseModel):
-    """
-    Agent First Prompt Entity.
-    """
+    """Agent First Prompt Entity."""
 
     class Action(BaseModel):
-        """
-        Action Entity.
-        """
+        """Action Entity."""
 
         action_name: str
-        action_input: Union[dict, str]
+        action_input: dict | str
 
         def to_dict(self) -> dict:
-            """
-            Convert to dictionary.
-            """
+            """Convert to dictionary."""
             return {
                 "action": self.action_name,
                 "action_input": self.action_input,
@@ -86,9 +80,7 @@ class AgentScratchpadUnit(BaseModel):
     action: Action | None = None
 
     def is_final(self) -> bool:
-        """
-        Check if the scratchpad unit is final.
-        """
+        """Check if the scratchpad unit is final."""
         return (
             self.action is not None
             and self.action.action_name.lower() == "final answer"
@@ -96,9 +88,7 @@ class AgentScratchpadUnit(BaseModel):
 
 
 class ToolInvokeMeta(BaseModel):
-    """
-    Tool invoke meta
-    """
+    """Tool invoke meta"""
 
     time_cost: float = Field(..., description="The time cost of the tool invoke")
     error: str | None = None
@@ -106,16 +96,12 @@ class ToolInvokeMeta(BaseModel):
 
     @classmethod
     def empty(cls) -> "ToolInvokeMeta":
-        """
-        Get an empty instance of ToolInvokeMeta
-        """
+        """Get an empty instance of ToolInvokeMeta"""
         return cls(time_cost=0.0, error=None, tool_config={})
 
     @classmethod
     def error_instance(cls, error: str) -> "ToolInvokeMeta":
-        """
-        Get an instance of ToolInvokeMeta with error
-        """
+        """Get an instance of ToolInvokeMeta with error"""
         return cls(time_cost=0.0, error=error, tool_config={})
 
     def to_dict(self) -> dict:
@@ -134,7 +120,8 @@ class ToolEntity(BaseModel):
     credential_id: str | None = None
     credential_type: CredentialType | None = None
     has_runtime_parameters: bool = Field(
-        default=False, description="Whether the tool has runtime parameters"
+        default=False,
+        description="Whether the tool has runtime parameters",
     )
     # provider type
     provider_type: ToolProviderType = ToolProviderType.BUILT_IN
@@ -152,10 +139,7 @@ class ToolEntity(BaseModel):
 
 class AgentProvider(ToolProvider):
     def validate_credentials(self, credentials: dict):
-        """
-        Always permit the agent to run
-        """
-        pass
+        """Always permit the agent to run"""
 
     def _validate_credentials(self, credentials: dict):
         pass
@@ -167,12 +151,12 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         self,
         runtime: AgentRuntime,
         session: Session,
-    ):
-        """
-        Initialize the agent strategy
+    ) -> None:
+        """Initialize the agent strategy
 
-        NOTE:
+        Note:
         - This method has been marked as final, DO NOT OVERRIDE IT.
+
         """
         self.runtime = runtime
         self.session = session
@@ -196,7 +180,9 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         return self._invoke(parameters)
 
     def increase_usage(
-        self, final_llm_usage_dict: dict[str, LLMUsage | None], usage: LLMUsage
+        self,
+        final_llm_usage_dict: dict[str, LLMUsage | None],
+        usage: LLMUsage,
     ):
         if not final_llm_usage_dict["usage"]:
             final_llm_usage_dict["usage"] = usage
@@ -218,7 +204,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         # recalc max_tokens if sum(prompt_token +  max_tokens) over model token limit
 
         model_context_tokens = model_entity.model_properties.get(
-            ModelPropertyKey.CONTEXT_SIZE
+            ModelPropertyKey.CONTEXT_SIZE,
         )
 
         max_tokens = 0
@@ -249,10 +235,10 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
                     and parameter_rule.use_template == "max_tokens"
                 ):
                     parameters[parameter_rule.name] = max_tokens
+        return None
 
     def _get_num_tokens_by_gpt2(self, prompt_messges: list[PromptMessage]) -> int:
-        """
-        Get number of tokens for given prompt messages by gpt2
+        """Get number of tokens for given prompt messages by gpt2
         Some provider models do not provide an interface for obtaining the
         number of tokens.
         Here, the gpt2 tokenizer is used to calculate the number of tokens.
@@ -273,12 +259,10 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         return len(tiktoken.encoding_for_model("gpt2").encode(text))
 
     def _init_prompt_tools(
-        self, tools: list[ToolEntity] | None
+        self,
+        tools: list[ToolEntity] | None,
     ) -> list[PromptMessageTool]:
-        """
-        Init tools
-        """
-
+        """Init tools"""
         prompt_messages_tools = []
         for tool in tools or []:
             try:
@@ -294,11 +278,10 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         return prompt_messages_tools
 
     def _convert_tool_to_prompt_message_tool(
-        self, tool: ToolEntity
+        self,
+        tool: ToolEntity,
     ) -> PromptMessageTool:
-        """
-        convert tool to prompt message tool
-        """
+        """Convert tool to prompt message tool"""
         message_tool = PromptMessageTool(
             name=tool.identity.name,
             description=tool.description.llm if tool.description else "",
@@ -351,11 +334,11 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         return message_tool
 
     def update_prompt_message_tool(
-        self, tool: ToolEntity, prompt_tool: PromptMessageTool
+        self,
+        tool: ToolEntity,
+        prompt_tool: PromptMessageTool,
     ) -> PromptMessageTool:
-        """
-        update prompt message tool
-        """
+        """Update prompt message tool"""
         # try to get tool runtime parameters
         tool_runtime_parameters = tool.parameters
 

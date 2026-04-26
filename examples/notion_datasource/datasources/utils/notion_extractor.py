@@ -12,8 +12,12 @@ HEADING_SPLITTER = {
 
 class NotionExtractor:
     def __init__(
-        self, access_token: str, page_id: str, page_type: str, workspace_id: str
-    ):
+        self,
+        access_token: str,
+        page_id: str,
+        page_type: str,
+        workspace_id: str,
+    ) -> None:
         self._notion_access_token = access_token
         self._page_id = page_id
         self._page_type = page_type
@@ -88,9 +92,7 @@ class NotionExtractor:
         markdown_table.append(self._generate_markdown_table(headers, rows))
 
         # Convert Markdown table to string
-        markdown_content = "\n".join(markdown_table)
-
-        return markdown_content
+        return "\n".join(markdown_table)
 
     def _get_notion_block_data(self, page_id: str) -> str:
         """Fetch and process Notion block data."""
@@ -133,13 +135,12 @@ class NotionExtractor:
                 cur_result_text = "\n".join(cur_result_text_arr)
                 if result_type in HEADING_SPLITTER:
                     result_lines_arr.append(
-                        f"{HEADING_SPLITTER[result_type]}{cur_result_text}"
+                        f"{HEADING_SPLITTER[result_type]}{cur_result_text}",
                     )
                 else:
                     result_lines_arr.append(cur_result_text + "\n\n")
 
-        md_content = "\n".join(result_lines_arr)
-        return md_content
+        return "\n".join(result_lines_arr)
 
     def _read_block(self, block_id: str, num_tabs: int = 0) -> str:
         """Read a block and its children with caching."""
@@ -168,14 +169,15 @@ class NotionExtractor:
                 block_type = result["type"]
                 if has_children and block_type != "child_page":
                     children_text = self._read_block(
-                        result_block_id, num_tabs=num_tabs + 1
+                        result_block_id,
+                        num_tabs=num_tabs + 1,
                     )
                     cur_result_text_arr.append(children_text)
 
                 cur_result_text = "\n".join(cur_result_text_arr)
                 if result_type in HEADING_SPLITTER:
                     result_lines_arr.append(
-                        f"{HEADING_SPLITTER[result_type]}{cur_result_text}"
+                        f"{HEADING_SPLITTER[result_type]}{cur_result_text}",
                     )
                 else:
                     result_lines_arr.append(cur_result_text + "\n\n")
@@ -203,28 +205,28 @@ class NotionExtractor:
         column_type = property_value["type"]
         if column_type == "multi_select":
             return ", ".join(option["name"] for option in property_value[column_type])
-        elif column_type in {"rich_text", "title"}:
+        if column_type in {"rich_text", "title"}:
             return (
                 property_value[column_type][0]["plain_text"]
                 if property_value[column_type]
                 else ""
             )
-        elif column_type in {"select", "status"}:
+        if column_type in {"select", "status"}:
             return (
                 property_value[column_type]["name"]
                 if property_value[column_type]
                 else ""
             )
-        elif column_type == "number":
+        if column_type == "number":
             return property_value.get("number")
-        elif column_type == "date":
+        if column_type == "date":
             date_data = property_value.get("date", {})
             return (
                 {"start": date_data.get("start"), "end": date_data.get("end")}
                 if date_data
                 else None
             )
-        elif column_type == "formula":
+        if column_type == "formula":
             formula_value = property_value[column_type]
             return (
                 formula_value.get("number")
@@ -232,12 +234,11 @@ class NotionExtractor:
                 and formula_value.get("type") == "number"
                 else formula_value
             )
-        elif column_type == "created_by":
+        if column_type == "created_by":
             # Handle created_by type
             created_by_data = property_value.get("created_by", {})
             return created_by_data.get("name") if created_by_data else None
-        else:
-            return property_value[column_type]
+        return property_value[column_type]
 
     def _extract_cell_text(self, cell: list[dict]) -> str:
         """Extract text content from a table cell."""
@@ -246,17 +247,19 @@ class NotionExtractor:
         return " ".join(text["text"]["content"] for text in cell if "text" in text)
 
     def _generate_markdown_table(
-        self, headers: list[str], rows: list[list[str]]
+        self,
+        headers: list[str],
+        rows: list[list[str]],
     ) -> str:
         """Generate a Markdown table from headers and rows."""
         markdown = ["| " + " | ".join(headers) + " |"]
         markdown.append("| " + " | ".join(["---"] * len(headers)) + " |")
-        for row in rows:
-            markdown.append(
-                "| "
-                + " | ".join(str(cell) if cell is not None else "" for cell in row)
-                + " |"
-            )
+        markdown.extend(
+            "| "
+            + " | ".join(str(cell) if cell is not None else "" for cell in row)
+            + " |"
+            for row in rows
+        )
         return "\n".join(markdown)
 
     def _paginate(self, fetch_function, **kwargs) -> list[dict]:

@@ -6,14 +6,13 @@ import secrets
 import time
 import urllib.parse
 from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
 from werkzeug import Request, Response
 
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
-from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
 from dify_plugin.errors.trigger import (
     SubscriptionError,
@@ -23,6 +22,9 @@ from dify_plugin.errors.trigger import (
     TriggerValidationError,
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
+
+if TYPE_CHECKING:
+    from dify_plugin.entities.provider_config import CredentialType
 
 
 class GmailTrigger(Trigger):
@@ -245,7 +247,7 @@ class GmailTrigger(Trigger):
             req = google_requests.Request()
             claims = id_token.verify_oauth2_token(token, req, audience=audience)
             issuer = claims.get("iss")
-            if issuer not in ("https://accounts.google.com", "accounts.google.com"):
+            if issuer not in {"https://accounts.google.com", "accounts.google.com"}:
                 raise TriggerValidationError("Invalid OIDC token issuer")
             if expected_email and claims.get("email") != expected_email:
                 raise TriggerValidationError(
@@ -533,7 +535,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 f"Network error while calling users.watch: {exc}",
                 error_code="NETWORK_ERROR",
             ) from exc
-        if resp.status_code not in (200, 201):
+        if resp.status_code not in {200, 201}:
             try:
                 err: dict[str, Any] = resp.json()
             except Exception:
@@ -863,7 +865,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         resp: requests.Response = requests.post(
             url, headers=headers, json=body, timeout=10
         )
-        if resp.status_code not in (200, 201):
+        if resp.status_code not in {200, 201}:
             try:
                 err: dict[str, Any] = resp.json()
             except Exception:

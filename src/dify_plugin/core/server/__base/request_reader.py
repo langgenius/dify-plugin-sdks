@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class RequestReader(ABC):
-    def __init__(self):
+    def __init__(self) -> None:
         # Convert class variables to instance variables to avoid global lock contention
         self.lock = threading.Lock()
         self.readers = []

@@ -3,7 +3,6 @@ import re
 import time
 from abc import abstractmethod
 from collections.abc import Generator, Mapping
-from typing import Union
 
 from pydantic import ConfigDict
 
@@ -35,9 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 class LargeLanguageModel(AIModel):
-    """
-    Model class for large language model.
-    """
+    """Model class for large language model."""
 
     model_type: ModelType = ModelType.LLM
 
@@ -59,9 +56,8 @@ class LargeLanguageModel(AIModel):
         stop: list[str] | None = None,
         stream: bool = True,
         user: str | None = None,
-    ) -> Union[LLMResult, Generator[LLMResultChunk, None, None]]:
-        """
-        Invoke large language model
+    ) -> LLMResult | Generator[LLMResultChunk, None, None]:
+        """Invoke large language model
 
         :param model: model name
         :param credentials: model credentials
@@ -83,8 +79,7 @@ class LargeLanguageModel(AIModel):
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> int:
-        """
-        Get number of tokens for given prompt messages
+        """Get number of tokens for given prompt messages
 
         :param model: model name
         :param credentials: model credentials
@@ -103,8 +98,7 @@ class LargeLanguageModel(AIModel):
         return re.split("|".join(stop), text, maxsplit=1)[0]
 
     def get_parameter_rules(self, model: str, credentials: dict) -> list[ParameterRule]:
-        """
-        Get parameter rules
+        """Get parameter rules
 
         :param model: model name
         :param credentials: model credentials
@@ -117,8 +111,7 @@ class LargeLanguageModel(AIModel):
         return []
 
     def get_model_mode(self, model: str, credentials: Mapping | None = None) -> LLMMode:
-        """
-        Get model mode
+        """Get model mode
 
         :param model: model name
         :param credentials: model credentials
@@ -129,16 +122,19 @@ class LargeLanguageModel(AIModel):
         mode = LLMMode.CHAT
         if model_schema and model_schema.model_properties.get(ModelPropertyKey.MODE):
             mode = LLMMode.value_of(
-                model_schema.model_properties[ModelPropertyKey.MODE]
+                model_schema.model_properties[ModelPropertyKey.MODE],
             )
 
         return mode
 
     def _calc_response_usage(
-        self, model: str, credentials: dict, prompt_tokens: int, completion_tokens: int
+        self,
+        model: str,
+        credentials: dict,
+        prompt_tokens: int,
+        completion_tokens: int,
     ) -> LLMUsage:
-        """
-        Calculate response usage
+        """Calculate response usage
 
         :param model: model name
         :param credentials: model credentials
@@ -167,7 +163,7 @@ class LargeLanguageModel(AIModel):
         latency = current_time - self.started_at
 
         # transform usage
-        usage = LLMUsage(
+        return LLMUsage(
             prompt_tokens=prompt_tokens,
             prompt_unit_price=prompt_price_info.unit_price,
             prompt_price_unit=prompt_price_info.unit,
@@ -183,13 +179,13 @@ class LargeLanguageModel(AIModel):
             latency=latency,
         )
 
-        return usage
-
     def _validate_and_filter_model_parameters(
-        self, model: str, model_parameters: dict, credentials: dict
+        self,
+        model: str,
+        model_parameters: dict,
+        credentials: dict,
     ) -> dict:
-        """
-        Validate model parameters
+        """Validate model parameters
 
         :param model: model name
         :param model_parameters: model parameters
@@ -211,19 +207,17 @@ class LargeLanguageModel(AIModel):
                     # if parameter value is None, use template value variable
                     # name instead
                     parameter_value = model_parameters[parameter_rule.use_template]
-                else:
-                    if parameter_rule.required:
-                        if parameter_rule.default is not None:
-                            filtered_model_parameters[parameter_name] = (
-                                parameter_rule.default
-                            )
-                            continue
-                        else:
-                            raise ValueError(
-                                f"Model Parameter {parameter_name} is required."
-                            )
-                    else:
+                elif parameter_rule.required:
+                    if parameter_rule.default is not None:
+                        filtered_model_parameters[parameter_name] = (
+                            parameter_rule.default
+                        )
                         continue
+                    raise ValueError(
+                        f"Model Parameter {parameter_name} is required.",
+                    )
+                else:
+                    continue
 
             # validate parameter value type
             if parameter_rule.type == ParameterType.INT:
@@ -237,7 +231,7 @@ class LargeLanguageModel(AIModel):
                 ):
                     raise ValueError(
                         f"Model Parameter {parameter_name} should be greater "
-                        f"than or equal to {parameter_rule.min}."
+                        f"than or equal to {parameter_rule.min}.",
                     )
 
                 if (
@@ -246,12 +240,12 @@ class LargeLanguageModel(AIModel):
                 ):
                     raise ValueError(
                         f"Model Parameter {parameter_name} should be less "
-                        f"than or equal to {parameter_rule.max}."
+                        f"than or equal to {parameter_rule.max}.",
                     )
             elif parameter_rule.type == ParameterType.FLOAT:
                 if not isinstance(parameter_value, float | int):
                     raise ValueError(
-                        f"Model Parameter {parameter_name} should be float."
+                        f"Model Parameter {parameter_name} should be float.",
                     )
 
                 # validate parameter value precision
@@ -259,16 +253,16 @@ class LargeLanguageModel(AIModel):
                     if parameter_rule.precision == 0:
                         if parameter_value != int(parameter_value):
                             raise ValueError(
-                                f"Model Parameter {parameter_name} should be int."
+                                f"Model Parameter {parameter_name} should be int.",
                             )
-                    else:
-                        if parameter_value != round(
-                            parameter_value, parameter_rule.precision
-                        ):
-                            raise ValueError(
-                                f"Model Parameter {parameter_name} should be round to "
-                                f"{parameter_rule.precision} decimal places."
-                            )
+                    elif parameter_value != round(
+                        parameter_value,
+                        parameter_rule.precision,
+                    ):
+                        raise ValueError(
+                            f"Model Parameter {parameter_name} should be round to "
+                            f"{parameter_rule.precision} decimal places.",
+                        )
 
                 # validate parameter value range
                 if (
@@ -277,7 +271,7 @@ class LargeLanguageModel(AIModel):
                 ):
                     raise ValueError(
                         f"Model Parameter {parameter_name} should be greater "
-                        f"than or equal to {parameter_rule.min}."
+                        f"than or equal to {parameter_rule.min}.",
                     )
 
                 if (
@@ -286,17 +280,17 @@ class LargeLanguageModel(AIModel):
                 ):
                     raise ValueError(
                         f"Model Parameter {parameter_name} should be less "
-                        f"than or equal to {parameter_rule.max}."
+                        f"than or equal to {parameter_rule.max}.",
                     )
             elif parameter_rule.type == ParameterType.BOOLEAN:
                 if not isinstance(parameter_value, bool):
                     raise ValueError(
-                        f"Model Parameter {parameter_name} should be bool."
+                        f"Model Parameter {parameter_name} should be bool.",
                     )
             elif parameter_rule.type == ParameterType.STRING:
                 if not isinstance(parameter_value, str):
                     raise ValueError(
-                        f"Model Parameter {parameter_name} should be string."
+                        f"Model Parameter {parameter_name} should be string.",
                     )
 
                 # validate options
@@ -306,17 +300,17 @@ class LargeLanguageModel(AIModel):
                 ):
                     raise ValueError(
                         f"Model Parameter {parameter_name} should be one of "
-                        f"{parameter_rule.options}."
+                        f"{parameter_rule.options}.",
                     )
             elif parameter_rule.type == ParameterType.TEXT:
                 if not isinstance(parameter_value, str):
                     raise ValueError(
-                        f"Model Parameter {parameter_name} should be string."
+                        f"Model Parameter {parameter_name} should be string.",
                     )
             else:
                 raise ValueError(
                     f"Model Parameter {parameter_name} type "
-                    f"{parameter_rule.type} is not supported."
+                    f"{parameter_rule.type} is not supported.",
                 )
 
             filtered_model_parameters[parameter_name] = parameter_value
@@ -333,9 +327,8 @@ class LargeLanguageModel(AIModel):
         stop: list[str] | None = None,
         stream: bool = True,
         user: str | None = None,
-    ) -> Union[LLMResult, Generator[LLMResultChunk, None, None]]:
-        """
-        Code block mode wrapper, ensure the response is a code block with
+    ) -> LLMResult | Generator[LLMResultChunk, None, None]:
+        """Code block mode wrapper, ensure the response is a code block with
         output markdown quote
 
         :param model: model name
@@ -349,7 +342,6 @@ class LargeLanguageModel(AIModel):
         :param callbacks: callbacks
         :return: full response or stream response chunk generator result
         """
-
         block_prompts = (
             "You should always follow the instructions and output a valid "
             "{{block}} object.\n"
@@ -383,13 +375,15 @@ class LargeLanguageModel(AIModel):
 
         # check if there is a system message
         if len(prompt_messages) > 0 and isinstance(
-            prompt_messages[0], SystemPromptMessage
+            prompt_messages[0],
+            SystemPromptMessage,
         ):
             # override the system message
             prompt_messages[0] = SystemPromptMessage(
                 content=block_prompts.replace(
-                    "{{instructions}}", str(prompt_messages[0].content)
-                )
+                    "{{instructions}}",
+                    str(prompt_messages[0].content),
+                ),
             )
         else:
             # insert the system message
@@ -399,12 +393,13 @@ class LargeLanguageModel(AIModel):
                     content=block_prompts.replace(
                         "{{instructions}}",
                         f"Please output a valid {code_block} object.",
-                    )
+                    ),
                 ),
             )
 
         if len(prompt_messages) > 0 and isinstance(
-            prompt_messages[-1], UserPromptMessage
+            prompt_messages[-1],
+            UserPromptMessage,
         ):
             # add ```JSON\n to the last text message
             if isinstance(prompt_messages[-1].content, str):
@@ -449,12 +444,11 @@ class LargeLanguageModel(AIModel):
                     prompt_messages=prompt_messages,
                     input_generator=new_generator(),
                 )
-            else:
-                return self._code_block_mode_stream_processor(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    input_generator=new_generator(),
-                )
+            return self._code_block_mode_stream_processor(
+                model=model,
+                prompt_messages=prompt_messages,
+                input_generator=new_generator(),
+            )
 
         return response
 
@@ -464,8 +458,7 @@ class LargeLanguageModel(AIModel):
         prompt_messages: list[PromptMessage],
         input_generator: Generator[LLMResultChunk, None, None],
     ) -> Generator[LLMResultChunk, None, None]:
-        """
-        Code block mode stream processor, ensure the response is a code block
+        """Code block mode stream processor, ensure the response is a code block
         with output markdown quote
 
         :param model: model name
@@ -512,7 +505,8 @@ class LargeLanguageModel(AIModel):
                     delta=LLMResultChunkDelta(
                         index=0,
                         message=AssistantPromptMessage(
-                            content=new_piece, tool_calls=[]
+                            content=new_piece,
+                            tool_calls=[],
                         ),
                     ),
                 )
@@ -523,8 +517,7 @@ class LargeLanguageModel(AIModel):
         prompt_messages: list,
         input_generator: Generator[LLMResultChunk, None, None],
     ) -> Generator[LLMResultChunk, None, None]:
-        """
-        Code block mode stream processor, ensure the response is a code block
+        """Code block mode stream processor, ensure the response is a code block
         with output markdown quote.
         This version skips the language identifier that follows the opening
         triple backticks.
@@ -594,23 +587,24 @@ class LargeLanguageModel(AIModel):
                     delta=LLMResultChunkDelta(
                         index=0,
                         message=AssistantPromptMessage(
-                            content=new_piece, tool_calls=[]
+                            content=new_piece,
+                            tool_calls=[],
                         ),
                     ),
                 )
 
     def _wrap_thinking_by_reasoning_content(
-        self, delta: dict, is_reasoning: bool
+        self,
+        delta: dict,
+        is_reasoning: bool,
     ) -> tuple[str, bool]:
-        """
-        If the reasoning response is from delta.get("reasoning_content"), we wrap
+        """If the reasoning response is from delta.get("reasoning_content"), we wrap
         it with HTML think tag.
 
         :param delta: delta dictionary from LLM streaming response
         :param is_reasoning: is reasoning
         :return: tuple of (processed_content, is_reasoning)
         """
-
         content = delta.get("content") or ""
         reasoning_content = delta.get("reasoning_content")
         output = content
@@ -620,13 +614,12 @@ class LargeLanguageModel(AIModel):
                 is_reasoning = True
             else:
                 output = reasoning_content
-        else:
-            if is_reasoning:
-                is_reasoning = False
-                if not reasoning_content:
-                    output = "\n</think>"
-                if content:
-                    output += content
+        elif is_reasoning:
+            is_reasoning = False
+            if not reasoning_content:
+                output = "\n</think>"
+            if content:
+                output += content
 
         return output, is_reasoning
 
@@ -645,8 +638,7 @@ class LargeLanguageModel(AIModel):
         stream: bool = True,
         user: str | None = None,
     ) -> Generator[LLMResultChunk, None, None]:
-        """
-        Invoke large language model
+        """Invoke large language model
 
         :param model: model name
         :param credentials: model credentials
@@ -664,7 +656,9 @@ class LargeLanguageModel(AIModel):
             model_parameters = {}
 
         model_parameters = self._validate_and_filter_model_parameters(
-            model, model_parameters, credentials
+            model,
+            model_parameters,
+            credentials,
         )
 
         with self.timing_context():

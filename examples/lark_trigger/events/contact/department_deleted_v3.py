@@ -27,12 +27,13 @@ def _serialize_status(status: DepartmentStatus | None) -> dict[str, bool]:
 
 
 def _serialize_leaders(leaders: list[DepartmentLeader] | None) -> list[dict[str, Any]]:
-    serialized: list[dict[str, Any]] = []
-    for leader in leaders or []:
-        serialized.append({
+    serialized: list[dict[str, Any]] = [
+        {
             "leader_type": leader.leader_type if leader.leader_type is not None else 0,
             "leader_id": getattr(leader, "leader_i_d", "") or "",
-        })
+        }
+        for leader in leaders or []
+    ]
     return serialized
 
 

@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import secrets
 from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
 from werkzeug import Request, Response
 
-from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
 from dify_plugin.errors.trigger import (
     SubscriptionError,
@@ -17,6 +16,9 @@ from dify_plugin.errors.trigger import (
     UnsubscribeError,
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
+
+if TYPE_CHECKING:
+    from dify_plugin.entities.provider_config import CredentialType
 
 
 class TelegramTrigger(Trigger):

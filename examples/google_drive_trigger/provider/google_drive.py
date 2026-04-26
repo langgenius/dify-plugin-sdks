@@ -192,9 +192,11 @@ class GoogleDriveTrigger(Trigger):
 
             raw_changes = payload.get("changes") or []
             if isinstance(raw_changes, Sequence):
-                for change in raw_changes:
-                    if isinstance(change, Mapping):
-                        changes.append(dict(change))
+                changes.extend(
+                    dict(change)
+                    for change in raw_changes
+                    if isinstance(change, Mapping)
+                )
 
             if next_page_token:
                 self._set_max_page_token(next_page_token)
@@ -623,10 +625,9 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         if isinstance(raw, str):
             return [part.strip() for part in raw.split(",") if part.strip()]
         if isinstance(raw, Sequence):
-            normalized: list[str] = []
-            for item in raw:
-                if isinstance(item, str) and item.strip():
-                    normalized.append(item.strip())
+            normalized: list[str] = [
+                item.strip() for item in raw if isinstance(item, str) and item.strip()
+            ]
             return normalized
         raise SubscriptionError(
             "spaces must be a string or list of strings", error_code="INVALID_SPACES"

@@ -20,7 +20,7 @@ class JinaProvider(ModelProvider):
             model_instance.validate_credentials(
                 model="jina-embeddings-v2-base-en", credentials=credentials
             )
-        except CredentialsValidateFailedError as ex:
-            raise ex
-        except Exception as ex:
-            raise ex
+        except CredentialsValidateFailedError:
+            raise
+        except Exception:
+            raise

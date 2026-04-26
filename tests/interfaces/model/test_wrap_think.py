@@ -103,8 +103,6 @@ class TestWrapThinking(unittest.TestCase):
             full_output += output
 
         # Verify results
-        print(f"DEBUG Output: {full_output!r}")
-
         assert "<think>" in full_output
         assert "Thinking started. Still thinking." in full_output
         assert "</think>" in full_output, "Should verify <think> tag is closed properly"

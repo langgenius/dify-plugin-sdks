@@ -1,3 +1,4 @@
+import pathlib
 from os.path import abspath, dirname, join
 from threading import Lock
 
@@ -13,8 +14,10 @@ class JinaTokenizer:
         if cls._tokenizer is None:
             with cls._lock:
                 if cls._tokenizer is None:
-                    base_path = abspath(__file__)
-                    gpt2_tokenizer_path = join(dirname(base_path), "tokenizer")
+                    base_path = pathlib.Path(__file__).resolve()
+                    gpt2_tokenizer_path = join(
+                        pathlib.Path(base_path).parent, "tokenizer"
+                    )
                     cls._tokenizer = AutoTokenizer.from_pretrained(gpt2_tokenizer_path)
         return cls._tokenizer
 

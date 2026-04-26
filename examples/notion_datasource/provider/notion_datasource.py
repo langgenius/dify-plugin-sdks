@@ -21,11 +21,11 @@ class NotionDatasourceProvider(DatasourceProvider):
     _TOKEN_URL = "https://api.notion.com/v1/oauth/token"
 
     def _oauth_get_authorization_url(
-        self, redirect_uri: str, system_credentials: Mapping[str, Any]
+        self,
+        redirect_uri: str,
+        system_credentials: Mapping[str, Any],
     ) -> str:
-        """
-        Generate the authorization URL for the Notion OAuth.
-        """
+        """Generate the authorization URL for the Notion OAuth."""
         params = {
             "client_id": system_credentials["client_id"],
             "response_type": "code",
@@ -35,11 +35,12 @@ class NotionDatasourceProvider(DatasourceProvider):
         return f"{self._AUTH_URL}?{urllib.parse.urlencode(params)}"
 
     def _oauth_get_credentials(
-        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
+        self,
+        redirect_uri: str,
+        system_credentials: Mapping[str, Any],
+        request: Request,
     ) -> DatasourceOAuthCredentials:
-        """
-        Get the credentials for the Notion OAuth.
-        """
+        """Get the credentials for the Notion OAuth."""
         code = request.args.get("code")
         if not code:
             raise DatasourceOAuthError("No code provided")
@@ -84,23 +85,21 @@ class NotionDatasourceProvider(DatasourceProvider):
         system_credentials: Mapping[str, Any],
         credentials: Mapping[str, Any],
     ) -> DatasourceOAuthCredentials:
-        """
-        Refresh the credentials for the Notion OAuth.
+        """Refresh the credentials for the Notion OAuth.
 
         Note: Notion OAuth API does not support refresh tokens.
         When the access token expires, users need to re-authorize through the
         OAuth flow.
         """
-        pass
 
     def _validate_credentials(self, credentials: Mapping[str, Any]):
         try:
             # Check if integration_token is provided
             if "integration_secret" not in credentials or not credentials.get(
-                "integration_secret"
+                "integration_secret",
             ):
                 raise ToolProviderCredentialValidationError(
-                    "Notion Integration Token is required."
+                    "Notion Integration Token is required.",
                 )
 
             # Try to authenticate with Notion API by making a test request
@@ -121,18 +120,17 @@ class NotionDatasourceProvider(DatasourceProvider):
                 )
                 if response.status_code == 401:
                     raise ToolProviderCredentialValidationError(
-                        "Invalid Notion Integration Token."
+                        "Invalid Notion Integration Token.",
                     )
-                elif response.status_code != 200:
+                if response.status_code != 200:
                     raise ToolProviderCredentialValidationError(
                         f"Failed to connect to Notion API: "
-                        f"{response.status_code} {response.text}"
+                        f"{response.status_code} {response.text}",
                     )
-                else:
-                    return True
+                return True
             except requests.RequestException as e:
                 raise ToolProviderCredentialValidationError(
-                    f"Network error when connecting to Notion API: {e!s}"
+                    f"Network error when connecting to Notion API: {e!s}",
                 ) from e
 
         except Exception as e:

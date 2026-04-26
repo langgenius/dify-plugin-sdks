@@ -86,9 +86,7 @@ class OpenAIModerationModel(_CommonOpenAI, ModerationModel):
         :return: false if text is safe, true otherwise
         """
         # call moderation model
-        moderation_result = client.moderations.create(model=model, input=texts)
-
-        return moderation_result
+        return client.moderations.create(model=model, input=texts)
 
     def _get_max_characters_per_chunk(self, model: str, credentials: dict) -> int:
         """

@@ -1,5 +1,6 @@
 import glob
 import os
+import pathlib
 from collections.abc import Sequence
 from enum import Enum
 
@@ -66,7 +67,7 @@ class FormOption(BaseModel):
     value: str
     show_on: list[FormShowOnObject] = Field(default_factory=list)
 
-    def __init__(self, **data):
+    def __init__(self, **data) -> None:
         super().__init__(**data)
         if not self.label:
             self.label = I18nObject(en_US=self.value)
@@ -235,7 +236,7 @@ class ProviderEntity(BaseModel):
         if not isinstance(value, dict):
             raise ValueError("models should be a glob path list")
 
-        cwd = os.getcwd()
+        cwd = pathlib.Path.cwd()
 
         model_entities = []
 

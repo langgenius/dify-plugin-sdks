@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from werkzeug import Request
 
-from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
 
 from .utils import (
@@ -16,6 +15,9 @@ from .utils import (
     resolve_calendar_id,
     should_enrich_details,
 )
+
+if TYPE_CHECKING:
+    from dify_plugin.entities.trigger import Variables
 
 
 class GoogleCalendarEventCreatedEvent(Event):

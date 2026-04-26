@@ -1,3 +1,4 @@
+import pathlib
 from typing import IO
 
 from openai import OpenAI
@@ -9,15 +10,16 @@ from ..common_openai import _CommonOpenAI
 
 
 class OpenAISpeech2TextModel(_CommonOpenAI, Speech2TextModel):
-    """
-    Model class for OpenAI Speech to text model.
-    """
+    """Model class for OpenAI Speech to text model."""
 
     def _invoke(
-        self, model: str, credentials: dict, file: IO[bytes], user: str | None = None
+        self,
+        model: str,
+        credentials: dict,
+        file: IO[bytes],
+        user: str | None = None,
     ) -> str:
-        """
-        Invoke speech2text model
+        """Invoke speech2text model
 
         :param model: model name
         :param credentials: model credentials
@@ -28,8 +30,7 @@ class OpenAISpeech2TextModel(_CommonOpenAI, Speech2TextModel):
         return self._speech2text_invoke(model, credentials, file)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        """
-        Validate model credentials
+        """Validate model credentials
 
         :param model: model name
         :param credentials: model credentials
@@ -38,16 +39,18 @@ class OpenAISpeech2TextModel(_CommonOpenAI, Speech2TextModel):
         try:
             audio_file_path = self._get_demo_file_path()
 
-            with open(audio_file_path, "rb") as audio_file:
+            with pathlib.Path(audio_file_path).open("rb") as audio_file:
                 self._speech2text_invoke(model, credentials, audio_file)
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex)) from ex
 
     def _speech2text_invoke(
-        self, model: str, credentials: dict, file: IO[bytes]
+        self,
+        model: str,
+        credentials: dict,
+        file: IO[bytes],
     ) -> str:
-        """
-        Invoke speech2text model
+        """Invoke speech2text model
 
         :param model: model name
         :param credentials: model credentials

@@ -47,7 +47,7 @@ class ModelInvocations:
 
 
 class AppInvocations:
-    def __init__(self, session: "Session"):
+    def __init__(self, session: "Session") -> None:
         from dify_plugin.invocations.app import FetchAppInvocation
         from dify_plugin.invocations.app.chat import ChatAppInvocation
         from dify_plugin.invocations.app.completion import CompletionAppInvocation
@@ -63,7 +63,7 @@ class AppInvocations:
 
 
 class WorkflowNodeInvocations:
-    def __init__(self, session: "Session"):
+    def __init__(self, session: "Session") -> None:
         from dify_plugin.invocations.workflow_node.parameter_extractor import (
             ParameterExtractorNodeInvocation,
         )
@@ -244,7 +244,7 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
 
         if not self.session:
             raise Exception("current tool runtime does not support backwards invoke")
-        if self.session.install_method in [InstallMethod.Local, InstallMethod.Remote]:
+        if self.session.install_method in {InstallMethod.Local, InstallMethod.Remote}:
             return self._full_duplex_backwards_invoke(
                 backwards_request_id, type, data_type, data
             )

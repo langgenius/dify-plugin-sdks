@@ -26,7 +26,7 @@ class OnlineDriveDatasource(ToolLike[DatasourceMessage]):
         self,
         runtime: DatasourceRuntime,
         session: Session,
-    ):
+    ) -> None:
         """
         Initialize the datasource
 

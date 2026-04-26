@@ -15,7 +15,7 @@ def test_error_hierarchy():
 
 
 class DummyStorageInvocation(StorageInvocation):
-    def __init__(self, return_values: list[dict]):
+    def __init__(self, return_values: list[dict]) -> None:
         self._return_values = return_values
 
     def _backwards_invoke(

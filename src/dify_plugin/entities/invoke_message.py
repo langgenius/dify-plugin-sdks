@@ -46,7 +46,8 @@ class InvokeMessage(BaseModel):
         )
         variable_value: Any = Field(..., description="The value of the variable")
         stream: bool = Field(
-            default=False, description="Whether the variable is streamed"
+            default=False,
+            description="Whether the variable is streamed",
         )
 
         @model_validator(mode="before")
@@ -57,10 +58,11 @@ class InvokeMessage(BaseModel):
                 return values
 
             if values.get("stream") and not isinstance(
-                values.get("variable_value"), str
+                values.get("variable_value"),
+                str,
             ):
                 raise ValueError(
-                    "When 'stream' is True, 'variable_value' must be a string."
+                    "When 'stream' is True, 'variable_value' must be a string.",
                 )
             return values
 
@@ -71,24 +73,25 @@ class InvokeMessage(BaseModel):
             SUCCESS = "success"
 
         id: str = Field(
-            default_factory=lambda: str(uuid.uuid4()), description="The id of the log"
+            default_factory=lambda: str(uuid.uuid4()),
+            description="The id of the log",
         )
         label: str = Field(..., description="The label of the log")
         parent_id: str | None = Field(
-            default=None, description="Leave empty for root log"
+            default=None,
+            description="Leave empty for root log",
         )
         error: str | None = Field(default=None, description="The error message")
         status: LogStatus = Field(..., description="The status of the log")
         data: Mapping[str, Any] = Field(..., description="Detailed log data")
         metadata: Mapping[LogMetadata, Any] | None = Field(
-            default=None, description="The metadata of the log"
+            default=None,
+            description="The metadata of the log",
         )
 
     class RetrieverResourceMessage(BaseModel):
         class RetrieverResource(BaseModel):
-            """
-            Model class for retriever resource.
-            """
+            """Model class for retriever resource."""
 
             position: int | None = None
             dataset_id: str | None = None
@@ -108,7 +111,8 @@ class InvokeMessage(BaseModel):
             doc_metadata: dict | None = None
 
         retriever_resources: list[RetrieverResource] = Field(
-            ..., description="retriever resources"
+            ...,
+            description="retriever resources",
         )
         context: str = Field(..., description="context")
 
@@ -153,7 +157,7 @@ class InvokeMessage(BaseModel):
     def serialize_message(self, v):
         if isinstance(v, self.BlobMessage):
             return {"blob": base64.b64encode(v.blob).decode("utf-8")}
-        elif isinstance(v, self.BlobChunkMessage):
+        if isinstance(v, self.BlobChunkMessage):
             return {
                 "id": v.id,
                 "sequence": v.sequence,

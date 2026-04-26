@@ -2,15 +2,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from enum import Enum, StrEnum
-from typing import Annotated, Literal, Union
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, BeforeValidator, Field, JsonValue, field_validator
 
 
 class PromptMessageRole(Enum):
-    """
-    Enum class for prompt message.
-    """
+    """Enum class for prompt message."""
 
     SYSTEM = "system"
     USER = "user"
@@ -20,8 +18,7 @@ class PromptMessageRole(Enum):
 
     @classmethod
     def value_of(cls, value: str) -> PromptMessageRole:
-        """
-        Get value of given mode.
+        """Get value of given mode.
 
         :param value: mode value
         :return: mode
@@ -33,9 +30,7 @@ class PromptMessageRole(Enum):
 
 
 class PromptMessageTool(BaseModel):
-    """
-    Model class for prompt message tool.
-    """
+    """Model class for prompt message tool."""
 
     name: str
 
@@ -44,18 +39,14 @@ class PromptMessageTool(BaseModel):
 
 
 class PromptMessageFunction(BaseModel):
-    """
-    Model class for prompt message function.
-    """
+    """Model class for prompt message function."""
 
     type: str = "function"
     function: PromptMessageTool
 
 
 class PromptMessageContentType(StrEnum):
-    """
-    Enum class for prompt message content type.
-    """
+    """Enum class for prompt message content type."""
 
     TEXT = "text"
     IMAGE = "image"
@@ -69,22 +60,19 @@ class PromptMessageContent(BaseModel):
 
 
 class TextPromptMessageContent(PromptMessageContent):
-    """
-    Model class for text prompt message content.
-    """
+    """Model class for text prompt message content."""
 
     type: Literal[PromptMessageContentType.TEXT] = PromptMessageContentType.TEXT
     data: str
 
 
 class MultiModalPromptMessageContent(PromptMessageContent):
-    """
-    Model class for multi-modal prompt message content.
-    """
+    """Model class for multi-modal prompt message content."""
 
     format: str = Field(default=..., description="the format of multi-modal file")
     base64_data: str = Field(
-        default="", description="the base64 data of multi-modal file"
+        default="",
+        description="the base64 data of multi-modal file",
     )
     url: str = Field(default="", description="the url of multi-modal file")
     mime_type: str = Field(default=..., description="the mime type of multi-modal file")
@@ -117,37 +105,31 @@ class DocumentPromptMessageContent(MultiModalPromptMessageContent):
 
 
 PromptMessageContentUnionTypes = Annotated[
-    Union[
-        TextPromptMessageContent,
-        ImagePromptMessageContent,
-        DocumentPromptMessageContent,
-        AudioPromptMessageContent,
-        VideoPromptMessageContent,
-    ],
+    TextPromptMessageContent
+    | ImagePromptMessageContent
+    | DocumentPromptMessageContent
+    | AudioPromptMessageContent
+    | VideoPromptMessageContent,
     Field(discriminator="type"),
 ]
 
 
 class PromptMessage(BaseModel):
-    """
-    Model class for prompt message.
-    """
+    """Model class for prompt message."""
 
     role: PromptMessageRole
     content: str | list[PromptMessageContentUnionTypes] | None = None
     name: str | None = None
 
     def is_empty(self) -> bool:
-        """
-        Check if prompt message is empty.
+        """Check if prompt message is empty.
 
         :return: True if prompt message is empty, False otherwise
         """
         return not self.content
 
     def get_text_content(self) -> str:
-        """
-        Get text content from prompt message.
+        """Get text content from prompt message.
 
         This method handles both simple string content and multi-modal content lists,
         extracting only the text parts from the message.
@@ -156,26 +138,25 @@ class PromptMessage(BaseModel):
         """
         if isinstance(self.content, str):
             return self.content
-        elif isinstance(self.content, list):
-            text_parts = []
-            for item in self.content:
-                if isinstance(item, TextPromptMessageContent):
-                    text_parts.append(item.data)
+        if isinstance(self.content, list):
+            text_parts = [
+                item.data
+                for item in self.content
+                if isinstance(item, TextPromptMessageContent)
+            ]
             return "".join(text_parts)
-        else:
-            return ""
+        return ""
 
     @field_validator("content", mode="before")
     @classmethod
     def transform_content(
-        cls, value: list[dict] | Sequence[PromptMessageContent] | str | None
+        cls,
+        value: list[dict] | Sequence[PromptMessageContent] | str | None,
     ) -> str | list[PromptMessageContent] | None:
-        """
-        Transform content to list of prompt message content.
-        """
+        """Transform content to list of prompt message content."""
         if isinstance(value, str):
             return value
-        elif isinstance(value, Sequence):
+        if isinstance(value, Sequence):
             result = []
             for content in value:
                 if isinstance(content, PromptMessageContent):
@@ -195,7 +176,7 @@ class PromptMessage(BaseModel):
                         result.append(VideoPromptMessageContent.model_validate(content))
                     case PromptMessageContentType.DOCUMENT:
                         result.append(
-                            DocumentPromptMessageContent.model_validate(content)
+                            DocumentPromptMessageContent.model_validate(content),
                         )
                     case _:
                         raise ValueError("invalid prompt message content type")
@@ -204,9 +185,7 @@ class PromptMessage(BaseModel):
 
 
 class UserPromptMessage(PromptMessage):
-    """
-    Model class for user prompt message.
-    """
+    """Model class for user prompt message."""
 
     role: PromptMessageRole = PromptMessageRole.USER
 
@@ -218,19 +197,13 @@ def _ensure_field_empty_str(value: str | None) -> str:
 
 
 class AssistantPromptMessage(PromptMessage):
-    """
-    Model class for assistant prompt message.
-    """
+    """Model class for assistant prompt message."""
 
     class ToolCall(BaseModel):
-        """
-        Model class for assistant prompt message tool call.
-        """
+        """Model class for assistant prompt message tool call."""
 
         class ToolCallFunction(BaseModel):
-            """
-            Model class for assistant prompt message tool call function.
-            """
+            """Model class for assistant prompt message tool call function."""
 
             name: Annotated[str, BeforeValidator(_ensure_field_empty_str)]
             arguments: Annotated[str, BeforeValidator(_ensure_field_empty_str)]
@@ -244,18 +217,16 @@ class AssistantPromptMessage(PromptMessage):
         def transform_id_to_str(cls, value) -> str:
             if value is None:
                 return ""
-            elif not isinstance(value, str):
+            if not isinstance(value, str):
                 return str(value)
-            else:
-                return value
+            return value
 
     role: PromptMessageRole = PromptMessageRole.ASSISTANT
     tool_calls: list[ToolCall] = []
     opaque_body: JsonValue | None = None
 
     def is_empty(self) -> bool:
-        """
-        Check if prompt message is empty.
+        """Check if prompt message is empty.
 
         :return: True if prompt message is empty, False otherwise
         """
@@ -263,32 +234,25 @@ class AssistantPromptMessage(PromptMessage):
 
 
 class SystemPromptMessage(PromptMessage):
-    """
-    Model class for system prompt message.
-    """
+    """Model class for system prompt message."""
 
     role: PromptMessageRole = PromptMessageRole.SYSTEM
 
 
 class DeveloperPromptMessage(PromptMessage):
-    """
-    Model class for developer prompt message.
-    """
+    """Model class for developer prompt message."""
 
     role: PromptMessageRole = PromptMessageRole.DEVELOPER
 
 
 class ToolPromptMessage(PromptMessage):
-    """
-    Model class for tool prompt message.
-    """
+    """Model class for tool prompt message."""
 
     role: PromptMessageRole = PromptMessageRole.TOOL
     tool_call_id: str
 
     def is_empty(self) -> bool:
-        """
-        Check if prompt message is empty.
+        """Check if prompt message is empty.
 
         :return: True if prompt message is empty, False otherwise
         """

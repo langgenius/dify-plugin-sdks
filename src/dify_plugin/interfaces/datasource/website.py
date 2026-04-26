@@ -23,7 +23,7 @@ class WebsiteCrawlDatasource(ABC):
         self,
         runtime: DatasourceRuntime,
         session: Session,
-    ):
+    ) -> None:
         """
         Initialize the datasource
 

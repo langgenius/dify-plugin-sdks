@@ -7,7 +7,7 @@ class InvokeError(Exception):
         if description:
             self.description = description
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.description or self.__class__.__name__
 
 
@@ -42,8 +42,4 @@ class InvokeBadRequestError(InvokeError):
 
 
 class CredentialsValidateFailedError(Exception):
-    """
-    Credentials validate failed error
-    """
-
-    pass
+    """Credentials validate failed error"""

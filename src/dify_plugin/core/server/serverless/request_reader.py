@@ -23,7 +23,7 @@ class ServerlessRequestReader(RequestReader):
         worker_connections: int = 1000,
         threads: int = 5,
         max_single_connection_lifetime: int = 300,
-    ):
+    ) -> None:
         """
         Initialize the ServerlessStream and wait for jobs
         """

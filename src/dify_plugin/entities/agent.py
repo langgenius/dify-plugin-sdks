@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from enum import StrEnum
-from typing import Any, Union
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -69,16 +69,18 @@ class AgentStrategyParameter(BaseModel):
     help: I18nObject | None = None
     type: ToolParameterType = Field(..., description="The type of the parameter")
     auto_generate: ParameterAutoGenerate | None = Field(
-        default=None, description="The auto generate of the parameter"
+        default=None,
+        description="The auto generate of the parameter",
     )
     template: ParameterTemplate | None = Field(
-        default=None, description="The template of the parameter"
+        default=None,
+        description="The template of the parameter",
     )
     scope: str | None = None
     required: bool | None = False
-    default: Union[int, float, str] | None = None
-    min: Union[float, int] | None = None
-    max: Union[float, int] | None = None
+    default: int | float | str | None = None
+    min: float | int | None = None
+    max: float | int | None = None
     precision: int | None = None
     options: list[ToolParameterOption] | None = None
 
@@ -106,16 +108,19 @@ class AgentStrategyConfigurationExtra(BaseModel):
 class AgentStrategyConfiguration(BaseModel):
     identity: AgentStrategyIdentity
     parameters: list[AgentStrategyParameter] = Field(
-        default=[], description="The parameters of the agent"
+        default=[],
+        description="The parameters of the agent",
     )
     description: I18nObject
     extra: AgentStrategyConfigurationExtra
     has_runtime_parameters: bool = Field(
-        default=False, description="Whether the tool has runtime parameters"
+        default=False,
+        description="Whether the tool has runtime parameters",
     )
     output_schema: Mapping[str, Any] | None = None
     features: list[AgentStrategyFeature] = Field(
-        default=[], description="The features of the agent"
+        default=[],
+        description="The features of the agent",
     )
 
 
@@ -142,7 +147,8 @@ class AgentProviderConfigurationExtra(BaseModel):
 class AgentStrategyProviderConfiguration(BaseModel):
     identity: AgentStrategyProviderIdentity
     strategies: list[AgentStrategyConfiguration] = Field(
-        default=[], description="The strategies of the agent provider"
+        default=[],
+        description="The strategies of the agent provider",
     )
 
     @field_validator("strategies", mode="before")
@@ -160,22 +166,22 @@ class AgentStrategyProviderConfiguration(BaseModel):
             try:
                 file = load_yaml_file(strategy)
                 strategies.append(
-                    AgentStrategyConfiguration(**{
-                        "identity": AgentStrategyIdentity(**file["identity"]),
-                        "parameters": [
+                    AgentStrategyConfiguration(
+                        identity=AgentStrategyIdentity(**file["identity"]),
+                        parameters=[
                             AgentStrategyParameter(**param)
                             for param in file.get("parameters", []) or []
                         ],
-                        "description": I18nObject(**file["description"]),
-                        "extra": AgentStrategyConfigurationExtra(
-                            **file.get("extra", {})
+                        description=I18nObject(**file["description"]),
+                        extra=AgentStrategyConfigurationExtra(
+                            **file.get("extra", {}),
                         ),
-                        "features": file.get("features", []),
-                    })
+                        features=file.get("features", []),
+                    ),
                 )
             except Exception as e:
                 raise ValueError(
-                    f"Error loading agent strategy configuration: {e!s}"
+                    f"Error loading agent strategy configuration: {e!s}",
                 ) from e
 
         return strategies

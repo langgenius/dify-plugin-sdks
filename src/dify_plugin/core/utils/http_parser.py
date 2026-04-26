@@ -94,7 +94,7 @@ def deserialize_request(raw_data: bytes) -> Request:
         environ["CONTENT_LENGTH"] = str(len(body))
 
     for name, value in headers.items():
-        if name.upper() in ("CONTENT-TYPE", "CONTENT-LENGTH"):
+        if name.upper() in {"CONTENT-TYPE", "CONTENT-LENGTH"}:
             continue
         env_name = f"HTTP_{name.upper().replace('-', '_')}"
         environ[env_name] = value

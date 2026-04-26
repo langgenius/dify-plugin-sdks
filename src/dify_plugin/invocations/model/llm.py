@@ -76,8 +76,7 @@ class LLMInvocation(BackwardsInvocation[LLMResultChunk]):
                 LLMResultChunk,
                 data,
             )
-            response = cast(Generator[LLMResultChunk, None, None], response)
-            return response
+            return cast(Generator[LLMResultChunk, None, None], response)
 
         result = LLMResult(
             model=model_config.model,

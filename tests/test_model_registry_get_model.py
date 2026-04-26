@@ -26,18 +26,14 @@ from dify_plugin.interfaces.model.ai_model import AIModel
 
 
 class MockModelProvider(ModelProvider):
-    """
-    Mock Model Provider
-    """
+    """Mock Model Provider"""
 
     def validate_provider_credentials(self, credentials: dict) -> None:
         pass
 
 
 class MockLLM(AIModel):
-    """
-    Mock LLM
-    """
+    """Mock LLM"""
 
     model_type = ModelType.LLM
 
@@ -52,8 +48,7 @@ class MockLLM(AIModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator[LLMResultChunk, None, None]:
-        """
-        Invoke LLM
+        """Invoke LLM
 
         :param model: model name
         :param credentials: model credentials
@@ -81,8 +76,7 @@ class MockLLM(AIModel):
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> int:
-        """
-        Get number of tokens
+        """Get number of tokens
 
         :param model: model name
         :param credentials: model credentials
@@ -93,17 +87,14 @@ class MockLLM(AIModel):
         return 0
 
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
-        """
-        Validate model credentials
+        """Validate model credentials
 
         :param model: model name
         :param credentials: model credentials
         """
-        pass
 
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
-        """
-        Map model invoke error to unified error
+        """Map model invoke error to unified error
 
         :return: Invoke error mapping
         """
@@ -111,31 +102,25 @@ class MockLLM(AIModel):
 
 
 def test_model_registry_get_model(monkeypatch):
-    """
-    Test model registry get model
-    """
+    """Test model registry get model"""
     config = MagicMock()
 
     def mock_validate_models(cls: ModelProviderConfiguration, values: dict) -> dict:
-        """
-        Mock validate models
-        """
+        """Mock validate models"""
         return values
 
     monkeypatch.setattr(
-        ModelProviderConfiguration, "validate_models", mock_validate_models
+        ModelProviderConfiguration,
+        "validate_models",
+        mock_validate_models,
     )
 
     def mock_load_yaml_file(file_name: str) -> dict:
-        """
-        Mock load yaml file
-        """
+        """Mock load yaml file"""
         return {}
 
     def mock_resolve_plugin_cls(self: PluginRegistration):
-        """
-        Mock resolve plugin cls
-        """
+        """Mock resolve plugin cls"""
         # add MockLLM to models_mapping
         provider_configuration = ModelProviderConfiguration(
             provider="test",
@@ -144,8 +129,9 @@ def test_model_registry_get_model(monkeypatch):
             supported_model_types=[ModelType.LLM],
             extra=ModelProviderConfigurationExtra(
                 python=ModelProviderConfigurationExtra.Python(
-                    provider_source="test", model_sources=[]
-                )
+                    provider_source="test",
+                    model_sources=[],
+                ),
             ),
             configurate_methods=[],
         )
@@ -169,23 +155,26 @@ def test_model_registry_get_model(monkeypatch):
                     provider=provider_configuration,
                     models={ModelType.LLM: MockLLM},
                 ),
-            )
+            ),
         }
 
     def mock_load_plugin_assets(_):
-        """
-        Mock load plugin assets
-        """
-        pass
+        """Mock load plugin assets"""
 
     monkeypatch.setattr(
-        PluginRegistration, "_load_plugin_configuration", mock_load_yaml_file
+        PluginRegistration,
+        "_load_plugin_configuration",
+        mock_load_yaml_file,
     )
     monkeypatch.setattr(
-        PluginRegistration, "_resolve_plugin_cls", mock_resolve_plugin_cls
+        PluginRegistration,
+        "_resolve_plugin_cls",
+        mock_resolve_plugin_cls,
     )
     monkeypatch.setattr(
-        PluginRegistration, "_load_plugin_assets", mock_load_plugin_assets
+        PluginRegistration,
+        "_load_plugin_assets",
+        mock_load_plugin_assets,
     )
 
     plugin_registration = PluginRegistration(config)

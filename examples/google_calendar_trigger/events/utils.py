@@ -16,10 +16,9 @@ def collect_events(payload: Mapping[str, Any], key: str) -> list[dict[str, Any]]
     raw_items = payload.get(key)
     if not isinstance(raw_items, Sequence):
         return []
-    events: list[dict[str, Any]] = []
-    for item in raw_items:
-        if isinstance(item, Mapping):
-            events.append(dict(item))
+    events: list[dict[str, Any]] = [
+        dict(item) for item in raw_items if isinstance(item, Mapping)
+    ]
     return events
 
 

@@ -32,8 +32,8 @@ def import_module_from_source(
             sys.modules[module_name] = module
         spec.loader.exec_module(module)
         return module
-    except Exception as e:
-        raise e
+    except Exception:
+        raise
 
 
 def get_subclasses_from_module[T](
@@ -42,12 +42,11 @@ def get_subclasses_from_module[T](
     """
     Get all the subclasses of the parent type from the module
     """
-    classes = [
+    return [
         x
-        for _, x in vars(mod).items()
+        for x in vars(mod).values()
         if isinstance(x, type) and x != parent_type and issubclass(x, parent_type)
     ]
-    return classes
 
 
 def load_multi_subclasses_from_source[T](
@@ -65,8 +64,7 @@ def load_multi_subclasses_from_source[T](
         py_file_path=script_path,
         use_lazy_loader=use_lazy_loader,
     )
-    subclasses = get_subclasses_from_module(module, parent_type)
-    return subclasses
+    return get_subclasses_from_module(module, parent_type)
 
 
 def load_single_subclass_from_source[T](

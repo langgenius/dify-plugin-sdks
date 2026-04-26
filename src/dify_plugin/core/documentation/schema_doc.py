@@ -13,7 +13,7 @@ class SchemaDoc:
         top: bool = False,
         ignore_fields: list[str] | None = None,
         outside_reference_fields: Mapping[str, type[BaseModel]] | None = None,
-    ):
+    ) -> None:
         self.cls = cls
         self.description = description
         self.name = name
@@ -65,6 +65,7 @@ def docs(
                 cls_or_func.__schema_docs__ = []
             cls_or_func.__schema_docs__.append(__cls_mapping__[cls_or_func])
             return cls_or_func
+        return None
 
     return decorator
 

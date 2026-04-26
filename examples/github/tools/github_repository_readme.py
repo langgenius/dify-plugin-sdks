@@ -74,7 +74,7 @@ class GithubRepositoryReadmeTool(Tool):
             else:
                 message = response_data.get("message")
                 raise InvokeError(f"Request failed: {response.status_code} {message}")
-        except InvokeError as e:
-            raise e
+        except InvokeError:
+            raise
         except Exception as e:
             raise InvokeError(f"Request failed: {e}") from e

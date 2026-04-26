@@ -52,7 +52,7 @@ class TriggerRuntime:
         session: Session,
         credential_type: CredentialType,
         credentials: Mapping[str, Any] | None = None,
-    ):
+    ) -> None:
         self.session = session
         self.credentials = credentials
         self.credential_type = credential_type
@@ -87,7 +87,7 @@ class Trigger(ABC):
     def __init__(
         self,
         runtime: TriggerRuntime,
-    ):
+    ) -> None:
         """
         Initialize the Trigger.
 
@@ -223,7 +223,7 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
 
     runtime: TriggerSubscriptionConstructorRuntime
 
-    def __init__(self, runtime: TriggerSubscriptionConstructorRuntime):
+    def __init__(self, runtime: TriggerSubscriptionConstructorRuntime) -> None:
         self.runtime = runtime
 
     def validate_api_key(self, credentials: Mapping[str, Any]) -> None:
@@ -742,7 +742,7 @@ class EventRuntime:
         credential_type: CredentialType,
         subscription: Subscription,
         credentials: Mapping[str, Any] | None = None,
-    ):
+    ) -> None:
         self.session = session
         self.subscription = subscription
         self.credentials = credentials
@@ -784,7 +784,7 @@ class Event(ABC):
     def __init__(
         self,
         runtime: EventRuntime,
-    ):
+    ) -> None:
         """
         Initialize the Event.
 

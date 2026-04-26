@@ -1,7 +1,8 @@
 import binascii
+import pathlib
 import tempfile
 from collections.abc import Generator, Iterable, Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from werkzeug import Request, Response
 
@@ -56,7 +57,6 @@ from dify_plugin.entities.agent import AgentRuntime
 from dify_plugin.entities.datasource import (
     DatasourceRuntime,
 )
-from dify_plugin.entities.oauth import OAuthCredentials
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolRuntime
 from dify_plugin.entities.trigger import (
@@ -67,8 +67,6 @@ from dify_plugin.entities.trigger import (
     Variables,
 )
 from dify_plugin.errors.trigger import EventIgnoreError
-from dify_plugin.interfaces.datasource import DatasourceProvider
-from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from dify_plugin.interfaces.model.moderation_model import ModerationModel
@@ -76,7 +74,6 @@ from dify_plugin.interfaces.model.rerank_model import RerankModel
 from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from dify_plugin.interfaces.model.tts_model import TTSModel
-from dify_plugin.interfaces.tool import Tool
 from dify_plugin.interfaces.trigger import (
     Event,
     EventRuntime,
@@ -86,6 +83,12 @@ from dify_plugin.interfaces.trigger import (
 from dify_plugin.protocol.dynamic_select import DynamicSelectProtocol
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
+if TYPE_CHECKING:
+    from dify_plugin.entities.oauth import OAuthCredentials
+    from dify_plugin.interfaces.datasource import DatasourceProvider
+    from dify_plugin.interfaces.endpoint import Endpoint
+    from dify_plugin.interfaces.tool import Tool
+
 
 class PluginExecutor:
     def __init__(self, config: DifyPluginEnv, registration: PluginRegistration) -> None:
@@ -93,7 +96,9 @@ class PluginExecutor:
         self.registration = registration
 
     def validate_tool_provider_credentials(
-        self, session: Session, data: ToolValidateCredentialsRequest
+        self,
+        session: Session,
+        data: ToolValidateCredentialsRequest,
     ):
         provider_instance = self.registration.get_tool_provider_cls(data.provider)
         if provider_instance is None:
@@ -112,7 +117,7 @@ class PluginExecutor:
         tool_cls = self.registration.get_tool_cls(request.provider, request.tool)
         if tool_cls is None:
             raise ValueError(
-                f"Tool `{request.tool}` not found for provider `{request.provider}`"
+                f"Tool `{request.tool}` not found for provider `{request.provider}`",
             )
 
         # instantiate tool
@@ -131,12 +136,13 @@ class PluginExecutor:
 
     def invoke_agent_strategy(self, session: Session, request: AgentInvokeRequest):
         agent_cls = self.registration.get_agent_strategy_cls(
-            request.agent_strategy_provider, request.agent_strategy
+            request.agent_strategy_provider,
+            request.agent_strategy,
         )
         if agent_cls is None:
             raise ValueError(
                 f"Agent `{request.agent_strategy}` not found for provider "
-                f"`{request.agent_strategy_provider}`"
+                f"`{request.agent_strategy_provider}`",
             )
 
         agent = agent_cls(
@@ -148,17 +154,19 @@ class PluginExecutor:
         yield from agent.invoke(request.agent_strategy_params)
 
     def get_tool_runtime_parameters(
-        self, session: Session, data: ToolGetRuntimeParametersRequest
+        self,
+        session: Session,
+        data: ToolGetRuntimeParametersRequest,
     ):
         tool_cls = self.registration.get_tool_cls(data.provider, data.tool)
         if tool_cls is None:
             raise ValueError(
-                f"Tool `{data.tool}` not found for provider `{data.provider}`"
+                f"Tool `{data.tool}` not found for provider `{data.provider}`",
             )
 
         if not tool_cls._is_get_runtime_parameters_overridden():
             raise ValueError(
-                f"Tool `{data.tool}` does not implement runtime parameters"
+                f"Tool `{data.tool}` does not implement runtime parameters",
             )
 
         tool_instance = tool_cls(
@@ -175,7 +183,9 @@ class PluginExecutor:
         }
 
     def validate_model_provider_credentials(
-        self, session: Session, data: ModelValidateProviderCredentialsRequest
+        self,
+        session: Session,
+        data: ModelValidateProviderCredentialsRequest,
     ):
         provider_instance = self.registration.get_model_provider_instance(data.provider)
         if provider_instance is None:
@@ -186,18 +196,21 @@ class PluginExecutor:
         return {"result": True, "credentials": data.credentials}
 
     def validate_model_credentials(
-        self, session: Session, data: ModelValidateModelCredentialsRequest
+        self,
+        session: Session,
+        data: ModelValidateModelCredentialsRequest,
     ):
         provider_instance = self.registration.get_model_provider_instance(data.provider)
         if provider_instance is None:
             raise ValueError(f"Provider `{data.provider}` not found")
 
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
         if model_instance is None:
             raise ValueError(
-                f"Model `{data.model_type}` not found for provider `{data.provider}`"
+                f"Model `{data.model_type}` not found for provider `{data.provider}`",
             )
 
         model_instance.validate_credentials(data.model, data.credentials)
@@ -206,7 +219,8 @@ class PluginExecutor:
 
     def invoke_llm(self, session: Session, data: ModelInvokeLLMRequest):
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
         if isinstance(model_instance, LargeLanguageModel):
             return model_instance.invoke(
@@ -219,14 +233,14 @@ class PluginExecutor:
                 data.stream,
                 data.user_id,
             )
-        else:
-            raise ValueError(
-                f"Model `{data.model_type}` not found for provider `{data.provider}`"
-            )
+        raise ValueError(
+            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+        )
 
     def get_llm_num_tokens(self, session: Session, data: ModelGetLLMNumTokens):
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
 
         if isinstance(model_instance, LargeLanguageModel):
@@ -236,18 +250,20 @@ class PluginExecutor:
                     data.credentials,
                     data.prompt_messages,
                     data.tools,
-                )
+                ),
             }
-        else:
-            raise ValueError(
-                f"Model `{data.model_type}` not found for provider `{data.provider}`"
-            )
+        raise ValueError(
+            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+        )
 
     def invoke_text_embedding(
-        self, session: Session, data: ModelInvokeTextEmbeddingRequest
+        self,
+        session: Session,
+        data: ModelInvokeTextEmbeddingRequest,
     ):
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
         if isinstance(model_instance, TextEmbeddingModel):
             return model_instance.invoke(
@@ -256,16 +272,18 @@ class PluginExecutor:
                 data.texts,
                 data.user_id,
             )
-        else:
-            raise ValueError(
-                f"Model `{data.model_type}` not found for provider `{data.provider}`"
-            )
+        raise ValueError(
+            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+        )
 
     def invoke_multimodal_embedding(
-        self, session: Session, data: ModelInvokeMultimodalEmbeddingRequest
+        self,
+        session: Session,
+        data: ModelInvokeMultimodalEmbeddingRequest,
     ):
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
         if isinstance(model_instance, TextEmbeddingModel):
             return model_instance.invoke_multimodal(
@@ -276,14 +294,17 @@ class PluginExecutor:
                 input_type=data.input_type,
             )
         raise ValueError(
-            f"Model `{data.model_type}` not found for provider `{data.provider}`"
+            f"Model `{data.model_type}` not found for provider `{data.provider}`",
         )
 
     def get_text_embedding_num_tokens(
-        self, session: Session, data: ModelGetTextEmbeddingNumTokens
+        self,
+        session: Session,
+        data: ModelGetTextEmbeddingNumTokens,
     ):
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
         if isinstance(model_instance, TextEmbeddingModel):
             return {
@@ -291,16 +312,16 @@ class PluginExecutor:
                     data.model,
                     data.credentials,
                     data.texts,
-                )
+                ),
             }
-        else:
-            raise ValueError(
-                f"Model `{data.model_type}` not found for provider `{data.provider}`"
-            )
+        raise ValueError(
+            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+        )
 
     def invoke_rerank(self, session: Session, data: ModelInvokeRerankRequest):
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
         if isinstance(model_instance, RerankModel):
             return model_instance.invoke(
@@ -312,16 +333,18 @@ class PluginExecutor:
                 data.top_n,
                 data.user_id,
             )
-        else:
-            raise ValueError(
-                f"Model `{data.model_type}` not found for provider `{data.provider}`"
-            )
+        raise ValueError(
+            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+        )
 
     def invoke_multimodal_rerank(
-        self, session: Session, data: ModelInvokeMultimodalRerankRequest
+        self,
+        session: Session,
+        data: ModelInvokeMultimodalRerankRequest,
     ):
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
         if isinstance(model_instance, RerankModel):
             return model_instance.invoke_multimodal(
@@ -334,12 +357,13 @@ class PluginExecutor:
                 user=data.user_id,
             )
         raise ValueError(
-            f"Model `{data.model_type}` not found for provider `{data.provider}`"
+            f"Model `{data.model_type}` not found for provider `{data.provider}`",
         )
 
     def invoke_tts(self, session: Session, data: ModelInvokeTTSRequest):
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
         if isinstance(model_instance, TTSModel):
             b = model_instance.invoke(
@@ -358,36 +382,41 @@ class PluginExecutor:
                 yield {"result": binascii.hexlify(chunk).decode()}
         else:
             raise ValueError(
-                f"Model `{data.model_type}` not found for provider `{data.provider}`"
+                f"Model `{data.model_type}` not found for provider `{data.provider}`",
             )
 
     def get_tts_model_voices(self, session: Session, data: ModelGetTTSVoices):
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
         if isinstance(model_instance, TTSModel):
             return {
                 "voices": model_instance.get_tts_model_voices(
-                    data.model, data.credentials, data.language
-                )
+                    data.model,
+                    data.credentials,
+                    data.language,
+                ),
             }
-        else:
-            raise ValueError(
-                f"Model `{data.model_type}` not found for provider `{data.provider}`"
-            )
+        raise ValueError(
+            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+        )
 
     def invoke_speech_to_text(
-        self, session: Session, data: ModelInvokeSpeech2TextRequest
+        self,
+        session: Session,
+        data: ModelInvokeSpeech2TextRequest,
     ):
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
 
         with tempfile.NamedTemporaryFile(suffix=".mp3", mode="wb", delete=True) as temp:
             temp.write(binascii.unhexlify(data.file))
             temp.flush()
 
-            with open(temp.name, "rb") as f:
+            with pathlib.Path(temp.name).open("rb") as f:
                 if isinstance(model_instance, Speech2TextModel):
                     return {
                         "result": model_instance.invoke(
@@ -395,32 +424,33 @@ class PluginExecutor:
                             data.credentials,
                             f,
                             data.user_id,
-                        )
+                        ),
                     }
-                else:
-                    raise ValueError(
-                        f"Model `{data.model_type}` not found for provider "
-                        f"`{data.provider}`"
-                    )
+                raise ValueError(
+                    f"Model `{data.model_type}` not found for provider "
+                    f"`{data.provider}`",
+                )
 
     def get_ai_model_schemas(self, session: Session, data: ModelGetAIModelSchemas):
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
         if isinstance(model_instance, AIModel):
             return {
                 "model_schema": model_instance.get_model_schema(
-                    data.model, data.credentials
-                )
+                    data.model,
+                    data.credentials,
+                ),
             }
-        else:
-            raise ValueError(
-                f"Model `{data.model_type}` not found for provider `{data.provider}`"
-            )
+        raise ValueError(
+            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+        )
 
     def invoke_moderation(self, session: Session, data: ModelInvokeModerationRequest):
         model_instance = self.registration.get_model_instance(
-            data.provider, data.model_type
+            data.provider,
+            data.model_type,
         )
 
         if isinstance(model_instance, ModerationModel):
@@ -430,12 +460,11 @@ class PluginExecutor:
                     data.credentials,
                     data.text,
                     data.user_id,
-                )
+                ),
             }
-        else:
-            raise ValueError(
-                f"Model `{data.model_type}` not found for provider `{data.provider}`"
-            )
+        raise ValueError(
+            f"Model `{data.model_type}` not found for provider `{data.provider}`",
+        )
 
     def invoke_endpoint(self, session: Session, data: EndpointInvokeRequest):
         bytes_data = binascii.unhexlify(data.raw_http_request)
@@ -475,7 +504,7 @@ class PluginExecutor:
                 result["result"] = binascii.hexlify(response.response).decode()
             elif isinstance(response.response, str):
                 result["result"] = binascii.hexlify(
-                    response.response.encode("utf-8")
+                    response.response.encode("utf-8"),
                 ).decode()
             elif isinstance(response.response, Iterable):
                 result["result"] = ""
@@ -484,13 +513,15 @@ class PluginExecutor:
                         result["result"] += binascii.hexlify(chunk).decode()
                     else:
                         result["result"] += binascii.hexlify(
-                            chunk.encode("utf-8")
+                            chunk.encode("utf-8"),
                         ).decode()
 
             yield result
 
     def _get_oauth_provider_instance(
-        self, session: Session, provider: str
+        self,
+        session: Session,
+        provider: str,
     ) -> OAuthProviderProtocol:
         oauth_supported_provider: OAuthProviderProtocol | None = (
             self.registration.get_supported_oauth_provider(
@@ -504,10 +535,13 @@ class PluginExecutor:
         return oauth_supported_provider
 
     def get_oauth_authorization_url(
-        self, session: Session, data: OAuthGetAuthorizationUrlRequest
+        self,
+        session: Session,
+        data: OAuthGetAuthorizationUrlRequest,
     ) -> Mapping[str, str]:
         provider_instance: OAuthProviderProtocol = self._get_oauth_provider_instance(
-            session=session, provider=data.provider
+            session=session,
+            provider=data.provider,
         )
 
         return {
@@ -518,10 +552,13 @@ class PluginExecutor:
         }
 
     def get_oauth_credentials(
-        self, session: Session, data: OAuthGetCredentialsRequest
+        self,
+        session: Session,
+        data: OAuthGetCredentialsRequest,
     ) -> Mapping[str, Any]:
         provider_instance: OAuthProviderProtocol = self._get_oauth_provider_instance(
-            session=session, provider=data.provider
+            session=session,
+            provider=data.provider,
         )
         bytes_data: bytes = binascii.unhexlify(data.raw_http_request)
         request: Request = deserialize_request(bytes_data)
@@ -539,10 +576,13 @@ class PluginExecutor:
         }
 
     def refresh_oauth_credentials(
-        self, session: Session, data: OAuthRefreshCredentialsRequest
+        self,
+        session: Session,
+        data: OAuthRefreshCredentialsRequest,
     ) -> dict[str, Mapping[str, Any] | int]:
         provider_instance: OAuthProviderProtocol = self._get_oauth_provider_instance(
-            session=session, provider=data.provider
+            session=session,
+            provider=data.provider,
         )
         credentials: OAuthCredentials = provider_instance.oauth_refresh_credentials(
             redirect_uri=data.redirect_uri,
@@ -556,7 +596,9 @@ class PluginExecutor:
         }
 
     def validate_datasource_credentials(
-        self, session: Session, data: DatasourceValidateCredentialsRequest
+        self,
+        session: Session,
+        data: DatasourceValidateCredentialsRequest,
     ) -> dict[str, bool]:
         provider_instance_cls: type[DatasourceProvider] = (
             self.registration.get_datasource_provider_cls(provider=data.provider)
@@ -569,10 +611,11 @@ class PluginExecutor:
         }
 
     def _get_dynamic_parameter_action(
-        self, session: Session, data: DynamicParameterFetchParameterOptionsRequest
+        self,
+        session: Session,
+        data: DynamicParameterFetchParameterOptionsRequest,
     ) -> DynamicSelectProtocol | None:
-        """
-        get the dynamic parameter provider class by provider name
+        """Get the dynamic parameter provider class by provider name
 
         :param session: session
         :param data: data
@@ -610,7 +653,8 @@ class PluginExecutor:
 
         # get tool
         tool_cls: type[Tool] | None = self.registration.get_tool_cls(
-            provider=data.provider, tool=data.provider_action
+            provider=data.provider,
+            tool=data.provider_action,
         )
         if tool_cls is not None:
             return tool_cls(
@@ -624,11 +668,11 @@ class PluginExecutor:
         raise ValueError("Cannot find the target to fetch parameter options")
 
     def invoke_trigger_event(
-        self, session: Session, request: TriggerInvokeEventRequest
+        self,
+        session: Session,
+        request: TriggerInvokeEventRequest,
     ) -> TriggerInvokeEventResponse:
-        """
-        Invoke trigger event
-        """
+        """Invoke trigger event"""
         event: Event = self.registration.get_trigger_event_handler(
             provider_name=request.provider,
             event=request.event,
@@ -642,7 +686,7 @@ class PluginExecutor:
         try:
             variables: Variables = event.on_event(
                 request=deserialize_request(
-                    raw_data=binascii.unhexlify(request.raw_http_request)
+                    raw_data=binascii.unhexlify(request.raw_http_request),
                 ),
                 parameters=request.parameters,
                 payload=request.payload,
@@ -656,15 +700,15 @@ class PluginExecutor:
                 variables={},
                 cancelled=True,
             )
-        except Exception as e:
-            raise e
+        except Exception:
+            raise
 
     def validate_trigger_provider_credentials(
-        self, session: Session, request: TriggerValidateProviderCredentialsRequest
+        self,
+        session: Session,
+        request: TriggerValidateProviderCredentialsRequest,
     ):
-        """
-        Validate trigger provider credentials
-        """
+        """Validate trigger provider credentials"""
         runtime = TriggerSubscriptionConstructorRuntime(
             session=session,
             credentials=request.credentials,
@@ -673,18 +717,19 @@ class PluginExecutor:
 
         provider_instance: TriggerSubscriptionConstructor = (
             self.registration.get_trigger_subscription_constructor(
-                provider_name=request.provider, runtime=runtime
+                provider_name=request.provider,
+                runtime=runtime,
             )
         )
         provider_instance.validate_api_key(credentials=request.credentials)
         return {"result": True}
 
     def dispatch_trigger_event(
-        self, session: Session, request: TriggerDispatchEventRequest
+        self,
+        session: Session,
+        request: TriggerDispatchEventRequest,
     ) -> TriggerDispatchResponse:
-        """
-        Dispatch trigger event
-        """
+        """Dispatch trigger event"""
         trigger_provider_instance: Trigger = self.registration.get_trigger_provider(
             provider_name=request.provider,
             session=session,
@@ -693,26 +738,27 @@ class PluginExecutor:
         )
         subscription: Subscription = request.subscription
         original_request: Request = deserialize_request(
-            raw_data=binascii.unhexlify(request.raw_http_request)
+            raw_data=binascii.unhexlify(request.raw_http_request),
         )
         dispatch_result: EventDispatch = trigger_provider_instance.dispatch_event(
-            subscription=subscription, request=original_request
+            subscription=subscription,
+            request=original_request,
         )
         return TriggerDispatchResponse(
             user_id=dispatch_result.user_id,
             events=dispatch_result.events,
             response=binascii.hexlify(
-                data=serialize_response(response=dispatch_result.response)
+                data=serialize_response(response=dispatch_result.response),
             ).decode(),
             payload=dispatch_result.payload,
         )
 
     def subscribe_trigger(
-        self, session: Session, request: TriggerSubscribeRequest
+        self,
+        session: Session,
+        request: TriggerSubscribeRequest,
     ) -> TriggerSubscriptionResponse:
-        """
-        Subscribe to a trigger with the external service
-        """
+        """Subscribe to a trigger with the external service"""
         trigger_provider_instance: TriggerSubscriptionConstructor = (
             self.registration.get_trigger_subscription_constructor(
                 provider_name=request.provider,
@@ -733,11 +779,11 @@ class PluginExecutor:
         return TriggerSubscriptionResponse(subscription=subscription.model_dump())
 
     def unsubscribe_trigger(
-        self, session: Session, request: TriggerUnsubscribeRequest
+        self,
+        session: Session,
+        request: TriggerUnsubscribeRequest,
     ) -> TriggerUnsubscribeResponse:
-        """
-        Unsubscribe from a trigger subscription
-        """
+        """Unsubscribe from a trigger subscription"""
         trigger_subscription_constructor_instance: TriggerSubscriptionConstructor = (
             self.registration.get_trigger_subscription_constructor(
                 provider_name=request.provider,
@@ -759,11 +805,11 @@ class PluginExecutor:
         return TriggerUnsubscribeResponse(subscription=unsubscription.model_dump())
 
     def refresh_trigger(
-        self, session: Session, request: TriggerRefreshRequest
+        self,
+        session: Session,
+        request: TriggerRefreshRequest,
     ) -> TriggerRefreshResponse:
-        """
-        Refresh/extend an existing trigger subscription without changing configuration
-        """
+        """Refresh/extend an existing trigger subscription without changing configuration"""
         trigger_subscription_constructor_instance: TriggerSubscriptionConstructor = (
             self.registration.get_trigger_subscription_constructor(
                 provider_name=request.provider,
@@ -779,11 +825,13 @@ class PluginExecutor:
                 subscription=request.subscription,
                 credentials=request.credentials,
                 credential_type=request.credential_type,
-            ).model_dump()
+            ).model_dump(),
         )
 
     def fetch_parameter_options(
-        self, session: Session, data: DynamicParameterFetchParameterOptionsRequest
+        self,
+        session: Session,
+        data: DynamicParameterFetchParameterOptionsRequest,
     ) -> dict[str, list[ParameterOption]]:
         action_instance: DynamicSelectProtocol | None = (
             self._get_dynamic_parameter_action(session=session, data=data)
@@ -791,15 +839,18 @@ class PluginExecutor:
         assert action_instance, f"Provider `{data.provider}` not found"
         return {
             "options": action_instance.fetch_parameter_options(
-                parameter=data.parameter
+                parameter=data.parameter,
             ),
         }
 
     def datasource_crawl_website(
-        self, session: Session, data: DatasourceCrawlWebsiteRequest
+        self,
+        session: Session,
+        data: DatasourceCrawlWebsiteRequest,
     ):
         datasource_cls = self.registration.get_website_crawl_datasource_cls(
-            data.provider, data.datasource
+            data.provider,
+            data.datasource,
         )
         datasource_instance = datasource_cls(
             runtime=DatasourceRuntime(
@@ -814,7 +865,8 @@ class PluginExecutor:
 
     def datasource_get_pages(self, session: Session, data: DatasourceGetPagesRequest):
         datasource_cls = self.registration.get_online_document_datasource_cls(
-            data.provider, data.datasource
+            data.provider,
+            data.datasource,
         )
         datasource_instance = datasource_cls(
             runtime=DatasourceRuntime(
@@ -828,10 +880,13 @@ class PluginExecutor:
         yield datasource_instance.get_pages(data.datasource_parameters)
 
     def datasource_get_page_content(
-        self, session: Session, data: DatasourceGetPageContentRequest
+        self,
+        session: Session,
+        data: DatasourceGetPageContentRequest,
     ):
         datasource_cls = self.registration.get_online_document_datasource_cls(
-            data.provider, data.datasource
+            data.provider,
+            data.datasource,
         )
         datasource_instance = datasource_cls(
             runtime=DatasourceRuntime(
@@ -845,10 +900,13 @@ class PluginExecutor:
         return datasource_instance.get_content(page=data.page)
 
     def datasource_online_drive_browse_files(
-        self, session: Session, data: DatasourceOnlineDriveBrowseFilesRequest
+        self,
+        session: Session,
+        data: DatasourceOnlineDriveBrowseFilesRequest,
     ):
         datasource_cls = self.registration.get_online_drive_datasource_cls(
-            data.provider, data.datasource
+            data.provider,
+            data.datasource,
         )
         datasource_instance = datasource_cls(
             runtime=DatasourceRuntime(
@@ -862,10 +920,13 @@ class PluginExecutor:
         yield datasource_instance.browse_files(data.request)
 
     def datasource_online_drive_download_file(
-        self, session: Session, data: DatasourceOnlineDriveDownloadFileRequest
+        self,
+        session: Session,
+        data: DatasourceOnlineDriveDownloadFileRequest,
     ):
         datasource_cls = self.registration.get_online_drive_datasource_cls(
-            data.provider, data.datasource
+            data.provider,
+            data.datasource,
         )
         datasource_instance = datasource_cls(
             runtime=DatasourceRuntime(

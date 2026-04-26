@@ -9,16 +9,14 @@ from dify_plugin.core.documentation.schema_doc import docs
     description="Common i18n object",
 )
 class I18nObject(BaseModel):
-    """
-    Model class for i18n object.
-    """
+    """Model class for i18n object."""
 
     zh_Hans: str | None = None
     pt_BR: str | None = None
     ja_JP: str | None = None
     en_US: str
 
-    def __init__(self, **data):
+    def __init__(self, **data) -> None:
         super().__init__(**data)
         if not self.zh_Hans:
             self.zh_Hans = self.en_US
@@ -52,8 +50,7 @@ class ParameterOption(BaseModel):
     def transform_id_to_str(cls, value) -> str:
         if not isinstance(value, str):
             return str(value)
-        else:
-            return value
+        return value
 
 
 @docs(

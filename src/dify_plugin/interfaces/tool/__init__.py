@@ -356,7 +356,7 @@ class Tool(ToolLike[ToolInvokeMessage]):
         self,
         runtime: ToolRuntime,
         session: Session,
-    ):
+    ) -> None:
         """
         Initialize the tool
 

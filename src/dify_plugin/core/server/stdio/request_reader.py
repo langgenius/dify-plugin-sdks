@@ -15,7 +15,7 @@ from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 
 
 class StdioRequestReader(RequestReader):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def _read_async(self) -> bytes:

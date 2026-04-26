@@ -33,9 +33,8 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         reconnect_attempts: int = 3,
         reconnect_timeout: int = 5,
         on_connected: Callable | None = None,
-    ):
-        """
-        Initialize the TCPStream and connect to the target, raising an
+    ) -> None:
+        """Initialize the TCPStream and connect to the target, raising an
         exception if connection failed.
         """
         super().__init__()
@@ -53,30 +52,22 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         signal.signal(signal.SIGINT, lambda *args, **kwargs: os._exit(0))
 
     def launch(self):
-        """
-        Launch the connection
-        """
+        """Launch the connection"""
         self._launch()
 
     def close(self):
-        """
-        Close the connection
-        """
+        """Close the connection"""
         if self.alive:
             self.sock.close()
             self.alive = False
 
     def _write_to_sock(self, data: bytes):
-        """
-        Write data to the socket
-        """
+        """Write data to the socket"""
         with self.opt_lock:
             return self.sock.send(data)
 
     def _recv_from_sock(self, size: int) -> bytes:
-        """
-        Receive data from the socket
-        """
+        """Receive data from the socket"""
         return self.sock.recv(size)
 
     def write(self, data: str):
@@ -108,25 +99,21 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         pass
 
     def _launch(self):
-        """
-        Connect to the target, try to reconnect if failed
-        """
+        """Connect to the target, try to reconnect if failed"""
         attempts = 0
         while attempts < self.reconnect_attempts:
             try:
                 self._connect()
                 break
-            except Exception as e:
+            except Exception:
                 attempts += 1
                 if attempts >= self.reconnect_attempts:
-                    raise e
+                    raise
 
                 time.sleep(self.reconnect_timeout)
 
     def _connect(self):
-        """
-        Connect to the target
-        """
+        """Connect to the target"""
         try:
             if native_socket.socket is gevent_socket.socket:
                 self.sock = gevent_socket.create_connection((self.host, self.port))
@@ -142,16 +129,14 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             if self.on_connected:
                 self.on_connected()
             logger.info(f"Sent key to {self.host}:{self.port}")
-        except OSError as e:
+        except OSError:
             logger.exception(
-                f"\033[31mFailed to connect to {self.host}:{self.port}\033[0m"
+                f"\033[31mFailed to connect to {self.host}:{self.port}\033[0m",
             )
-            raise e
+            raise
 
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
-        """
-        Read data from the target
-        """
+        """Read data from the target"""
         buffer = b""
         while self.alive:
             try:
@@ -172,7 +157,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                     raise Exception("Connection is closed")
             except Exception:
                 logger.exception(
-                    f"\033[31mFailed to read data from {self.host}:{self.port}\033[0m"
+                    f"\033[31mFailed to read data from {self.host}:{self.port}\033[0m",
                 )
                 self.alive = False
                 time.sleep(self.reconnect_timeout)
@@ -210,10 +195,10 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                     yield chunk
                     logger.info(
                         f"Received event: \n{chunk.event}\n session_id: "
-                        f"\n{chunk.session_id}\n data: \n{chunk.data}"
+                        f"\n{chunk.session_id}\n data: \n{chunk.data}",
                     )
                 except Exception:
                     logger.exception(
-                        "\033[31mAn error occurred while parsing the data: "
-                        f"{line}\033[0m"
+                        "\x1b[31mAn error occurred while parsing the data: %s\x1b[0m",
+                        line,
                     )

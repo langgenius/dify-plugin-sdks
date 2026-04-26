@@ -1,6 +1,4 @@
-"""
-This file is used to hold the integration config for plugin testing.
-"""
+"""This file is used to hold the integration config for plugin testing."""
 
 import shutil
 import subprocess
@@ -40,7 +38,7 @@ class IntegrationConfig(BaseSettings):
                 raise ValueError("dify cli not found")
 
         # check dify version
-        version = subprocess.check_output([v, "version"]).decode("utf-8")  # noqa: S603
+        version = subprocess.check_output([v, "version"]).decode("utf-8")
 
         try:
             version = Version(version)
@@ -49,7 +47,7 @@ class IntegrationConfig(BaseSettings):
 
         if version < Version("0.1.0"):
             raise ValueError(
-                "dify cli version must be greater than 0.1.0 to support plugin run"
+                "dify cli version must be greater than 0.1.0 to support plugin run",
             )
 
         return v

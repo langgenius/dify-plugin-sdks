@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class FirecrawlApp:
-    def __init__(self, api_key: str | None = None, base_url: str | None = None):
+    def __init__(self, api_key: str | None = None, base_url: str | None = None) -> None:
         self.api_key = api_key
         self.base_url = base_url or "https://api.firecrawl.dev"
         if not self.api_key:
@@ -40,7 +40,11 @@ class FirecrawlApp:
         for i in range(retries):
             try:
                 response = requests.request(
-                    method, url, json=data, headers=headers, timeout=30
+                    method,
+                    url,
+                    json=data,
+                    headers=headers,
+                    timeout=30,
                 )
                 return response.json()
             except requests.exceptions.RequestException:
@@ -53,7 +57,7 @@ class FirecrawlApp:
     def scrape_url(self, url: str, **kwargs):
         endpoint = f"{self.base_url}/v1/scrape"
         data = {"url": url, **kwargs}
-        logger.debug(f"Sent request to {endpoint=} body={data}")
+        logger.debug("Sent request to %s body=%s", endpoint, data)
         response = self._request("POST", endpoint, data)
         if response is None:
             raise HTTPError("Failed to scrape URL after multiple retries")
@@ -62,7 +66,7 @@ class FirecrawlApp:
     def map(self, url: str, **kwargs):
         endpoint = f"{self.base_url}/v1/map"
         data = {"url": url, **kwargs}
-        logger.debug(f"Sent request to {endpoint=} body={data}")
+        logger.debug("Sent request to %s body=%s", endpoint, data)
         response = self._request("POST", endpoint, data)
         if response is None:
             raise HTTPError("Failed to perform map after multiple retries")
@@ -79,11 +83,11 @@ class FirecrawlApp:
         endpoint = f"{self.base_url}/v1/crawl"
         headers = self._prepare_headers(idempotency_key)
         data = {"url": url, **kwargs}
-        logger.debug(f"Sent request to {endpoint=} body={data}")
+        logger.debug("Sent request to %s body=%s", endpoint, data)
         response = self._request("POST", endpoint, data, headers)
         if response is None:
             raise HTTPError("Failed to initiate crawl after multiple retries")
-        elif not response.get("success"):
+        if not response.get("success"):
             raise HTTPError(f"Failed to crawl: {response.get('error')}")
         job_id: str = response["id"]
         if wait:
@@ -95,7 +99,7 @@ class FirecrawlApp:
         response = self._request("GET", endpoint)
         if response is None:
             raise HTTPError(
-                f"Failed to check status for job {job_id} after multiple retries"
+                f"Failed to check status for job {job_id} after multiple retries",
             )
         return response
 
@@ -110,14 +114,15 @@ class FirecrawlApp:
         while True:
             status = self.check_crawl_status(job_id)
             if status["status"] == "completed":
-                status = self.format_crawl_status_response(status["status"], status)
-                return status
-            elif status["status"] == "failed":
+                return self.format_crawl_status_response(status["status"], status)
+            if status["status"] == "failed":
                 raise HTTPError(f"Job {job_id} failed: {status['error']}")
             time.sleep(poll_interval)
 
     def format_crawl_status_response(
-        self, status: str, crawl_status_response: dict[str, Any]
+        self,
+        status: str,
+        crawl_status_response: dict[str, Any],
     ) -> dict[str, Any]:
         data = crawl_status_response.get("data", [])
         url_data_list = []
@@ -145,6 +150,7 @@ def get_array_params(tool_parameters: dict[str, Any], key):
     param = tool_parameters.get(key)
     if param:
         return param.split(",")
+    return None
 
 
 def get_json_params(tool_parameters: dict[str, Any], key):
@@ -157,3 +163,4 @@ def get_json_params(tool_parameters: dict[str, Any], key):
         except Exception as e:
             raise ValueError(f"Invalid {key} format.") from e
         return param
+    return None

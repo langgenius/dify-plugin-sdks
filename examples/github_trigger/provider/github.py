@@ -8,14 +8,13 @@ import time
 import urllib.parse
 import uuid
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import requests
 from werkzeug import Request, Response
 
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.oauth import TriggerOAuthCredentials
-from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
 from dify_plugin.errors.trigger import (
     SubscriptionError,
@@ -26,6 +25,9 @@ from dify_plugin.errors.trigger import (
     UnsubscribeError,
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
+
+if TYPE_CHECKING:
+    from dify_plugin.entities.provider_config import CredentialType
 
 
 class GithubTrigger(Trigger):
