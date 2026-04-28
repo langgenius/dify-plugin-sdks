@@ -21,16 +21,18 @@ class DependabotAlertEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         alert = payload.get("alert")
         if not isinstance(alert, Mapping):
-            raise ValueError("No alert in payload")
+            msg = "No alert in payload"
+            raise ValueError(msg)
 
         self._check_severity(alert, parameters.get("severity"))
         self._check_state(alert, parameters.get("state"))
@@ -49,7 +51,7 @@ class DependabotAlertEvent(Event):
         ).lower()
         targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
         if targets and sev not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_state(self, alert: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -57,7 +59,7 @@ class DependabotAlertEvent(Event):
         state = (alert.get("state") or "").lower()
         targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
         if targets and state not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_ecosystem(self, alert: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -66,7 +68,7 @@ class DependabotAlertEvent(Event):
         eco = ((advisory.get("package") or {}).get("ecosystem") or "").lower()
         targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
         if targets and eco not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_package(self, alert: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -79,7 +81,7 @@ class DependabotAlertEvent(Event):
         ).lower()
         targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
         if targets and name not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_manifest(self, alert: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -87,4 +89,4 @@ class DependabotAlertEvent(Event):
         manifest = (alert.get("manifest") or "").lower()
         targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
         if targets and manifest not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError

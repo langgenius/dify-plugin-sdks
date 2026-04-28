@@ -21,7 +21,8 @@ class SecretScanningEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         event_type = (request.headers.get("X-GitHub-Event") or "").lower()
         subtype = self._infer_subtype(event_type)
@@ -29,13 +30,13 @@ class SecretScanningEvent(Event):
         # Subtypes filter
         allowed_subtypes = parameters.get("subtypes") or []
         if allowed_subtypes and subtype not in allowed_subtypes:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         # Actions differ by subtype; apply generic actions filter if provided
         allowed_actions = parameters.get("actions") or []
         action = (payload.get("action") or "").lower()
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         # Generic filters
         self._check_secret_type(payload, parameters.get("secret_type"))
@@ -64,7 +65,7 @@ class SecretScanningEvent(Event):
             alert.get("secret_type") or alert.get("secret_type_display_name") or ""
         ).lower()
         if stype and stype not in types:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_severity(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -75,7 +76,7 @@ class SecretScanningEvent(Event):
         alert = payload.get("alert") or {}
         sev = (alert.get("severity") or "").lower()
         if sev and sev not in levels:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_branch(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -88,4 +89,4 @@ class SecretScanningEvent(Event):
         ) or ""
         branch = ref.split("/", 2)[-1] if ref.startswith("refs/heads/") else ref
         if branch and branch not in branches:
-            raise EventIgnoreError()
+            raise EventIgnoreError

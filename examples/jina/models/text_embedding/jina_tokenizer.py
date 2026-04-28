@@ -1,20 +1,25 @@
-from os.path import abspath, dirname, join
+import pathlib
 from threading import Lock
+from typing import ClassVar, Protocol
 
 from transformers import AutoTokenizer
 
 
+class _Tokenizer(Protocol):
+    def encode(self, text: str) -> list[int]: ...
+
+
 class JinaTokenizer:
-    _tokenizer = None
-    _lock = Lock()
+    _tokenizer: ClassVar[_Tokenizer | None] = None
+    _lock: ClassVar[Lock] = Lock()
 
     @classmethod
-    def _get_tokenizer(cls):
+    def _get_tokenizer(cls) -> _Tokenizer:
         if cls._tokenizer is None:
             with cls._lock:
                 if cls._tokenizer is None:
-                    base_path = abspath(__file__)
-                    gpt2_tokenizer_path = join(dirname(base_path), "tokenizer")
+                    base_path = pathlib.Path(__file__).resolve()
+                    gpt2_tokenizer_path = str(base_path.parent / "tokenizer")
                     cls._tokenizer = AutoTokenizer.from_pretrained(gpt2_tokenizer_path)
         return cls._tokenizer
 

@@ -20,6 +20,12 @@ class MeetingRoomStatusChangedV1Event(Event):
         Handle meeting room status changed event.
 
         This event is triggered when a meeting room's status is changed.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,
@@ -29,7 +35,8 @@ class MeetingRoomStatusChangedV1Event(Event):
             ),
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict: dict[str, Any] = {

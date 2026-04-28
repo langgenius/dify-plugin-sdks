@@ -1,3 +1,5 @@
+# ruff: noqa: RUF001
+
 from decimal import Decimal
 from enum import Enum
 from typing import Any
@@ -26,17 +28,24 @@ class DefaultParameterName(Enum):
     JSON_SCHEMA = "json_schema"
 
     @classmethod
-    def value_of(cls, value: Any) -> "DefaultParameterName":
+    def value_of(cls, value: object) -> "DefaultParameterName":
         """
         Get parameter name from value.
 
         :param value: parameter value
         :return: parameter name
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         for name in cls:
             if name.value == value:
                 return name
-        raise ValueError(f"invalid parameter name {value}")
+        msg = f"invalid parameter name {value}"
+        raise ValueError(msg)
 
 
 PARAMETER_RULE_TEMPLATE: dict[DefaultParameterName, dict] = {

@@ -3,7 +3,7 @@ import pytest
 from dify_plugin.interfaces.datasource import DatasourceProvider
 
 
-def test_construct_datasource_provider():
+def test_construct_datasource_provider() -> None:
     """
     Test that the DatasourceProvider can be constructed without implementing any methods
     """
@@ -11,7 +11,7 @@ def test_construct_datasource_provider():
     assert provider is not None
 
 
-def test_oauth_get_authorization_url():
+def test_oauth_get_authorization_url() -> None:
     """
     Test that the DatasourceProvider can get the authorization url
     """

@@ -21,12 +21,13 @@ class SubIssuesUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         sub_issue = payload.get("sub_issue")
         if not isinstance(sub_issue, Mapping):
@@ -44,7 +45,7 @@ class SubIssuesUnifiedEvent(Event):
                 if v.strip().isdigit()
             }
             if numbers and (parent_issue.get("number") or 0) not in numbers:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         child_filter = parameters.get("child_issue")
         if child_filter:
@@ -54,6 +55,6 @@ class SubIssuesUnifiedEvent(Event):
                 if v.strip().isdigit()
             }
             if numbers and (sub_issue.get("number") or 0) not in numbers:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

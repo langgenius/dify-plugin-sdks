@@ -22,7 +22,7 @@ from dify_plugin.interfaces.trigger import (
 )
 
 
-def test_construct_trigger_provider():
+def test_construct_trigger_provider() -> None:
     """
     Test that the TriggerProvider can be constructed without implementing any methods
     """
@@ -51,7 +51,7 @@ def test_construct_trigger_provider():
     assert provider is not None
 
 
-def test_oauth_get_authorization_url():
+def test_oauth_get_authorization_url() -> None:
     """
     Test that the TriggerProvider can get the authorization url
     """

@@ -16,7 +16,7 @@ class ModelProvider(ABC):
         self,
         provider_schemas: ProviderEntity,
         model_factory: ModelFactory,
-    ):
+    ) -> None:
         """
         Initialize model provider
 
@@ -46,6 +46,9 @@ class ModelProvider(ABC):
         Get provider schema
 
         :return: provider schema
+
+        Returns:
+            The return value.
         """
         return self.provider_schema
 
@@ -55,6 +58,9 @@ class ModelProvider(ABC):
 
         :param model_type: model type defined in `ModelType`
         :return: list of models
+
+        Returns:
+            The return value.
         """
         provider_schema = self.get_provider_schema()
         if model_type not in provider_schema.supported_model_types:
@@ -64,10 +70,9 @@ class ModelProvider(ABC):
         model_instance = self.get_model_instance(model_type)
 
         # get predefined models (predefined_models)
-        models = model_instance.predefined_models()
+        return model_instance.predefined_models()
 
         # return models
-        return models
 
     def get_model_instance(self, model_type: ModelType) -> AIModel:
         """
@@ -75,5 +80,8 @@ class ModelProvider(ABC):
 
         :param model_type: model type defined in `ModelType`
         :return:
+
+        Returns:
+            The return value.
         """
         return self.model_factory.get_instance(model_type)

@@ -32,7 +32,7 @@ class PullRequestReviewCommentUnifiedEvent(Event):
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         apply_pull_request_review_comment_filters(comment, pull_request, parameters)
         if action == "deleted":

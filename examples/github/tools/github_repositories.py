@@ -1,6 +1,7 @@
 import json
 from collections.abc import Generator
-from datetime import datetime
+from datetime import UTC, datetime
+from http import HTTPStatus
 from typing import Any
 from urllib.parse import quote
 
@@ -10,6 +11,15 @@ from dify_plugin import Tool
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
+
+DESCRIPTION_PREVIEW_LENGTH = 100
+GITHUB_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+DISPLAY_DATE_FORMAT = "%Y-%m-%d"
+
+
+def _format_github_date(value: str) -> str:
+    parsed = datetime.strptime(value, GITHUB_TIMESTAMP_FORMAT).replace(tzinfo=UTC)
+    return parsed.strftime(DISPLAY_DATE_FORMAT)
 
 
 class GithubRepositoriesTool(Tool):
@@ -53,22 +63,19 @@ class GithubRepositoriesTool(Tool):
                 url=f"{api_domain}/search/repositories?q={quote(query)}&sort=stars&per_page={top_n}&order=desc",
             )
             response_data = response.json()
-            if response.status_code == 200 and isinstance(
+            if response.status_code == HTTPStatus.OK and isinstance(
                 response_data.get("items"), list
             ):
                 contents = []
                 if len(response_data.get("items")) > 0:
                     for item in response_data.get("items"):
                         content = {}
-                        updated_at_object = datetime.strptime(
-                            item["updated_at"], "%Y-%m-%dT%H:%M:%SZ"
-                        )
                         content["owner"] = item["owner"]["login"]
                         content["name"] = item["name"]
                         if item["description"] is not None:
                             content["description"] = (
-                                item["description"][:100] + "..."
-                                if len(item["description"]) > 100
+                                item["description"][:DESCRIPTION_PREVIEW_LENGTH] + "..."
+                                if len(item["description"]) > DESCRIPTION_PREVIEW_LENGTH
                                 else item["description"]
                             )
                         else:
@@ -76,7 +83,7 @@ class GithubRepositoriesTool(Tool):
                         content["url"] = item["html_url"]
                         content["star"] = item["watchers"]
                         content["forks"] = item["forks"]
-                        content["updated"] = updated_at_object.strftime("%Y-%m-%d")
+                        content["updated"] = _format_github_date(item["updated_at"])
                         contents.append(content)
                     s.close()
                     yield self.create_text_message(

@@ -21,11 +21,12 @@ class BranchProtectionConfigurationEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         return Variables(variables={**payload})

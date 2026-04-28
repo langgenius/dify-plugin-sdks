@@ -24,6 +24,12 @@ class DriveFileBitableFieldChangedV1Event(Event):
         Handle bitable field changed event.
 
         This event is triggered when a field/column in a bitable is changed.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,
@@ -31,7 +37,8 @@ class DriveFileBitableFieldChangedV1Event(Event):
             lambda builder: builder.register_p2_drive_file_bitable_field_changed_v1,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict: dict[str, Any] = {

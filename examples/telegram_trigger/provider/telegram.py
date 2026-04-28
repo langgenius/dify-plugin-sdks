@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import secrets
 from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
 from werkzeug import Request, Response
 
-from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
 from dify_plugin.errors.trigger import (
     SubscriptionError,
@@ -17,6 +16,9 @@ from dify_plugin.errors.trigger import (
     UnsubscribeError,
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
+
+if TYPE_CHECKING:
+    from dify_plugin.entities.provider_config import CredentialType
 
 
 class TelegramTrigger(Trigger):
@@ -29,19 +31,20 @@ class TelegramTrigger(Trigger):
         if secret_token:
             header_token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
             if header_token != secret_token:
-                raise TriggerValidationError("Invalid Telegram secret token")
+                msg = "Invalid Telegram secret token"
+                raise TriggerValidationError(msg)
 
         try:
             payload = request.get_json(force=True)
         except (
             Exception
         ) as exc:  # pragma: no cover - defensive: werkzeug parsing errors
-            raise TriggerDispatchError(
-                f"Failed to parse Telegram payload: {exc}"
-            ) from exc
+            msg = f"Failed to parse Telegram payload: {exc}"
+            raise TriggerDispatchError(msg) from exc
 
         if not payload:
-            raise TriggerDispatchError("Empty Telegram webhook payload")
+            msg = "Empty Telegram webhook payload"
+            raise TriggerDispatchError(msg)
 
         event = self._resolve_event(payload)
         response = Response(
@@ -91,9 +94,8 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
         token = credentials.get("bot_token")
         if not token:
-            raise TriggerProviderCredentialValidationError(
-                "Telegram Bot Token is required"
-            )
+            msg = "Telegram Bot Token is required"
+            raise TriggerProviderCredentialValidationError(msg)
 
         url = f"{self._API_BASE}/bot{token}/getMe"
         try:
@@ -101,16 +103,14 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
         except (
             requests.RequestException
         ) as exc:  # pragma: no cover - network error path
-            raise TriggerProviderCredentialValidationError(
-                f"Network error: {exc}"
-            ) from exc
+            msg = f"Network error: {exc}"
+            raise TriggerProviderCredentialValidationError(msg) from exc
 
         try:
             payload = response.json()
         except ValueError as exc:  # pragma: no cover - invalid JSON path
-            raise TriggerProviderCredentialValidationError(
-                "Invalid response from Telegram API"
-            ) from exc
+            msg = "Invalid response from Telegram API"
+            raise TriggerProviderCredentialValidationError(msg) from exc
 
         if not payload.get("ok"):
             description = (
@@ -127,9 +127,8 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> Subscription:
         token = credentials.get("bot_token")
         if not token:
-            raise SubscriptionError(
-                "Telegram Bot Token is required", error_code="MISSING_BOT_TOKEN"
-            )
+            msg = "Telegram Bot Token is required"
+            raise SubscriptionError(msg, error_code="MISSING_BOT_TOKEN")
 
         allowed_updates = parameters.get("allowed_updates") or []
         secret_token = secrets.token_urlsafe(32)
@@ -215,9 +214,8 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> Subscription:
         token = credentials.get("bot_token")
         if not token:
-            raise SubscriptionError(
-                "Telegram Bot Token is required", error_code="MISSING_BOT_TOKEN"
-            )
+            msg = "Telegram Bot Token is required"
+            raise SubscriptionError(msg, error_code="MISSING_BOT_TOKEN")
 
         webhook_info = self._get_webhook_info(token)
         properties = dict(subscription.properties)
@@ -253,8 +251,9 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
         except (
             requests.RequestException
         ) as exc:  # pragma: no cover - network error path
+            msg = f"Network error while calling Telegram {method}: {exc}"
             raise SubscriptionError(
-                f"Network error while calling Telegram {method}: {exc}",
+                msg,
                 error_code="NETWORK_ERROR",
             ) from exc
         return self._parse_subscription_response(response, method)
@@ -266,8 +265,9 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
         except (
             requests.RequestException
         ) as exc:  # pragma: no cover - network error path
+            msg = f"Network error while calling Telegram {method}: {exc}"
             raise SubscriptionError(
-                f"Network error while calling Telegram {method}: {exc}",
+                msg,
                 error_code="NETWORK_ERROR",
             ) from exc
         return self._parse_subscription_response(response, method)
@@ -278,8 +278,9 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
         try:
             data = response.json()
         except ValueError as exc:  # pragma: no cover - invalid JSON path
+            msg = "Invalid JSON response from Telegram API"
             raise SubscriptionError(
-                "Invalid JSON response from Telegram API",
+                msg,
                 error_code="INVALID_RESPONSE",
             ) from exc
 

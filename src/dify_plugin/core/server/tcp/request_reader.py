@@ -33,9 +33,8 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         reconnect_attempts: int = 3,
         reconnect_timeout: int = 5,
         on_connected: Callable | None = None,
-    ):
-        """
-        Initialize the TCPStream and connect to the target, raising an
+    ) -> None:
+        """Initialize the TCPStream and connect to the target, raising an
         exception if connection failed.
         """
         super().__init__()
@@ -50,38 +49,31 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         self.opt_lock = Lock()
 
         # handle SIGINT to exit the program smoothly due to the gevent limitation
-        signal.signal(signal.SIGINT, lambda *args, **kwargs: os._exit(0))
+        signal.signal(signal.SIGINT, lambda *_args, **_kwargs: os._exit(0))
 
-    def launch(self):
-        """
-        Launch the connection
-        """
+    def launch(self) -> None:
+        """Launch the connection"""
         self._launch()
 
-    def close(self):
-        """
-        Close the connection
-        """
+    def close(self) -> None:
+        """Close the connection"""
         if self.alive:
             self.sock.close()
             self.alive = False
 
-    def _write_to_sock(self, data: bytes):
-        """
-        Write data to the socket
-        """
+    def _write_to_sock(self, data: bytes) -> int:
+        """Write data to the socket"""
         with self.opt_lock:
             return self.sock.send(data)
 
     def _recv_from_sock(self, size: int) -> bytes:
-        """
-        Receive data from the socket
-        """
+        """Receive data from the socket"""
         return self.sock.recv(size)
 
-    def write(self, data: str):
+    def write(self, data: str) -> None:
         if not self.alive:
-            raise Exception("connection is dead")
+            msg = "connection is dead"
+            raise Exception(msg)
 
         try:
             if native_socket.socket is gevent_socket.socket:
@@ -104,29 +96,25 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             logger.exception("Failed to write data")
             self._launch()
 
-    def done(self):
+    def done(self) -> None:
         pass
 
-    def _launch(self):
-        """
-        Connect to the target, try to reconnect if failed
-        """
+    def _launch(self) -> None:
+        """Connect to the target, try to reconnect if failed"""
         attempts = 0
         while attempts < self.reconnect_attempts:
             try:
                 self._connect()
                 break
-            except Exception as e:
+            except Exception:
                 attempts += 1
                 if attempts >= self.reconnect_attempts:
-                    raise e
+                    raise
 
                 time.sleep(self.reconnect_timeout)
 
-    def _connect(self):
-        """
-        Connect to the target
-        """
+    def _connect(self) -> None:
+        """Connect to the target"""
         try:
             if native_socket.socket is gevent_socket.socket:
                 self.sock = gevent_socket.create_connection((self.host, self.port))
@@ -138,20 +126,20 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                 data=InitializeMessage.Key(key=self.key).model_dump(),
             )
             self.sock.sendall(handshake_message.model_dump_json().encode() + b"\n")
-            logger.info(f"\033[32mConnected to {self.host}:{self.port}\033[0m")
+            logger.info("\033[32mConnected to %s:%s\033[0m", self.host, self.port)
             if self.on_connected:
                 self.on_connected()
-            logger.info(f"Sent key to {self.host}:{self.port}")
-        except OSError as e:
+            logger.info("Sent key to %s:%s", self.host, self.port)
+        except OSError:
             logger.exception(
-                f"\033[31mFailed to connect to {self.host}:{self.port}\033[0m"
+                "\033[31mFailed to connect to %s:%s\033[0m",
+                self.host,
+                self.port,
             )
-            raise e
+            raise
 
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
-        """
-        Read data from the target
-        """
+        """Read data from the target"""
         buffer = b""
         while self.alive:
             try:
@@ -169,10 +157,13 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                     else:
                         raise
                 if data == b"":
-                    raise Exception("Connection is closed")
+                    msg = "Connection is closed"
+                    raise Exception(msg)
             except Exception:
                 logger.exception(
-                    f"\033[31mFailed to read data from {self.host}:{self.port}\033[0m"
+                    "\033[31mFailed to read data from %s:%s\033[0m",
+                    self.host,
+                    self.port,
                 )
                 self.alive = False
                 time.sleep(self.reconnect_timeout)
@@ -209,11 +200,13 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                     )
                     yield chunk
                     logger.info(
-                        f"Received event: \n{chunk.event}\n session_id: "
-                        f"\n{chunk.session_id}\n data: \n{chunk.data}"
+                        "Received event: \n%s\n session_id: \n%s\n data: \n%s",
+                        chunk.event,
+                        chunk.session_id,
+                        chunk.data,
                     )
                 except Exception:
                     logger.exception(
-                        "\033[31mAn error occurred while parsing the data: "
-                        f"{line}\033[0m"
+                        "\x1b[31mAn error occurred while parsing the data: %s\x1b[0m",
+                        line,
                     )

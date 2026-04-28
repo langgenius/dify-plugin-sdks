@@ -1,6 +1,7 @@
 import json
 from collections.abc import Generator
-from datetime import datetime
+from datetime import UTC, datetime
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -9,6 +10,15 @@ from dify_plugin import Tool
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
+
+BODY_PREVIEW_LENGTH = 200
+GITHUB_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+DISPLAY_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+def _format_github_timestamp(value: str) -> str:
+    parsed = datetime.strptime(value, GITHUB_TIMESTAMP_FORMAT).replace(tzinfo=UTC)
+    return parsed.strftime(DISPLAY_DATETIME_FORMAT)
 
 
 class GithubRepositoryIssuesTool(Tool):
@@ -73,7 +83,7 @@ class GithubRepositoryIssuesTool(Tool):
                 params=params,
             )
 
-            if response.status_code == 200:
+            if response.status_code == HTTPStatus.OK:
                 response_data = response.json()
 
                 issues = []
@@ -85,8 +95,9 @@ class GithubRepositoryIssuesTool(Tool):
                     issue_info = {
                         "number": issue.get("number", 0),
                         "title": issue.get("title", ""),
-                        "body": (issue.get("body", "") or "")[:200] + "..."
-                        if len(issue.get("body", "") or "") > 200
+                        "body": (issue.get("body", "") or "")[:BODY_PREVIEW_LENGTH]
+                        + "..."
+                        if len(issue.get("body", "") or "") > BODY_PREVIEW_LENGTH
                         else (issue.get("body", "") or ""),
                         "state": issue.get("state", ""),
                         "url": issue.get("html_url", ""),
@@ -98,14 +109,14 @@ class GithubRepositoryIssuesTool(Tool):
                             label.get("name", "") for label in issue.get("labels", [])
                         ],
                         "comments": issue.get("comments", 0),
-                        "created_at": datetime.strptime(
-                            issue.get("created_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                        ).strftime("%Y-%m-%d %H:%M:%S")
+                        "created_at": _format_github_timestamp(
+                            issue.get("created_at", "")
+                        )
                         if issue.get("created_at")
                         else "",
-                        "updated_at": datetime.strptime(
-                            issue.get("updated_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                        ).strftime("%Y-%m-%d %H:%M:%S")
+                        "updated_at": _format_github_timestamp(
+                            issue.get("updated_at", "")
+                        )
                         if issue.get("updated_at")
                         else "",
                     }
@@ -129,8 +140,10 @@ class GithubRepositoryIssuesTool(Tool):
             else:
                 response_data = response.json()
                 message = response_data.get("message", "Unknown error")
-                raise InvokeError(f"Request failed: {response.status_code} {message}")
-        except InvokeError as e:
-            raise e
+                msg = f"Request failed: {response.status_code} {message}"
+                raise InvokeError(msg)
+        except InvokeError:
+            raise
         except Exception as e:
-            raise InvokeError(f"GitHub API request failed: {e}") from e
+            msg = f"GitHub API request failed: {e}"
+            raise InvokeError(msg) from e

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import lark_oapi as lark
 from lark_oapi.api.im.v1.model import UserId
@@ -11,7 +11,8 @@ from lark_oapi.core.http import RawRequest
 from lark_oapi.event.dispatcher_handler import EventDispatcherHandlerBuilder
 from werkzeug import Request
 
-from dify_plugin.interfaces.trigger import EventRuntime
+if TYPE_CHECKING:
+    from dify_plugin.interfaces.trigger import EventRuntime
 
 
 def build_raw_request(request: Request) -> RawRequest:
@@ -44,7 +45,8 @@ def dispatch_single_event[EventDataT](
     )
 
     if not encrypt_key or not verification_token:
-        raise ValueError("encrypt_key or verification_token is not set")
+        msg = "encrypt_key or verification_token is not set"
+        raise ValueError(msg)
 
     builder = lark.EventDispatcherHandler.builder(
         encrypt_key,
@@ -57,11 +59,13 @@ def dispatch_single_event[EventDataT](
 
     payload = event.get("payload")
     if payload is None:
-        raise ValueError("event is None")
+        msg = "event is None"
+        raise ValueError(msg)
 
     event_data = payload
     if event_data is None:
-        raise ValueError("event.event is None")
+        msg = "event.event is None"
+        raise ValueError(msg)
 
     return event_data
 

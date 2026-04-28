@@ -1,6 +1,7 @@
 import json
 import time
 from decimal import Decimal
+from http import HTTPStatus
 from urllib.parse import urljoin
 
 import requests
@@ -48,6 +49,9 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         :param user: unique user id
         :param input_type: input type
         :return: embeddings result
+
+        Returns:
+            The return value.
         """
 
         # Prepare headers and payload for the request
@@ -138,6 +142,9 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         :param credentials: model credentials
         :param texts: texts to embed
         :return:
+
+        Returns:
+            The return value.
         """
         return [self._get_num_tokens_by_gpt2(text) for text in texts]
 
@@ -148,6 +155,9 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             headers = {"Content-Type": "application/json"}
@@ -175,23 +185,22 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
                 timeout=(10, 300),
             )
 
-            if response.status_code != 200:
-                raise CredentialsValidateFailedError(
+            if response.status_code != HTTPStatus.OK:
+                msg = (
                     "Credentials validation failed with status code "
                     f"{response.status_code}"
                 )
+                raise CredentialsValidateFailedError(msg)
 
             try:
                 json_result = response.json()
             except json.JSONDecodeError as e:
-                raise CredentialsValidateFailedError(
-                    "Credentials validation failed: JSON decode error"
-                ) from e
+                msg = "Credentials validation failed: JSON decode error"
+                raise CredentialsValidateFailedError(msg) from e
 
             if "model" not in json_result:
-                raise CredentialsValidateFailedError(
-                    "Credentials validation failed: invalid response"
-                )
+                msg = "Credentials validation failed: invalid response"
+                raise CredentialsValidateFailedError(msg)
         except CredentialsValidateFailedError:
             raise
         except Exception as ex:
@@ -203,7 +212,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         """
         generate custom model entities from credentials
         """
-        entity = AIModelEntity(
+        return AIModelEntity(
             model=model,
             label=I18nObject(en_US=model),
             model_type=ModelType.TEXT_EMBEDDING,
@@ -222,8 +231,6 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             ),
         )
 
-        return entity
-
     def _calc_response_usage(
         self, model: str, credentials: dict, tokens: int
     ) -> EmbeddingUsage:
@@ -234,6 +241,9 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         :param credentials: model credentials
         :param tokens: input tokens
         :return: usage
+
+        Returns:
+            The return value.
         """
         # get input price info
         input_price_info = self.get_price(
@@ -244,7 +254,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         )
 
         # transform usage
-        usage = EmbeddingUsage(
+        return EmbeddingUsage(
             tokens=tokens,
             total_tokens=tokens,
             unit_price=input_price_info.unit_price,
@@ -253,5 +263,3 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             currency=input_price_info.currency,
             latency=time.perf_counter() - self.started_at,
         )
-
-        return usage

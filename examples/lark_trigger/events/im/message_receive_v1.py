@@ -21,6 +21,12 @@ class MessageReceiveV1Event(Event):
 
         This event is triggered when a message is sent to a group chat where
         the bot is a member.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,
@@ -28,7 +34,8 @@ class MessageReceiveV1Event(Event):
             lambda builder: builder.register_p2_im_message_receive_v1,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict: dict[str, Any] = {}

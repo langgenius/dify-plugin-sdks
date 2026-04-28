@@ -1,10 +1,13 @@
+# ruff: noqa: RUF001
+
 import codecs
 import json
 import logging
 import uuid
-from collections.abc import Generator
+from collections.abc import Generator, Mapping
 from decimal import Decimal
-from typing import Any, Union, cast
+from http import HTTPStatus
+from typing import Any, cast
 from urllib.parse import urljoin
 
 import requests
@@ -46,6 +49,7 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from dify_plugin.interfaces.model.openai_compatible.common import _CommonOaiApiCompat
 
 logger = logging.getLogger(__name__)
+EMPTY_STRING = ""
 
 _plugin_config = DifyPluginEnv()
 
@@ -57,20 +61,21 @@ def _gen_tool_call_id() -> str:
 def _increase_tool_call(
     new_tool_calls: list[AssistantPromptMessage.ToolCall],
     existing_tools_calls: list[AssistantPromptMessage.ToolCall],
-):
-    """
-    Merge incremental tool call updates into existing tool calls.
+) -> None:
+    """Merge incremental tool call updates into existing tool calls.
 
     :param new_tool_calls: List of new tool call deltas to be merged.
     :param existing_tools_calls: List of existing tool calls to be modified IN-PLACE.
     """
 
-    def get_tool_call(tool_call_id: str):
-        """
-        Get or create a tool call by ID
+    def get_tool_call(tool_call_id: str) -> AssistantPromptMessage.ToolCall:
+        """Get or create a tool call by ID
 
         :param tool_call_id: tool call ID
         :return: existing or new tool call
+
+        Returns:
+            The return value.
         """
         if not tool_call_id:
             return existing_tools_calls[-1]
@@ -88,7 +93,8 @@ def _increase_tool_call(
                 id=tool_call_id,
                 type="function",
                 function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                    name="", arguments=""
+                    name="",
+                    arguments="",
                 ),
             )
             existing_tools_calls.append(tool_call_)
@@ -113,9 +119,7 @@ def _increase_tool_call(
 
 
 class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
-    """
-    Model class for OpenAI large language model.
-    """
+    """Model class for OpenAI large language model."""
 
     def _invoke(
         self,
@@ -127,9 +131,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         stop: list[str] | None = None,
         stream: bool = True,
         user: str | None = None,
-    ) -> Union[LLMResult, Generator]:
-        """
-        Invoke large language model
+    ) -> LLMResult | Generator:
+        """Invoke large language model
 
         :param model: model name
         :param credentials: model credentials
@@ -140,8 +143,10 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :param stream: is stream response
         :param user: unique user id
         :return: full response or stream response chunk generator result
-        """
 
+        Returns:
+            The return value.
+        """
         # text completion model
         return self._generate(
             model=model,
@@ -161,25 +166,30 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> int:
-        """
-        Get number of tokens for given prompt messages
+        """Get number of tokens for given prompt messages
 
         :param model:
         :param credentials:
         :param prompt_messages:
         :param tools: tools for tool calling
         :return:
+
+        Returns:
+            The return value.
         """
         return self._num_tokens_from_messages(prompt_messages, tools, credentials)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        """
-        Validate model credentials using requests to ensure compatibility with
+        """Validate model credentials using requests to ensure compatibility with
         all providers following OpenAI's API standard.
 
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
+            ValueError: If input values are invalid.
         """
         response: requests.Response | None = None
         try:
@@ -213,7 +223,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 data["prompt"] = "ping"
                 endpoint_url = urljoin(endpoint_url, "completions")
             else:
-                raise ValueError("Unsupported completion type for model configuration.")
+                msg = "Unsupported completion type for model configuration."
+                raise ValueError(msg)
 
             # ADD stream validate_credentials
             stream_mode_auth = credentials.get("stream_mode_auth", "not_use")
@@ -233,37 +244,52 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     timeout=(10, 300),
                     stream=True,
                 )
-                if response.status_code != 200:
-                    raise CredentialsValidateFailedError(
+                if response.status_code != HTTPStatus.OK:
+                    msg = (
                         "Credentials validation failed with status code "
                         f"{response.status_code} and response body {response.text}"
+                    )
+                    raise CredentialsValidateFailedError(
+                        msg,
                     )
                 return
 
             # send a post request to validate the credentials
             response = requests.post(
-                endpoint_url, headers=headers, json=data, timeout=(10, 300)
+                endpoint_url,
+                headers=headers,
+                json=data,
+                timeout=(10, 300),
             )
 
-            if response.status_code != 200:
-                raise CredentialsValidateFailedError(
+            if response.status_code != HTTPStatus.OK:
+                msg = (
                     "Credentials validation failed with status code "
                     f"{response.status_code} and response body {response.text}"
+                )
+                raise CredentialsValidateFailedError(
+                    msg,
                 )
 
             try:
                 json_result = response.json()
             except json.JSONDecodeError:
-                raise CredentialsValidateFailedError(
+                msg = (
                     "Credentials validation failed: JSON decode error, "
                     f"response body {response.text}"
+                )
+                raise CredentialsValidateFailedError(
+                    msg,
                 ) from None
 
-            if completion_type is LLMMode.CHAT and json_result.get("object", "") == "":
+            if (
+                completion_type is LLMMode.CHAT
+                and json_result.get("object", "") == EMPTY_STRING
+            ):
                 json_result["object"] = "chat.completion"
             elif (
                 completion_type is LLMMode.COMPLETION
-                and json_result.get("object", "") == ""
+                and json_result.get("object", "") == EMPTY_STRING
             ):
                 json_result["object"] = "text_completion"
 
@@ -271,37 +297,46 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 "object" not in json_result
                 or json_result["object"] != "chat.completion"
             ):
-                raise CredentialsValidateFailedError(
+                msg = (
                     f"Credentials validation failed: invalid response object, "
                     f"must be 'chat.completion', response body {response.text}"
                 )
-            elif completion_type is LLMMode.COMPLETION and (
+                raise CredentialsValidateFailedError(
+                    msg,
+                )
+            if completion_type is LLMMode.COMPLETION and (
                 "object" not in json_result
                 or json_result["object"] != "text_completion"
             ):
-                raise CredentialsValidateFailedError(
+                msg = (
                     f"Credentials validation failed: invalid response object, "
                     f"must be 'text_completion', response body {response.text}"
+                )
+                raise CredentialsValidateFailedError(
+                    msg,
                 )
         except CredentialsValidateFailedError:
             raise
         except Exception as ex:
             if response:
-                raise CredentialsValidateFailedError(
+                msg = (
                     "An error occurred during credentials validation: "
                     f"{ex!s}, response body {response.text}"
-                ) from ex
-            else:
+                )
                 raise CredentialsValidateFailedError(
-                    f"An error occurred during credentials validation: {ex!s}"
+                    msg,
                 ) from ex
+            msg = f"An error occurred during credentials validation: {ex!s}"
+            raise CredentialsValidateFailedError(
+                msg,
+            ) from ex
 
     def get_customizable_model_schema(
-        self, model: str, credentials: dict
+        self,
+        model: str,
+        credentials: dict,
     ) -> AIModelEntity:
-        """
-        generate custom model entities from credentials
-        """
+        """Generate custom model entities from credentials"""
         features = []
 
         function_calling_type = credentials.get("function_calling_type", "no_call")
@@ -311,7 +346,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             features.append(ModelFeature.MULTI_TOOL_CALL)
 
         stream_function_calling = credentials.get(
-            "stream_function_calling", "supported"
+            "stream_function_calling",
+            "supported",
         )
         if stream_function_calling == "supported":
             features.append(ModelFeature.STREAM_TOOL_CALL)
@@ -332,7 +368,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             features=features,
             model_properties={
                 ModelPropertyKey.CONTEXT_SIZE: int(
-                    credentials.get("context_size", "4096")
+                    credentials.get("context_size", "4096"),
                 ),
                 ModelPropertyKey.MODE: credentials.get("mode"),
             },
@@ -445,8 +481,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         elif credentials["mode"] == "completion":
             entity.model_properties[ModelPropertyKey.MODE] = LLMMode.COMPLETION.value
         else:
+            msg = f"Unknown completion type {credentials['completion_type']}"
             raise ValueError(
-                f"Unknown completion type {credentials['completion_type']}"
+                msg,
             )
 
         return entity
@@ -464,9 +501,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         stop: list[str] | None = None,
         stream: bool = True,
         user: str | None = None,
-    ) -> Union[LLMResult, Generator]:
-        """
-        Invoke llm completion model
+    ) -> LLMResult | Generator:
+        """Invoke llm completion model
 
         :param model: model name
         :param credentials: credentials
@@ -476,6 +512,13 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :param stream: is stream response
         :param user: unique user id
         :return: full response or stream response chunk generator result
+
+        Returns:
+            The return value.
+
+        Raises:
+            InvokeError: If model invocation fails.
+            ValueError: If input values are invalid.
         """
         headers = {
             "Content-Type": "application/json",
@@ -501,15 +544,19 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             if response_format == "json_schema":
                 json_schema = model_parameters.get("json_schema")
                 if not json_schema:
-                    raise ValueError(
+                    msg = (
                         "Must define JSON Schema when the response format is "
                         "json_schema"
+                    )
+                    raise ValueError(
+                        msg,
                     )
                 try:
                     schema = TypeAdapter(dict[str, Any]).validate_json(json_schema)
                 except Exception as exc:
+                    msg = f"not correct json_schema format: {json_schema}"
                     raise ValueError(
-                        f"not correct json_schema format: {json_schema}"
+                        msg,
                     ) from exc
                 model_parameters.pop("json_schema")
                 model_parameters["response_format"] = {
@@ -539,7 +586,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             endpoint_url = urljoin(endpoint_url, "completions")
             data["prompt"] = prompt_messages[0].content
         else:
-            raise ValueError("Unsupported completion type for model configuration.")
+            msg = "Unsupported completion type for model configuration."
+            raise ValueError(msg)
 
         # annotate tools with names, descriptions, etc.
         function_calling_type = credentials.get("function_calling_type", "no_call")
@@ -557,10 +605,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             elif function_calling_type == "tool_call":
                 data["tool_choice"] = "auto"
 
-                for tool in tools:
-                    formatted_tools.append(
-                        PromptMessageFunction(function=tool).model_dump()
-                    )
+                formatted_tools.extend(
+                    PromptMessageFunction(function=tool).model_dump() for tool in tools
+                )
 
                 data["tools"] = formatted_tools
 
@@ -581,19 +628,28 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if response.encoding is None or response.encoding == "ISO-8859-1":
             response.encoding = "utf-8"
 
-        if response.status_code != 200:
-            raise InvokeError(
+        if response.status_code != HTTPStatus.OK:
+            msg = (
                 "API request failed with status code "
                 f"{response.status_code}: {response.text}"
+            )
+            raise InvokeError(
+                msg,
             )
 
         if stream:
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages
+                model,
+                credentials,
+                response,
+                prompt_messages,
             )
 
         return self._handle_generate_response(
-            model, credentials, response, prompt_messages
+            model,
+            credentials,
+            response,
+            prompt_messages,
         )
 
     def _create_final_llm_result_chunk(
@@ -611,7 +667,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         prompt_tokens = usage and usage.get("prompt_tokens")
         if prompt_tokens is None:
             prompt_tokens = self._num_tokens_from_string(
-                text=prompt_messages[0].content
+                text=prompt_messages[0].content,
             )
         completion_tokens = usage and usage.get("completion_tokens")
         if completion_tokens is None:
@@ -619,13 +675,19 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         # transform usage
         usage = self._calc_response_usage(
-            model, credentials, prompt_tokens, completion_tokens
+            model,
+            credentials,
+            prompt_tokens,
+            completion_tokens,
         )
 
         return LLMResultChunk(
             model=model,
             delta=LLMResultChunkDelta(
-                index=index, message=message, finish_reason=finish_reason, usage=usage
+                index=index,
+                message=message,
+                finish_reason=finish_reason,
+                usage=usage,
             ),
         )
 
@@ -636,14 +698,16 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         response: requests.Response,
         prompt_messages: list[PromptMessage],
     ) -> Generator:
-        """
-        Handle llm stream response
+        """Handle llm stream response
 
         :param model: model name
         :param credentials: model credentials
         :param response: streamed response
         :param prompt_messages: prompt messages
         :return: llm response chunk generator
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         chunk_index = 0
         full_assistant_content = ""
@@ -654,8 +718,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         # delimiter for stream response, need unicode_escape
         delimiter = credentials.get("stream_mode_delimiter", "\n\n")
         delimiter = codecs.decode(delimiter, "unicode_escape")
-        for chunk in response.iter_lines(decode_unicode=True, delimiter=delimiter):
-            chunk = chunk.strip()
+        for raw_chunk in response.iter_lines(decode_unicode=True, delimiter=delimiter):
+            chunk = raw_chunk.strip()
             if chunk:
                 # ignore sse comments
                 if chunk.startswith(":"):
@@ -666,7 +730,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
                 try:
                     chunk_json: dict = TypeAdapter(dict[str, Any]).validate_json(
-                        decoded_chunk
+                        decoded_chunk,
                     )
                 # stream ended
                 except ValidationError:
@@ -685,9 +749,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 if chunk_json.get("error") and chunk_json.get("choices") is None:
                     raise ValueError(chunk_json.get("error"))
 
-                if chunk_json:  # noqa: SIM102
-                    if u := chunk_json.get("usage"):
-                        usage = u
+                if chunk_json and (u := chunk_json.get("usage")):
+                    usage = u
                 if not chunk_json or len(chunk_json["choices"]) == 0:
                     continue
 
@@ -699,7 +762,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     delta = choice["delta"]
                     delta_content, is_reasoning_started = (
                         self._wrap_thinking_by_reasoning_content(
-                            delta, is_reasoning_started
+                            delta,
+                            is_reasoning_started,
                         )
                     )
 
@@ -721,17 +785,17 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                                 "id": "tool_call_id",
                                 "type": "function",
                                 "function": delta.get("function_call", {}),
-                            }
+                            },
                         ]
 
                     # extract tool calls from response
                     if assistant_message_tool_calls:
                         tool_calls = self._extract_response_tool_calls(
-                            assistant_message_tool_calls
+                            assistant_message_tool_calls,
                         )
                         _increase_tool_call(tool_calls, tools_calls)
 
-                    if delta_content is None or delta_content == "":
+                    if delta_content is None or delta_content == EMPTY_STRING:
                         continue
 
                     # transform assistant message to prompt message
@@ -742,12 +806,12 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     full_assistant_content += delta_content
                 elif "text" in choice:
                     choice_text = choice.get("text", "")
-                    if choice_text == "":
+                    if choice_text == EMPTY_STRING:
                         continue
 
                     # transform assistant message to prompt message
                     assistant_prompt_message = AssistantPromptMessage(
-                        content=choice_text
+                        content=choice_text,
                     )
                     full_assistant_content += choice_text
                 else:
@@ -811,17 +875,18 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             response_content = output["text"]
 
         assistant_message = AssistantPromptMessage(
-            content=response_content, tool_calls=[]
+            content=response_content,
+            tool_calls=[],
         )
 
         if tool_calls:
             if function_calling_type == "tool_call":
                 assistant_message.tool_calls = self._extract_response_tool_calls(
-                    tool_calls
+                    tool_calls,
                 )
             elif function_calling_type == "function_call":
                 assistant_message.tool_calls = [
-                    self._extract_response_function_call(tool_calls)
+                    self._extract_response_function_call(tool_calls),
                 ]
 
         usage = response_json.get("usage")
@@ -833,44 +898,47 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             # calculate num tokens
             assert prompt_messages[0].content is not None
             prompt_tokens = self._num_tokens_from_string(
-                model, prompt_messages[0].content
+                model,
+                prompt_messages[0].content,
             )
             assert assistant_message.content is not None
             completion_tokens = self._num_tokens_from_string(
-                model, assistant_message.content
+                model,
+                assistant_message.content,
             )
 
         # transform usage
         usage = self._calc_response_usage(
-            model, credentials, prompt_tokens, completion_tokens
+            model,
+            credentials,
+            prompt_tokens,
+            completion_tokens,
         )
 
         # transform response
-        result = LLMResult(
+        return LLMResult(
             id=message_id,
             model=response_json.get("model", model),
             message=assistant_message,
             usage=usage,
         )
 
-        return result
-
     def _convert_prompt_message_to_dict(
-        self, message: PromptMessage, credentials: dict | None = None
+        self,
+        message: PromptMessage,
+        credentials: dict | None = None,
     ) -> dict:
-        """
-        Convert PromptMessage to dict for OpenAI API format
-        """
+        """Convert PromptMessage to dict for OpenAI API format"""
         message_dict = {}
         if isinstance(message, UserPromptMessage):
-            message = cast(UserPromptMessage, message)
+            message = cast("UserPromptMessage", message)
             if isinstance(message.content, str):
                 message_dict = {"role": "user", "content": message.content}
             else:
                 sub_messages = []
                 for message_content in message.content or []:
                     if message_content.type == PromptMessageContentType.TEXT:
-                        message_content = cast(PromptMessageContent, message_content)
+                        message_content = cast("PromptMessageContent", message_content)
                         sub_message_dict = {
                             "type": "text",
                             "text": message_content.data,
@@ -878,7 +946,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                         sub_messages.append(sub_message_dict)
                     elif message_content.type == PromptMessageContentType.IMAGE:
                         message_content = cast(
-                            ImagePromptMessageContent, message_content
+                            "ImagePromptMessageContent",
+                            message_content,
                         )
                         sub_message_dict = {
                             "type": "image_url",
@@ -891,11 +960,12 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
                 message_dict = {"role": "user", "content": sub_messages}
         elif isinstance(message, AssistantPromptMessage):
-            message = cast(AssistantPromptMessage, message)
+            message = cast("AssistantPromptMessage", message)
             message_dict = {"role": "assistant", "content": message.content}
             if message.tool_calls:
                 function_calling_type = credentials.get(
-                    "function_calling_type", "no_call"
+                    "function_calling_type",
+                    "no_call",
                 )
                 if function_calling_type == "tool_call":
                     message_dict["tool_calls"] = [
@@ -908,10 +978,10 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                         "arguments": function_call.function.arguments,
                     }
         elif isinstance(message, SystemPromptMessage):
-            message = cast(SystemPromptMessage, message)
+            message = cast("SystemPromptMessage", message)
             message_dict = {"role": "system", "content": message.content}
         elif isinstance(message, ToolPromptMessage):
-            message = cast(ToolPromptMessage, message)
+            message = cast("ToolPromptMessage", message)
             function_calling_type = credentials.get("function_calling_type", "no_call")
             if function_calling_type == "tool_call":
                 message_dict = {
@@ -926,7 +996,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     "name": message.tool_call_id,
                 }
         else:
-            raise ValueError(f"Got unknown type {message}")
+            msg = f"Got unknown type {message}"
+            raise ValueError(msg)
 
         if message.name and message_dict.get("role", "") != "tool":
             message_dict["name"] = message.name
@@ -935,15 +1006,17 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
     def _num_tokens_from_string(
         self,
-        text: Union[str, list[PromptMessageContent]],
+        text: str | list[PromptMessageContent],
         tools: list[PromptMessageTool] | None = None,
     ) -> int:
-        """
-        Approximate num tokens for model with gpt2 tokenizer.
+        """Approximate num tokens for model with gpt2 tokenizer.
 
         :param text: prompt text
         :param tools: tools for tool calling
         :return: number of tokens
+
+        Returns:
+            The return value.
         """
         if isinstance(text, str):
             full_text = text
@@ -951,7 +1024,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             full_text = ""
             for message_content in text:
                 if message_content.type == PromptMessageContentType.TEXT:
-                    message_content = cast(PromptMessageContent, message_content)
+                    message_content = cast("PromptMessageContent", message_content)
                     full_text += message_content.data
 
         num_tokens = self._get_num_tokens_by_gpt2(full_text)
@@ -967,10 +1040,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         tools: list[PromptMessageTool] | None = None,
         credentials: dict | None = None,
     ) -> int:
-        """
-        Approximate num tokens with GPT2 tokenizer.
-        """
-
+        """Approximate num tokens with GPT2 tokenizer."""
         tokens_per_message = 3
         tokens_per_name = 1
 
@@ -987,16 +1057,17 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 #  type is not implemented, which need to download the image
                 #  and then get the resolution for calculation,
                 #  and will increase the request delay
-                if isinstance(value, list):
+                message_value = value
+                if isinstance(message_value, list):
                     text = ""
-                    for item in value:
+                    for item in message_value:
                         if isinstance(item, dict) and item["type"] == "text":
                             text += item["text"]
 
-                    value = text
+                    message_value = text
 
                 if key == "tool_calls":
-                    for tool_call in value or []:
+                    for tool_call in message_value or []:
                         for t_key, t_value in tool_call.items():
                             num_tokens += self._get_num_tokens_by_gpt2(t_key)
                             if t_key == "function":
@@ -1007,7 +1078,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                                 num_tokens += self._get_num_tokens_by_gpt2(t_key)
                                 num_tokens += self._get_num_tokens_by_gpt2(t_value)
                 else:
-                    num_tokens += self._get_num_tokens_by_gpt2(str(value))
+                    num_tokens += self._get_num_tokens_by_gpt2(str(message_value))
 
                 if key == "name":
                     num_tokens += tokens_per_name
@@ -1021,11 +1092,13 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         return num_tokens
 
     def _num_tokens_for_tools(self, tools: list[PromptMessageTool]) -> int:
-        """
-        Calculate num tokens for tool calling with tiktoken package.
+        """Calculate num tokens for tool calling with tiktoken package.
 
         :param tools: tools for tool calling
         :return: number of tokens
+
+        Returns:
+            The return value.
         """
         num_tokens = 0
         for tool in tools:
@@ -1058,12 +1131,12 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                                 for enum_field in field_value:
                                     num_tokens += 3
                                     num_tokens += self._get_num_tokens_by_gpt2(
-                                        enum_field
+                                        enum_field,
                                     )
                             else:
                                 num_tokens += self._get_num_tokens_by_gpt2(field_key)
                                 num_tokens += self._get_num_tokens_by_gpt2(
-                                    str(field_value)
+                                    str(field_value),
                                 )
                 if "required" in parameters:
                     num_tokens += self._get_num_tokens_by_gpt2("required")
@@ -1074,13 +1147,16 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         return num_tokens
 
     def _extract_response_tool_calls(
-        self, response_tool_calls: list[dict]
+        self,
+        response_tool_calls: list[dict],
     ) -> list[AssistantPromptMessage.ToolCall]:
-        """
-        Extract tool calls from response
+        """Extract tool calls from response
 
         :param response_tool_calls: response tool calls
         :return: list of tool calls
+
+        Returns:
+            The return value.
         """
         tool_calls = []
         if response_tool_calls:
@@ -1090,7 +1166,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 function = AssistantPromptMessage.ToolCall.ToolCallFunction(
                     name=response_tool_call.get("function", {}).get("name", ""),
                     arguments=response_tool_call.get("function", {}).get(
-                        "arguments", ""
+                        "arguments",
+                        "",
                     ),
                 )
 
@@ -1104,13 +1181,16 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         return tool_calls
 
     def _extract_response_function_call(
-        self, response_function_call
+        self,
+        response_function_call: Mapping[str, object] | None,
     ) -> AssistantPromptMessage.ToolCall | None:
-        """
-        Extract function call from response
+        """Extract function call from response
 
         :param response_function_call: response function call
         :return: tool call
+
+        Returns:
+            The return value.
         """
         tool_call = None
         if response_function_call:

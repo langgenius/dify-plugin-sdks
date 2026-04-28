@@ -1,20 +1,23 @@
 import inspect
 import logging
 from collections.abc import Callable
-from typing import Any
 
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.__base.response_writer import ResponseWriter
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class Route:
     filter: Callable[[dict], bool]
-    func: Callable
+    func: Callable[..., object]
 
-    def __init__(self, filter: Callable[[dict], bool], func) -> None:  # noqa: A002
+    def __init__(
+        self,
+        filter: Callable[[dict], bool],  # noqa: A002
+        func: Callable[..., object],
+    ) -> None:
         self.filter = filter
         self.func = func
 
@@ -32,14 +35,15 @@ class Router:
 
     def register_route(
         self,
-        f: Callable,
+        f: Callable[..., object],
         filter: Callable[[dict], bool],  # noqa: A002
-        instance: Any = None,
-    ):
+        instance: object | None = None,
+    ) -> None:
         sig = inspect.signature(f)
         parameters = list(sig.parameters.values())
         if len(parameters) == 0:
-            raise ValueError("Route function must have at least one parameter")
+            msg = "Route function must have at least one parameter"
+            raise ValueError(msg)
 
         if instance:
             # get first parameter of func
@@ -47,7 +51,7 @@ class Router:
             # get annotation of the first parameter
             annotation = parameter.annotation
 
-            def wrapper(session: Session, data: dict):
+            def wrapper(session: Session, data: dict) -> object:
                 try:
                     data = annotation(**data)
                 except TypeError as e:
@@ -66,7 +70,7 @@ class Router:
             # get annotation of the first parameter
             annotation = parameter.annotation
 
-            def wrapper(session: Session, data: dict):
+            def wrapper(session: Session, data: dict) -> object:
                 try:
                     data = annotation(**data)
                 except TypeError as e:
@@ -81,7 +85,8 @@ class Router:
 
         self.routes.append(Route(filter, wrapper))
 
-    def dispatch(self, session: Session, data: dict) -> Any:
+    def dispatch(self, session: Session, data: dict) -> object | None:
         for route in self.routes:
             if route.filter(data):
                 return route.func(session, data)
+        return None

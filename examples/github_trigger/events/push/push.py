@@ -22,7 +22,8 @@ class PushEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         self._check_ref(payload, parameters.get("ref"))
         self._check_branch(payload, parameters.get("branch"))
@@ -46,7 +47,7 @@ class PushEvent(Event):
 
         current_ref = payload.get("ref")
         if current_ref not in allowed_refs:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_branch(
         self, payload: Mapping[str, Any], branch_param: str | None
@@ -67,7 +68,7 @@ class PushEvent(Event):
             else current_ref
         )
         if branch not in allowed_branches:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_pusher(
         self, payload: Mapping[str, Any], pusher_param: str | None
@@ -91,7 +92,7 @@ class PushEvent(Event):
         if not candidates or not any(
             candidate in allowed_pushers for candidate in candidates
         ):
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_deleted(
         self, payload: Mapping[str, Any], deleted_param: bool | None
@@ -101,7 +102,7 @@ class PushEvent(Event):
 
         is_deleted = bool(payload.get("deleted"))
         if is_deleted != bool(deleted_param):
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_forced(
         self, payload: Mapping[str, Any], forced_param: bool | None
@@ -111,7 +112,7 @@ class PushEvent(Event):
 
         is_forced = bool(payload.get("forced"))
         if is_forced != bool(forced_param):
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_commit_message_contains(
         self, payload: Mapping[str, Any], value: str | None
@@ -134,7 +135,7 @@ class PushEvent(Event):
         if any(kw in message for kw in keywords):
             return
 
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
     def _check_files_glob(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -152,4 +153,4 @@ class PushEvent(Event):
                         if fnmatch.fnmatch(path, pattern):
                             return
 
-        raise EventIgnoreError()
+        raise EventIgnoreError

@@ -27,14 +27,17 @@ class StarCreatedEvent(Event):
         """
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         star_action = payload.get("action")
         events = parameters.get("events", [])
         if star_action not in events:
-            raise EventIgnoreError(f"Not interested in this star action {star_action}")
+            msg = f"Not interested in this star action {star_action}"
+            raise EventIgnoreError(msg)
 
         sender = payload.get("sender")
         if not sender:
-            raise ValueError("No sender data in payload")
+            msg = "No sender data in payload"
+            raise ValueError(msg)
         return Variables(variables={**payload})

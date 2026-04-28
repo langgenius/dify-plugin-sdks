@@ -52,9 +52,8 @@ class SlackTrigger(Trigger):
     ) -> EventDispatch:
         signing_secret = str(subscription.properties.get("signing_secret") or "")
         if not signing_secret:
-            raise TriggerDispatchError(
-                "Slack signing secret is missing from subscription properties"
-            )
+            msg = "Slack signing secret is missing from subscription properties"
+            raise TriggerDispatchError(msg)
 
         if request.headers.get("X-Slack-Retry-Num"):
             return EventDispatch(
@@ -83,27 +82,30 @@ class SlackTrigger(Trigger):
         body_bytes = request.get_data(cache=True, as_text=False)
         timestamp_header = request.headers.get("X-Slack-Request-Timestamp")
         if not timestamp_header:
-            raise TriggerValidationError("Missing Slack timestamp header")
+            msg = "Missing Slack timestamp header"
+            raise TriggerValidationError(msg)
 
         try:
             timestamp = int(timestamp_header)
         except ValueError as exc:
-            raise TriggerValidationError("Invalid Slack timestamp header") from exc
+            msg = "Invalid Slack timestamp header"
+            raise TriggerValidationError(msg) from exc
 
         current_time = int(time.time())
         if abs(current_time - timestamp) > self._MAX_SIGNATURE_AGE:
-            raise TriggerValidationError(
-                "Slack request timestamp is outside the allowed tolerance"
-            )
+            msg = "Slack request timestamp is outside the allowed tolerance"
+            raise TriggerValidationError(msg)
 
         signature = request.headers.get("X-Slack-Signature")
         if not signature:
-            raise TriggerValidationError("Missing Slack signature header")
+            msg = "Missing Slack signature header"
+            raise TriggerValidationError(msg)
 
         try:
             body_text = body_bytes.decode("utf-8")
         except UnicodeDecodeError as exc:
-            raise TriggerDispatchError("Slack payload must be UTF-8 encoded") from exc
+            msg = "Slack payload must be UTF-8 encoded"
+            raise TriggerDispatchError(msg) from exc
 
         expected_signature = self._build_signature(
             signing_secret=signing_secret,
@@ -111,19 +113,20 @@ class SlackTrigger(Trigger):
             body=body_text,
         )
         if not hmac.compare_digest(signature, expected_signature):
-            raise TriggerValidationError("Invalid Slack signature")
+            msg = "Invalid Slack signature"
+            raise TriggerValidationError(msg)
 
         try:
             payload = json.loads(body_text)
         except json.JSONDecodeError as exc:
-            raise TriggerDispatchError("Failed to decode Slack payload") from exc
+            msg = "Failed to decode Slack payload"
+            raise TriggerDispatchError(msg) from exc
 
         if payload.get("type") == "url_verification":
             challenge = payload.get("challenge")
             if not challenge:
-                raise TriggerDispatchError(
-                    "Slack URL verification payload missing challenge"
-                )
+                msg = "Slack URL verification payload missing challenge"
+                raise TriggerDispatchError(msg)
             return payload, Response(challenge, mimetype="text/plain", status=200)
 
         return payload, Response(response="{}", status=200, mimetype="application/json")
@@ -136,7 +139,8 @@ class SlackTrigger(Trigger):
 
         event = payload.get("event")
         if not isinstance(event, Mapping):
-            raise TriggerDispatchError("Slack payload missing event body")
+            msg = "Slack payload missing event body"
+            raise TriggerDispatchError(msg)
 
         event_type = str(event.get("type") or "")
 

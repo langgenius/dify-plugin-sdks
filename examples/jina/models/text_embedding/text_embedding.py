@@ -1,4 +1,5 @@
 import time
+from http import HTTPStatus
 from json import JSONDecodeError, dumps
 
 from models.text_embedding.jina_tokenizer import JinaTokenizer
@@ -30,9 +31,7 @@ from dify_plugin.errors.model import (
 
 
 class JinaTextEmbeddingModel(TextEmbeddingModel):
-    """
-    Model class for Jina text embedding model.
-    """
+    """Model class for Jina text embedding model."""
 
     api_base: str = "https://api.jina.ai/v1"
 
@@ -44,18 +43,29 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         user: str | None = None,
         input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
     ) -> TextEmbeddingResult:
-        """
-        Invoke text embedding model
+        """Invoke text embedding model
 
         :param model: model name
         :param credentials: model credentials
         :param texts: texts to embed
         :param user: unique user id
         :return: embeddings result
+
+        Returns:
+            The return value.
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
+            InvokeAuthorizationError: If model invocation fails.
+            InvokeBadRequestError: If model invocation fails.
+            InvokeConnectionError: If model invocation fails.
+            InvokeRateLimitError: If model invocation fails.
+            InvokeServerUnavailableError: If model invocation fails.
         """
         api_key = credentials["api_key"]
         if not api_key:
-            raise CredentialsValidateFailedError("api_key is required")
+            msg = "api_key is required"
+            raise CredentialsValidateFailedError(msg)
 
         base_url = credentials.get("base_url", self.api_base)
         base_url = base_url.removesuffix("/")
@@ -66,7 +76,7 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
             "Content-Type": "application/json",
         }
 
-        def transform_jina_input_text(model, text):
+        def transform_jina_input_text(model: str, text: str) -> str | dict[str, str]:
             if model == "jina-clip-v1":
                 return {"text": text}
             return text
@@ -77,26 +87,28 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         }
 
         try:
-            response = post(url, headers=headers, data=dumps(data))  # noqa: S113
+            response = post(url, headers=headers, data=dumps(data), timeout=10)
         except Exception as e:
             raise InvokeConnectionError(str(e)) from e
 
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             try:
                 resp = response.json()
                 msg = resp["detail"]
-                if response.status_code == 401:
+                if response.status_code == HTTPStatus.UNAUTHORIZED:
                     raise InvokeAuthorizationError(msg)
-                elif response.status_code == 429:
+                if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
                     raise InvokeRateLimitError(msg)
-                elif response.status_code == 500:
+                if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
                     raise InvokeServerUnavailableError(msg)
-                else:
-                    raise InvokeBadRequestError(msg)
+                raise InvokeBadRequestError(msg)
             except JSONDecodeError as e:
-                raise InvokeServerUnavailableError(
+                msg = (
                     f"Failed to convert response to json: {e} with text: "
                     f"{response.text}"
+                )
+                raise InvokeServerUnavailableError(
+                    msg,
                 ) from e
 
         try:
@@ -104,53 +116,58 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
             embeddings = resp["data"]
             usage = resp["usage"]
         except Exception as e:
+            msg = f"Failed to convert response to json: {e} with text: {response.text}"
             raise InvokeServerUnavailableError(
-                f"Failed to convert response to json: {e} with text: {response.text}"
+                msg,
             ) from e
 
         usage = self._calc_response_usage(
-            model=model, credentials=credentials, tokens=usage["total_tokens"]
+            model=model,
+            credentials=credentials,
+            tokens=usage["total_tokens"],
         )
 
-        result = TextEmbeddingResult(
+        return TextEmbeddingResult(
             model=model,
             embeddings=[[float(data) for data in x["embedding"]] for x in embeddings],
             usage=usage,
         )
 
-        return result
-
     def get_num_tokens(
-        self, model: str, credentials: dict, texts: list[str]
+        self,
+        model: str,
+        credentials: dict,
+        texts: list[str],
     ) -> list[int]:
-        """
-        Get number of tokens for given prompt messages
+        """Get number of tokens for given prompt messages
 
         :param model: model name
         :param credentials: model credentials
         :param texts: texts to embed
         :return:
-        """
-        num_tokens = []
-        for text in texts:
-            # use JinaTokenizer to get num tokens
-            num_tokens.append(JinaTokenizer.get_num_tokens(text))
 
-        return num_tokens
+        Returns:
+            The return value.
+        """
+        # use JinaTokenizer to get num tokens
+        return [JinaTokenizer.get_num_tokens(text) for text in texts]
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        """
-        Validate model credentials
+        """Validate model credentials
 
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             self._invoke(model=model, credentials=credentials, texts=["ping"])
         except Exception as e:
+            msg = f"Credentials validation failed: {e}"
             raise CredentialsValidateFailedError(
-                f"Credentials validation failed: {e}"
+                msg,
             ) from e
 
     @property
@@ -164,15 +181,20 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         }
 
     def _calc_response_usage(
-        self, model: str, credentials: dict, tokens: int
+        self,
+        model: str,
+        credentials: dict,
+        tokens: int,
     ) -> EmbeddingUsage:
-        """
-        Calculate response usage
+        """Calculate response usage
 
         :param model: model name
         :param credentials: model credentials
         :param tokens: input tokens
         :return: usage
+
+        Returns:
+            The return value.
         """
         # get input price info
         input_price_info = self.get_price(
@@ -183,7 +205,7 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         )
 
         # transform usage
-        usage = EmbeddingUsage(
+        return EmbeddingUsage(
             tokens=tokens,
             total_tokens=tokens,
             unit_price=input_price_info.unit_price,
@@ -193,15 +215,13 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
             latency=time.perf_counter() - self.started_at,
         )
 
-        return usage
-
     def get_customizable_model_schema(
-        self, model: str, credentials: dict
+        self,
+        model: str,
+        credentials: dict,
     ) -> AIModelEntity:
-        """
-        generate custom model entities from credentials
-        """
-        entity = AIModelEntity(
+        """Generate custom model entities from credentials"""
+        return AIModelEntity(
             model=model,
             label=I18nObject(en_US=model),
             model_type=ModelType.TEXT_EMBEDDING,
@@ -209,8 +229,6 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
             model_properties={
                 ModelPropertyKey.CONTEXT_SIZE: int(
                     credentials.get("context_size") or 128,
-                )
+                ),
             },
         )
-
-        return entity

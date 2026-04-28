@@ -1,15 +1,17 @@
 import logging
 import os
+import pathlib
 import shutil
 import signal
-import subprocess
+import subprocess  # noqa: S404
 import tempfile
 import threading
 import uuid
 from collections.abc import Generator
 from queue import Queue
 from threading import Lock, Semaphore
-from typing import TypeVar
+from types import TracebackType
+from typing import Self, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -31,8 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 class PluginRunner:
-    """
-    A class that runs a plugin locally.
+    """A class that runs a plugin locally.
 
     Usage:
     ```python
@@ -62,7 +63,7 @@ class PluginRunner:
         config: IntegrationConfig,
         plugin_package_path: str,
         extra_args: list[str] | None = None,
-    ):
+    ) -> None:
         self.config = config
         self.plugin_package_path = plugin_package_path
         self.extra_args = extra_args or []
@@ -80,16 +81,16 @@ class PluginRunner:
         self.stop_flag = False
         self.stop_flag_lock = Lock()
 
-        logger.info(f"Running plugin from {plugin_package_path}")
+        logger.info("Running plugin from %s", plugin_package_path)
 
         # check if plugin is a directory
-        if os.path.isdir(plugin_package_path):
+        if pathlib.Path(plugin_package_path).is_dir():
             logger.info("plugin source directory detected, building plugin")
             with tempfile.TemporaryDirectory(delete=False) as temp_dir:
-                output_path = os.path.join(temp_dir, "plugin.difypkg")
+                output_path = str(pathlib.Path(temp_dir) / "plugin.difypkg")
                 self._build_plugin(plugin_package_path, output_path)
                 self.plugin_package_path = output_path
-                logger.info(f"Plugin built in {self.plugin_package_path}")
+                logger.info("Plugin built in %s", self.plugin_package_path)
                 self.resources_need_to_be_cleaned.append(temp_dir)
 
         self.process = subprocess.Popen(  # noqa: S603
@@ -107,30 +108,29 @@ class PluginRunner:
             stdin=self.stdin_pipe_read,
         )
 
-        logger.info(f"Plugin process created with pid {self.process.pid}")
+        logger.info("Plugin process created with pid %s", self.process.pid)
 
         # wait for plugin to be ready
         self.ready_semaphore = Semaphore(0)
 
         # create a thread to read the stdout and stderr
         self.stdout_reader = threading.Thread(
-            target=self._message_reader, args=(self.stdout_pipe_read,)
+            target=self._message_reader,
+            args=(self.stdout_pipe_read,),
         )
-        try:
-            self.stdout_reader.start()
-        except Exception as e:
-            raise e
+        self.stdout_reader.start()
 
         self.q = dict[str, Queue[PluginGenericResponse | None]]()
         self.q_lock = Lock()
 
         # wait for the plugin to be ready with timeout
         if not self.ready_semaphore.acquire(timeout=30):  # 30 seconds timeout
-            raise TimeoutError("Plugin failed to start within 30 seconds")
+            msg = "Plugin failed to start within 30 seconds"
+            raise TimeoutError(msg)
 
         logger.info("Plugin ready")
 
-    def _build_plugin(self, package_path: str, output_path: str):
+    def _build_plugin(self, package_path: str, output_path: str) -> None:
         # build plugin
         output = subprocess.check_output(  # noqa: S603
             [
@@ -144,7 +144,7 @@ class PluginRunner:
         )
         logger.info(output.decode("utf-8"))
 
-    def _close(self):
+    def _close(self) -> None:
         with self.stop_flag_lock:
             if self.stop_flag:
                 return
@@ -176,10 +176,10 @@ class PluginRunner:
         # doesn't make sense.
         b = os.read(fd, 65536)
         if not b:
-            raise PluginStoppedError()
+            raise PluginStoppedError
         return b
 
-    def _message_reader(self, pipe: int):
+    def _message_reader(self, pipe: int) -> None:
         import time
 
         # create a scanner to read the message line by line
@@ -207,8 +207,8 @@ class PluginRunner:
                 buffer = lines[-1]
 
                 lines = lines[:-1]
-                for line in lines:
-                    line = line.strip()
+                for raw_line in lines:
+                    line = raw_line.strip()
                     if not line:
                         continue
 
@@ -216,12 +216,12 @@ class PluginRunner:
         finally:
             self._close()
 
-    def _publish_message(self, message: str):
+    def _publish_message(self, message: str) -> None:
         # parse the message
         try:
             parsed_message = PluginGenericResponse.model_validate_json(message)
         except ValidationError:
-            logger.warning(f"Failed to parse message: {message}")
+            logger.warning("Failed to parse message: %s", message)
             return
 
         if not parsed_message.invoke_id:
@@ -229,7 +229,7 @@ class PluginRunner:
                 logger.info("Plugin is ready")
                 self.ready_semaphore.release()
             elif parsed_message.type == ResponseType.ERROR:
-                logger.error(f"Plugin error: {parsed_message.response}")
+                logger.error("Plugin error: %s", parsed_message.response)
                 raise ValueError(parsed_message.response)
             elif parsed_message.type == ResponseType.INFO:
                 logger.info(parsed_message.response)
@@ -243,7 +243,7 @@ class PluginRunner:
             else:
                 self.q[parsed_message.invoke_id].put(parsed_message)
 
-    def _write_to_pipe(self, data: bytes):
+    def _write_to_pipe(self, data: bytes) -> None:
         # split the data into chunks of 4096 bytes
         chunks = [data[i : i + 4096] for i in range(0, len(data), 4096)]
         # A lock is needed to avoid race conditions when multiple threads
@@ -261,7 +261,7 @@ class PluginRunner:
     ) -> Generator[R, None, None]:
         with self.stop_flag_lock:
             if self.stop_flag:
-                raise PluginStoppedError()
+                raise PluginStoppedError
 
         invoke_id = uuid.uuid4().hex
         request = PluginInvokeRequest(
@@ -287,17 +287,24 @@ class PluginRunner:
                     elif message.type == ResponseType.ERROR:
                         raise ValueError(message.response)
                     else:
-                        raise ValueError("Invalid response type")
+                        msg = "Invalid response type"
+                        raise ValueError(msg)
                 else:
-                    raise ValueError("Invalid invoke id")
+                    msg = "Invalid invoke id"
+                    raise ValueError(msg)
         finally:
             with self.q_lock:
                 del self.q[invoke_id]
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         self._close()
 
         for resource in self.resources_need_to_be_cleaned:

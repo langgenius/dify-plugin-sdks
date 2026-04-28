@@ -1,4 +1,4 @@
-import os
+import pathlib
 from abc import abstractmethod
 from typing import IO
 
@@ -46,12 +46,15 @@ class Speech2TextModel(AIModel):
         Get demo file for given model
 
         :return: demo file
+
+        Returns:
+            The return value.
         """
         # Get the directory of the current file
-        current_dir = os.path.dirname(os.path.abspath(__file__))
+        current_dir = pathlib.Path(pathlib.Path(__file__).resolve()).parent
 
         # Construct the path to the audio file
-        return os.path.join(current_dir, "audio.mp3")
+        return str(current_dir / "audio.mp3")
 
     ############################################################
     #                 For executor use only                    #
@@ -68,6 +71,9 @@ class Speech2TextModel(AIModel):
         :param file: audio file
         :param user: unique user id
         :return: text for given audio file
+
+        Returns:
+            The return value.
         """
         with self.timing_context():
             try:

@@ -1,18 +1,22 @@
 import json
 import re
 from collections.abc import Generator
-from typing import Union
 
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.interfaces.agent import AgentScratchpadUnit
+
+CODE_BLOCK_DELIMITER_COUNT = 3
+TRIM_BOUNDARY_CHARACTERS = frozenset(("\n", " ", ""))
 
 
 class CotAgentOutputParser:
     @classmethod
     def handle_react_stream_output(
-        cls, llm_response: Generator[LLMResultChunk, None, None], usage_dict: dict
-    ) -> Generator[Union[str, AgentScratchpadUnit.Action], None, None]:
-        def parse_action(json_str):
+        cls,
+        llm_response: Generator[LLMResultChunk, None, None],
+        usage_dict: dict,
+    ) -> Generator[str | AgentScratchpadUnit.Action, None, None]:
+        def parse_action(json_str: str) -> str | AgentScratchpadUnit.Action:
             try:
                 action = json.loads(json_str, strict=False)
                 action_name = None
@@ -29,24 +33,31 @@ class CotAgentOutputParser:
                         action_name = value
 
                 if action_name is not None and action_input is not None:
-                    return AgentScratchpadUnit.Action(
-                        action_name=action_name,
-                        action_input=action_input,
+                    parsed_action: str | AgentScratchpadUnit.Action = (
+                        AgentScratchpadUnit.Action(
+                            action_name=action_name,
+                            action_input=action_input,
+                        )
                     )
                 else:
-                    return json_str or ""
+                    parsed_action = json_str or ""
             except Exception:
                 return json_str or ""
+            else:
+                return parsed_action
 
         def extra_json_from_code_block(
-            code_block,
-        ) -> Generator[Union[str, AgentScratchpadUnit.Action], None, None]:
+            code_block: str,
+        ) -> Generator[str | AgentScratchpadUnit.Action, None, None]:
             code_blocks = re.findall(r"```(.*?)```", code_block, re.DOTALL)
             if not code_blocks:
                 return
             for block in code_blocks:
                 json_text = re.sub(
-                    r"^[a-zA-Z]+\n", "", block.strip(), flags=re.MULTILINE
+                    r"^[a-zA-Z]+\n",
+                    "",
+                    block.strip(),
+                    flags=re.MULTILINE,
                 )
                 yield parse_action(json_text)
 
@@ -99,7 +110,7 @@ class CotAgentOutputParser:
 
                 if not in_code_block and not in_json:
                     if delta.lower() == action_str[action_idx] and action_idx == 0:
-                        if last_character not in {"\n", " ", ""}:
+                        if last_character not in TRIM_BOUNDARY_CHARACTERS:
                             yield_delta = True
                         else:
                             last_character = delta
@@ -119,15 +130,14 @@ class CotAgentOutputParser:
                             action_idx = 0
                         index += steps
                         continue
-                    else:
-                        if action_cache:
-                            last_character = delta
-                            yield action_cache
-                            action_cache = ""
-                            action_idx = 0
+                    elif action_cache:
+                        last_character = delta
+                        yield action_cache
+                        action_cache = ""
+                        action_idx = 0
 
                     if delta.lower() == thought_str[thought_idx] and thought_idx == 0:
-                        if last_character not in {"\n", " ", ""}:
+                        if last_character not in TRIM_BOUNDARY_CHARACTERS:
                             yield_delta = True
                         else:
                             last_character = delta
@@ -147,12 +157,11 @@ class CotAgentOutputParser:
                             thought_idx = 0
                         index += steps
                         continue
-                    else:
-                        if thought_cache:
-                            last_character = delta
-                            yield thought_cache
-                            thought_cache = ""
-                            thought_idx = 0
+                    elif thought_cache:
+                        last_character = delta
+                        yield thought_cache
+                        thought_cache = ""
+                        thought_idx = 0
 
                     if yield_delta:
                         index += steps
@@ -160,7 +169,7 @@ class CotAgentOutputParser:
                         yield delta
                         continue
 
-                if code_block_delimiter_count == 3:
+                if code_block_delimiter_count == CODE_BLOCK_DELIMITER_COUNT:
                     if in_code_block:
                         last_character = delta
                         yield from extra_json_from_code_block(code_block_cache)
@@ -186,10 +195,9 @@ class CotAgentOutputParser:
                                 got_json = True
                                 index += steps
                                 continue
-                    else:
-                        if in_json:
-                            last_character = delta
-                            json_cache += delta
+                    elif in_json:
+                        last_character = delta
+                        json_cache += delta
 
                     if got_json:
                         got_json = False

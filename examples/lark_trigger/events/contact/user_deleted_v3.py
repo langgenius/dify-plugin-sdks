@@ -21,6 +21,12 @@ class ContactUserDeletedV3Event(Event):
 
         This event is triggered when an employee is deleted from the
         organization or leaves.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,
@@ -28,7 +34,8 @@ class ContactUserDeletedV3Event(Event):
             lambda builder: builder.register_p2_contact_user_deleted_v3,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary with basic user information
         variables_dict = {}

@@ -1,5 +1,5 @@
 import json
-from collections.abc import Mapping
+from collections.abc import Generator, Mapping
 
 from werkzeug import Request, Response
 
@@ -23,7 +23,7 @@ class GirlsTalk(Endpoint):
         if not query:
             return Response("Query is required", status=400)
 
-        def generator():
+        def generator() -> Generator[str, None, None]:
             response = self.session.app.chat.invoke(
                 app_id=app.get("app_id"),
                 query=query,

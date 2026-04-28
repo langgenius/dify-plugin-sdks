@@ -23,16 +23,18 @@ class IssuesUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         issue = payload.get("issue")
         if not isinstance(issue, Mapping):
-            raise ValueError("No issue in payload")
+            msg = "No issue in payload"
+            raise ValueError(msg)
 
         isu.check_labels(issue, parameters.get("labels"))
         isu.check_assignee(issue, parameters.get("assignee"))

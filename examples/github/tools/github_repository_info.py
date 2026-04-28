@@ -1,6 +1,7 @@
 import json
 from collections.abc import Generator
-from datetime import datetime
+from datetime import UTC, datetime
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -9,6 +10,14 @@ from dify_plugin import Tool
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
+
+GITHUB_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+DISPLAY_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+def _format_github_timestamp(value: str) -> str:
+    parsed = datetime.strptime(value, GITHUB_TIMESTAMP_FORMAT).replace(tzinfo=UTC)
+    return parsed.strftime(DISPLAY_DATETIME_FORMAT)
 
 
 class GithubRepositoryInfoTool(Tool):
@@ -60,7 +69,7 @@ class GithubRepositoryInfoTool(Tool):
                 url=url,
             )
 
-            if response.status_code == 200:
+            if response.status_code == HTTPStatus.OK:
                 response_data = response.json()
 
                 # Extract key information
@@ -84,19 +93,19 @@ class GithubRepositoryInfoTool(Tool):
                     "license": response_data.get("license", {}).get("name", "")
                     if response_data.get("license")
                     else "",
-                    "created_at": datetime.strptime(
-                        response_data.get("created_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                    ).strftime("%Y-%m-%d %H:%M:%S")
+                    "created_at": _format_github_timestamp(
+                        response_data.get("created_at", "")
+                    )
                     if response_data.get("created_at")
                     else "",
-                    "updated_at": datetime.strptime(
-                        response_data.get("updated_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                    ).strftime("%Y-%m-%d %H:%M:%S")
+                    "updated_at": _format_github_timestamp(
+                        response_data.get("updated_at", "")
+                    )
                     if response_data.get("updated_at")
                     else "",
-                    "pushed_at": datetime.strptime(
-                        response_data.get("pushed_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                    ).strftime("%Y-%m-%d %H:%M:%S")
+                    "pushed_at": _format_github_timestamp(
+                        response_data.get("pushed_at", "")
+                    )
                     if response_data.get("pushed_at")
                     else "",
                     "topics": response_data.get("topics", []),
@@ -120,8 +129,10 @@ class GithubRepositoryInfoTool(Tool):
             else:
                 response_data = response.json()
                 message = response_data.get("message", "Unknown error")
-                raise InvokeError(f"Request failed: {response.status_code} {message}")
-        except InvokeError as e:
-            raise e
+                msg = f"Request failed: {response.status_code} {message}"
+                raise InvokeError(msg)
+        except InvokeError:
+            raise
         except Exception as e:
-            raise InvokeError(f"GitHub API request failed: {e}") from e
+            msg = f"GitHub API request failed: {e}"
+            raise InvokeError(msg) from e

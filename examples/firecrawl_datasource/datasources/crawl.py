@@ -13,6 +13,8 @@ from dify_plugin.entities.datasource import (
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.interfaces.datasource.website import WebsiteCrawlDatasource
 
+EMPTY_FILTER_VALUES = frozenset({None, ""})
+
 
 class CrawlDatasource(WebsiteCrawlDatasource):
     def _get_website_crawl(
@@ -21,13 +23,23 @@ class CrawlDatasource(WebsiteCrawlDatasource):
         """
         the api doc:
         https://docs.firecrawl.dev/api-reference/endpoint/crawl
+
+        Yields:
+            Generated values.
+
+        Raises:
+            HTTPError: If the HTTP request fails.
+            ToolProviderCredentialValidationError: If credentials validation fails.
+            ValueError: If input values are invalid.
         """
         source_url = datasource_parameters.get("url")
         if not source_url:
-            raise ValueError("Url is required")
+            msg = "Url is required"
+            raise ValueError(msg)
 
         if not self.runtime.credentials.get("firecrawl_api_key"):
-            raise ToolProviderCredentialValidationError("api key is required")
+            msg = "api key is required"
+            raise ToolProviderCredentialValidationError(msg)
 
         try:
             app = FirecrawlApp(
@@ -42,7 +54,7 @@ class CrawlDatasource(WebsiteCrawlDatasource):
                 "onlyMainContent": datasource_parameters.get("only_main_content", True)
             }
             scrape_options = {
-                k: v for k, v in scrape_options.items() if v not in (None, "")
+                k: v for k, v in scrape_options.items() if v not in EMPTY_FILTER_VALUES
             }
 
             payload = {
@@ -60,7 +72,7 @@ class CrawlDatasource(WebsiteCrawlDatasource):
                 else datasource_parameters.get("limit", 5),
                 "scrapeOptions": scrape_options or None,
             }
-            payload = {k: v for k, v in payload.items() if v not in (None, "")}
+            payload = {k: v for k, v in payload.items() if v not in EMPTY_FILTER_VALUES}
 
             crawl_res = WebSiteInfo(web_info_list=[], status="", total=0, completed=0)
 
@@ -69,7 +81,6 @@ class CrawlDatasource(WebsiteCrawlDatasource):
             )
             job_id = crawl_result["id"]
             crawl_res.status = "processing"
-            print(crawl_res)
             yield self.create_crawl_message(crawl_res)
 
             while True:
@@ -82,7 +93,8 @@ class CrawlDatasource(WebsiteCrawlDatasource):
                     yield self.create_crawl_message(crawl_res)
                     break
                 elif status["status"] == "failed":
-                    raise HTTPError(f"Job {crawl_res.job_id} failed: {status['error']}")
+                    msg = f"Job {crawl_res.job_id} failed: {status['error']}"
+                    raise HTTPError(msg)
                 else:
                     crawl_res.status = "processing"
                     crawl_res.total = status["total"] or 0
@@ -91,10 +103,13 @@ class CrawlDatasource(WebsiteCrawlDatasource):
                     time.sleep(5)
 
         except Exception as e:
-            raise ValueError(f"An error occurred: {e!s}") from e
+            msg = f"An error occurred: {e!s}"
+            raise ValueError(msg) from e
 
     @staticmethod
-    def _process_completed_job(app: FirecrawlApp, status: dict, crawl_res: WebSiteInfo):
+    def _process_completed_job(
+        app: FirecrawlApp, status: dict, crawl_res: WebSiteInfo
+    ) -> None:
         format_res = app.format_crawl_status_response(status["status"], status)
 
         crawl_res.web_info_list = [

@@ -21,16 +21,18 @@ class DeploymentEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         deployment = payload.get("deployment")
         if not isinstance(deployment, Mapping):
-            raise ValueError("No deployment in payload")
+            msg = "No deployment in payload"
+            raise ValueError(msg)
 
         self._check_environment(deployment, parameters.get("environment"))
         self._check_ref(deployment, parameters.get("ref"))
@@ -45,7 +47,7 @@ class DeploymentEvent(Event):
         env = (deployment.get("environment") or "").strip()
         targets = {s.strip() for s in str(value).split(",") if s.strip()}
         if targets and env not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_ref(self, deployment: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -53,7 +55,7 @@ class DeploymentEvent(Event):
         ref = (deployment.get("ref") or "").strip()
         targets = {s.strip() for s in str(value).split(",") if s.strip()}
         if targets and ref not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_creator(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -61,4 +63,4 @@ class DeploymentEvent(Event):
         creator = (payload.get("sender", {}) or {}).get("login")
         targets = {s.strip() for s in str(value).split(",") if s.strip()}
         if targets and creator not in targets:
-            raise EventIgnoreError()
+            raise EventIgnoreError

@@ -5,14 +5,14 @@ from dify_plugin.entities.model.message import (
 )
 
 
-def test_build_prompt_message_with_prompt_message_contents():
+def test_build_prompt_message_with_prompt_message_contents() -> None:
     prompt = UserPromptMessage(content=[TextPromptMessageContent(data="Hello, World!")])
     assert isinstance(prompt.content, list)
     assert isinstance(prompt.content[0], TextPromptMessageContent)
     assert prompt.content[0].data == "Hello, World!"
 
 
-def test_dump_prompt_message():
+def test_dump_prompt_message() -> None:
     example_url = "https://example.com/image.jpg"
     prompt = UserPromptMessage(
         content=[
@@ -31,7 +31,7 @@ def test_dump_prompt_message():
     assert data["content"][1].get("url") == example_url
 
 
-def test_validate_prompt_message():
+def test_validate_prompt_message() -> None:
     json_data = {
         "content": [
             {"type": "text", "data": "Hello, World!"},

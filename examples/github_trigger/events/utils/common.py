@@ -12,7 +12,8 @@ def load_json_payload(request: Request) -> Mapping[str, Any]:
     """Load JSON payload from request, raising if missing."""
     payload = request.get_json()
     if not payload:
-        raise ValueError("No payload received")
+        msg = "No payload received"
+        raise ValueError(msg)
     return payload
 
 
@@ -22,12 +23,13 @@ def ensure_action(payload: Mapping[str, Any], expected_action: str | None) -> No
         return
 
     if payload.get("action") != expected_action:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
 def require_mapping(payload: Mapping[str, Any], key: str) -> Mapping[str, Any]:
     """Require that payload contains a mapping under given key."""
     value = payload.get(key)
     if not isinstance(value, Mapping):
-        raise ValueError(f"No {key} data in payload")
+        msg = f"No {key} data in payload"
+        raise ValueError(msg)
     return value

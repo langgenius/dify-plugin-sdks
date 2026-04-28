@@ -1,5 +1,5 @@
 import logging
-import os
+import pathlib
 from typing import Any
 
 import yaml
@@ -12,34 +12,41 @@ logger.addHandler(plugin_logger_handler)
 
 
 def load_yaml_file(file_path: str, ignore_error: bool = False) -> dict[str, Any]:
-    """
-    Safe loading a YAML file to a dict
+    """Safe loading a YAML file to a dict
     :param file_path: the path of the YAML file
     :param ignore_error:
         if True, return empty dict if error occurs and the error will be
         logged in warning level
         if False, raise error if error occurs
     :return: a dict of the YAML content
+
+    Returns:
+        The return value.
+
+    Raises:
+        FileNotFoundError: If the YAML file cannot be loaded.
+        YAMLError: If the YAML file cannot be loaded.
     """
     try:
-        if not file_path or not os.path.exists(file_path):
+        if not file_path or not pathlib.Path(file_path).exists():
+            msg = f"Failed to load YAML file {file_path}: file not found"
             raise FileNotFoundError(
-                f"Failed to load YAML file {file_path}: file not found"
+                msg,
             )
 
-        with open(file_path, encoding="utf-8") as file:
+        with pathlib.Path(file_path).open(encoding="utf-8") as file:
             try:
                 return yaml.safe_load(file)
             except Exception as e:
+                msg = f"Failed to load YAML file {file_path}: {e}"
                 raise yaml.YAMLError(
-                    f"Failed to load YAML file {file_path}: {e}"
+                    msg,
                 ) from e
     except FileNotFoundError as e:
-        logger.debug(f"Failed to load YAML file {file_path}: {e}")
+        logger.debug("Failed to load YAML file %s: %s", file_path, e)
         return {}
-    except Exception as e:
+    except Exception:
         if ignore_error:
-            logger.exception(f"Failed to load YAML file {file_path}")
+            logger.exception("Failed to load YAML file %s", file_path)
             return {}
-        else:
-            raise e
+        raise

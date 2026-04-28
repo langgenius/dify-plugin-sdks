@@ -17,7 +17,7 @@ def _make_agent_model_config() -> AgentModelConfig:
     )
 
 
-def test_agent_model_config_ensure_history_prompt_messages_not_shared():
+def test_agent_model_config_ensure_history_prompt_messages_not_shared() -> None:
     prompt_message = PromptMessage(
         role=PromptMessageRole.USER, content="Content", name=None
     )
@@ -31,7 +31,7 @@ def test_agent_model_config_ensure_history_prompt_messages_not_shared():
     assert len(cfg2.history_prompt_messages) == 0
 
 
-def test_constructor_of_agent_strategy():
+def test_constructor_of_agent_strategy() -> None:
     """
     Test the constructor of AgentStrategy
 

@@ -33,6 +33,13 @@ from dify_plugin.interfaces.agent import (
     ToolInvokeMeta,
 )
 
+logger = logging.getLogger(__name__)
+EMPTY_STRING = ""
+IMAGE_RESPONSE_TYPES = frozenset({
+    ToolInvokeMessage.MessageType.IMAGE_LINK,
+    ToolInvokeMessage.MessageType.IMAGE,
+})
+
 
 class FunctionCallingParams(BaseModel):
     query: str
@@ -55,11 +62,10 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         return SystemPromptMessage(content=self.instruction)
 
     def _invoke(
-        self, parameters: dict[str, Any]
+        self,
+        parameters: dict[str, Any],
     ) -> Generator[AgentInvokeMessage, None, None]:
-        """
-        Run FunctionCall agent application
-        """
+        """Run FunctionCall agent application"""
         fc_params = FunctionCallingParams(**parameters)
 
         # init prompt messages
@@ -122,7 +128,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             )
             if model.entity and model.completion_params:
                 self.recalc_llm_max_tokens(
-                    model.entity, prompt_messages, model.completion_params
+                    model.entity,
+                    prompt_messages,
+                    model.completion_params,
                 )
             # invoke model
             model_started_at = time.perf_counter()
@@ -184,7 +192,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 or iteration_step == max_iteration_steps
                             ):
                                 yield self.create_text_message(
-                                    str(chunk.delta.message.content)
+                                    str(chunk.delta.message.content),
                                 )
 
                     if chunk.delta.usage:
@@ -193,7 +201,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
             else:
                 result = chunks
-                result = cast(LLMResult, result)
+                result = cast("LLMResult", result)
                 # check if there is any tool call
                 if self.check_blocking_tool_calls(result):
                     function_call_state = True
@@ -267,12 +275,13 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                                     name=tool_call_name,
                                     arguments=json.dumps(
-                                        tool_call_args, ensure_ascii=False
+                                        tool_call_args,
+                                        ensure_ascii=False,
                                     ),
                                 ),
-                            )
+                            ),
                         ],
-                    )
+                    ),
                 )
                 tool_instance = tool_instances[tool_call_name]
                 tool_call_started_at = time.perf_counter()
@@ -293,7 +302,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         "tool_call_name": tool_call_name,
                         "tool_response": f"there is not a tool named {tool_call_name}",
                         "meta": ToolInvokeMeta.error_instance(
-                            f"there is not a tool named {tool_call_name}"
+                            f"there is not a tool named {tool_call_name}",
                         ).to_dict(),
                     }
                 else:
@@ -316,7 +325,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 == ToolInvokeMessage.MessageType.TEXT
                             ):
                                 tool_result += cast(
-                                    ToolInvokeMessage.TextMessage,
+                                    "ToolInvokeMessage.TextMessage",
                                     tool_invoke_response.message,
                                 ).text
                             elif (
@@ -326,50 +335,49 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 tool_result += (
                                     "result link: "
                                     + cast(
-                                        ToolInvokeMessage.TextMessage,
+                                        "ToolInvokeMessage.TextMessage",
                                         tool_invoke_response.message,
                                     ).text
                                     + "."
                                     + " please tell user to check it."
                                 )
-                            elif tool_invoke_response.type in {
-                                ToolInvokeMessage.MessageType.IMAGE_LINK,
-                                ToolInvokeMessage.MessageType.IMAGE,
-                            }:
+                            elif tool_invoke_response.type in IMAGE_RESPONSE_TYPES:
                                 # Extract the file path or URL from the message
                                 if hasattr(tool_invoke_response.message, "text"):
                                     file_info = cast(
-                                        ToolInvokeMessage.TextMessage,
+                                        "ToolInvokeMessage.TextMessage",
                                         tool_invoke_response.message,
                                     ).text
                                     # Try to create a blob message with the file content
                                     try:
                                         # If it's a local file path, try to read it
-                                        if file_info.startswith("/files/"):
-                                            import os
-
-                                            if os.path.exists(file_info):
-                                                file_content = pathlib.Path(
-                                                    file_info
-                                                ).read_bytes()
-                                                # Create a blob with the file content.
-                                                yield self.create_blob_message(
-                                                    blob=file_content,
-                                                    meta={
-                                                        "mime_type": "image/png",
-                                                        "filename": pathlib.Path(
-                                                            file_info
-                                                        ).name,
-                                                    },
-                                                )
+                                        if (
+                                            file_info.startswith(
+                                                "/files/",
+                                            )
+                                            and pathlib.Path(file_info).exists()
+                                        ):
+                                            file_content = pathlib.Path(
+                                                file_info,
+                                            ).read_bytes()
+                                            # Create a blob with the file content.
+                                            yield self.create_blob_message(
+                                                blob=file_content,
+                                                meta={
+                                                    "mime_type": "image/png",
+                                                    "filename": pathlib.Path(
+                                                        file_info,
+                                                    ).name,
+                                                },
+                                            )
                                     except Exception:
-                                        logging.exception(
-                                            "Failed to create blob message"
+                                        logger.exception(
+                                            "Failed to create blob message",
                                         )
                                 tool_result += (
                                     "image has been created and sent to user already, "
-                                    + "you do not need to create it, just tell "
-                                    + "the user to check it now."
+                                    "you do not need to create it, just tell "
+                                    "the user to check it now."
                                 )
                                 # TODO: convert to agent invoke message
                                 yield tool_invoke_response
@@ -379,7 +387,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             ):
                                 text = json.dumps(
                                     cast(
-                                        ToolInvokeMessage.JsonMessage,
+                                        "ToolInvokeMessage.JsonMessage",
                                         tool_invoke_response.message,
                                     ).json_object,
                                     ensure_ascii=False,
@@ -428,13 +436,14 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             content=str(tool_response["tool_response"]),
                             tool_call_id=tool_call_id,
                             name=tool_call_name,
-                        )
+                        ),
                     )
 
             # update prompt tool
             for prompt_tool in prompt_messages_tools:
                 self.update_prompt_message_tool(
-                    tool_instances[prompt_tool.name], prompt_tool
+                    tool_instances[prompt_tool.name],
+                    prompt_tool,
                 )
             yield self.finish_log_message(
                 log=round_log,
@@ -475,35 +484,32 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 LogMetadata.TOTAL_TOKENS: llm_usage["usage"].total_tokens
                 if llm_usage["usage"] is not None
                 else 0,
-            }
+            },
         })
 
     def check_tool_calls(self, llm_result_chunk: LLMResultChunk) -> bool:
-        """
-        Check if there is any tool call in llm result chunk
-        """
+        """Check if there is any tool call in llm result chunk"""
         return bool(llm_result_chunk.delta.message.tool_calls)
 
     def check_blocking_tool_calls(self, llm_result: LLMResult) -> bool:
-        """
-        Check if there is any blocking tool call in llm result
-        """
+        """Check if there is any blocking tool call in llm result"""
         return bool(llm_result.message.tool_calls)
 
     def extract_tool_calls(
-        self, llm_result_chunk: LLMResultChunk
+        self,
+        llm_result_chunk: LLMResultChunk,
     ) -> list[tuple[str, str, dict[str, Any]]]:
-        """
-        Extract tool calls from llm result chunk
+        """Extract tool calls from llm result chunk
 
         Returns:
             List[Tuple[str, str, Dict[str, Any]]]:
                 [(tool_call_id, tool_call_name, tool_call_args)]
+
         """
         tool_calls = []
         for prompt_message in llm_result_chunk.delta.message.tool_calls:
             args = {}
-            if prompt_message.function.arguments != "":
+            if prompt_message.function.arguments != EMPTY_STRING:
                 args = json.loads(prompt_message.function.arguments)
 
             tool_calls.append((
@@ -515,19 +521,20 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         return tool_calls
 
     def extract_blocking_tool_calls(
-        self, llm_result: LLMResult
+        self,
+        llm_result: LLMResult,
     ) -> list[tuple[str, str, dict[str, Any]]]:
-        """
-        Extract blocking tool calls from llm result
+        """Extract blocking tool calls from llm result
 
         Returns:
             List[Tuple[str, str, Dict[str, Any]]]:
                 [(tool_call_id, tool_call_name, tool_call_args)]
+
         """
         tool_calls = []
         for prompt_message in llm_result.message.tool_calls:
             args = {}
-            if prompt_message.function.arguments != "":
+            if prompt_message.function.arguments != EMPTY_STRING:
                 args = json.loads(prompt_message.function.arguments)
 
             tool_calls.append((
@@ -539,11 +546,11 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         return tool_calls
 
     def _init_system_message(
-        self, prompt_template: str, prompt_messages: list[PromptMessage]
+        self,
+        prompt_template: str,
+        prompt_messages: list[PromptMessage],
     ) -> list[PromptMessage]:
-        """
-        Initialize system message
-        """
+        """Initialize system message"""
         if not prompt_messages and prompt_template:
             return [
                 SystemPromptMessage(content=prompt_template),
@@ -559,18 +566,22 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         return prompt_messages or []
 
     def _clear_user_prompt_image_messages(
-        self, prompt_messages: list[PromptMessage]
+        self,
+        prompt_messages: list[PromptMessage],
     ) -> list[PromptMessage]:
-        """
-        As for now, gpt supports both fc and vision at the first iteration.
+        """As for now, gpt supports both fc and vision at the first iteration.
         We need to remove image messages from the prompt messages at the
         first iteration.
+
+        Returns:
+            The return value.
         """
         prompt_messages = deepcopy(prompt_messages)
 
         for prompt_message in prompt_messages:
             if isinstance(prompt_message, UserPromptMessage) and isinstance(
-                prompt_message.content, list
+                prompt_message.content,
+                list,
             ):
                 prompt_message.content = "\n".join([
                     content.data

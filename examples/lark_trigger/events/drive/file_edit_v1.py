@@ -26,7 +26,8 @@ class DriveFileEditV1Event(Event):
             lambda builder: builder.register_p2_drive_file_edit_v1,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         operators = serialize_user_list(event_data.operator_id_list or [])
         subscribers = serialize_user_list(event_data.subscriber_id_list or [])

@@ -20,5 +20,6 @@ class PingEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
         return Variables(variables={**payload})

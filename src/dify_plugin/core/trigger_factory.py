@@ -44,10 +44,11 @@ class TriggerProviderRegistration:
         """Register an event implementation for the provider."""
 
         if name in self._entry.events:
-            raise ValueError(
+            msg = (
                 f"Event `{name}` is already registered for provider "
                 f"`{self._entry.configuration.identity.name}`"
             )
+            raise ValueError(msg)
 
         self._entry.events[name] = (configuration, trigger_cls)
 
@@ -74,9 +75,8 @@ class TriggerFactory:
         # definitions when multiple plugins try to use the same identifier.
         provider_name = configuration.identity.name
         if provider_name in self._providers:
-            raise ValueError(
-                f"Trigger provider `{provider_name}` is already registered"
-            )
+            msg = f"Trigger provider `{provider_name}` is already registered"
+            raise ValueError(msg)
 
         entry = _TriggerProviderEntry(
             configuration=configuration,
@@ -137,10 +137,11 @@ class TriggerFactory:
 
         entry = self._get_entry(provider_name)
         if not entry.subscription_constructor_cls:
-            raise ValueError(
+            msg = (
                 f"Trigger provider `{provider_name}` does not define a "
                 "subscription constructor"
             )
+            raise ValueError(msg)
 
         return entry.subscription_constructor_cls(runtime)
 
@@ -169,7 +170,8 @@ class TriggerFactory:
 
         entry = self._get_entry(provider_name)
         if event not in entry.events:
-            raise ValueError(f"Event `{event}` not found in provider `{provider_name}`")
+            msg = f"Event `{event}` not found in provider `{provider_name}`"
+            raise ValueError(msg)
 
         _, event_cls = entry.events[event]
         return event_cls(runtime)
@@ -200,4 +202,5 @@ class TriggerFactory:
         try:
             return self._providers[provider_name]
         except KeyError as exc:  # pragma: no cover - defensive branch
-            raise ValueError(f"Trigger provider `{provider_name}` not found") from exc
+            msg = f"Trigger provider `{provider_name}` not found"
+            raise ValueError(msg) from exc

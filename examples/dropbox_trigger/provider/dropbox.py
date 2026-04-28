@@ -7,6 +7,7 @@ import hmac
 import json
 import time
 from collections.abc import Mapping, Sequence
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -53,9 +54,8 @@ class DropboxTrigger(Trigger):
 
         app_secret = str(subscription.properties.get("app_secret") or "")
         if not app_secret:
-            raise TriggerDispatchError(
-                "Dropbox App Secret missing from subscription properties"
-            )
+            msg = "Dropbox App Secret missing from subscription properties"
+            raise TriggerDispatchError(msg)
 
         # Validate signature
         self._validate_signature(request=request, app_secret=app_secret)
@@ -65,9 +65,8 @@ class DropboxTrigger(Trigger):
             body_text = request.get_data(cache=True, as_text=True)
             payload = json.loads(body_text) if body_text else {}
         except json.JSONDecodeError as exc:
-            raise TriggerDispatchError(
-                "Invalid JSON payload for Dropbox webhook"
-            ) from exc
+            msg = "Invalid JSON payload for Dropbox webhook"
+            raise TriggerDispatchError(msg) from exc
 
         # Extract notified account IDs (if present)
         notified_accounts: list[str] = payload.get("list_folder", {}).get("accounts")
@@ -135,13 +134,15 @@ class DropboxTrigger(Trigger):
     def _validate_signature(request: Request, app_secret: str) -> None:
         signature = request.headers.get("X-Dropbox-Signature")
         if not signature:
-            raise TriggerValidationError("Missing X-Dropbox-Signature header")
+            msg = "Missing X-Dropbox-Signature header"
+            raise TriggerValidationError(msg)
         body = request.get_data(cache=True, as_text=False) or b""
         expected = hmac.new(
             app_secret.encode("utf-8"), body, hashlib.sha256
         ).hexdigest()
         if not hmac.compare_digest(signature, expected):
-            raise TriggerValidationError("Invalid Dropbox webhook signature")
+            msg = "Invalid Dropbox webhook signature"
+            raise TriggerValidationError(msg)
 
     # ----------------------------- Dropbox API helpers -----------------------------
     def _get_latest_cursor(self, access_token: str) -> str:
@@ -164,13 +165,16 @@ class DropboxTrigger(Trigger):
                 timeout=10,
             )
         except Exception as exc:
-            raise TriggerDispatchError(f"Failed to get Dropbox cursor: {exc}") from exc
+            msg = f"Failed to get Dropbox cursor: {exc}"
+            raise TriggerDispatchError(msg) from exc
         data = resp.json() if resp.content else {}
-        if resp.status_code != 200:
-            raise TriggerDispatchError(f"Dropbox get_latest_cursor error: {data}")
+        if resp.status_code != HTTPStatus.OK:
+            msg = f"Dropbox get_latest_cursor error: {data}"
+            raise TriggerDispatchError(msg)
         cursor = str(data.get("cursor") or "")
         if not cursor:
-            raise TriggerDispatchError("Dropbox cursor missing in response")
+            msg = "Dropbox cursor missing in response"
+            raise TriggerDispatchError(msg)
         return cursor
 
     def _list_folder_continue(
@@ -189,20 +193,18 @@ class DropboxTrigger(Trigger):
                 timeout=10,
             )
         except Exception as exc:
-            raise TriggerDispatchError(
-                f"Failed to fetch Dropbox changes: {exc}"
-            ) from exc
+            msg = f"Failed to fetch Dropbox changes: {exc}"
+            raise TriggerDispatchError(msg) from exc
         data = resp.json() if resp.content else {}
-        if resp.status_code != 200:
-            raise TriggerDispatchError(f"Dropbox list_folder/continue error: {data}")
+        if resp.status_code != HTTPStatus.OK:
+            msg = f"Dropbox list_folder/continue error: {data}"
+            raise TriggerDispatchError(msg)
         entries = data.get("entries") or []
         has_more = bool(data.get("has_more"))
         new_cursor = str(data.get("cursor") or cursor)
         normalized: list[Mapping[str, Any]] = []
         if isinstance(entries, Sequence):
-            for e in entries:
-                if isinstance(e, Mapping):
-                    normalized.append(e)
+            normalized.extend(e for e in entries if isinstance(e, Mapping))
         return list(normalized), new_cursor, has_more
 
     # ---------------- Entry formatting and storage -----------------

@@ -17,7 +17,7 @@ from dify_plugin.interfaces.datasource.online_document import OnlineDocumentData
 class NotionDataSource(OnlineDocumentDatasource):
     _API_VERSION = "2022-06-28"
     _AUTH_URL = "https://api.notion.com/v1/oauth/authorize"
-    _TOKEN_URL = "https://api.notion.com/v1/oauth/token"
+    _OAUTH_ENDPOINT = "https://api.notion.com/v1/oauth/token"
     _NOTION_PAGE_SEARCH = "https://api.notion.com/v1/search"
     _NOTION_BLOCK_SEARCH = "https://api.notion.com/v1/blocks"
     _NOTION_BOT_USER = "https://api.notion.com/v1/users/me"
@@ -28,7 +28,8 @@ class NotionDataSource(OnlineDocumentDatasource):
         # Get integration token from credentials
         access_token = self.runtime.credentials.get("integration_secret")
         if not access_token:
-            raise ValueError("Access token not found in credentials")
+            msg = "Access token not found in credentials"
+            raise ValueError(msg)
         workspace_name = self.notion_workspace_info(access_token).get(
             "workspace_name", ""
         )
@@ -52,7 +53,8 @@ class NotionDataSource(OnlineDocumentDatasource):
     ) -> Generator[DatasourceMessage, None, None]:
         access_token = self.runtime.credentials.get("integration_secret")
         if not access_token:
-            raise ValueError("Access token not found in credentials")
+            msg = "Access token not found in credentials"
+            raise ValueError(msg)
         try:
             notion_extractor = NotionExtractor(
                 access_token=access_token,
@@ -63,14 +65,13 @@ class NotionDataSource(OnlineDocumentDatasource):
             online_document_res = notion_extractor.extract()
         except Exception as e:
             raise ValueError(str(e)) from e
-        print(online_document_res)
         yield self.create_variable_message("content", online_document_res["content"])
         yield self.create_variable_message("page_id", online_document_res["page_id"])
         yield self.create_variable_message(
             "workspace_id", online_document_res["workspace_id"]
         )
 
-    def notion_workspace_info(self, access_token: str):
+    def notion_workspace_info(self, access_token: str) -> dict[str, str]:
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Notion-Version": self._API_VERSION,

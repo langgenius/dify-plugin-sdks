@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Generator, Mapping
 
 from werkzeug import Request, Response
 
@@ -22,7 +22,7 @@ class Tts(Endpoint):
             content_text=content_text,
         )
 
-        def generator():
+        def generator() -> Generator[bytes, None, None]:
             yield from response
 
         return Response(generator(), status=200, content_type="text/event-stream")

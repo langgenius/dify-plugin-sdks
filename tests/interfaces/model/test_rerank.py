@@ -40,7 +40,7 @@ class MockRerankModel(RerankModel):
         pass
 
 
-def test_rerank():
+def test_rerank() -> None:
     model_factory = prepare_model_factory({ModelType.RERANK: MockRerankModel})
     instance = model_factory.get_instance(ModelType.RERANK)
     assert isinstance(instance, MockRerankModel)
@@ -105,7 +105,7 @@ class MockMultiModalRerankModel(RerankModel):
         pass
 
 
-def test_rerank_multimodal():
+def test_rerank_multimodal() -> None:
     model_factory = prepare_model_factory({ModelType.RERANK: MockMultiModalRerankModel})
     instance = model_factory.get_instance(ModelType.RERANK)
     assert isinstance(instance, MockMultiModalRerankModel)

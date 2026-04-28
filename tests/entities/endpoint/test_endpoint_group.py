@@ -1,5 +1,6 @@
 import os
 
+import pytest
 import yaml
 
 os.environ["GEVENT_SUPPORT"] = "true"
@@ -7,7 +8,7 @@ os.environ["GEVENT_SUPPORT"] = "true"
 from dify_plugin.entities.endpoint import EndpointProviderConfiguration
 
 
-def test_load_endpoint_group():
+def test_load_endpoint_group() -> None:
     endpoint_group = EndpointProviderConfiguration(
         **yaml.safe_load(
             """endpoints:
@@ -27,11 +28,11 @@ def test_load_endpoint_group():
     assert endpoint_group.endpoints[0].extra.python.source == "test.py"
 
 
-def test_load_endpoint_from_file(monkeypatch):
+def test_load_endpoint_from_file(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         EndpointProviderConfiguration,
         "_load_yaml_file",
-        lambda x: {
+        lambda _x: {
             "path": "/test",
             "method": "GET",
             "hidden": False,

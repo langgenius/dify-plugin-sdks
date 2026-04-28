@@ -9,6 +9,8 @@ from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.trigger import Event
 
+TRUTHY_STRINGS = frozenset({"true", "1", "yes"})
+
 
 class PullRequestReviewThreadUnifiedEvent(Event):
     """Unified PR review thread event (resolved/unresolved/edited/created)."""
@@ -21,21 +23,23 @@ class PullRequestReviewThreadUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         thread = payload.get("thread")
         if not isinstance(thread, Mapping):
-            raise ValueError("No thread in payload")
+            msg = "No thread in payload"
+            raise ValueError(msg)
 
         if parameters.get("is_resolved") is not None:
-            want = str(parameters.get("is_resolved")).lower() in {"true", "1", "yes"}
+            want = str(parameters.get("is_resolved")).lower() in TRUTHY_STRINGS
             if bool(thread.get("is_resolved")) != want:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         author = parameters.get("author")
         if author:
@@ -49,7 +53,7 @@ class PullRequestReviewThreadUnifiedEvent(Event):
                         found = True
                         break
             if allowed and not found:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         path_filter = parameters.get("path")
         if path_filter:
@@ -62,6 +66,6 @@ class PullRequestReviewThreadUnifiedEvent(Event):
                 return any((c or {}).get("path") in paths for c in comments)
 
             if paths and not any_path_match():
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

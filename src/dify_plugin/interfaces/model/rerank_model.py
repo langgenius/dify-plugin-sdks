@@ -55,10 +55,11 @@ class RerankModel(AIModel):
     ) -> MultiModalRerankResult:
         """Invoke a multimodal rerank model."""
 
-        raise NotImplementedError(
+        msg = (
             f"{self.__class__.__name__} does not implement `_invoke_multimodal`. "
             "Implement this method to support multimodal rerank invocations."
         )
+        raise NotImplementedError(msg)
 
     ############################################################
     #                 For executor use only                    #
@@ -85,6 +86,9 @@ class RerankModel(AIModel):
         :param top_n: top n
         :param user: unique user id
         :return: rerank result
+
+        Returns:
+            The return value.
         """
 
         with self.timing_context():

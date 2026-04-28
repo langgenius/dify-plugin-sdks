@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import urllib.parse
 from collections.abc import Mapping, Sequence
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -16,15 +17,14 @@ def collect_events(payload: Mapping[str, Any], key: str) -> list[dict[str, Any]]
     raw_items = payload.get(key)
     if not isinstance(raw_items, Sequence):
         return []
-    events: list[dict[str, Any]] = []
-    for item in raw_items:
-        if isinstance(item, Mapping):
-            events.append(dict(item))
+    events: list[dict[str, Any]] = [
+        dict(item) for item in raw_items if isinstance(item, Mapping)
+    ]
     return events
 
 
 def resolve_calendar_id(
-    runtime: Any, payload: Mapping[str, Any], parameters: Mapping[str, Any]
+    runtime: object, payload: Mapping[str, Any], parameters: Mapping[str, Any]
 ) -> str:
     subscription_params: Mapping[str, Any] = {}
     if getattr(runtime, "subscription", None):
@@ -38,20 +38,19 @@ def resolve_calendar_id(
     return str(calendar_id)
 
 
-def get_access_token(runtime: Any) -> str:
+def get_access_token(runtime: object) -> str:
     credentials: Mapping[str, Any] = {}
     if getattr(runtime, "credentials", None):
         credentials = runtime.credentials or {}
     token = credentials.get("access_token")
     if not token:
-        raise ValueError(
-            "Missing Google Calendar OAuth access token in runtime credentials"
-        )
+        msg = "Missing Google Calendar OAuth access token in runtime credentials"
+        raise ValueError(msg)
     return str(token)
 
 
 def enrich_events(
-    runtime: Any,
+    runtime: object,
     *,
     calendar_id: str,
     events: list[dict[str, Any]],
@@ -82,12 +81,12 @@ def enrich_events(
             enriched.append(event)
             continue
 
-        if resp.status_code == 200:
+        if resp.status_code == HTTPStatus.OK:
             try:
                 enriched.append(resp.json() or {})
             except Exception:
                 enriched.append(event)
-        elif resp.status_code == 404 and include_deleted:
+        elif resp.status_code == HTTPStatus.NOT_FOUND and include_deleted:
             enriched.append(event)
         else:
             enriched.append(event)
@@ -99,7 +98,7 @@ def build_variables(
     payload: Mapping[str, Any], calendar_id: str, events: list[dict[str, Any]]
 ) -> Variables:
     if not events:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
     variables = {
         "calendar_id": calendar_id,
@@ -118,10 +117,10 @@ def build_variables(
 
 def ensure_events_or_raise(events: list[dict[str, Any]]) -> None:
     if not events:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def should_enrich_details(runtime: Any, parameters: Mapping[str, Any]) -> bool:
+def should_enrich_details(runtime: object, parameters: Mapping[str, Any]) -> bool:
     if "enrich_event_details" in parameters:
         return bool(parameters.get("enrich_event_details"))
 

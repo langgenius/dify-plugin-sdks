@@ -12,7 +12,7 @@ from dify_plugin.entities.model.message import (
 
 
 class TestLLMResultChunk:
-    def test_init(self):
+    def test_init(self) -> None:
         model = "gpt-4o"
         delta = LLMResultChunkDelta(
             index=0,
@@ -41,7 +41,7 @@ class TestLLMResultChunk:
 
 
 class TestLLMResult:
-    def test_init(self):
+    def test_init(self) -> None:
         model = "gpt-4o"
         assistant_message = AssistantPromptMessage(
             content="Hello, World!", role=PromptMessageRole.ASSISTANT

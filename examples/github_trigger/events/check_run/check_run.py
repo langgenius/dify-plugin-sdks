@@ -21,16 +21,18 @@ class CheckRunUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         run = payload.get("check_run")
         if not isinstance(run, Mapping):
-            raise ValueError("No check_run in payload")
+            msg = "No check_run in payload"
+            raise ValueError(msg)
 
         self._check_name(run, parameters.get("check_name"))
         self._check_branch(run, parameters.get("branch"))
@@ -47,7 +49,7 @@ class CheckRunUnifiedEvent(Event):
         if not names:
             return
         if (run.get("name") or "").strip() not in names:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_branch(self, run: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -68,7 +70,7 @@ class CheckRunUnifiedEvent(Event):
             if isinstance(suite, Mapping):
                 branch = suite.get("head_branch")
         if branch not in branches:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_app_slug(self, run: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -79,7 +81,7 @@ class CheckRunUnifiedEvent(Event):
         app = run.get("app") or {}
         slug = (app.get("slug") if isinstance(app, Mapping) else None) or ""
         if slug not in slugs:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_conclusion(self, run: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -89,7 +91,7 @@ class CheckRunUnifiedEvent(Event):
             return
         conclusion = (run.get("conclusion") or "").lower()
         if conclusion and conclusion not in allowed:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_actor(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -99,4 +101,4 @@ class CheckRunUnifiedEvent(Event):
             return
         actor_login = (payload.get("sender") or {}).get("login")
         if actor_login not in users:
-            raise EventIgnoreError()
+            raise EventIgnoreError

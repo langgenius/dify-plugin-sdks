@@ -12,11 +12,12 @@ class DatasourceProvider:
     A provider for a datasource
     """
 
-    def validate_credentials(self, credentials: Mapping[str, Any]):
+    def validate_credentials(self, credentials: Mapping[str, Any]) -> None:
         return self._validate_credentials(credentials)
 
-    def _validate_credentials(self, credentials: Mapping[str, Any]):
-        raise NotImplementedError("This method should be implemented by a subclass")
+    def _validate_credentials(self, credentials: Mapping[str, Any]) -> None:
+        msg = "This method should be implemented by a subclass"
+        raise NotImplementedError(msg)
 
     def oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
@@ -26,7 +27,8 @@ class DatasourceProvider:
     def _oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
     ) -> str:
-        raise NotImplementedError("This method should be implemented by a subclass")
+        msg = "This method should be implemented by a subclass"
+        raise NotImplementedError(msg)
 
     def oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
@@ -46,7 +48,8 @@ class DatasourceProvider:
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> DatasourceOAuthCredentials:
-        raise NotImplementedError("This method should be implemented by a subclass")
+        msg = "This method should be implemented by a subclass"
+        raise NotImplementedError(msg)
 
     def oauth_refresh_credentials(
         self,
@@ -61,6 +64,9 @@ class DatasourceProvider:
         :param system_credentials: system credentials
         :param credentials: credentials
         :return: refreshed credentials
+
+        Returns:
+            The return value.
         """
         datasource_credentials = self._oauth_refresh_credentials(
             redirect_uri, system_credentials, credentials
@@ -80,7 +86,8 @@ class DatasourceProvider:
         system_credentials: Mapping[str, Any],
         credentials: Mapping[str, Any],
     ) -> DatasourceOAuthCredentials:
-        raise NotImplementedError(
+        msg = (
             "The tool you are using does not support OAuth, please implement "
             "`_oauth_refresh_credentials` method"
         )
+        raise NotImplementedError(msg)

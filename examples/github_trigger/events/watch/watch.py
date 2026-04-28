@@ -21,18 +21,19 @@ class WatchEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action") or "started"
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         watcher = (payload.get("sender") or {}).get("login")
         allowed = parameters.get("watcher")
         if allowed:
             users = {u.strip() for u in str(allowed).split(",") if u.strip()}
             if users and watcher not in users:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

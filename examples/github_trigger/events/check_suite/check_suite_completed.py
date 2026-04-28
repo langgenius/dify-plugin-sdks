@@ -21,14 +21,16 @@ class CheckSuiteCompletedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         if payload.get("action") != "completed":
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         suite = payload.get("check_suite")
         if not isinstance(suite, Mapping):
-            raise ValueError("No check_suite data in payload")
+            msg = "No check_suite data in payload"
+            raise ValueError(msg)
 
         self._check_conclusion(suite, parameters.get("conclusion"))
         self._check_branch(suite, parameters.get("branch"))
@@ -44,7 +46,7 @@ class CheckSuiteCompletedEvent(Event):
             return
         conclusion = (suite.get("conclusion") or "").lower()
         if conclusion not in allowed:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_branch(self, suite: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -54,7 +56,7 @@ class CheckSuiteCompletedEvent(Event):
             return
         head_branch = suite.get("head_branch")
         if head_branch not in branches:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_app_slug(self, suite: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -65,4 +67,4 @@ class CheckSuiteCompletedEvent(Event):
         app = suite.get("app") or {}
         slug = (app.get("slug") if isinstance(app, Mapping) else None) or ""
         if slug not in slugs:
-            raise EventIgnoreError()
+            raise EventIgnoreError

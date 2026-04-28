@@ -1,7 +1,7 @@
 from dify_plugin.config.config import DifyPluginEnv, InstallMethod
 
 
-def test_launch():
+def test_launch() -> None:
     """
     Env should works without any parameters and env variables
     """
@@ -10,7 +10,7 @@ def test_launch():
     assert InstallMethod.Local == env.INSTALL_METHOD
 
 
-def test_launch_local_plugin():
+def test_launch_local_plugin() -> None:
     """
     Env should works without any parameters and env variables
     """
@@ -21,7 +21,7 @@ def test_launch_local_plugin():
     assert InstallMethod.Local == env.INSTALL_METHOD
 
 
-def test_launch_remote_plugin():
+def test_launch_remote_plugin() -> None:
     """
     Env should works with remote install url and key
     """
@@ -36,16 +36,16 @@ def test_launch_remote_plugin():
     assert env.REMOTE_INSTALL_KEY == "19dcf2f3-2856-4fa4-b32b-9ece9b741977"
 
 
-def test_launch_serverless_plugin():
+def test_launch_serverless_plugin() -> None:
     """
     Env should works with serverless install method
     """
     env = DifyPluginEnv(
         INSTALL_METHOD=InstallMethod.Serverless,
-        SERVERLESS_HOST="0.0.0.0",
+        SERVERLESS_HOST="127.0.0.1",
         SERVERLESS_PORT=8080,
     )
 
     assert InstallMethod.Serverless == env.INSTALL_METHOD
-    assert env.SERVERLESS_HOST == "0.0.0.0"
+    assert env.SERVERLESS_HOST == "127.0.0.1"
     assert env.SERVERLESS_PORT == 8080

@@ -21,16 +21,18 @@ class WorkflowJobUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         job = payload.get("workflow_job")
         if not isinstance(job, Mapping):
-            raise ValueError("No workflow_job in payload")
+            msg = "No workflow_job in payload"
+            raise ValueError(msg)
 
         self._check_workflow_name(job, parameters.get("workflow_name"))
         self._check_job_name(job, parameters.get("job_name"))
@@ -49,7 +51,7 @@ class WorkflowJobUnifiedEvent(Event):
         if not names:
             return
         if job.get("workflow_name") not in names:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_job_name(self, job: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -58,7 +60,7 @@ class WorkflowJobUnifiedEvent(Event):
         if not names:
             return
         if job.get("name") not in names:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_branch(self, job: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -67,7 +69,7 @@ class WorkflowJobUnifiedEvent(Event):
         if not branches:
             return
         if job.get("head_branch") not in branches:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_conclusion(self, job: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -77,7 +79,7 @@ class WorkflowJobUnifiedEvent(Event):
             return
         conclusion = (job.get("conclusion") or "").lower()
         if conclusion and conclusion not in allowed:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_runner_labels(self, job: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -88,7 +90,7 @@ class WorkflowJobUnifiedEvent(Event):
         labels = job.get("labels") or []
         current = {str(label).strip() for label in labels}
         if not any(t in current for t in targets):
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_actor(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -98,4 +100,4 @@ class WorkflowJobUnifiedEvent(Event):
             return
         actor_login = (payload.get("sender") or {}).get("login")
         if actor_login not in users:
-            raise EventIgnoreError()
+            raise EventIgnoreError

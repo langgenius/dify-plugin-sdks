@@ -1,7 +1,9 @@
 from unittest.mock import MagicMock, patch
 
 from dify_plugin.entities.model.message import AssistantPromptMessage
-from dify_plugin.interfaces.model.openai_compatible.llm import _increase_tool_call
+from dify_plugin.interfaces.model.openai_compatible.llm import (
+    _increase_tool_call,  # noqa: PLC2701
+)
 
 ToolCall = AssistantPromptMessage.ToolCall
 
@@ -185,13 +187,13 @@ EXPECTED_CASE_4 = [
 ]
 
 
-def _run_case(inputs: list[ToolCall], expected: list[ToolCall]):
+def _run_case(inputs: list[ToolCall], expected: list[ToolCall]) -> None:
     actual = []
     _increase_tool_call(inputs, actual)
     assert actual == expected
 
 
-def test__increase_tool_call():
+def test__increase_tool_call() -> None:
     # case 1:
     _run_case(INPUTS_CASE_1, EXPECTED_CASE_1)
 

@@ -3,8 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dify_plugin.core.server.__base.request_reader import RequestReader
-
-from dify_plugin.core.server.__base.response_writer import ResponseWriter
+    from dify_plugin.core.server.__base.response_writer import ResponseWriter
 
 
 class PluginInStreamEvent(Enum):
@@ -12,11 +11,12 @@ class PluginInStreamEvent(Enum):
     BackwardInvocationResponse = "backwards_response"
 
     @classmethod
-    def value_of(cls, v: str):
+    def value_of(cls, v: str) -> "PluginInStreamEvent":
         for e in cls:
             if e.value == v:
                 return e
-        raise ValueError(f"Invalid value for PluginInStream.Event: {v}")
+        msg = f"Invalid value for PluginInStream.Event: {v}"
+        raise ValueError(msg)
 
 
 class PluginInStreamBase:
@@ -54,7 +54,7 @@ class PluginInStream(PluginInStreamBase):
         app_id: str | None = None,
         endpoint_id: str | None = None,
         context: dict | None = None,
-    ):
+    ) -> None:
         self.reader = reader
         self.writer = writer
         super().__init__(

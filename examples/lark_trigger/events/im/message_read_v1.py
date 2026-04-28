@@ -20,6 +20,12 @@ class MessageReadV1Event(Event):
         Handle the event when messages are marked as read.
 
         This event is triggered when a user reads one or more messages.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,
@@ -27,7 +33,8 @@ class MessageReadV1Event(Event):
             lambda builder: builder.register_p2_im_message_message_read_v1,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict = {}

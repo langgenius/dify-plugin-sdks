@@ -31,7 +31,7 @@ class File(BaseModel):
             ValueError: If the URL uses an unsupported protocol
                         (e.g., missing 'http://' or 'https://'), suggesting
                         configuration of the FILES_URL environment variable.
-            httpx.HTTPStatusError: If the request to fetch the file fails.
+
         """
         if self._blob is None:
             try:
@@ -39,11 +39,12 @@ class File(BaseModel):
                 response.raise_for_status()
                 self._blob = response.content
             except httpx.UnsupportedProtocol as e:
-                raise ValueError(
+                msg = (
                     f"Invalid file URL '{self.url}': {e}. "
                     "Ensure the `FILES_URL` environment variable is set in "
                     "your .env file"
-                ) from e
+                )
+                raise ValueError(msg) from e
 
         assert self._blob is not None
         return self._blob

@@ -1,6 +1,6 @@
 import contextlib
 import time
-from collections.abc import Mapping
+from collections.abc import Generator, Mapping
 
 from werkzeug import Request, Response
 
@@ -31,7 +31,7 @@ class Duck(Endpoint):
         Invokes the endpoint with the given request.
         """
 
-        def generator():
+        def generator() -> Generator[str, None, None]:
             try:
                 visitors = int(self.session.storage.get("visitors").decode())
             except Exception:

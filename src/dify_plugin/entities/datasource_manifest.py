@@ -1,5 +1,5 @@
 from enum import Enum, StrEnum
-from typing import Any, Union
+from typing import Any
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
@@ -42,9 +42,7 @@ class DatasourceLabelEnum(Enum):
     description="Type of datasource provider",
 )
 class DatasourceProviderType(StrEnum):
-    """
-    Enum class for datasource provider
-    """
+    """Enum class for datasource provider"""
 
     ONLINE_DOCUMENT = "online_document"
     WEBSITE_CRAWL = "website_crawl"
@@ -56,9 +54,7 @@ class DatasourceProviderType(StrEnum):
     description="Parameter of datasource entity",
 )
 class DatasourceParameter(BaseModel):
-    """
-    Overrides type
-    """
+    """Overrides type"""
 
     class DatasourceParameterType(StrEnum):
         STRING = CommonParameterType.STRING.value
@@ -72,15 +68,16 @@ class DatasourceParameter(BaseModel):
     name: str = Field(..., description="The name of the parameter")
     label: I18nObject = Field(..., description="The label presented to the user")
     placeholder: I18nObject | None = Field(
-        default=None, description="The placeholder presented to the user"
+        default=None,
+        description="The placeholder presented to the user",
     )
     scope: str | None = None
     auto_generate: ParameterAutoGenerate | None = None
     template: ParameterTemplate | None = None
     required: bool = False
-    default: Union[float, int, str] | None = None
-    min: Union[float, int] | None = None
-    max: Union[float, int] | None = None
+    default: float | int | str | None = None
+    min: float | int | None = None
+    max: float | int | None = None
     precision: int | None = None
     options: list[ParameterOption] = Field(default_factory=list)
     type: DatasourceParameterType = Field(..., description="The type of the parameter")
@@ -118,14 +115,17 @@ class DatasourceEntity(BaseModel):
     parameters: list[DatasourceParameter] = Field(default_factory=list)
     description: I18nObject = Field(..., description="The label of the datasource")
     output_schema: dict[str, Any] = Field(
-        default_factory=dict, description="Output schema definition"
+        default_factory=dict,
+        description="Output schema definition",
     )
     extra: DatasourceEntityExtra
 
     @field_validator("parameters", mode="before")
     @classmethod
     def set_parameters(
-        cls, v, validation_info: ValidationInfo
+        cls,
+        v: list[DatasourceParameter] | None,
+        _validation_info: ValidationInfo,
     ) -> list[DatasourceParameter]:
         return v or []
 
@@ -137,7 +137,8 @@ class DatasourceProviderIdentity(BaseModel):
     author: str = Field(..., description="The author of the datasource")
     name: str = Field(..., description="The name of the datasource")
     description: I18nObject = Field(
-        ..., description="The description of the datasource"
+        ...,
+        description="The description of the datasource",
     )
     icon: str = Field(..., description="The icon of the datasource")
     label: I18nObject = Field(..., description="The label of the datasource")
@@ -164,12 +165,11 @@ class DatasourceProviderConfigurationExtra(BaseModel):
     outside_reference_fields={"datasources": DatasourceEntity},
 )
 class DatasourceProviderManifest(BaseModel):
-    """
-    Datasource provider entity
-    """
+    """Datasource provider entity"""
 
     identity: DatasourceProviderIdentity = Field(
-        ..., description="The identity of the datasource provider"
+        ...,
+        description="The identity of the datasource provider",
     )
     credentials_schema: list[ProviderConfig] = Field(
         default_factory=list,
@@ -180,32 +180,38 @@ class DatasourceProviderManifest(BaseModel):
         description="The OAuth schema of the datasource provider if OAuth is supported",
     )
     provider_type: DatasourceProviderType = Field(
-        ..., description="The type of the datasource provider"
+        ...,
+        description="The type of the datasource provider",
     )
     datasources: list[DatasourceEntity] = Field(
-        default_factory=list, description="The datasources of the datasource provider"
+        default_factory=list,
+        description="The datasources of the datasource provider",
     )
     extra: DatasourceProviderConfigurationExtra = Field(
-        ..., description="The extra of the datasource provider"
+        ...,
+        description="The extra of the datasource provider",
     )
 
     @field_validator("datasources", mode="before")
     @classmethod
-    def validate_datasources(cls, value) -> list[DatasourceEntity]:
+    def validate_datasources(cls, value: list[object]) -> list[DatasourceEntity]:
         if not isinstance(value, list):
-            raise ValueError("datasources should be a list")
+            msg = "datasources should be a list"
+            raise ValueError(msg)
 
         datasources: list[DatasourceEntity] = []
 
         for datasource in value:
             if not isinstance(datasource, str):
-                raise ValueError("datasource path should be a string")
+                msg = "datasource path should be a string"
+                raise ValueError(msg)
             try:
                 file = load_yaml_file(datasource)
                 datasources.append(DatasourceEntity(**file))
             except Exception as e:
+                msg = f"Error loading datasource configuration: {e!s}"
                 raise ValueError(
-                    f"Error loading datasource configuration: {e!s}"
+                    msg,
                 ) from e
 
         return datasources

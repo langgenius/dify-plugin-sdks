@@ -6,51 +6,51 @@ from typing import Any
 from dify_plugin.errors.trigger import EventIgnoreError
 
 
-def check_comment_body_contains(comment: Mapping[str, Any], value: Any) -> None:
+def check_comment_body_contains(comment: Mapping[str, Any], value: object) -> None:
     keywords = _normalize_list(value, lowercase=True)
     if not keywords:
         return
     body = (comment.get("body") or "").lower()
     if not any(k in body for k in keywords):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def check_commenter(comment: Mapping[str, Any], value: Any) -> None:
+def check_commenter(comment: Mapping[str, Any], value: object) -> None:
     commenters = _normalize_list(value)
     if not commenters:
         return
     login = (comment.get("user") or {}).get("login")
     if login not in commenters:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def check_issue_labels(issue: Mapping[str, Any], value: Any) -> None:
+def check_issue_labels(issue: Mapping[str, Any], value: object) -> None:
     labels = _normalize_list(value)
     if not labels:
         return
     current = [lbl.get("name") for lbl in issue.get("labels", [])]
     if not any(lbl in current for lbl in labels):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def check_issue_state(issue: Mapping[str, Any], value: Any) -> None:
+def check_issue_state(issue: Mapping[str, Any], value: object) -> None:
     if not value:
         return
     state = (issue.get("state") or "").lower()
     targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
     if targets and state not in targets:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def check_is_pull_request(issue: Mapping[str, Any], flag: Any) -> None:
+def check_is_pull_request(issue: Mapping[str, Any], flag: object) -> None:
     if flag is None:
         return
     is_pr = "pull_request" in issue
     if bool(flag) != is_pr:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def _normalize_list(raw: Any, *, lowercase: bool = False) -> list[str]:
+def _normalize_list(raw: object, *, lowercase: bool = False) -> list[str]:
     if raw is None:
         return []
     if isinstance(raw, (list, tuple)):

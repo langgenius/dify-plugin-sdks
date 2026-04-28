@@ -88,10 +88,9 @@ class LLMStructuredOutputInvocation(
                 LLMResultChunkWithStructuredOutput,
                 data,
             )
-            response = cast(
+            return cast(
                 Generator[LLMResultChunkWithStructuredOutput, None, None], response
             )
-            return response
 
         result = LLMResultWithStructuredOutput(
             model=model_config.model,

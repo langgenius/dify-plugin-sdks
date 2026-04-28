@@ -24,7 +24,7 @@ class MessageReceivedEvent(TelegramUpdateEvent, Event):
         chat = message.get("chat", {})
         chat_type_filter = parameters.get("chat_type")
         if chat_type_filter and chat.get("type") != chat_type_filter:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         keywords = parameters.get("text_contains")
         if keywords:
@@ -33,7 +33,7 @@ class MessageReceivedEvent(TelegramUpdateEvent, Event):
                 term.strip().lower() for term in keywords.split(",") if term.strip()
             ]
             if terms and not any(term in content for term in terms):
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return {
             "update_id": payload.get("update_id"),

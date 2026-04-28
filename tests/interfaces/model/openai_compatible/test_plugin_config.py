@@ -12,18 +12,18 @@ from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.interfaces.model.openai_compatible import llm
 
 
-def test_plugin_config_exists():
+def test_plugin_config_exists() -> None:
     """Test that _plugin_config object exists"""
     assert hasattr(llm, "_plugin_config")
     assert llm._plugin_config is not None
 
 
-def test_plugin_config_type():
+def test_plugin_config_type() -> None:
     """Test that _plugin_config is an instance of DifyPluginEnv"""
     assert isinstance(llm._plugin_config, DifyPluginEnv)
 
 
-def test_plugin_config_has_max_request_timeout():
+def test_plugin_config_has_max_request_timeout() -> None:
     """Test that _plugin_config has MAX_REQUEST_TIMEOUT attribute"""
     assert hasattr(llm._plugin_config, "MAX_REQUEST_TIMEOUT")
     assert isinstance(llm._plugin_config.MAX_REQUEST_TIMEOUT, int)
@@ -31,7 +31,7 @@ def test_plugin_config_has_max_request_timeout():
     assert llm._plugin_config.MAX_REQUEST_TIMEOUT > 0
 
 
-def test_plugin_config_has_max_invocation_timeout():
+def test_plugin_config_has_max_invocation_timeout() -> None:
     """Test that _plugin_config has MAX_INVOCATION_TIMEOUT attribute"""
     assert hasattr(llm._plugin_config, "MAX_INVOCATION_TIMEOUT")
     assert isinstance(llm._plugin_config.MAX_INVOCATION_TIMEOUT, int)
@@ -39,7 +39,7 @@ def test_plugin_config_has_max_invocation_timeout():
     assert llm._plugin_config.MAX_INVOCATION_TIMEOUT > 0
 
 
-def test_plugin_config_singleton():
+def test_plugin_config_singleton() -> None:
     """Test that configuration object is instantiated only once at module level"""
     # Get the id of the config object
     config_id_1 = id(llm._plugin_config)
@@ -53,7 +53,7 @@ def test_plugin_config_singleton():
     assert config_id_1 == config_id_2
 
 
-def test_plugin_config_timeout_values_reasonable():
+def test_plugin_config_timeout_values_reasonable() -> None:
     """Test that timeout configuration values are within reasonable range"""
     # MAX_REQUEST_TIMEOUT should be between 1 and 3600 seconds
     assert 1 <= llm._plugin_config.MAX_REQUEST_TIMEOUT <= 3600
@@ -62,7 +62,7 @@ def test_plugin_config_timeout_values_reasonable():
     assert 1 <= llm._plugin_config.MAX_INVOCATION_TIMEOUT <= 3600
 
 
-def test_plugin_config_can_create_new_instance():
+def test_plugin_config_can_create_new_instance() -> None:
     """Test that new DifyPluginEnv instances can be created.
 
     Verify the config class itself works.

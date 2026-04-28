@@ -19,6 +19,12 @@ class ContactDepartmentCreatedV3Event(Event):
         Handle new department creation event.
 
         This event is triggered when a new department is created in the organization.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,
@@ -26,11 +32,13 @@ class ContactDepartmentCreatedV3Event(Event):
             lambda builder: builder.register_p2_contact_department_created_v3,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         dept_data = event_data.object
         if dept_data is None:
-            raise ValueError("dept_data is None")
+            msg = "dept_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary with explicit fields
         variables_dict = {

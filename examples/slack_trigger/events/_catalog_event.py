@@ -10,6 +10,8 @@ from dify_plugin.errors.trigger import EventIgnoreError
 
 from .catalog_data import EVENT_CATALOG
 
+EMPTY_FIELD_VALUES = frozenset({"", None})
+
 _MESSAGE_TOPIC_TO_CHANNEL_TYPE: dict[str, str] = {
     "message.app.home": "app_home",
     "message.channels": "channel",
@@ -35,16 +37,18 @@ class CatalogSlackEvent:
 
     def _get_metadata(self) -> Mapping[str, Any]:
         if not self.EVENT_KEY:
+            msg = "EVENT_KEY must be defined on CatalogSlackEvent subclasses"
             raise ValueError(
-                "EVENT_KEY must be defined on CatalogSlackEvent subclasses"
+                msg,
             )
         try:
             metadata = EVENT_CATALOG[self.EVENT_KEY]
         except KeyError as exc:
-            raise ValueError(f"Unknown Slack event key: {self.EVENT_KEY}") from exc
+            msg = f"Unknown Slack event key: {self.EVENT_KEY}"
+            raise ValueError(msg) from exc
         return metadata
 
-    def _sanitize(self, value: Any) -> Any:
+    def _sanitize(self, value: object) -> object:
         if value is None:
             return ""
         if isinstance(value, Mapping):
@@ -53,10 +57,10 @@ class CatalogSlackEvent:
             return [self._sanitize(item) for item in value]
         return value
 
-    def _ensure_list(self, value: Any) -> list[Any]:
+    def _ensure_list(self, value: object) -> list[object]:
         if isinstance(value, list):
             return value
-        if value in ("", None):
+        if value in EMPTY_FIELD_VALUES:
             return []
         return [value]
 
@@ -71,27 +75,28 @@ class CatalogSlackEvent:
         payload = request.get_json(silent=True) or {}
         event = payload.get("event")
         if not isinstance(event, Mapping):
-            raise ValueError("Slack event payload is missing the event body")
+            msg = "Slack event payload is missing the event body"
+            raise ValueError(msg)
 
         event_type = str(event.get("type") or "")
         expected_event_type = str(metadata.get("event_type") or "")
 
         if expected_event_type == "message":
             if event_type != "message":
-                raise EventIgnoreError()
+                raise EventIgnoreError
             subtype = str(event.get("subtype") or "")
             if subtype and subtype in _MESSAGE_IGNORE_SUBTYPES:
-                raise EventIgnoreError()
+                raise EventIgnoreError
             expected_channel_type = _MESSAGE_TOPIC_TO_CHANNEL_TYPE.get(
-                metadata["topic"], ""
+                metadata["topic"],
+                "",
             )
             if expected_channel_type:
                 channel_type = str(event.get("channel_type") or "")
                 if channel_type != expected_channel_type:
-                    raise EventIgnoreError()
-        else:
-            if event_type != expected_event_type:
-                raise EventIgnoreError()
+                    raise EventIgnoreError
+        elif event_type != expected_event_type:
+            raise EventIgnoreError
 
         sanitized_payload = self._sanitize(payload)
         sanitized_event = self._sanitize(event)
@@ -120,7 +125,7 @@ class CatalogSlackEvent:
             "authed_users": authed_users,
             "authed_teams": authed_teams,
             "is_ext_shared_channel": bool(
-                sanitized_event.get("is_ext_shared_channel", False)
+                sanitized_event.get("is_ext_shared_channel", False),
             ),
             "channel_type": channel_type,
             "summary": str(metadata.get("summary") or metadata.get("label") or ""),

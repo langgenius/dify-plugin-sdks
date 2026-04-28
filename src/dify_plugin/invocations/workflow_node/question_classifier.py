@@ -28,4 +28,5 @@ class QuestionClassifierNodeInvocation(BackwardsInvocation[NodeResponse]):
         for data in response:
             return data
 
-        raise Exception("No response from workflow node question classifier")
+        msg = "No response from workflow node question classifier"
+        raise Exception(msg)

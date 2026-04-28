@@ -21,14 +21,16 @@ class CheckRunCreatedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         if payload.get("action") != "created":
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         run = payload.get("check_run")
         if not isinstance(run, Mapping):
-            raise ValueError("No check_run data in payload")
+            msg = "No check_run data in payload"
+            raise ValueError(msg)
 
         self._check_name(run, parameters.get("check_name"))
         self._check_branch(run, parameters.get("branch"))
@@ -45,7 +47,7 @@ class CheckRunCreatedEvent(Event):
             return
         name = (run.get("name") or "").strip()
         if name not in names:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_branch(self, run: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -68,7 +70,7 @@ class CheckRunCreatedEvent(Event):
             if isinstance(suite, Mapping):
                 branch = suite.get("head_branch")
         if branch not in branches:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_app_slug(self, run: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -79,7 +81,7 @@ class CheckRunCreatedEvent(Event):
         app = run.get("app") or {}
         slug = (app.get("slug") if isinstance(app, Mapping) else None) or ""
         if slug not in slugs:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_actor(self, payload: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -89,4 +91,4 @@ class CheckRunCreatedEvent(Event):
             return
         actor_login = payload.get("sender", {}).get("login")
         if actor_login not in users:
-            raise EventIgnoreError()
+            raise EventIgnoreError

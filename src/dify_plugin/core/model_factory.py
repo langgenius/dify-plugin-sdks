@@ -15,7 +15,7 @@ class ModelFactory:
         self,
         provider: ModelProviderConfiguration,
         models: dict[ModelType, type[AIModel]],
-    ):
+    ) -> None:
         """
         Initialize model instance factory
 
@@ -25,20 +25,26 @@ class ModelFactory:
         self.provider = provider
         self.models = models
 
-    def get_instance(self, model_type: ModelType):
+    def get_instance(self, model_type: ModelType) -> AIModel:
         """
         Get model instance
 
         :param model_type: model type
         :return: model instance
+
+        Returns:
+            The return value.
         """
         return self.models[model_type](self.provider.models)
 
-    def get_model_cls(self, model_type: ModelType):
+    def get_model_cls(self, model_type: ModelType) -> type[AIModel]:
         """
         Get model class
 
         :param model_type: model type
         :return: model class
+
+        Returns:
+            The return value.
         """
         return self.models[model_type]

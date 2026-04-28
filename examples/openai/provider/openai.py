@@ -16,6 +16,9 @@ class OpenAIProvider(ModelProvider):
 
         :param credentials: provider credentials, credentials form defined in
             `provider_credential_schema`.
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
@@ -25,10 +28,11 @@ class OpenAIProvider(ModelProvider):
             model_instance.validate_credentials(
                 model="gpt-3.5-turbo", credentials=credentials
             )
-        except CredentialsValidateFailedError as ex:
-            raise ex
-        except Exception as ex:
+        except CredentialsValidateFailedError:
+            raise
+        except Exception:
             logger.exception(
-                f"{self.get_provider_schema().provider} credentials validate failed"
+                "%s credentials validate failed",
+                self.get_provider_schema().provider,
             )
-            raise ex
+            raise

@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from http import HTTPStatus
 from urllib.parse import urljoin
 
 import requests
@@ -42,6 +43,12 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         :param voice: model voice/speaker
         :param user: unique user id
         :return: audio data as bytes iterator
+
+        Yields:
+            Generated values.
+
+        Raises:
+            InvokeBadRequestError: If model invocation fails.
         """
         # Set up headers with authentication if provided
         headers = {}
@@ -79,7 +86,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
                 timeout=(10, 300),
             )
 
-            if response.status_code != 200:
+            if response.status_code != HTTPStatus.OK:
                 raise InvokeBadRequestError(response.text)
 
             # Stream the audio data
@@ -94,6 +101,9 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             # Get default voice for validation
@@ -122,8 +132,8 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         voice_names = credentials.get("voices", "alloy").strip().split(",")
         voices = []
 
-        for voice in voice_names:
-            voice = voice.strip()
+        for voice_name in voice_names:
+            voice = voice_name.strip()
             if not voice:
                 continue
 
@@ -163,7 +173,8 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
             not model_schema
             or ModelPropertyKey.VOICES not in model_schema.model_properties
         ):
-            raise ValueError("this model does not support voice")
+            msg = "this model does not support voice"
+            raise ValueError(msg)
 
         voices = model_schema.model_properties[ModelPropertyKey.VOICES]
 

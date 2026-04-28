@@ -76,8 +76,7 @@ class LLMInvocation(BackwardsInvocation[LLMResultChunk]):
                 LLMResultChunk,
                 data,
             )
-            response = cast(Generator[LLMResultChunk, None, None], response)
-            return response
+            return cast(Generator[LLMResultChunk, None, None], response)
 
         result = LLMResult(
             model=model_config.model,
@@ -139,4 +138,5 @@ class SummaryInvocation(BackwardsInvocation[SummaryResult]):
             data = cast(SummaryResult, llm_result)
             return data.summary
 
-        raise Exception("No response from summary")
+        msg = "No response from summary"
+        raise Exception(msg)

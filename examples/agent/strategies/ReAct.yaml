@@ -57,4 +57,4 @@ parameters:
     max: 30
 extra:
   python:
-    source: strategies/ReAct.py
+    source: strategies/react.py

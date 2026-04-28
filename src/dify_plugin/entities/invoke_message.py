@@ -20,13 +20,13 @@ class InvokeMessage(BaseModel):
     class TextMessage(BaseModel):
         text: str
 
-        def to_dict(self):
+        def to_dict(self) -> dict[str, str]:
             return {"text": self.text}
 
     class JsonMessage(BaseModel):
         json_object: Mapping | list
 
-        def to_dict(self):
+        def to_dict(self) -> dict[str, Mapping | list]:
             return {"json_object": self.json_object}
 
     class BlobMessage(BaseModel):
@@ -46,21 +46,24 @@ class InvokeMessage(BaseModel):
         )
         variable_value: Any = Field(..., description="The value of the variable")
         stream: bool = Field(
-            default=False, description="Whether the variable is streamed"
+            default=False,
+            description="Whether the variable is streamed",
         )
 
         @model_validator(mode="before")
         @classmethod
-        def validate_variable_value_and_stream(cls, values):
+        def validate_variable_value_and_stream(cls, values: object) -> object:
             # skip validation if values is not a dict
             if not isinstance(values, dict):
                 return values
 
             if values.get("stream") and not isinstance(
-                values.get("variable_value"), str
+                values.get("variable_value"),
+                str,
             ):
+                msg = "When 'stream' is True, 'variable_value' must be a string."
                 raise ValueError(
-                    "When 'stream' is True, 'variable_value' must be a string."
+                    msg,
                 )
             return values
 
@@ -71,24 +74,25 @@ class InvokeMessage(BaseModel):
             SUCCESS = "success"
 
         id: str = Field(
-            default_factory=lambda: str(uuid.uuid4()), description="The id of the log"
+            default_factory=lambda: str(uuid.uuid4()),
+            description="The id of the log",
         )
         label: str = Field(..., description="The label of the log")
         parent_id: str | None = Field(
-            default=None, description="Leave empty for root log"
+            default=None,
+            description="Leave empty for root log",
         )
         error: str | None = Field(default=None, description="The error message")
         status: LogStatus = Field(..., description="The status of the log")
         data: Mapping[str, Any] = Field(..., description="Detailed log data")
         metadata: Mapping[LogMetadata, Any] | None = Field(
-            default=None, description="The metadata of the log"
+            default=None,
+            description="The metadata of the log",
         )
 
     class RetrieverResourceMessage(BaseModel):
         class RetrieverResource(BaseModel):
-            """
-            Model class for retriever resource.
-            """
+            """Model class for retriever resource."""
 
             position: int | None = None
             dataset_id: str | None = None
@@ -108,7 +112,8 @@ class InvokeMessage(BaseModel):
             doc_metadata: dict | None = None
 
         retriever_resources: list[RetrieverResource] = Field(
-            ..., description="retriever resources"
+            ...,
+            description="retriever resources",
         )
         context: str = Field(..., description="context")
 
@@ -143,17 +148,17 @@ class InvokeMessage(BaseModel):
 
     @field_validator("message", mode="before")
     @classmethod
-    def decode_blob_message(cls, v):
+    def decode_blob_message(cls, v: object) -> object:
         if isinstance(v, dict) and "blob" in v:
             with contextlib.suppress(Exception):
                 v["blob"] = base64.b64decode(v["blob"])
         return v
 
     @field_serializer("message")
-    def serialize_message(self, v):
+    def serialize_message(self, v: object) -> object:
         if isinstance(v, self.BlobMessage):
             return {"blob": base64.b64encode(v.blob).decode("utf-8")}
-        elif isinstance(v, self.BlobChunkMessage):
+        if isinstance(v, self.BlobChunkMessage):
             return {
                 "id": v.id,
                 "sequence": v.sequence,

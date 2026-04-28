@@ -21,11 +21,13 @@ class PageBuildEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         build = payload.get("build")
         if not isinstance(build, Mapping):
-            raise ValueError("No build in payload")
+            msg = "No build in payload"
+            raise ValueError(msg)
 
         status_filter = parameters.get("status")
         status = (build.get("status") or "").lower()
@@ -34,6 +36,6 @@ class PageBuildEvent(Event):
                 v.strip().lower() for v in str(status_filter).split(",") if v.strip()
             }
             if allowed and status not in allowed:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

@@ -20,6 +20,12 @@ class VcMeetingStartedV1Event(Event):
         Handle video conference meeting started event.
 
         This event is triggered when a video conference meeting starts.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,
@@ -27,7 +33,8 @@ class VcMeetingStartedV1Event(Event):
             lambda builder: builder.register_p2_vc_meeting_meeting_started_v1,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict: dict[str, Any] = {}

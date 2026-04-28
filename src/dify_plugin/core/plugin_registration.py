@@ -62,6 +62,14 @@ from dify_plugin.protocol.oauth import OAuthProviderProtocol
 T = TypeVar("T")
 
 
+def _source_to_module_name(source: str) -> str:
+    return Path(source).with_suffix("").as_posix().replace("/", ".")
+
+
+def _source_to_script_path(source: str) -> str:
+    return str(Path.cwd() / source)
+
+
 class PluginRegistration:
     configuration: PluginConfiguration
     tools_configuration: list[ToolProviderConfiguration]
@@ -129,7 +137,7 @@ class PluginRegistration:
         # load plugin assets
         self._load_plugin_assets()
 
-    def _load_plugin_assets(self):
+    def _load_plugin_assets(self) -> None:
         """
         load plugin assets
         """
@@ -142,7 +150,7 @@ class PluginRegistration:
                         PluginAsset(filename=entry.name, data=entry_bytes)
                     )
 
-    def _load_plugin_configuration(self):
+    def _load_plugin_configuration(self) -> None:
         """
         load basic plugin configuration from manifest.yaml
         """
@@ -176,9 +184,10 @@ class PluginRegistration:
                 self.triggers_configuration.append(trigger_provider_configuration)
 
         except Exception as e:
-            raise ValueError(f"Error loading plugin configuration: {e!s}") from e
+            msg = f"Error loading plugin configuration: {e!s}"
+            raise ValueError(msg) from e
 
-    def _resolve_tool_providers(self):
+    def _resolve_tool_providers(self) -> None:
         """
         walk through all the tool providers and tools and load the classes from sources
         """
@@ -186,12 +195,10 @@ class PluginRegistration:
             # load class
             source = provider.extra.python.source
             # remove extension
-            module_source = os.path.splitext(source)[0]
-            # replace / with .
-            module_source = module_source.replace("/", ".")
+            module_source = _source_to_module_name(source)
             cls = load_single_subclass_from_source(
                 module_name=module_source,
-                script_path=os.path.join(os.getcwd(), source),
+                script_path=_source_to_script_path(source),
                 parent_type=ToolProvider,
             )
 
@@ -199,11 +206,10 @@ class PluginRegistration:
             tools = {}
             for tool in provider.tools:
                 tool_source = tool.extra.python.source
-                tool_module_source = os.path.splitext(tool_source)[0]
-                tool_module_source = tool_module_source.replace("/", ".")
+                tool_module_source = _source_to_module_name(tool_source)
                 tool_cls = load_single_subclass_from_source(
                     module_name=tool_module_source,
-                    script_path=os.path.join(os.getcwd(), tool_source),
+                    script_path=_source_to_script_path(tool_source),
                     parent_type=Tool,
                 )
 
@@ -214,7 +220,7 @@ class PluginRegistration:
 
             self.tools_mapping[provider.identity.name] = (provider, cls, tools)
 
-    def _resolve_agent_providers(self):
+    def _resolve_agent_providers(self) -> None:
         """
         walk through all the agent providers and strategies and load the
         classes from sources
@@ -223,11 +229,10 @@ class PluginRegistration:
             strategies = {}
             for strategy in provider.strategies:
                 strategy_source = strategy.extra.python.source
-                strategy_module_source = os.path.splitext(strategy_source)[0]
-                strategy_module_source = strategy_module_source.replace("/", ".")
+                strategy_module_source = _source_to_module_name(strategy_source)
                 strategy_cls = load_single_subclass_from_source(
                     module_name=strategy_module_source,
-                    script_path=os.path.join(os.getcwd(), strategy_source),
+                    script_path=_source_to_script_path(strategy_source),
                     parent_type=AgentStrategy,
                 )
 
@@ -238,7 +243,7 @@ class PluginRegistration:
                 strategies,
             )
 
-    def _resolve_datasource_providers(self):
+    def _resolve_datasource_providers(self) -> None:
         """
         walk through all the datasource providers and datasources and load the
         classes from sources
@@ -247,12 +252,10 @@ class PluginRegistration:
             # load class
             source = provider.extra.python.source
             # remove extension
-            module_source = os.path.splitext(source)[0]
-            # replace / with .
-            module_source = module_source.replace("/", ".")
+            module_source = _source_to_module_name(source)
             provider_cls = load_single_subclass_from_source(
                 module_name=module_source,
-                script_path=os.path.join(os.getcwd(), source),
+                script_path=_source_to_script_path(source),
                 parent_type=DatasourceProvider,
             )
 
@@ -265,14 +268,11 @@ class PluginRegistration:
             if provider.provider_type in datasource_mappings:
                 parent_type, mapping = datasource_mappings[provider.provider_type]
                 for datasource in provider.datasources:
-                    module_source = os.path.splitext(datasource.extra.python.source)[
-                        0
-                    ].replace("/", ".")
+                    source = datasource.extra.python.source
+                    module_source = _source_to_module_name(source)
                     cls = load_single_subclass_from_source(
                         module_name=module_source,
-                        script_path=os.path.join(
-                            os.getcwd(), datasource.extra.python.source
-                        ),
+                        script_path=_source_to_script_path(source),
                         parent_type=parent_type,
                     )
                     mapping[datasource.identity.name] = cls
@@ -292,36 +292,38 @@ class PluginRegistration:
                 ][1],
             )
 
-    def _resolve_trigger_providers(self):
+    def _resolve_trigger_providers(self) -> None:
         """
         walk through all the trigger providers and triggers and load the
         classes from sources
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         for provider in self.triggers_configuration:
             # load provider class
             source = provider.extra.python.source
             # remove extension
-            module_source = os.path.splitext(source)[0]
-            # replace / with .
-            module_source = module_source.replace("/", ".")
+            module_source = _source_to_module_name(source)
             provider_cls = load_single_subclass_from_source(
                 module_name=module_source,
-                script_path=os.path.join(os.getcwd(), source),
+                script_path=_source_to_script_path(source),
                 parent_type=Trigger,
             )
 
             subscription_constructor_cls_candidates = load_multi_subclasses_from_source(
                 module_name=module_source,
-                script_path=os.path.join(os.getcwd(), source),
+                script_path=_source_to_script_path(source),
                 parent_type=TriggerSubscriptionConstructor,
             )
 
             if len(subscription_constructor_cls_candidates) > 1:
-                raise ValueError(
+                msg = (
                     "Multiple TriggerSubscriptionConstructor subclasses found "
                     f"in {source}."
                     " Only a single implementation is supported."
                 )
+                raise ValueError(msg)
 
             subscription_constructor_cls = (
                 subscription_constructor_cls_candidates[0]
@@ -333,10 +335,11 @@ class PluginRegistration:
                 provider.subscription_constructor
                 and subscription_constructor_cls is None
             ):
-                raise ValueError(
+                msg = (
                     "Trigger subscription constructor configuration declared "
                     f"but no implementation found in {source}."
                 )
+                raise ValueError(msg)
 
             # load events class
             trigger_registrations: list[
@@ -344,11 +347,10 @@ class PluginRegistration:
             ] = []
             for trigger in provider.events:
                 trigger_source = trigger.extra.python.source
-                trigger_module_source = os.path.splitext(trigger_source)[0]
-                trigger_module_source = trigger_module_source.replace("/", ".")
+                trigger_module_source = _source_to_module_name(trigger_source)
                 trigger_cls = load_single_subclass_from_source(
                     module_name=trigger_module_source,
-                    script_path=os.path.join(os.getcwd(), trigger_source),
+                    script_path=_source_to_script_path(trigger_source),
                     parent_type=Event,
                 )
                 trigger_registrations.append((
@@ -377,7 +379,7 @@ class PluginRegistration:
         """
         return any(issubclass(cls, parent) and cls != parent for parent in parent_cls)
 
-    def _resolve_model_providers(self):
+    def _resolve_model_providers(self) -> None:
         """
         walk through all the model providers and models and load the classes
         from sources
@@ -386,23 +388,20 @@ class PluginRegistration:
             # load class
             source = provider.extra.python.provider_source
             # remove extension
-            module_source = os.path.splitext(source)[0]
-            # replace / with .
-            module_source = module_source.replace("/", ".")
+            module_source = _source_to_module_name(source)
             cls = load_single_subclass_from_source(
                 module_name=module_source,
-                script_path=os.path.join(os.getcwd(), source),
+                script_path=_source_to_script_path(source),
                 parent_type=ModelProvider,
             )
 
             # load models class
             models: dict[ModelType, type[AIModel]] = {}
             for model_source in provider.extra.python.model_sources:
-                model_module_source = os.path.splitext(model_source)[0]
-                model_module_source = model_module_source.replace("/", ".")
+                model_module_source = _source_to_module_name(model_source)
                 model_classes = load_multi_subclasses_from_source(
                     module_name=model_module_source,
-                    script_path=os.path.join(os.getcwd(), model_source),
+                    script_path=_source_to_script_path(model_source),
                     parent_type=AIModel,
                 )
 
@@ -419,14 +418,14 @@ class PluginRegistration:
                         models[model_cls.model_type] = model_cls
 
             model_factory = ModelFactory(provider, models)
-            provider_instance = cls(provider, model_factory)  # type: ignore
+            provider_instance = cls(provider, model_factory)
             self.models_mapping[provider.provider] = (
                 provider,
                 provider_instance,
                 model_factory,
             )
 
-    def _resolve_endpoints(self):
+    def _resolve_endpoints(self) -> None:
         """
         load endpoints
         """
@@ -434,12 +433,11 @@ class PluginRegistration:
             # load endpoints
             for endpoint in endpoint_provider.endpoints:
                 # remove extension
-                module_source = os.path.splitext(endpoint.extra.python.source)[0]
-                # replace / with .
-                module_source = module_source.replace("/", ".")
+                source = endpoint.extra.python.source
+                module_source = _source_to_module_name(source)
                 endpoint_cls = load_single_subclass_from_source(
                     module_name=module_source,
-                    script_path=os.path.join(os.getcwd(), endpoint.extra.python.source),
+                    script_path=_source_to_script_path(source),
                     parent_type=Endpoint,
                 )
 
@@ -449,7 +447,7 @@ class PluginRegistration:
                     )
                 )
 
-    def _resolve_plugin_cls(self):
+    def _resolve_plugin_cls(self) -> None:
         """
         register all plugin extensions
         """
@@ -471,45 +469,67 @@ class PluginRegistration:
         # load trigger providers and triggers
         self._resolve_trigger_providers()
 
-    def get_tool_provider_cls(self, provider: str):
+    def get_tool_provider_cls(self, provider: str) -> type[ToolProvider] | None:
         """
         get the tool provider class by provider name
         :param provider: provider name
         :return: tool provider class
+
+        Returns:
+            The return value.
         """
         for provider_registration in self.tools_mapping:
             if provider_registration == provider:
                 return self.tools_mapping[provider_registration][1]
+        return None
 
-    def get_tool_cls(self, provider: str, tool: str):
+    def get_tool_cls(self, provider: str, tool: str) -> type[Tool] | None:
         """
         get the tool class by provider
         :param provider: provider name
         :param tool: tool name
         :return: tool class
+
+        Returns:
+            The return value.
         """
         for provider_registration in self.tools_mapping:
             if provider_registration == provider:
                 registration = self.tools_mapping[provider_registration][2].get(tool)
                 if registration:
                     return registration[1]
+        return None
 
-    def get_agent_provider_cls(self, provider: str):
+    def get_agent_provider_cls(
+        self,
+        provider: str,
+    ) -> dict[str, tuple[AgentStrategyConfiguration, type[AgentStrategy]]] | None:
         """
         get the agent provider class by provider name
         :param provider: provider name
         :return: agent provider class
+
+        Returns:
+            The return value.
         """
         for provider_registration in self.agent_strategies_mapping:
             if provider_registration == provider:
                 return self.agent_strategies_mapping[provider_registration][1]
+        return None
 
-    def get_agent_strategy_cls(self, provider: str, agent: str):
+    def get_agent_strategy_cls(
+        self,
+        provider: str,
+        agent: str,
+    ) -> type[AgentStrategy] | None:
         """
         get the agent class by provider
         :param provider: provider name
         :param agent: agent name
         :return: agent class
+
+        Returns:
+            The return value.
         """
         for provider_registration in self.agent_strategies_mapping:
             if provider_registration == provider:
@@ -518,28 +538,41 @@ class PluginRegistration:
                 ].get(agent)
                 if registration:
                     return registration[1]
+        return None
 
-    def get_model_provider_instance(self, provider: str):
+    def get_model_provider_instance(self, provider: str) -> ModelProvider | None:
         """
         get the model provider class by provider name
         :param provider: provider name
         :return: model provider class
+
+        Returns:
+            The return value.
         """
         for provider_registration in self.models_mapping:
             if provider_registration == provider:
                 return self.models_mapping[provider_registration][1]
+        return None
 
-    def get_model_instance(self, provider: str, model_type: ModelType):
+    def get_model_instance(
+        self,
+        provider: str,
+        model_type: ModelType,
+    ) -> AIModel | None:
         """
         get the model class by provider
         :param provider: provider name
         :param model: model name
         :return: model class
+
+        Returns:
+            The return value.
         """
         for provider_registration in self.models_mapping:
             if provider_registration == provider:
                 model_factory = self.models_mapping[provider_registration][2]
                 return model_factory.get_instance(model_type)
+        return None
 
     def get_trigger_provider(
         self,
@@ -591,6 +624,9 @@ class PluginRegistration:
         get provider which supports oauth
         :param provider: provider name
         :return: supported oauth providers
+
+        Returns:
+            The return value.
         """
         try:
             configuration = self.trigger_factory.get_configuration(provider)
@@ -631,10 +667,17 @@ class PluginRegistration:
         get the datasource provider class by provider name
         :param provider: provider name
         :return: datasource provider class
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         if provider in self.datasource_mapping:
             return self.datasource_mapping[provider].provider_cls
-        raise ValueError(f"Datasource provider {provider} not found")
+        msg = f"Datasource provider {provider} not found"
+        raise ValueError(msg)
 
     def get_website_crawl_datasource_cls(
         self, provider: str, datasource: str
@@ -644,6 +687,12 @@ class PluginRegistration:
         :param provider: provider name
         :param datasource: datasource name
         :return: website crawl datasource class
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         if provider in self.datasource_mapping and (
             result := self.datasource_mapping[
@@ -651,9 +700,8 @@ class PluginRegistration:
             ].website_crawl_datasource_mapping.get(datasource)
         ):
             return result
-        raise ValueError(
-            f"Website crawl datasource {datasource} not found for provider {provider}"
-        )
+        msg = f"Website crawl datasource {datasource} not found for provider {provider}"
+        raise ValueError(msg)
 
     def get_online_document_datasource_cls(
         self, provider: str, datasource: str
@@ -663,6 +711,12 @@ class PluginRegistration:
         :param provider: provider name
         :param datasource: datasource name
         :return: online document datasource class
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         if provider in self.datasource_mapping and (
             result := self.datasource_mapping[
@@ -670,9 +724,10 @@ class PluginRegistration:
             ].online_document_datasource_mapping.get(datasource)
         ):
             return result
-        raise ValueError(
+        msg = (
             f"Online document datasource {datasource} not found for provider {provider}"
         )
+        raise ValueError(msg)
 
     def dispatch_endpoint_request(
         self, request: Request
@@ -681,13 +736,21 @@ class PluginRegistration:
         dispatch endpoint request, match the request to the registered endpoints
 
         returns the endpoint and the values
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         adapter = self.endpoints.bind_to_environ(request.environ)
         try:
             endpoint, values = adapter.match()
-            return endpoint, values
         except werkzeug.exceptions.HTTPException as e:
-            raise ValueError(f"Failed to dispatch endpoint request: {e!s}") from e
+            msg = f"Failed to dispatch endpoint request: {e!s}"
+            raise ValueError(msg) from e
+        else:
+            return endpoint, values
 
     def get_online_drive_datasource_cls(
         self, provider: str, datasource: str
@@ -697,6 +760,12 @@ class PluginRegistration:
         :param provider: provider name
         :param datasource: datasource name
         :return: online drive datasource class
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         if provider in self.datasource_mapping and (
             result := self.datasource_mapping[
@@ -704,6 +773,5 @@ class PluginRegistration:
             ].online_drive_datasource_mapping.get(datasource)
         ):
             return result
-        raise ValueError(
-            f"Online drive datasource {datasource} not found for provider {provider}"
-        )
+        msg = f"Online drive datasource {datasource} not found for provider {provider}"
+        raise ValueError(msg)

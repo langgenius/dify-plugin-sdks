@@ -20,6 +20,12 @@ class DriveFileCreatedV1Event(Event):
         Handle file creation in drive.
 
         This event is triggered when a new file is created in a folder.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,
@@ -27,7 +33,8 @@ class DriveFileCreatedV1Event(Event):
             lambda builder: builder.register_p2_drive_file_created_in_folder_v1,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict = {

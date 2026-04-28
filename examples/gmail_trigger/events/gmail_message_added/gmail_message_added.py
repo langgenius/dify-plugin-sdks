@@ -7,7 +7,8 @@ import quopri
 import re
 from collections.abc import Mapping
 from html.parser import HTMLParser
-from typing import Any
+from http import HTTPStatus
+from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote, urlparse
 
 import requests
@@ -16,7 +17,12 @@ from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.trigger import Event
-from dify_plugin.invocations.file import UploadFileResponse
+
+if TYPE_CHECKING:
+    from dify_plugin.invocations.file import UploadFileResponse
+
+INLINE_MIME_TYPES = frozenset({"text/plain", "text/html"})
+URL_FILENAME_PLACEHOLDERS = frozenset({"view", "open", "download", "uc"})
 
 
 class GmailMessageAddedEvent(Event):
@@ -35,7 +41,7 @@ class GmailMessageAddedEvent(Event):
         items: list[dict[str, Any]] = []
         raw_items = payload.get("message_added") or payload.get("items")
         if isinstance(raw_items, list):
-            items = raw_items  # type: ignore[assignment]
+            items = raw_items
 
         # Fallback to storage (legacy path)
         if not items:
@@ -45,7 +51,7 @@ class GmailMessageAddedEvent(Event):
             pending_key = f"gmail:{sub_key}:pending:message_added"
 
             if not self.runtime.session.storage.exist(pending_key):
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
             raw_bytes = self.runtime.session.storage.get(pending_key)
             try:
@@ -53,7 +59,7 @@ class GmailMessageAddedEvent(Event):
             except Exception as err:
                 # Corrupted payload, cleanup and ignore
                 self.runtime.session.storage.delete(pending_key)
-                raise EventIgnoreError() from err
+                raise EventIgnoreError from err
 
             # Cleanup the pending batch to avoid re-processing
             self.runtime.session.storage.delete(pending_key)
@@ -62,12 +68,13 @@ class GmailMessageAddedEvent(Event):
             history_id = history_id or data.get("historyId")
 
         if not items:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         # Fetch message details for each id
         access_token: str | None = (self.runtime.credentials or {}).get("access_token")
         if not access_token:
-            raise ValueError("Missing access token")
+            msg = "Missing access token"
+            raise ValueError(msg)
         headers: dict[str, str] = {"Authorization": f"Bearer {access_token}"}
 
         # Optional label-based local filtering
@@ -87,7 +94,7 @@ class GmailMessageAddedEvent(Event):
             mresp: requests.Response = requests.get(
                 murl, headers=headers, params=mparams, timeout=10
             )
-            if mresp.status_code != 200:
+            if mresp.status_code != HTTPStatus.OK:
                 continue
             m = mresp.json() or {}
             headers_list = (m.get("payload") or {}).get("headers") or []
@@ -104,7 +111,7 @@ class GmailMessageAddedEvent(Event):
                 mid_str: str = mid_str,
                 attachments_meta: list[Mapping[str, Any]] = attachments_meta,
                 inline_parts: list[Mapping[str, Any]] = inline_parts,
-            ):
+            ) -> None:
                 nonlocal has_attachments
                 if not part:
                     return
@@ -131,7 +138,7 @@ class GmailMessageAddedEvent(Event):
                         "original_url": original_url,
                         "inline_data": inline_data,
                     })
-                elif mime_type in {"text/plain", "text/html"}:
+                elif mime_type in INLINE_MIME_TYPES:
                     inline_data = body.get("data")
                     if inline_data:
                         inline_parts.append({
@@ -187,7 +194,7 @@ class GmailMessageAddedEvent(Event):
             })
 
         if not messages:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         return Variables(
             variables={"history_id": str(history_id or ""), "messages": messages}
@@ -357,7 +364,7 @@ class GmailMessageAddedEvent(Event):
             response = requests.get(url, headers=headers, timeout=10)
         except requests.RequestException:
             return None, None
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             return None, None
 
         data = response.json() or {}
@@ -427,7 +434,7 @@ class GmailMessageAddedEvent(Event):
 
     def _extract_links_from_html(self, html: str) -> list[tuple[str, str | None]]:
         class _AttachmentLinkParser(HTMLParser):
-            def __init__(self):
+            def __init__(self) -> None:
                 super().__init__()
                 self.links: list[tuple[str, str | None]] = []
                 self._current_href: str | None = None
@@ -496,6 +503,6 @@ class GmailMessageAddedEvent(Event):
         parsed = urlparse(url)
         candidate = parsed.path.rsplit("/", 1)[-1] if parsed.path else ""
         candidate = unquote(candidate)
-        if candidate and candidate not in {"view", "open", "download", "uc"}:
+        if candidate and candidate not in URL_FILENAME_PLACEHOLDERS:
             return candidate
         return "attachment"

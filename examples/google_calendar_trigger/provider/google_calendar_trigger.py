@@ -8,14 +8,14 @@ import time
 import urllib.parse
 import uuid
 from collections.abc import Callable, Mapping
-from typing import Any
+from http import HTTPStatus
+from typing import TYPE_CHECKING, Any
 
 import requests
 from werkzeug import Request, Response
 
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
-from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
 from dify_plugin.errors.trigger import (
     SubscriptionError,
@@ -27,13 +27,18 @@ from dify_plugin.errors.trigger import (
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
 
+if TYPE_CHECKING:
+    from dify_plugin.entities.provider_config import CredentialType
+
 _CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
+TRUTHY_STRINGS = frozenset({"true", "1", "yes", "on"})
+FALSY_STRINGS = frozenset({"false", "0", "no", "off"})
+WATCH_SUCCESS_STATUSES = frozenset({HTTPStatus.OK, HTTPStatus.CREATED})
+CHANNEL_STOP_SUCCESS_STATUSES = frozenset({HTTPStatus.OK, HTTPStatus.NO_CONTENT})
 
 
 class SyncTokenExpiredError(TriggerError):
     """Raised when Google Calendar reports an invalidated sync token."""
-
-    pass
 
 
 def _encode_calendar_id(calendar_id: str) -> str:
@@ -65,7 +70,7 @@ def _parse_google_error(resp: requests.Response) -> str:
     return resp.text or f"HTTP {resp.status_code}"
 
 
-def _to_bool(value: Any, default: bool) -> bool:
+def _to_bool(value: object, default: bool) -> bool:
     if value is None:
         return default
     if isinstance(value, bool):
@@ -74,9 +79,9 @@ def _to_bool(value: Any, default: bool) -> bool:
         return bool(value)
     if isinstance(value, str):
         normalized = value.strip().lower()
-        if normalized in {"true", "1", "yes", "on"}:
+        if normalized in TRUTHY_STRINGS:
             return True
-        if normalized in {"false", "0", "no", "off"}:
+        if normalized in FALSY_STRINGS:
             return False
     return default
 
@@ -100,13 +105,15 @@ def _retrieve_sync_token(
         try:
             resp = requests.get(url, headers=headers, params=params, timeout=10)
         except requests.RequestException as exc:
+            msg = f"Network error while obtaining sync token: {exc}"
             raise error_factory(
-                f"Network error while obtaining sync token: {exc}"
+                msg,
             ) from exc
 
-        if resp.status_code != 200:
+        if resp.status_code != HTTPStatus.OK:
+            msg = f"Failed to obtain calendar sync token: {_parse_google_error(resp)}"
             raise error_factory(
-                f"Failed to obtain calendar sync token: {_parse_google_error(resp)}"
+                msg,
             )
 
         data: dict[str, Any] = resp.json() or {}
@@ -122,16 +129,19 @@ def _retrieve_sync_token(
         break
 
     if not next_sync_token:
-        raise error_factory(
+        msg = (
             "Google Calendar response missing nextSyncToken after "
             "paginating all events. "
             "See https://developers.google.com/calendar/api/guides/sync "
             "for requirements."
         )
+        raise error_factory(
+            msg,
+        )
     return next_sync_token
 
 
-def _parse_rfc3339(value: Any) -> datetime.datetime | None:
+def _parse_rfc3339(value: object) -> datetime.datetime | None:
     if not isinstance(value, str) or not value:
         return None
     try:
@@ -174,7 +184,9 @@ class GoogleCalendarTrigger(Trigger):
 
     # ---------------- Trigger dispatch lifecycle -----------------
     def _dispatch_event(
-        self, subscription: Subscription, request: Request
+        self,
+        subscription: Subscription,
+        request: Request,
     ) -> EventDispatch:
         properties = subscription.properties or {}
         parameters = subscription.parameters or {}
@@ -184,11 +196,13 @@ class GoogleCalendarTrigger(Trigger):
         channel_id = (request.headers.get("X-Goog-Channel-ID") or "").strip()
         channel_token = (request.headers.get("X-Goog-Channel-Token") or "").strip()
         if expected_channel_id and channel_id != expected_channel_id:
+            msg = "Channel ID mismatch for Google Calendar notification"
             raise TriggerValidationError(
-                "Channel ID mismatch for Google Calendar notification"
+                msg,
             )
         if expected_token and channel_token != expected_token:
-            raise TriggerValidationError("Channel token verification failed")
+            msg = "Channel token verification failed"
+            raise TriggerValidationError(msg)
 
         resource_state = (
             (request.headers.get("X-Goog-Resource-State") or "").strip().lower()
@@ -209,12 +223,13 @@ class GoogleCalendarTrigger(Trigger):
             return EventDispatch(
                 events=[],
                 response=self._value_error(
-                    "Missing access token for Google Calendar API"
+                    "Missing access token for Google Calendar API",
                 ),
             )
 
         if not self.runtime:
-            raise TriggerDispatchError("Runtime context unavailable")
+            msg = "Runtime context unavailable"
+            raise TriggerDispatchError(msg)
         session = self.runtime.session
 
         subscription_key = properties.get("subscription_key") or ""
@@ -232,7 +247,8 @@ class GoogleCalendarTrigger(Trigger):
                 session.storage.set(sync_storage_key, sync_token.encode("utf-8"))
             else:
                 sync_token = self._bootstrap_sync_token(
-                    access_token=access_token, calendar_id=calendar_id
+                    access_token=access_token,
+                    calendar_id=calendar_id,
                 )
                 session.storage.set(sync_storage_key, sync_token.encode("utf-8"))
                 initialized_now = True
@@ -254,7 +270,8 @@ class GoogleCalendarTrigger(Trigger):
             )
         except SyncTokenExpiredError:
             fresh_token = self._bootstrap_sync_token(
-                access_token=access_token, calendar_id=calendar_id
+                access_token=access_token,
+                calendar_id=calendar_id,
             )
             if fresh_token:
                 session.storage.set(sync_storage_key, fresh_token.encode("utf-8"))
@@ -352,23 +369,23 @@ class GoogleCalendarTrigger(Trigger):
             try:
                 resp = requests.get(url, headers=headers, params=params, timeout=10)
             except requests.RequestException as exc:
+                msg = f"Network error while fetching calendar delta: {exc}"
                 raise TriggerDispatchError(
-                    f"Network error while fetching calendar delta: {exc}"
+                    msg,
                 ) from exc
 
-            if resp.status_code == 410:
-                raise SyncTokenExpiredError()
-            if resp.status_code != 200:
+            if resp.status_code == HTTPStatus.GONE:
+                raise SyncTokenExpiredError
+            if resp.status_code != HTTPStatus.OK:
+                msg = f"Failed to fetch calendar delta: {_parse_google_error(resp)}"
                 raise TriggerDispatchError(
-                    f"Failed to fetch calendar delta: {_parse_google_error(resp)}"
+                    msg,
                 )
 
             data: dict[str, Any] = resp.json() or {}
             batch = data.get("items") or []
             if isinstance(batch, list):
-                for it in batch:
-                    if isinstance(it, Mapping):
-                        items.append(dict(it))
+                items.extend(dict(it) for it in batch if isinstance(it, Mapping))
 
             next_page = data.get("nextPageToken")
             next_sync = data.get("nextSyncToken")
@@ -383,7 +400,9 @@ class GoogleCalendarTrigger(Trigger):
 
     def _bootstrap_sync_token(self, access_token: str, calendar_id: str) -> str:
         return _retrieve_sync_token(
-            access_token, calendar_id, lambda msg: TriggerDispatchError(msg)
+            access_token,
+            calendar_id,
+            TriggerDispatchError,
         )
 
 
@@ -391,20 +410,25 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
     """Manage Google Calendar trigger subscription lifecycle."""
 
     _AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-    _TOKEN_URL = "https://oauth2.googleapis.com/token"
+    _OAUTH_ENDPOINT = "https://oauth2.googleapis.com/token"
     _CAL_BASE = _CALENDAR_API_BASE
 
     _DEFAULT_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 
     # ---------------- Credential handling -----------------
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
-        raise TriggerProviderCredentialValidationError(
+        msg = (
             "Google Calendar trigger does not support API Key credentials. "
             "Please use OAuth authorization."
         )
+        raise TriggerProviderCredentialValidationError(
+            msg,
+        )
 
     def _oauth_get_authorization_url(
-        self, redirect_uri: str, system_credentials: Mapping[str, Any]
+        self,
+        redirect_uri: str,
+        system_credentials: Mapping[str, Any],
     ) -> str:
         state = secrets.token_urlsafe(16)
         params = {
@@ -427,12 +451,14 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> TriggerOAuthCredentials:
         code = request.args.get("code")
         if not code:
-            raise TriggerProviderOAuthError("No authorization code provided")
+            msg = "No authorization code provided"
+            raise TriggerProviderOAuthError(msg)
 
         client_id = system_credentials.get("client_id")
         client_secret = system_credentials.get("client_secret")
         if not client_id or not client_secret:
-            raise TriggerProviderOAuthError("Client ID and Client Secret are required")
+            msg = "Client ID and Client Secret are required"
+            raise TriggerProviderOAuthError(msg)
 
         data = {
             "client_id": client_id,
@@ -444,23 +470,29 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         try:
             resp = requests.post(
-                self._TOKEN_URL, data=data, headers=headers, timeout=10
+                self._OAUTH_ENDPOINT,
+                data=data,
+                headers=headers,
+                timeout=10,
             )
         except requests.RequestException as exc:
+            msg = f"Network error during OAuth token exchange: {exc}"
             raise TriggerProviderOAuthError(
-                f"Network error during OAuth token exchange: {exc}"
+                msg,
             ) from exc
 
-        if resp.status_code != 200:
+        if resp.status_code != HTTPStatus.OK:
+            msg = f"OAuth token exchange failed: {_parse_google_error(resp)}"
             raise TriggerProviderOAuthError(
-                f"OAuth token exchange failed: {_parse_google_error(resp)}"
+                msg,
             )
 
         payload: dict[str, Any] = resp.json() or {}
         access_token: str | None = payload.get("access_token")
         if not access_token:
+            msg = "Google OAuth response missing access_token"
             raise TriggerProviderOAuthError(
-                "Google OAuth response missing access_token"
+                msg,
             )
 
         expires_in: int = int(payload.get("expires_in") or 0)
@@ -479,7 +511,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
                 headers=headers_info,
                 timeout=10,
             )
-            if info_resp.status_code == 200:
+            if info_resp.status_code == HTTPStatus.OK:
                 info_payload = info_resp.json() or {}
                 email = info_payload.get("email")
                 if isinstance(email, str) and email:
@@ -497,13 +529,15 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> OAuthCredentials:
         refresh_token = credentials.get("refresh_token")
         if not refresh_token:
-            raise TriggerProviderOAuthError("Missing refresh_token for OAuth refresh")
+            msg = "Missing refresh_token for OAuth refresh"
+            raise TriggerProviderOAuthError(msg)
 
         client_id = system_credentials.get("client_id")
         client_secret = system_credentials.get("client_secret")
         if not client_id or not client_secret:
+            msg = "Client ID and Client Secret are required for refresh"
             raise TriggerProviderOAuthError(
-                "Client ID and Client Secret are required for refresh"
+                msg,
             )
 
         data = {
@@ -515,23 +549,29 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         try:
             resp = requests.post(
-                self._TOKEN_URL, data=data, headers=headers, timeout=10
+                self._OAUTH_ENDPOINT,
+                data=data,
+                headers=headers,
+                timeout=10,
             )
         except requests.RequestException as exc:
+            msg = f"Network error during OAuth refresh: {exc}"
             raise TriggerProviderOAuthError(
-                f"Network error during OAuth refresh: {exc}"
+                msg,
             ) from exc
 
-        if resp.status_code != 200:
+        if resp.status_code != HTTPStatus.OK:
+            msg = f"OAuth refresh failed: {_parse_google_error(resp)}"
             raise TriggerProviderOAuthError(
-                f"OAuth refresh failed: {_parse_google_error(resp)}"
+                msg,
             )
 
         payload: dict[str, Any] = resp.json() or {}
         access_token: str | None = payload.get("access_token")
         if not access_token:
+            msg = "Google OAuth refresh response missing access_token"
             raise TriggerProviderOAuthError(
-                "Google OAuth refresh response missing access_token"
+                msg,
             )
 
         expires_in: int = int(payload.get("expires_in") or 0)
@@ -556,8 +596,9 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> Subscription:
         access_token = credentials.get("access_token")
         if not access_token:
+            msg = "Missing access_token for Google Calendar API"
             raise SubscriptionError(
-                "Missing access_token for Google Calendar API",
+                msg,
                 error_code="MISSING_CREDENTIALS",
             )
 
@@ -583,14 +624,16 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         try:
             resp = requests.post(url, headers=headers, json=body, timeout=10)
         except requests.RequestException as exc:
+            msg = f"Network error while creating calendar watch: {exc}"
             raise SubscriptionError(
-                f"Network error while creating calendar watch: {exc}",
+                msg,
                 error_code="NETWORK_ERROR",
             ) from exc
 
-        if resp.status_code not in (200, 201):
+        if resp.status_code not in WATCH_SUCCESS_STATUSES:
+            msg = f"Failed to create calendar watch: {_parse_google_error(resp)}"
             raise SubscriptionError(
-                f"Failed to create calendar watch: {_parse_google_error(resp)}",
+                msg,
                 error_code="WATCH_CREATION_FAILED",
             )
 
@@ -598,8 +641,9 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         resource_id = data.get("resourceId")
         expiration_ms = data.get("expiration")
         if not resource_id:
+            msg = "Google Calendar response missing resourceId"
             raise SubscriptionError(
-                "Google Calendar response missing resourceId",
+                msg,
                 error_code="WATCH_CREATION_FAILED",
             )
 
@@ -608,7 +652,8 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
             expires_at = int(expiration_ms / 1000)
 
         initial_sync_token = self._bootstrap_sync_token(
-            access_token=access_token, calendar_id=calendar_id
+            access_token=access_token,
+            calendar_id=calendar_id,
         )
 
         params = dict(parameters)
@@ -645,8 +690,9 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> Subscription:
         access_token = credentials.get("access_token")
         if not access_token:
+            msg = "Missing access_token for Google Calendar API"
             raise SubscriptionError(
-                "Missing access_token for Google Calendar API",
+                msg,
                 error_code="MISSING_CREDENTIALS",
             )
 
@@ -679,14 +725,16 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         try:
             resp = requests.post(url, headers=headers, json=body, timeout=10)
         except requests.RequestException as exc:
+            msg = f"Network error while refreshing calendar watch: {exc}"
             raise SubscriptionError(
-                f"Network error while refreshing calendar watch: {exc}",
+                msg,
                 error_code="NETWORK_ERROR",
             ) from exc
 
-        if resp.status_code not in (200, 201):
+        if resp.status_code not in WATCH_SUCCESS_STATUSES:
+            msg = f"Failed to refresh calendar watch: {_parse_google_error(resp)}"
             raise SubscriptionError(
-                f"Failed to refresh calendar watch: {_parse_google_error(resp)}",
+                msg,
                 error_code="WATCH_REFRESH_FAILED",
             )
 
@@ -694,8 +742,9 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         resource_id = data.get("resourceId")
         expiration_ms = data.get("expiration")
         if not resource_id:
+            msg = "Google Calendar refresh response missing resourceId"
             raise SubscriptionError(
-                "Google Calendar refresh response missing resourceId",
+                msg,
                 error_code="WATCH_REFRESH_FAILED",
             )
 
@@ -704,7 +753,8 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
             expires_at = int(expiration_ms / 1000)
 
         initial_sync_token = self._bootstrap_sync_token(
-            access_token=access_token, calendar_id=calendar_id
+            access_token=access_token,
+            calendar_id=calendar_id,
         )
 
         params = dict(subscription.parameters or {})
@@ -740,17 +790,20 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         access_token = credentials.get("access_token")
         if not access_token:
             return UnsubscribeResult(
-                success=False, message="Missing access_token for Google Calendar API"
+                success=False,
+                message="Missing access_token for Google Calendar API",
             )
 
         properties = subscription.properties or {}
         success = self._stop_channel(access_token=access_token, properties=properties)
         if not success:
             return UnsubscribeResult(
-                success=False, message="Failed to stop Google Calendar channel"
+                success=False,
+                message="Failed to stop Google Calendar channel",
             )
         return UnsubscribeResult(
-            success=True, message="Google Calendar channel stopped"
+            success=True,
+            message="Google Calendar channel stopped",
         )
 
     def _stop_channel(self, access_token: str, properties: Mapping[str, Any]) -> bool:
@@ -774,7 +827,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         except requests.RequestException:
             return False
 
-        return resp.status_code in (200, 204)
+        return resp.status_code in CHANNEL_STOP_SUCCESS_STATUSES
 
     def _bootstrap_sync_token(self, access_token: str, calendar_id: str) -> str:
         return _retrieve_sync_token(
@@ -794,7 +847,8 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         access_token = credentials.get("access_token")
         if not access_token:
-            raise ValueError("access_token is required to list calendars")
+            msg = "access_token is required to list calendars"
+            raise ValueError(msg)
 
         headers = {"Authorization": f"Bearer {access_token}"}
         params: dict[str, str] = {"minAccessRole": "reader"}
@@ -805,13 +859,15 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
             try:
                 resp = requests.get(url, headers=headers, params=params, timeout=10)
             except requests.RequestException as exc:
+                msg = f"Network error while listing calendars: {exc}"
                 raise ValueError(
-                    f"Network error while listing calendars: {exc}"
+                    msg,
                 ) from exc
 
-            if resp.status_code != 200:
+            if resp.status_code != HTTPStatus.OK:
+                msg = f"Failed to list calendars: {_parse_google_error(resp)}"
                 raise ValueError(
-                    f"Failed to list calendars: {_parse_google_error(resp)}"
+                    msg,
                 )
 
             data: dict[str, Any] = resp.json() or {}
@@ -827,7 +883,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
                             ParameterOption(
                                 value=str(calendar_id),
                                 label=I18nObject(en_US=str(summary)),
-                            )
+                            ),
                         )
 
             page_token = data.get("nextPageToken")
@@ -840,7 +896,8 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
             options.insert(
                 0,
                 ParameterOption(
-                    value="primary", label=I18nObject(en_US="Primary Calendar")
+                    value="primary",
+                    label=I18nObject(en_US="Primary Calendar"),
                 ),
             )
         return options

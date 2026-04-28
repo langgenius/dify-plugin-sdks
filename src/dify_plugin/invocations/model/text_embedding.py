@@ -31,7 +31,8 @@ class TextEmbeddingInvocation(BackwardsInvocation[TextEmbeddingResult]):
         ):
             return data
 
-        raise Exception("No response from text embedding")
+        msg = "No response from text embedding"
+        raise Exception(msg)
 
     def invoke_multimodal(
         self,
@@ -57,4 +58,5 @@ class TextEmbeddingInvocation(BackwardsInvocation[TextEmbeddingResult]):
         ):
             return data
 
-        raise Exception("No response from multimodal embedding")
+        msg = "No response from multimodal embedding"
+        raise Exception(msg)

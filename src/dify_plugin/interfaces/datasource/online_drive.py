@@ -26,7 +26,7 @@ class OnlineDriveDatasource(ToolLike[DatasourceMessage]):
         self,
         runtime: DatasourceRuntime,
         session: Session,
-    ):
+    ) -> None:
         """
         Initialize the datasource
 
@@ -52,7 +52,8 @@ class OnlineDriveDatasource(ToolLike[DatasourceMessage]):
         """
         Browse the files
         """
-        raise NotImplementedError("This method should be implemented by a subclass")
+        msg = "This method should be implemented by a subclass"
+        raise NotImplementedError(msg)
 
     def download_file(
         self, request: OnlineDriveDownloadFileRequest
@@ -69,4 +70,5 @@ class OnlineDriveDatasource(ToolLike[DatasourceMessage]):
         """
         Download the file content
         """
-        raise NotImplementedError("This method should be implemented by a subclass")
+        msg = "This method should be implemented by a subclass"
+        raise NotImplementedError(msg)

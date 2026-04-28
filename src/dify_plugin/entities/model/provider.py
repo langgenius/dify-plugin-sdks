@@ -1,5 +1,4 @@
-import glob
-import os
+import pathlib
 from collections.abc import Sequence
 from enum import Enum
 
@@ -34,7 +33,7 @@ class FormType(Enum):
     """
 
     TEXT_INPUT = "text-input"
-    SECRET_INPUT = "secret-input"
+    SECRET_INPUT = "secret-input"  # noqa: S105
     SELECT = "select"
     RADIO = "radio"
     SWITCH = "switch"
@@ -66,7 +65,7 @@ class FormOption(BaseModel):
     value: str
     show_on: list[FormShowOnObject] = Field(default_factory=list)
 
-    def __init__(self, **data):
+    def __init__(self, **data: object) -> None:
         super().__init__(**data)
         if not self.label:
             self.label = I18nObject(en_US=self.value)
@@ -218,6 +217,9 @@ class ProviderEntity(BaseModel):
         Convert to simple provider.
 
         :return: simple provider
+
+        Returns:
+            The return value.
         """
         return SimpleProviderEntity(
             provider=self.provider,
@@ -230,32 +232,34 @@ class ProviderEntity(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_models(cls, values) -> dict:
+    def validate_models(cls, values: dict[str, object]) -> dict[str, object]:
         value = values.get("models", {})
         if not isinstance(value, dict):
-            raise ValueError("models should be a glob path list")
+            msg = "models should be a glob path list"
+            raise ValueError(msg)
 
-        cwd = os.getcwd()
+        cwd = pathlib.Path.cwd()
 
         model_entities = []
 
-        def load_models(model_type: str):
+        def load_models(model_type: str) -> None:
             if model_type not in value:
                 return
 
             for path in value[model_type].get("predefined", []):
-                yaml_paths = glob.glob(os.path.join(cwd, path))
+                yaml_paths = cwd.glob(path)
                 for yaml_path in yaml_paths:
-                    if yaml_path.endswith("_position.yaml"):
+                    if str(yaml_path).endswith("_position.yaml"):
                         if "position" not in values:
                             values["position"] = {}
 
-                        position = load_yaml_file(yaml_path)
+                        position = load_yaml_file(str(yaml_path))
                         values["position"][model_type] = position
                     else:
-                        model_entity = load_yaml_file(yaml_path)
+                        model_entity = load_yaml_file(str(yaml_path))
                         if not model_entity:
-                            raise ValueError(f"Error loading model entity: {yaml_path}")
+                            msg = f"Error loading model entity: {yaml_path}"
+                            raise ValueError(msg)
 
                         provider_model = AIModelEntity(**model_entity)
                         model_entities.append(provider_model)

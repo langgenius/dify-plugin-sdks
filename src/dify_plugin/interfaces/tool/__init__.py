@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
-from typing import Any, final
+from typing import Any, Self, final
 
 from typing_extensions import deprecated
 from werkzeug import Request
@@ -47,6 +47,9 @@ class ToolLike[T: InvokeMessage](ABC):
 
         :param image: the url of the image
         :return: the image message
+
+        Returns:
+            The return value.
         """
         return self.response_type(
             type=InvokeMessage.MessageType.IMAGE,
@@ -59,6 +62,9 @@ class ToolLike[T: InvokeMessage](ABC):
 
         :param link: the url of the link
         :return: the link message
+
+        Returns:
+            The return value.
         """
         return self.response_type(
             type=InvokeMessage.MessageType.LINK,
@@ -71,6 +77,9 @@ class ToolLike[T: InvokeMessage](ABC):
 
         :param blob: the blob
         :return: the blob message
+
+        Returns:
+            The return value.
         """
         return self.response_type(
             type=InvokeMessage.MessageType.BLOB,
@@ -78,13 +87,16 @@ class ToolLike[T: InvokeMessage](ABC):
             meta=meta,
         )
 
-    def create_variable_message(self, variable_name: str, variable_value: Any) -> T:
+    def create_variable_message(self, variable_name: str, variable_value: object) -> T:
         """
         create a variable message
 
         :param variable_name: the name of the variable
         :param variable_value: the value of the variable
         :return: the variable message
+
+        Returns:
+            The return value.
         """
         return self.response_type(
             type=InvokeMessage.MessageType.VARIABLE,
@@ -104,6 +116,9 @@ class ToolLike[T: InvokeMessage](ABC):
         :param variable_name: the name of the variable
         :param variable_value: the value of the variable
         :return: the variable message
+
+        Returns:
+            The return value.
         """
         return self.response_type(
             type=InvokeMessage.MessageType.VARIABLE,
@@ -193,6 +208,9 @@ class ToolLike[T: InvokeMessage](ABC):
         get the runtime parameters of the tool
 
         :return: the runtime parameters
+
+        Returns:
+            The return value.
         """
         return []
 
@@ -202,6 +220,9 @@ class ToolLike[T: InvokeMessage](ABC):
         check if the _get_runtime_parameters method is overridden by subclass
 
         :return: True if overridden, False otherwise
+
+        Returns:
+            The return value.
         """
         return "_get_runtime_parameters" in cls.__dict__
 
@@ -257,14 +278,15 @@ class ToolLike[T: InvokeMessage](ABC):
 
 
 class ToolProvider:
-    def validate_credentials(self, credentials: dict):
+    def validate_credentials(self, credentials: dict) -> None:
         return self._validate_credentials(credentials)
 
-    def _validate_credentials(self, credentials: dict):
-        raise NotImplementedError(
+    def _validate_credentials(self, credentials: dict) -> None:
+        msg = (
             "The tool you are using does not support credentials validation, "
             "please implement `_validate_credentials` method"
         )
+        raise NotImplementedError(msg)
 
     def oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
@@ -275,16 +297,20 @@ class ToolProvider:
         :param redirect_uri: redirect uri
         :param system_credentials: system credentials
         :return: authorization url
+
+        Returns:
+            The return value.
         """
         return self._oauth_get_authorization_url(redirect_uri, system_credentials)
 
     def _oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
     ) -> str:
-        raise NotImplementedError(
+        msg = (
             "The tool you are using does not support OAuth, please implement "
             "`_oauth_get_authorization_url` method"
         )
+        raise NotImplementedError(msg)
 
     def oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
@@ -296,6 +322,9 @@ class ToolProvider:
         :param system_credentials: system credentials
         :param request: raw http request
         :return: credentials
+
+        Returns:
+            The return value.
         """
         tool_oauth_credentials = self._oauth_get_credentials(
             redirect_uri, system_credentials, request
@@ -308,10 +337,11 @@ class ToolProvider:
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> ToolOAuthCredentials:
-        raise NotImplementedError(
+        msg = (
             "The tool you are using does not support OAuth, please implement "
             "`_oauth_get_credentials` method"
         )
+        raise NotImplementedError(msg)
 
     def oauth_refresh_credentials(
         self,
@@ -326,6 +356,9 @@ class ToolProvider:
         :param system_credentials: system credentials
         :param credentials: credentials
         :return: refreshed credentials
+
+        Returns:
+            The return value.
         """
         tool_oauth_credentials = self._oauth_refresh_credentials(
             redirect_uri, system_credentials, credentials
@@ -341,10 +374,11 @@ class ToolProvider:
         system_credentials: Mapping[str, Any],
         credentials: Mapping[str, Any],
     ) -> ToolOAuthCredentials:
-        raise NotImplementedError(
+        msg = (
             "The tool you are using does not support OAuth, please implement "
             "`_oauth_refresh_credentials` method"
         )
+        raise NotImplementedError(msg)
 
 
 class Tool(ToolLike[ToolInvokeMessage]):
@@ -356,7 +390,7 @@ class Tool(ToolLike[ToolInvokeMessage]):
         self,
         runtime: ToolRuntime,
         session: Session,
-    ):
+    ) -> None:
         """
         Initialize the tool
 
@@ -372,12 +406,12 @@ class Tool(ToolLike[ToolInvokeMessage]):
         cls,
         credentials: dict,
         user_id: str | None = None,
-    ):
+    ) -> Self:
         return cls(
             runtime=ToolRuntime(
                 credentials=credentials, user_id=user_id, session_id=None
             ),
-            session=Session.empty_session(),  # TODO could not fetch session here
+            session=Session.empty_session(),  # TODO: could not fetch session here
         )
 
     ############################################################
@@ -398,10 +432,11 @@ class Tool(ToolLike[ToolInvokeMessage]):
 
         Also, it's optional to implement, that's why it's not an abstract method.
         """
-        raise NotImplementedError(
+        msg = (
             "This plugin should implement `_fetch_parameter_options` method "
             "to enable dynamic select parameter"
         )
+        raise NotImplementedError(msg)
 
     ############################################################
     #                 For executor use only                    #
@@ -424,5 +459,7 @@ class Tool(ToolLike[ToolInvokeMessage]):
 
         To be implemented by subclasses.
 
+        Returns:
+            The return value.
         """
         return self._fetch_parameter_options(parameter)

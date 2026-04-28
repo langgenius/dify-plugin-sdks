@@ -21,16 +21,18 @@ class RepositoryAdvisoryUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         advisory = payload.get("repository_advisory")
         if not isinstance(advisory, Mapping):
-            raise ValueError("No repository_advisory in payload")
+            msg = "No repository_advisory in payload"
+            raise ValueError(msg)
 
         severity_filter = parameters.get("severity")
         if severity_filter:
@@ -39,7 +41,7 @@ class RepositoryAdvisoryUnifiedEvent(Event):
             }
             sev = (advisory.get("severity") or "").lower()
             if allowed and sev not in allowed:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         ghsa_filter = parameters.get("ghsa_id")
         if ghsa_filter:
@@ -48,6 +50,6 @@ class RepositoryAdvisoryUnifiedEvent(Event):
             }
             ghsa = (advisory.get("ghsa_id") or "").upper()
             if allowed and ghsa not in allowed:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

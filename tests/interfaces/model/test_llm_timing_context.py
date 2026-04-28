@@ -23,15 +23,10 @@ class MockLLM(LargeLanguageModel):
     model_type = ModelType.LLM
 
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
-        """
-        Validate model credentials
-        """
-        pass
+        """Validate model credentials"""
 
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
-        """
-        Map model invoke error to unified error
-        """
+        """Map model invoke error to unified error"""
         return {}
 
     def _invoke(
@@ -45,8 +40,7 @@ class MockLLM(LargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator[LLMResultChunk, None, None]:
-        """
-        Invoke large language model
+        """Invoke large language model
 
         :param model: model name
         :param credentials: model credentials
@@ -57,6 +51,9 @@ class MockLLM(LargeLanguageModel):
         :param stream: is stream response
         :param user: unique user id
         :return: full response or stream response chunk generator result
+
+        Yields:
+            Generated values.
         """
         time.sleep(1)
         yield LLMResultChunk(
@@ -89,23 +86,22 @@ class MockLLM(LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> int:
-        """
-        Get number of tokens
+        """Get number of tokens
 
         :param model: model name
         :param credentials: model credentials
         :param prompt_messages: prompt messages
         :param tools: tools
         :return: number of tokens
+
+        Returns:
+            The return value.
         """
         return 0
 
 
-def test_llm_timing_context():
-    """
-    Check if timing context is correct in single-threaded environment
-    """
-
+def test_llm_timing_context() -> None:
+    """Check if timing context is correct in single-threaded environment"""
     model = MockLLM(model_schemas=[])
     for result in model.invoke(
         model="test",
@@ -118,14 +114,13 @@ def test_llm_timing_context():
         assert result.delta.usage.latency < 1.5
 
 
-def test_multithreaded_llm_timing_context():
-    """
-    Check if timing context is correct in multi-threaded environment
+def test_multithreaded_llm_timing_context() -> None:
+    """Check if timing context is correct in multi-threaded environment
 
     NOTE: Singleton model is not supported.
     """
 
-    def task(_):
+    def task(_: int) -> None:
         model = MockLLM(model_schemas=[])
         for result in model.invoke(
             model="test",

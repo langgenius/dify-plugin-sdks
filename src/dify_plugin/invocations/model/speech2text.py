@@ -24,4 +24,5 @@ class Speech2TextInvocation(BackwardsInvocation[Speech2TextResult]):
         ):
             return data.result
 
-        raise Exception("No response from speech2text")
+        msg = "No response from speech2text"
+        raise Exception(msg)

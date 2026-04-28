@@ -1,41 +1,49 @@
+import importlib
+import pathlib
 from collections import defaultdict
 from enum import Enum
-from typing import Any, Union
+from typing import TextIO, Union
 
 from pydantic import BaseModel
 
 from dify_plugin.core.documentation.schema_doc import list_schema_docs
-from dify_plugin.core.entities import *  # noqa: F403
-from dify_plugin.core.entities.plugin import *  # noqa: F403
-from dify_plugin.core.entities.plugin.setup import *  # noqa: F403
-from dify_plugin.entities import *  # noqa: F403
-from dify_plugin.entities.agent import *  # noqa: F403
-from dify_plugin.entities.endpoint import *  # noqa: F403
-from dify_plugin.entities.model import *  # noqa: F403
-from dify_plugin.entities.model.llm import *  # noqa: F403
-from dify_plugin.entities.model.moderation import *  # noqa: F403
-from dify_plugin.entities.model.provider import *  # noqa: F403
-from dify_plugin.entities.model.rerank import *  # noqa: F403
-from dify_plugin.entities.model.speech2text import *  # noqa: F403
-from dify_plugin.entities.model.text_embedding import *  # noqa: F403
-from dify_plugin.entities.model.tts import *  # noqa: F403
-from dify_plugin.entities.tool import *  # noqa: F403
+
+COLLECTION_ORIGINS = frozenset({list, set})
+
+for module_name in (
+    "dify_plugin.core.entities",
+    "dify_plugin.core.entities.plugin",
+    "dify_plugin.core.entities.plugin.setup",
+    "dify_plugin.entities",
+    "dify_plugin.entities.agent",
+    "dify_plugin.entities.endpoint",
+    "dify_plugin.entities.model",
+    "dify_plugin.entities.model.llm",
+    "dify_plugin.entities.model.moderation",
+    "dify_plugin.entities.model.provider",
+    "dify_plugin.entities.model.rerank",
+    "dify_plugin.entities.model.speech2text",
+    "dify_plugin.entities.model.text_embedding",
+    "dify_plugin.entities.model.tts",
+    "dify_plugin.entities.tool",
+):
+    importlib.import_module(module_name)
 
 
 class SchemaDocumentationGenerator:
-    def __init__(self):
+    def __init__(self) -> None:
         self._reference_counts: dict[type, int] = {}
         self._reference_graph: dict[type, set[type]] = defaultdict(set)
         self._processed_types: set[type] = set()
         self._field_descriptions: dict[tuple[type, str], str] = {}
         self._schema_descriptions: dict[type, str] = {}
         self._processed_field_types: set[type] = set()
-        self._type_to_schema: dict[type, Any] = {}
+        self._type_to_schema: dict[type, object] = {}
         self._type_blocks: dict[type, int] = {}
         self._blocks: list[list] = []
         self._types: set[type] = set()
 
-    def _organize_toc(self) -> list[tuple[type, list[Any]]]:
+    def _organize_toc(self) -> list[tuple[type, list[object]]]:
         """Organize types into a hierarchical structure for table of contents.
 
         The hierarchy is built based on the following rules:
@@ -58,6 +66,7 @@ class SchemaDocumentationGenerator:
             List[Tuple[Type, List[Any]]]: A list of tuples, where each tuple contains:
                 - A parent type
                 - A list of its child nodes, each being a tuple of (Type, List[Any])
+
         """
         # Build a reverse reference map: type -> set of types that reference it
         referenced_by = {t: set() for t in self._types}
@@ -66,7 +75,10 @@ class SchemaDocumentationGenerator:
                 if ref in referenced_by:
                     referenced_by[ref].add(t)
 
-        def build_subtree(type_: type, processed: set[type]) -> tuple[type, list[Any]]:
+        def build_subtree(
+            type_: type,
+            processed: set[type],
+        ) -> tuple[type, list[object]]:
             """Recursively build a subtree for a type and its references.
 
             Args:
@@ -75,12 +87,13 @@ class SchemaDocumentationGenerator:
 
             Returns:
                 Tuple[Type, List[Any]]: The type and its nested children
+
             """
             if type_ in processed:
                 return type_, []
 
             processed.add(type_)
-            children = []
+            children: list[object] = []
 
             # Find all types that are only referenced by this type
             for ref_type in self._reference_graph.get(type_, set()):
@@ -122,8 +135,8 @@ class SchemaDocumentationGenerator:
 
         return hierarchy
 
-    def generate_docs(self, output_file: str):
-        with open(output_file, "w") as f:
+    def generate_docs(self, output_file: str) -> None:
+        with pathlib.Path(output_file).open("w", encoding="utf-8") as f:
             # Write header
             f.write("# Dify Plugin SDK Schema Documentation\n\n")
 
@@ -147,7 +160,10 @@ class SchemaDocumentationGenerator:
             f.write("## Table of Contents\n\n")
             hierarchy = self._organize_toc()
 
-            def write_toc_item(node: tuple[type, list[Any]], indent: int = 0):
+            def write_toc_item(
+                node: tuple[type, list[object]],
+                indent: int = 0,
+            ) -> None:
                 type_, children = node
                 schema = self._type_to_schema[type_]
                 name = schema.name or type_.__name__
@@ -174,7 +190,7 @@ class SchemaDocumentationGenerator:
 
             # Store schema description
             if cls not in self._schema_descriptions or len(schema.description) > len(
-                self._schema_descriptions[cls]
+                self._schema_descriptions[cls],
             ):
                 self._schema_descriptions[cls] = schema.description
 
@@ -231,13 +247,13 @@ class SchemaDocumentationGenerator:
 
                 # Store the most detailed description
                 if key not in self._field_descriptions or len(description) > len(
-                    self._field_descriptions[key]
+                    self._field_descriptions[key],
                 ):
                     self._field_descriptions[key] = description
 
-    def _extract_referenced_types(self, field_type):
+    def _extract_referenced_types(self, field_type: object) -> set[type]:
         """Recursively extract all referenced BaseModel and Enum types."""
-        referenced = set()
+        referenced: set[type] = set()
         if field_type is None:
             return referenced
 
@@ -324,7 +340,11 @@ class SchemaDocumentationGenerator:
             top_block = self._blocks[0]
             self._blocks.sort(key=lambda block: 0 if block is top_block else 1)
 
-    def _is_container_type(self, field_type: Any, container_types=(list, set)) -> bool:
+    def _is_container_type(
+        self,
+        field_type: object,
+        container_types: tuple[type, ...] = (list, set),
+    ) -> bool:
         """Check if a field type is a container type (list, set, etc)."""
         try:
             return (
@@ -335,7 +355,7 @@ class SchemaDocumentationGenerator:
         except Exception:
             return False
 
-    def _get_container_name(self, field_type: Any) -> str:
+    def _get_container_name(self, field_type: object) -> str:
         """Get the name of a container type."""
         try:
             origin = getattr(field_type, "__origin__", None)
@@ -343,7 +363,7 @@ class SchemaDocumentationGenerator:
         except Exception:
             return str(field_type)
 
-    def _write_schema_doc(self, f, type_) -> None:
+    def _write_schema_doc(self, f: TextIO, type_: type) -> None:
         """Write documentation for a single schema."""
         schema = self._type_to_schema[type_]
         name = schema.name or type_.__name__
@@ -387,7 +407,8 @@ class SchemaDocumentationGenerator:
 
                 # Get the most detailed description
                 description = self._field_descriptions.get(
-                    (type_, field_name), field_info.description or ""
+                    (type_, field_name),
+                    field_info.description or "",
                 )
 
                 # Format type name
@@ -414,22 +435,24 @@ class SchemaDocumentationGenerator:
 
                 f.write(
                     f"| {field_name} | {type_name} | {description} | "
-                    f"{default} | {extra} |\n"
+                    f"{default} | {extra} |\n",
                 )
 
             f.write("\n")
 
         elif issubclass(type_, Enum):
             f.write("### Values\n\n")
-            for member in type_:
-                f.write(f"- `{member.name}`: {member.value}\n")
+            f.writelines(f"- `{member.name}`: {member.value}\n" for member in type_)
             f.write("\n")
 
-    def _format_type_name(self, field_type: Any) -> str:
+    def _format_type_name(self, field_type: object) -> str:
         """Format the type name for display, handling complex types and references.
 
         For BaseModel and Enum types, use their schema name if available.
         For container types (list, dict, etc), recursively format their type arguments.
+
+        Returns:
+            The return value.
         """
         if field_type is None:
             return "Any"
@@ -444,17 +467,17 @@ class SchemaDocumentationGenerator:
 
         if hasattr(field_type, "__origin__") and hasattr(field_type, "__args__"):
             origin = field_type.__origin__
-            if origin in (list, set):
+            if origin in COLLECTION_ORIGINS:
                 inner_type = self._format_type_name(field_type.__args__[0])
                 return f"{origin.__name__}[{inner_type}]"
-            elif origin is dict:
+            if origin is dict:
                 key_type = self._format_type_name(field_type.__args__[0])
                 value_type = self._format_type_name(field_type.__args__[1])
                 return f"dict[{key_type}, {value_type}]"
-            elif origin is tuple:
+            if origin is tuple:
                 types = [self._format_type_name(arg) for arg in field_type.__args__]
                 return f"tuple[{', '.join(types)}]"
-            elif origin is Union:
+            if origin is Union:
                 types = [self._format_type_name(arg) for arg in field_type.__args__]
                 return f"Union[{', '.join(types)}]"
 

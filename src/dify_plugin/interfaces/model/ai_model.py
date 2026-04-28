@@ -2,7 +2,7 @@ import decimal
 import socket
 import time
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from typing import final
 
@@ -26,6 +26,8 @@ if socket.socket is gevent.socket.socket:
     import gevent.threadpool
 
     threadpool = gevent.threadpool.ThreadPool(1)
+
+TOKEN_ESTIMATION_TEXT_LIMIT = 100_000
 
 
 class AIModel(ABC):
@@ -60,15 +62,16 @@ class AIModel(ABC):
         ]
 
     @contextmanager
-    def timing_context(self):
+    def timing_context(self) -> Generator[None, None, None]:
         """
         Context manager for timing requests
         """
         if self.started_at:
-            raise TimingContextRaceConditionError(
+            msg = (
                 "Timing context has been started, DO NOT start it in "
                 "multi-threaded environment."
             )
+            raise TimingContextRaceConditionError(msg)
 
         # initialize started_at
         # NOTE: started_at is not a class variable, it bound to specific instance
@@ -107,6 +110,9 @@ class AIModel(ABC):
 
         :param error: model invoke error
         :return: unified error
+
+        Returns:
+            The return value.
         """
         provider_name = self.__class__.__module__.split(".")[-3]
 
@@ -139,6 +145,12 @@ class AIModel(ABC):
         :param price_type: price type
         :param tokens: number of tokens
         :return: price info
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         # get model schema
         model_schema = self.get_model_schema(model, credentials)
@@ -166,7 +178,8 @@ class AIModel(ABC):
 
         # calculate total amount
         if not price_config:
-            raise ValueError(f"Price config not found for model {model}")
+            msg = f"Price config not found for model {model}"
+            raise ValueError(msg)
         total_amount = tokens * unit_price * price_config.unit
         total_amount = total_amount.quantize(
             decimal.Decimal("0.0000001"), rounding=decimal.ROUND_HALF_UP
@@ -184,6 +197,9 @@ class AIModel(ABC):
         Get all predefined models for given provider.
 
         :return:
+
+        Returns:
+            The return value.
         """
         return self.model_schemas
 
@@ -196,6 +212,9 @@ class AIModel(ABC):
         :param model: model name
         :param credentials: model credentials
         :return: model schema
+
+        Returns:
+            The return value.
         """
         # get predefined models (predefined_models)
         models = self.predefined_models()
@@ -222,6 +241,9 @@ class AIModel(ABC):
         :param model: model name
         :param credentials: model credentials
         :return: model schema
+
+        Returns:
+            The return value.
         """
         return self._get_customizable_model_schema(model, credentials)
 
@@ -312,6 +334,9 @@ class AIModel(ABC):
         :param model: model name
         :param credentials: model credentials
         :return: model schema
+
+        Returns:
+            The return value.
         """
         return None
 
@@ -323,11 +348,18 @@ class AIModel(ABC):
 
         :param name: parameter name
         :return: parameter rule
+
+        Returns:
+            The return value.
+
+        Raises:
+            Exception: If the operation fails.
         """
         default_parameter_rule = PARAMETER_RULE_TEMPLATE.get(name)
 
         if not default_parameter_rule:
-            raise Exception(f"Invalid model parameter rule name {name}")
+            msg = f"Invalid model parameter rule name {name}"
+            raise Exception(msg)
 
         return default_parameter_rule
 
@@ -343,13 +375,16 @@ class AIModel(ABC):
         :param text: plain text of prompt. You need to convert the original
             message to plain text
         :return: number of tokens
+
+        Returns:
+            The return value.
         """
 
         # ENHANCEMENT:
         # to avoid performance issue, do not calculate the number of tokens
         # for too long text
-        # only to promise text length is less than 100000
-        if len(text) >= 100000:
+        # only to promise text length is less than TOKEN_ESTIMATION_TEXT_LIMIT
+        if len(text) >= TOKEN_ESTIMATION_TEXT_LIMIT:
             return len(text)
 
         # check if gevent is patched to main thread

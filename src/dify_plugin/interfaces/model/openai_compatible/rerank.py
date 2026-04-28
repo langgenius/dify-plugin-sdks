@@ -43,6 +43,13 @@ class OAICompatRerankModel(RerankModel):
         :param top_n: top n documents to return
         :param user: unique user id
         :return: rerank result
+
+        Returns:
+            The return value.
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
+            InvokeServerUnavailableError: If model invocation fails.
         """
         if len(docs) == 0:
             return RerankResult(model=model, docs=[])
@@ -51,9 +58,11 @@ class OAICompatRerankModel(RerankModel):
         model_name = model
 
         if not server_url:
-            raise CredentialsValidateFailedError("server_url is required")
+            msg = "server_url is required"
+            raise CredentialsValidateFailedError(msg)
         if not model_name:
-            raise CredentialsValidateFailedError("model_name is required")
+            msg = "model_name is required"
+            raise CredentialsValidateFailedError(msg)
 
         url = server_url
         headers = {
@@ -130,6 +139,9 @@ class OAICompatRerankModel(RerankModel):
         :param model: model name
         :param credentials: model credentials
         :return:
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             self._invoke(
@@ -137,13 +149,17 @@ class OAICompatRerankModel(RerankModel):
                 credentials=credentials,
                 query="What is the capital of the United States?",
                 docs=[
-                    "Carson City is the capital city of the American state "
-                    "of Nevada. At the 2010 United States Census, Carson City "
-                    "had a population of 55,274.",
-                    "The Commonwealth of the Northern Mariana Islands is a "
-                    "group of islands in the Pacific Ocean that are a "
-                    "political division controlled by the United States. "
-                    "Its capital is Saipan.",
+                    (
+                        "Carson City is the capital city of the American state "
+                        "of Nevada. At the 2010 United States Census, Carson City "
+                        "had a population of 55,274."
+                    ),
+                    (
+                        "The Commonwealth of the Northern Mariana Islands is a "
+                        "group of islands in the Pacific Ocean that are a "
+                        "political division controlled by the United States. "
+                        "Its capital is Saipan."
+                    ),
                 ],
                 score_threshold=0.8,
             )
@@ -156,15 +172,13 @@ class OAICompatRerankModel(RerankModel):
         """
         generate custom model entities from credentials
         """
-        entity = AIModelEntity(
+        return AIModelEntity(
             model=model,
             label=I18nObject(en_US=model),
             model_type=ModelType.RERANK,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={},
         )
-
-        return entity
 
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:

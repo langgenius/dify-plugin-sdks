@@ -1,22 +1,34 @@
+from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
+from dify_plugin.core.entities.invocation import InvokeType
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
 
 
-def test_session_context_tool_credentials():
+def test_session_context_tool_credentials() -> None:
     """
     Test the SessionContext tool credentials with mocked backwards invoke
     """
 
-    def mock_backwards_invoke(invoke_type, data_type, data):
+    def mock_backwards_invoke(
+        invoke_type: InvokeType,
+        data_type: type[ToolInvokeMessage],
+        data: dict[str, object],
+    ) -> Generator[ToolInvokeMessage, None, None]:
+        _ = invoke_type
+        _ = data_type
+        credential_id = data.get("credential_id")
+        if not isinstance(credential_id, str):
+            credential_id = "no_credential_id"
+
         yield ToolInvokeMessage(
             type=ToolInvokeMessage.MessageType.TEXT,
             message=ToolInvokeMessage.TextMessage(
-                text=data.get("credential_id", "no_credential_id")
+                text=credential_id,
             ),
             meta={"mock": True},
         )

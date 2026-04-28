@@ -3,7 +3,7 @@ import argparse
 from dify_plugin.commands.generate_docs import generate_docs
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Dify Plugin SDK Documentation Generator"
     )

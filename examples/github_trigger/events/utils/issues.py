@@ -6,16 +6,16 @@ from typing import Any
 from dify_plugin.errors.trigger import EventIgnoreError
 
 
-def check_labels(issue: Mapping[str, Any], value: Any) -> None:
+def check_labels(issue: Mapping[str, Any], value: object) -> None:
     labels = _normalize_list(value)
     if not labels:
         return
     current = [lbl.get("name") for lbl in issue.get("labels", [])]
     if not any(lbl in current for lbl in labels):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def check_assignee(issue: Mapping[str, Any], value: Any) -> None:
+def check_assignee(issue: Mapping[str, Any], value: object) -> None:
     assignees = _normalize_list(value)
     if not assignees:
         return
@@ -24,55 +24,55 @@ def check_assignee(issue: Mapping[str, Any], value: Any) -> None:
     if login := single.get("login"):
         assigned.add(login)
     if not assigned or not any(a in assigned for a in assignees):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def check_authors(issue: Mapping[str, Any], value: Any) -> None:
+def check_authors(issue: Mapping[str, Any], value: object) -> None:
     authors = _normalize_list(value)
     if not authors:
         return
     login = (issue.get("user") or {}).get("login")
     if login not in authors:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def check_milestone(issue: Mapping[str, Any], value: Any) -> None:
+def check_milestone(issue: Mapping[str, Any], value: object) -> None:
     milestones = _normalize_list(value)
     if not milestones:
         return
     milestone = (issue.get("milestone") or {}).get("title")
     if milestone not in milestones:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def check_title_contains(issue: Mapping[str, Any], value: Any) -> None:
+def check_title_contains(issue: Mapping[str, Any], value: object) -> None:
     keywords = _normalize_list(value, lowercase=True)
     if not keywords:
         return
     title = (issue.get("title") or "").lower()
     if not any(k in title for k in keywords):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def check_body_contains(issue: Mapping[str, Any], value: Any) -> None:
+def check_body_contains(issue: Mapping[str, Any], value: object) -> None:
     keywords = _normalize_list(value, lowercase=True)
     if not keywords:
         return
     body = (issue.get("body") or "").lower()
     if not any(k in body for k in keywords):
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def check_state(issue: Mapping[str, Any], value: Any) -> None:
+def check_state(issue: Mapping[str, Any], value: object) -> None:
     if not value:
         return
     state = (issue.get("state") or "").lower()
     targets = {s.strip().lower() for s in str(value).split(",") if s.strip()}
     if targets and state not in targets:
-        raise EventIgnoreError()
+        raise EventIgnoreError
 
 
-def _normalize_list(raw: Any, *, lowercase: bool = False) -> list[str]:
+def _normalize_list(raw: object, *, lowercase: bool = False) -> list[str]:
     if raw is None:
         return []
     if isinstance(raw, (list, tuple)):

@@ -32,7 +32,7 @@ class MockModel(AIModel):
         pass
 
 
-def test_model_provider_get_model_instance_delegates_to_factory():
+def test_model_provider_get_model_instance_delegates_to_factory() -> None:
     """
     Ensure ModelProvider.get_model_instance forwards to ModelFactory.get_instance.
     Constructor usage mirrors test_construct_tool.py style: inline subclass
@@ -54,7 +54,7 @@ def test_model_provider_get_model_instance_delegates_to_factory():
     assert isinstance(result, MockModel)
 
 
-def test_model_provider_get_model_instance_get_multiple_instances():
+def test_model_provider_get_model_instance_get_multiple_instances() -> None:
     model_factory = prepare_model_factory({ModelType.LLM: MockModel})
 
     provider = MockModelProvider(
@@ -83,10 +83,10 @@ def test_model_provider_get_model_instance_get_multiple_instances():
     assert result2 is not result3
 
 
-def test_model_provider_get_model_instance_multithread():
+def test_model_provider_get_model_instance_multithread() -> None:
     model_factory = prepare_model_factory({ModelType.LLM: MockModel})
 
-    def task(_):
+    def task(_: int) -> None:
         model = model_factory.get_instance(ModelType.LLM)
         assert isinstance(model, MockModel)
         model.invoke()

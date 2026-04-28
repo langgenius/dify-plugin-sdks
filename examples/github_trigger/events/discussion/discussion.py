@@ -25,16 +25,18 @@ class DiscussionUnifiedEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         discussion = payload.get("discussion")
         if not isinstance(discussion, Mapping):
-            raise ValueError("No discussion in payload")
+            msg = "No discussion in payload"
+            raise ValueError(msg)
 
         self._check_category(discussion, parameters.get("category"))
         self._check_author(discussion, parameters.get("author"))
@@ -52,7 +54,7 @@ class DiscussionUnifiedEvent(Event):
         cats = {v.strip() for v in str(value).split(",") if v.strip()}
         name = ((discussion.get("category") or {}).get("name") or "").strip()
         if cats and name not in cats:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_author(self, discussion: Mapping[str, Any], value: str | None) -> None:
         if not value:
@@ -60,7 +62,7 @@ class DiscussionUnifiedEvent(Event):
         authors = {v.strip() for v in str(value).split(",") if v.strip()}
         login = ((discussion.get("user") or {}).get("login") or "").strip()
         if authors and login not in authors:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
     def _check_title_body(
         self,
@@ -72,9 +74,9 @@ class DiscussionUnifiedEvent(Event):
             kws = {v.strip().lower() for v in str(title_value).split(",") if v.strip()}
             title = (discussion.get("title") or "").lower()
             if kws and not any(k in title for k in kws):
-                raise EventIgnoreError()
+                raise EventIgnoreError
         if body_value:
             kws = {v.strip().lower() for v in str(body_value).split(",") if v.strip()}
             body = (discussion.get("body") or "").lower()
             if kws and not any(k in body for k in kws):
-                raise EventIgnoreError()
+                raise EventIgnoreError

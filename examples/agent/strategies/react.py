@@ -29,6 +29,10 @@ from dify_plugin.interfaces.agent import (
 from examples.agent.output_parser.cot_output_parser import CotAgentOutputParser
 from examples.agent.prompt.template import REACT_PROMPT_TEMPLATES
 
+IMAGE_RESPONSE_TYPES = frozenset({
+    ToolInvokeMessage.MessageType.IMAGE_LINK,
+    ToolInvokeMessage.MessageType.IMAGE,
+})
 ignore_observation_providers = ["wenxin"]
 
 
@@ -41,9 +45,7 @@ class ReActParams(BaseModel):
 
 
 class AgentPromptEntity(BaseModel):
-    """
-    Agent Prompt Entity.
-    """
+    """Agent Prompt Entity."""
 
     first_prompt: str
     next_iteration: str
@@ -68,7 +70,8 @@ class ReActAgentStrategy(AgentStrategy):
             ],
         )
         if not prompt_entity:
-            raise ValueError("Agent prompt configuration is not set")
+            msg = "Agent prompt configuration is not set"
+            raise ValueError(msg)
         first_prompt = prompt_entity.first_prompt
 
         system_prompt = (
@@ -92,7 +95,8 @@ class ReActAgentStrategy(AgentStrategy):
         try:
             react_params = ReActParams(**parameters)
         except pydantic.ValidationError as e:
-            raise ValueError(f"Invalid parameters: {e!s}") from e
+            msg = f"Invalid parameters: {e!s}"
+            raise ValueError(msg) from e
 
         # Init parameters
         self.query = react_params.query
@@ -151,11 +155,14 @@ class ReActAgentStrategy(AgentStrategy):
 
             # recalc llm max tokens
             prompt_messages = self._organize_prompt_messages(
-                agent_scratchpad, self.query
+                agent_scratchpad,
+                self.query,
             )
             if model.entity and model.completion_params:
                 self.recalc_llm_max_tokens(
-                    model.entity, prompt_messages, model.completion_params
+                    model.entity,
+                    prompt_messages,
+                    model.completion_params,
                 )
             # invoke model
             chunks = self.session.model.llm.invoke(
@@ -167,7 +174,8 @@ class ReActAgentStrategy(AgentStrategy):
 
             usage_dict: dict[str, LLMUsage | None] = {"usage": None}
             react_chunks = CotAgentOutputParser.handle_react_stream_output(
-                chunks, usage_dict
+                chunks,
+                usage_dict,
             )
             scratchpad = AgentScratchpadUnit(
                 agent_response="",
@@ -314,7 +322,8 @@ class ReActAgentStrategy(AgentStrategy):
                 # update prompt tool message
                 for prompt_tool in self._prompt_messages_tools:
                     self.update_prompt_message_tool(
-                        tool_instances[prompt_tool.name], prompt_tool
+                        tool_instances[prompt_tool.name],
+                        prompt_tool,
                     )
             yield self.finish_log_message(
                 log=round_log,
@@ -357,30 +366,29 @@ class ReActAgentStrategy(AgentStrategy):
                 LogMetadata.TOTAL_TOKENS: llm_usage["usage"].total_tokens
                 if llm_usage["usage"] is not None
                 else 0,
-            }
+            },
         })
 
     def _organize_user_query(
-        self, query, prompt_messages: list[PromptMessage]
+        self,
+        query: str,
+        prompt_messages: list[PromptMessage],
     ) -> list[PromptMessage]:
-        """
-        Organize user query
-        """
+        """Organize user query"""
         prompt_messages.append(UserPromptMessage(content=query))
 
         return prompt_messages
 
     def _organize_prompt_messages(
-        self, agent_scratchpad: list, query: str
+        self,
+        agent_scratchpad: list,
+        query: str,
     ) -> list[PromptMessage]:
-        """
-        Organize
-        """
+        """Organize"""
         # organize system prompt
         system_message = self._system_prompt_message
 
         # organize current assistant messages
-        agent_scratchpad = agent_scratchpad
         if not agent_scratchpad:
             assistant_messages = []
         else:
@@ -428,13 +436,18 @@ class ReActAgentStrategy(AgentStrategy):
         tool_instances: Mapping[str, ToolEntity],
         message_file_ids: list[str],
     ) -> tuple[str, dict[str, Any] | str, list[ToolInvokeMessage]]:
-        """
-        handle invoke action
+        """Handle invoke action
         :param action: action
         :param tool_instances: tool instances
         :param message_file_ids: message file ids
         :param trace_manager: trace manager
         :return: observation, meta
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         # action is tool call, invoke tool
         tool_call_name = action.action_name
@@ -455,9 +468,10 @@ class ReActAgentStrategy(AgentStrategy):
                     if param.form == ToolParameter.ToolParameterForm.LLM
                 ]
                 if len(params) > 1:
-                    raise ValueError("tool call args is not a valid json string") from e
+                    msg = "tool call args is not a valid json string"
+                    raise ValueError(msg) from e
                 tool_call_args = {params[0]: tool_call_args} if len(params) == 1 else {}
-        tool_call_args = cast(dict[str, Any], tool_call_args)
+        tool_call_args = cast("dict[str, Any]", tool_call_args)
         tool_invoke_parameters = {**tool_instance.runtime_parameters, **tool_call_args}
         try:
             tool_invoke_responses = self.session.tool.invoke(
@@ -471,35 +485,37 @@ class ReActAgentStrategy(AgentStrategy):
             additional_messages = []  # Collect messages that need to be yielded
             for response in tool_invoke_responses:
                 if response.type == ToolInvokeMessage.MessageType.TEXT:
-                    result += cast(ToolInvokeMessage.TextMessage, response.message).text
+                    result += cast(
+                        "ToolInvokeMessage.TextMessage", response.message
+                    ).text
                 elif response.type == ToolInvokeMessage.MessageType.LINK:
                     link_text = cast(
-                        ToolInvokeMessage.TextMessage, response.message
+                        "ToolInvokeMessage.TextMessage",
+                        response.message,
                     ).text
                     result += (
                         f"result link: {link_text}." + " please tell user to check it."
                     )
-                elif response.type in {
-                    ToolInvokeMessage.MessageType.IMAGE_LINK,
-                    ToolInvokeMessage.MessageType.IMAGE,
-                }:
+                elif response.type in IMAGE_RESPONSE_TYPES:
                     # Pass through the original image response for upper layers.
                     additional_messages.append(response)
                     # Include the actual file path information for the LLM
                     image_link_text = cast(
-                        ToolInvokeMessage.TextMessage, response.message
+                        "ToolInvokeMessage.TextMessage",
+                        response.message,
                     ).text
                     result += (
                         "Image has been successfully generated and saved to: "
                         f"{image_link_text}. "
-                        + "The image file is now available for download. "
-                        + "Please inform the user that the image has been "
-                        + "created successfully."
+                        "The image file is now available for download. "
+                        "Please inform the user that the image has been "
+                        "created successfully."
                     )
                 elif response.type == ToolInvokeMessage.MessageType.JSON:
                     text = json.dumps(
                         cast(
-                            ToolInvokeMessage.JsonMessage, response.message
+                            "ToolInvokeMessage.JsonMessage",
+                            response.message,
                         ).json_object,
                         ensure_ascii=False,
                     )
@@ -516,19 +532,17 @@ class ReActAgentStrategy(AgentStrategy):
         return result, tool_invoke_parameters, additional_messages
 
     def _convert_dict_to_action(self, action: dict) -> AgentScratchpadUnit.Action:
-        """
-        convert dict to action
-        """
+        """Convert dict to action"""
         return AgentScratchpadUnit.Action(
-            action_name=action["action"], action_input=action["action_input"]
+            action_name=action["action"],
+            action_input=action["action_input"],
         )
 
     def _format_assistant_message(
-        self, agent_scratchpad: list[AgentScratchpadUnit]
+        self,
+        agent_scratchpad: list[AgentScratchpadUnit],
     ) -> str:
-        """
-        format assistant message
-        """
+        """Format assistant message"""
         message = ""
         for scratchpad in agent_scratchpad:
             if scratchpad.is_final():

@@ -1,6 +1,7 @@
 import json
 from collections.abc import Generator
-from datetime import datetime
+from datetime import UTC, datetime
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -9,6 +10,15 @@ from dify_plugin import Tool
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
+
+RELEASE_BODY_PREVIEW_LENGTH = 300
+GITHUB_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+DISPLAY_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+def _format_github_timestamp(value: str) -> str:
+    parsed = datetime.strptime(value, GITHUB_TIMESTAMP_FORMAT).replace(tzinfo=UTC)
+    return parsed.strftime(DISPLAY_DATETIME_FORMAT)
 
 
 class GithubRepositoryReleasesTool(Tool):
@@ -65,7 +75,7 @@ class GithubRepositoryReleasesTool(Tool):
                 params=params,
             )
 
-            if response.status_code == 200:
+            if response.status_code == HTTPStatus.OK:
                 response_data = response.json()
 
                 releases = []
@@ -74,8 +84,12 @@ class GithubRepositoryReleasesTool(Tool):
                         "id": release.get("id", 0),
                         "tag_name": release.get("tag_name", ""),
                         "name": release.get("name", ""),
-                        "body": (release.get("body", "") or "")[:300] + "..."
-                        if len(release.get("body", "") or "") > 300
+                        "body": (release.get("body", "") or "")[
+                            :RELEASE_BODY_PREVIEW_LENGTH
+                        ]
+                        + "..."
+                        if len(release.get("body", "") or "")
+                        > RELEASE_BODY_PREVIEW_LENGTH
                         else (release.get("body", "") or ""),
                         "url": release.get("html_url", ""),
                         "tarball_url": release.get("tarball_url", ""),
@@ -92,14 +106,14 @@ class GithubRepositoryReleasesTool(Tool):
                             }
                             for asset in release.get("assets", [])
                         ],
-                        "created_at": datetime.strptime(
-                            release.get("created_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                        ).strftime("%Y-%m-%d %H:%M:%S")
+                        "created_at": _format_github_timestamp(
+                            release.get("created_at", "")
+                        )
                         if release.get("created_at")
                         else "",
-                        "published_at": datetime.strptime(
-                            release.get("published_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                        ).strftime("%Y-%m-%d %H:%M:%S")
+                        "published_at": _format_github_timestamp(
+                            release.get("published_at", "")
+                        )
                         if release.get("published_at")
                         else "",
                     }
@@ -123,8 +137,10 @@ class GithubRepositoryReleasesTool(Tool):
             else:
                 response_data = response.json()
                 message = response_data.get("message", "Unknown error")
-                raise InvokeError(f"Request failed: {response.status_code} {message}")
-        except InvokeError as e:
-            raise e
+                msg = f"Request failed: {response.status_code} {message}"
+                raise InvokeError(msg)
+        except InvokeError:
+            raise
         except Exception as e:
-            raise InvokeError(f"GitHub API request failed: {e}") from e
+            msg = f"GitHub API request failed: {e}"
+            raise InvokeError(msg) from e

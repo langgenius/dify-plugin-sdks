@@ -21,12 +21,13 @@ class BranchProtectionRuleEvent(Event):
     ) -> Variables:
         payload = request.get_json()
         if not payload:
-            raise ValueError("No payload received")
+            msg = "No payload received"
+            raise ValueError(msg)
 
         allowed_actions = parameters.get("actions") or []
         action = payload.get("action")
         if allowed_actions and action not in allowed_actions:
-            raise EventIgnoreError()
+            raise EventIgnoreError
 
         pattern_filter = parameters.get("pattern")
         if pattern_filter:
@@ -34,6 +35,6 @@ class BranchProtectionRuleEvent(Event):
             pat = (rule.get("pattern") or "").strip()
             targets = {s.strip() for s in str(pattern_filter).split(",") if s.strip()}
             if targets and pat not in targets:
-                raise EventIgnoreError()
+                raise EventIgnoreError
 
         return Variables(variables={**payload})

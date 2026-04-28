@@ -1,6 +1,7 @@
 import base64
 import json
 from collections.abc import Generator
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -10,14 +11,16 @@ from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
 
+CONTENT_DECODE_SIZE_LIMIT = 100_000
+CONTENT_PREVIEW_LENGTH = 2_000
+
 
 class GithubRepositoryContentsTool(Tool):
     def _invoke(
-        self, tool_parameters: dict[str, Any]
+        self,
+        tool_parameters: dict[str, Any],
     ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        invoke tools
-        """
+        """Invoke tools"""
         owner = tool_parameters.get("owner", "")
         repo = tool_parameters.get("repo", "")
         path = tool_parameters.get("path", "")
@@ -71,7 +74,7 @@ class GithubRepositoryContentsTool(Tool):
                 params=params,
             )
 
-            if response.status_code == 200:
+            if response.status_code == HTTPStatus.OK:
                 response_data = response.json()
 
                 # Handle both single file and directory listings
@@ -104,66 +107,67 @@ class GithubRepositoryContentsTool(Tool):
                                 "Summarize the GitHub repository contents "
                                 "in a structured format"
                             ),
-                        )
+                        ),
+                    )
+                # Single file
+                elif response_data.get("type") == "file":
+                    file_info = {
+                        "name": response_data.get("name", ""),
+                        "path": response_data.get("path", ""),
+                        "type": response_data.get("type", ""),
+                        "size": response_data.get("size", 0),
+                        "sha": response_data.get("sha", ""),
+                        "url": response_data.get("html_url", ""),
+                        "download_url": response_data.get("download_url", ""),
+                        "encoding": response_data.get("encoding", ""),
+                    }
+
+                    # Try to decode content if it's base64 encoded and small enough
+                    if (
+                        response_data.get("encoding") == "base64"
+                        and response_data.get("content")
+                        and response_data.get("size", 0) < CONTENT_DECODE_SIZE_LIMIT
+                    ):  # Only decode files < 100KB
+                        try:
+                            content = response_data.get("content", "").replace(
+                                "\n",
+                                "",
+                            )
+                            decoded_content = base64.b64decode(content).decode(
+                                "utf-8",
+                            )
+                            file_info["content"] = (
+                                decoded_content[:CONTENT_PREVIEW_LENGTH] + "..."
+                                if len(decoded_content) > CONTENT_PREVIEW_LENGTH
+                                else decoded_content
+                            )
+                        except Exception:
+                            file_info["content"] = "Unable to decode content"
+
+                    result = {"type": "file", "file_info": file_info}
+
+                    yield self.create_text_message(
+                        self.session.model.summary.invoke(
+                            text=json.dumps(result, ensure_ascii=False),
+                            instruction=(
+                                "Summarize the GitHub file content in a "
+                                "structured format"
+                            ),
+                        ),
                     )
                 else:
-                    # Single file
-                    if response_data.get("type") == "file":
-                        file_info = {
-                            "name": response_data.get("name", ""),
-                            "path": response_data.get("path", ""),
-                            "type": response_data.get("type", ""),
-                            "size": response_data.get("size", 0),
-                            "sha": response_data.get("sha", ""),
-                            "url": response_data.get("html_url", ""),
-                            "download_url": response_data.get("download_url", ""),
-                            "encoding": response_data.get("encoding", ""),
-                        }
-
-                        # Try to decode content if it's base64 encoded and small enough
-                        if (
-                            response_data.get("encoding") == "base64"
-                            and response_data.get("content")
-                            and response_data.get("size", 0) < 100000
-                        ):  # Only decode files < 100KB
-                            try:
-                                content = response_data.get("content", "").replace(
-                                    "\n", ""
-                                )
-                                decoded_content = base64.b64decode(content).decode(
-                                    "utf-8"
-                                )
-                                file_info["content"] = (
-                                    decoded_content[:2000] + "..."
-                                    if len(decoded_content) > 2000
-                                    else decoded_content
-                                )
-                            except Exception:
-                                file_info["content"] = "Unable to decode content"
-
-                        result = {"type": "file", "file_info": file_info}
-
-                        yield self.create_text_message(
-                            self.session.model.summary.invoke(
-                                text=json.dumps(result, ensure_ascii=False),
-                                instruction=(
-                                    "Summarize the GitHub file content in a "
-                                    "structured format"
-                                ),
-                            )
-                        )
-                    else:
-                        yield self.create_text_message(
-                            "Content type "
-                            f"'{response_data.get('type')}' is not supported"
-                        )
+                    yield self.create_text_message(
+                        f"Content type '{response_data.get('type')}' is not supported",
+                    )
 
                 s.close()
             else:
                 response_data = response.json()
                 message = response_data.get("message", "Unknown error")
-                raise InvokeError(f"Request failed: {response.status_code} {message}")
-        except InvokeError as e:
-            raise e
+                msg = f"Request failed: {response.status_code} {message}"
+                raise InvokeError(msg)
+        except InvokeError:
+            raise
         except Exception as e:
-            raise InvokeError(f"GitHub API request failed: {e}") from e
+            msg = f"GitHub API request failed: {e}"
+            raise InvokeError(msg) from e

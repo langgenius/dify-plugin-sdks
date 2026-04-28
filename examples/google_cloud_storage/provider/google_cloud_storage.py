@@ -12,13 +12,11 @@ class GoogleCloudStorageDatasourceProvider(DatasourceProvider):
     def _validate_credentials(self, credentials: Mapping[str, Any]) -> None:
         try:
             if not credentials or not credentials.get("credentials"):
-                raise ToolProviderCredentialValidationError(
-                    "Google Cloud Storage credentials are required."
-                )
+                msg = "Google Cloud Storage credentials are required."
+                raise ToolProviderCredentialValidationError(msg)
             if not isinstance(credentials.get("credentials"), str):
-                raise ToolProviderCredentialValidationError(
-                    "Google Cloud Storage credentials must be a string json."
-                )
+                msg = "Google Cloud Storage credentials must be a string json."
+                raise ToolProviderCredentialValidationError(msg)
 
             service_account_obj = json.loads(credentials.get("credentials"))
             google_client = storage.Client.from_service_account_info(

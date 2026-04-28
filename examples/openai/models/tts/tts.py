@@ -17,9 +17,7 @@ from ..common_openai import _CommonOpenAI
 
 
 class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
-    """
-    Model class for OpenAI Speech to text model.
-    """
+    """Model class for OpenAI Speech to text model."""
 
     def _invoke(
         self,
@@ -30,8 +28,7 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         voice: str,
         user: str | None = None,
     ) -> bytes | Generator[bytes, None, None]:
-        """
-        _invoke text2speech model
+        """_invoke text2speech model
 
         :param model: model name
         :param tenant_id: user tenant id
@@ -40,30 +37,44 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         :param voice: model timbre
         :param user: unique user id
         :return: text translated to audio file
-        """
 
+        Returns:
+            The return value.
+
+        Raises:
+            InvokeBadRequestError: If model invocation fails.
+        """
         voices = self.get_tts_model_voices(model=model, credentials=credentials)
         if not voices:
-            raise InvokeBadRequestError("No voices found for the model")
+            msg = "No voices found for the model"
+            raise InvokeBadRequestError(msg)
 
         if not voice or voice not in [d["value"] for d in voices]:
             voice = self._get_model_default_voice(model, credentials)
 
         # if streaming:
         return self._tts_invoke_streaming(
-            model=model, credentials=credentials, content_text=content_text, voice=voice
+            model=model,
+            credentials=credentials,
+            content_text=content_text,
+            voice=voice,
         )
 
     def validate_credentials(
-        self, model: str, credentials: dict, user: str | None = None
+        self,
+        model: str,
+        credentials: dict,
+        user: str | None = None,
     ) -> None:
-        """
-        validate credentials text2speech model
+        """Validate credentials text2speech model
 
         :param model: model name
         :param credentials: model credentials
         :param user: unique user id
         :return: text translated to audio file
+
+        Raises:
+            CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
             self._tts_invoke(
@@ -76,16 +87,25 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
             raise CredentialsValidateFailedError(str(ex)) from ex
 
     def _tts_invoke(
-        self, model: str, credentials: dict, content_text: str, voice: str
+        self,
+        model: str,
+        credentials: dict,
+        content_text: str,
+        voice: str,
     ) -> bytes:
-        """
-        _tts_invoke text2speech model
+        """_tts_invoke text2speech model
 
         :param model: model name
         :param credentials: model credentials
         :param content_text: text content to be translated
         :param voice: model timbre
         :return: text translated to audio file
+
+        Returns:
+            The return value.
+
+        Raises:
+            InvokeBadRequestError: If model invocation fails.
         """
         audio_type = self._get_model_audio_type(model, credentials)
         word_limit = self._get_model_word_limit(model, credentials) or 500
@@ -93,14 +113,15 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         try:
             sentences = list(
                 self._split_text_into_sentences(
-                    org_text=content_text, max_length=word_limit
-                )
+                    org_text=content_text,
+                    max_length=word_limit,
+                ),
             )
             audio_bytes_list = []
 
             # Create a thread pool and map the function to the list of sentences
             with concurrent.futures.ThreadPoolExecutor(
-                max_workers=max_workers
+                max_workers=max_workers,
             ) as executor:
                 futures = [
                     executor.submit(
@@ -131,22 +152,31 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
                 buffer.seek(0)
 
                 return buffer.read()
-            else:
-                raise InvokeBadRequestError("No audio bytes found")
+            msg = "No audio bytes found"
+            raise InvokeBadRequestError(msg)
         except Exception as ex:
             raise InvokeBadRequestError(str(ex)) from ex
 
     def _tts_invoke_streaming(
-        self, model: str, credentials: dict, content_text: str, voice: str
+        self,
+        model: str,
+        credentials: dict,
+        content_text: str,
+        voice: str,
     ) -> Generator[bytes, None, None]:
-        """
-        _tts_invoke_streaming text2speech model
+        """_tts_invoke_streaming text2speech model
 
         :param model: model name
         :param credentials: model credentials
         :param content_text: text content to be translated
         :param voice: model timbre
         :return: text translated to audio file
+
+        Yields:
+            Generated values.
+
+        Raises:
+            InvokeBadRequestError: If model invocation fails.
         """
         try:
             # doc: https://platform.openai.com/docs/guides/text-to-speech
@@ -155,7 +185,8 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
 
             voices = self.get_tts_model_voices(model=model, credentials=credentials)
             if not voices:
-                raise InvokeBadRequestError("No voices found for the model")
+                msg = "No voices found for the model"
+                raise InvokeBadRequestError(msg)
 
             if not voice or voice not in voices:
                 voice = self._get_model_default_voice(model, credentials)
@@ -163,10 +194,11 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
             word_limit = self._get_model_word_limit(model, credentials) or 500
             if len(content_text) > word_limit:
                 sentences = self._split_text_into_sentences(
-                    content_text, max_length=word_limit
+                    content_text,
+                    max_length=word_limit,
                 )
                 executor = concurrent.futures.ThreadPoolExecutor(
-                    max_workers=min(3, len(sentences))
+                    max_workers=min(3, len(sentences)),
                 )
                 futures = [
                     executor.submit(
@@ -174,7 +206,7 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
                         model=model,
                         response_format="mp3",
                         input=sentences[i],
-                        voice=voice,  # type: ignore
+                        voice=voice,
                     )
                     for i in range(len(sentences))
                 ]
@@ -186,7 +218,7 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
             else:
                 response = client.audio.speech.with_streaming_response.create(
                     model=model,
-                    voice=voice,  # type: ignore
+                    voice=voice,
                     response_format="mp3",
                     input=content_text.strip(),
                 )
@@ -196,21 +228,32 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         except Exception as ex:
             raise InvokeBadRequestError(str(ex)) from ex
 
-    def _process_sentence(self, sentence: str, model: str, voice, credentials: dict):
-        """
-        _tts_invoke openai text2speech model api
+    def _process_sentence(
+        self,
+        sentence: str,
+        model: str,
+        voice: str,
+        credentials: dict,
+    ) -> bytes | None:
+        """_tts_invoke openai text2speech model api
 
         :param model: model name
         :param credentials: model credentials
         :param voice: model timbre
         :param sentence: text content to be translated
         :return: text translated to audio file
+
+        Returns:
+            The return value.
         """
         # transform credentials to kwargs for model instance
         credentials_kwargs = self._to_credential_kwargs(credentials)
         client = OpenAI(**credentials_kwargs)
         response = client.audio.speech.create(
-            model=model, voice=voice, input=sentence.strip()
+            model=model,
+            voice=voice,
+            input=sentence.strip(),
         )
         if isinstance(response.read(), bytes):
             return response.read()
+        return None

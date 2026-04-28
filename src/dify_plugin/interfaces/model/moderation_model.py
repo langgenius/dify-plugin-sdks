@@ -50,6 +50,9 @@ class ModerationModel(AIModel):
         :param text: text to moderate
         :param user: unique user id
         :return: false if text is safe, true otherwise
+
+        Returns:
+            The return value.
         """
         with self.timing_context():
             try:

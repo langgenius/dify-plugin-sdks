@@ -12,13 +12,13 @@ class ResponseWriter(ABC):
     """
 
     @abstractmethod
-    def write(self, data: str):
+    def write(self, data: str) -> None:
         """
         Write data to the response
         """
 
     @abstractmethod
-    def done(self):
+    def done(self) -> None:
         """
         finish this round
         """
@@ -28,7 +28,7 @@ class ResponseWriter(ABC):
         event: Event,
         session_id: str | None = None,
         data: dict | BaseModel | None = None,
-    ):
+    ) -> None:
         """
         serialize the output to the daemon
         """
@@ -44,18 +44,18 @@ class ResponseWriter(ABC):
 
     def error(
         self, session_id: str | None = None, data: dict | BaseModel | None = None
-    ):
+    ) -> None:
         return self.put(Event.ERROR, session_id, data)
 
-    def log(self, data: dict | None = None):
+    def log(self, data: dict | None = None) -> None:
         return self.put(Event.LOG, None, data)
 
-    def heartbeat(self):
+    def heartbeat(self) -> None:
         return self.put(Event.HEARTBEAT, None, {})
 
     def session_message(
         self, session_id: str | None = None, data: dict | BaseModel | None = None
-    ):
+    ) -> None:
         return self.put(Event.SESSION, session_id, data)
 
     def session_message_text(

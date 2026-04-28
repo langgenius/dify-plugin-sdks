@@ -32,7 +32,7 @@ class IOServer(ABC):
         self.executer = ThreadPoolExecutor(max_workers=self.config.MAX_WORKER)
         self.request_reader = request_reader
 
-    def close(self, *args):
+    def close(self, *args: object) -> None:
         self.request_reader.close()
 
     @abstractmethod
@@ -47,12 +47,12 @@ class IOServer(ABC):
         app_id: str | None = None,
         endpoint_id: str | None = None,
         context: dict | None = None,
-    ):
+    ) -> None:
         """
         accept requests and execute them, should be implemented outside
         """
 
-    def _setup_instruction_listener(self):
+    def _setup_instruction_listener(self) -> None:
         """
         start listen to stdin and dispatch task to executor
         """
@@ -85,7 +85,7 @@ class IOServer(ABC):
         app_id: str | None = None,
         endpoint_id: str | None = None,
         context: dict | None = None,
-    ):
+    ) -> None:
         """
         wrapper for _execute_request
         """
@@ -127,7 +127,7 @@ class IOServer(ABC):
         writer.session_message(session_id=session_id, data=writer.stream_end_object())
         writer.done()
 
-    def _heartbeat(self):
+    def _heartbeat(self) -> None:
         """
         send heartbeat to stdout
         """
@@ -139,7 +139,7 @@ class IOServer(ABC):
                 self.default_writer.heartbeat()
             time.sleep(self.config.HEARTBEAT_INTERVAL)
 
-    def _parent_alive_check(self):
+    def _parent_alive_check(self) -> None:
         """
         check if the parent process is alive
         """
@@ -149,7 +149,7 @@ class IOServer(ABC):
             if parent_process_id == 1:
                 os._exit(-1)
 
-    def _run(self):
+    def _run(self) -> None:
         th1 = Thread(target=self._setup_instruction_listener)
         th2 = Thread(target=self.request_reader.event_loop)
         th3 = None
@@ -172,7 +172,7 @@ class IOServer(ABC):
         if th3 is not None:
             th3.join()
 
-    def run(self):
+    def run(self) -> None:
         """
         start plugin server
         """

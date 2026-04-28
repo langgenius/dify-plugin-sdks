@@ -51,4 +51,5 @@ class CompletionAppInvocation(BackwardsInvocation[dict]):
         for data in response:
             return data
 
-        raise Exception("No response from completion")
+        msg = "No response from completion"
+        raise Exception(msg)

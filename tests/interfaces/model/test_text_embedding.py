@@ -52,7 +52,7 @@ class MockTextEmbeddingModel(TextEmbeddingModel):
 
 
 # test both constructor and invoke
-def test_text_embedding():
+def test_text_embedding() -> None:
     model_factory = prepare_model_factory({
         ModelType.TEXT_EMBEDDING: MockTextEmbeddingModel
     })
@@ -119,7 +119,7 @@ class MockMultiModalTextEmbeddingModel(TextEmbeddingModel):
         return {}
 
 
-def test_text_embedding_multimodal():
+def test_text_embedding_multimodal() -> None:
     model_factory = prepare_model_factory({
         ModelType.TEXT_EMBEDDING: MockMultiModalTextEmbeddingModel
     })

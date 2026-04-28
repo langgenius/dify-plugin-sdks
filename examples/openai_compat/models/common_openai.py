@@ -20,6 +20,9 @@ class _CommonOpenAI:
 
         :param credentials:
         :return:
+
+        Returns:
+            The return value.
         """
         credentials_kwargs = {
             "api_key": credentials["openai_api_key"],

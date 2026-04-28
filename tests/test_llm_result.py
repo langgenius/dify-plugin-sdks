@@ -10,7 +10,7 @@ from dify_plugin.entities.model.message import (
 )
 
 
-def test_assistant_message_opaque_body_roundtrip():
+def test_assistant_message_opaque_body_roundtrip() -> None:
     message = AssistantPromptMessage(
         content=[TextPromptMessageContent(data="Hello", opaque_body={"segment_id": 1})],
         opaque_body={"provider_message_id": "msg_123"},
@@ -21,7 +21,7 @@ def test_assistant_message_opaque_body_roundtrip():
     assert message.content[0].opaque_body == {"segment_id": 1}
 
 
-def test_build_llm_result_chunk_with_prompt_messages():
+def test_build_llm_result_chunk_with_prompt_messages() -> None:
     chunk = LLMResultChunk(
         model="test",
         prompt_messages=[
@@ -48,7 +48,7 @@ def test_build_llm_result_chunk_with_prompt_messages():
     assert len(chunk.prompt_messages) == 0
 
 
-def test_build_llm_result_with_prompt_messages():
+def test_build_llm_result_with_prompt_messages() -> None:
     result = LLMResult(
         model="test",
         prompt_messages=[

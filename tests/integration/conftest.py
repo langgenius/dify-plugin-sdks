@@ -5,7 +5,7 @@ from collections.abc import Generator
 from typing import ClassVar
 
 import pytest
-from xprocess import ProcessStarter
+from xprocess import ProcessStarter, XProcess
 
 from ..consts.mockserver import OPENAI_MOCK_SERVER_PORT
 
@@ -13,7 +13,7 @@ PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture(scope="session")
-def openai_mock_server(xprocess) -> Generator[str, None, None]:
+def openai_mock_server(xprocess: XProcess) -> Generator[str, None, None]:
     class Starter(ProcessStarter):
         pattern = "OpenAI mock server starting"
         args: ClassVar[list[str]] = [sys.executable, "-m", "tests.__mock_server"]

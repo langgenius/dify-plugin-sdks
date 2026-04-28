@@ -20,6 +20,12 @@ class ChatMemberBotAddedV1Event(Event):
         Handle the event when a bot is added to a chat group.
 
         This event is triggered when a bot is added to a group chat.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,
@@ -27,7 +33,8 @@ class ChatMemberBotAddedV1Event(Event):
             lambda builder: builder.register_p2_im_chat_member_bot_added_v1,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict: dict[str, Any] = {

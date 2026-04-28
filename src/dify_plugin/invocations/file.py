@@ -1,4 +1,5 @@
 from enum import StrEnum
+from http import HTTPStatus
 
 import requests
 from pydantic import BaseModel, model_validator
@@ -15,7 +16,7 @@ class UploadFileResponse(BaseModel):
         AUDIO = "audio"
 
         @classmethod
-        def from_mime_type(cls, mime_type: str):
+        def from_mime_type(cls, mime_type: str) -> "UploadFileResponse.Type":
             if mime_type.startswith("image/"):
                 return cls.IMAGE
             if mime_type.startswith("video/"):
@@ -35,7 +36,7 @@ class UploadFileResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_type(cls, d):
+    def validate_type(cls, d: dict[str, object]) -> dict[str, object]:
         if "type" not in d:
             d["type"] = cls.Type.from_mime_type(d.get("mime_type", ""))
         return d
@@ -50,18 +51,26 @@ class UploadFileResponse(BaseModel):
 
 class File(BackwardsInvocation[dict]):
     def upload(
-        self, filename: str, content: bytes, mimetype: str
+        self,
+        filename: str,
+        content: bytes,
+        mimetype: str,
     ) -> UploadFileResponse:
-        """
-        Upload a file
+        """Upload a file
 
         :param filename: file name
         :param content: file content
         :param mimetype: file mime type
 
         :return: file id
+
+        Returns:
+            The return value.
+
+        Raises:
+            Exception: If the operation fails.
         """
-        for response in self._backwards_invoke(
+        for upload_data in self._backwards_invoke(
             InvokeType.UploadFile,
             dict,
             {
@@ -69,17 +78,26 @@ class File(BackwardsInvocation[dict]):
                 "mimetype": mimetype,
             },
         ):
-            url = response.get("url")
+            url = upload_data.get("url")
             if not url:
-                raise Exception("upload file failed, could not get signed url")
+                msg = "upload file failed, could not get signed url"
+                raise Exception(msg)
 
-            response = requests.post(url, files={"file": (filename, content, mimetype)})  # noqa: S113
-            if response.status_code != 201:
-                raise Exception(
+            upload_response = requests.post(
+                url,
+                files={"file": (filename, content, mimetype)},
+                timeout=10,
+            )
+            if upload_response.status_code != HTTPStatus.CREATED:
+                msg = (
                     "upload file failed, status code: "
-                    f"{response.status_code}, response: {response.text}"
+                    f"{upload_response.status_code}, response: {upload_response.text}"
+                )
+                raise Exception(
+                    msg,
                 )
 
-            return UploadFileResponse(**response.json())
+            return UploadFileResponse(**upload_response.json())
 
-        raise Exception("upload file failed, empty response from server")
+        msg = "upload file failed, empty response from server"
+        raise Exception(msg)

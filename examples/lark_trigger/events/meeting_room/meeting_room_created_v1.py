@@ -20,6 +20,12 @@ class MeetingRoomCreatedV1Event(Event):
         Handle meeting room created event.
 
         This event is triggered when a new meeting room is created.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,
@@ -27,7 +33,8 @@ class MeetingRoomCreatedV1Event(Event):
             lambda builder: builder.register_p2_meeting_room_meeting_room_created_v1,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict: dict[str, Any] = {

@@ -10,6 +10,10 @@ from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.trigger import Event
 
+EMPTY_STRING = ""
+TRUTHY_STRINGS = frozenset({"true", "1", "yes", "on"})
+FALSY_STRINGS = frozenset({"false", "0", "no", "off"})
+
 
 class GoogleDriveChangeDetectedEvent(Event):
     """Fetch Google Drive change feed entries and expose them to workflows."""
@@ -23,9 +27,8 @@ class GoogleDriveChangeDetectedEvent(Event):
         credentials = self.runtime.credentials or {}
         access_token = credentials.get("access_token")
         if not access_token:
-            raise ValueError(
-                "Missing Google Drive OAuth access token in runtime credentials"
-            )
+            msg = "Missing Google Drive OAuth access token in runtime credentials"
+            raise ValueError(msg)
 
         spaces = self._resolve_spaces()
         change_types = self._normalize_string_list(parameters.get("change_types"))
@@ -35,7 +38,8 @@ class GoogleDriveChangeDetectedEvent(Event):
 
         changes = payload.get("changes", [])
         if not changes:
-            raise EventIgnoreError("No Drive changes found in payload")
+            msg = "No Drive changes found in payload"
+            raise EventIgnoreError(msg)
 
         filtered_changes = self._filter_changes(
             changes=changes,
@@ -44,7 +48,8 @@ class GoogleDriveChangeDetectedEvent(Event):
         )
 
         if not filtered_changes:
-            raise EventIgnoreError("No Drive changes matched the configured filters")
+            msg = "No Drive changes matched the configured filters"
+            raise EventIgnoreError(msg)
 
         variables = {
             "changes": filtered_changes,
@@ -122,7 +127,7 @@ class GoogleDriveChangeDetectedEvent(Event):
         return ["drive"]
 
     @staticmethod
-    def _safe_int(value: Any, default: int, minimum: int, maximum: int) -> int:
+    def _safe_int(value: object, default: int, minimum: int, maximum: int) -> int:
         try:
             integer = int(value)
         except (TypeError, ValueError):
@@ -130,7 +135,7 @@ class GoogleDriveChangeDetectedEvent(Event):
         return max(minimum, min(maximum, integer))
 
     @staticmethod
-    def _to_bool(value: Any, default: bool) -> bool:
+    def _to_bool(value: object, default: bool) -> bool:
         if value is None:
             return default
         if isinstance(value, bool):
@@ -139,14 +144,14 @@ class GoogleDriveChangeDetectedEvent(Event):
             return bool(value)
         if isinstance(value, str):
             normalized = value.strip().lower()
-            if normalized in {"true", "1", "yes", "on"}:
+            if normalized in TRUTHY_STRINGS:
                 return True
-            if normalized in {"false", "0", "no", "off"}:
+            if normalized in FALSY_STRINGS:
                 return False
-        return default if value == "" else bool(value)
+        return default if value == EMPTY_STRING else bool(value)
 
     @staticmethod
-    def _normalize_string_list(value: Any) -> list[str]:
+    def _normalize_string_list(value: object) -> list[str]:
         if value is None:
             return []
         if isinstance(value, str):

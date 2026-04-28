@@ -1,1 +1,0 @@
-"""Commit comment events (unified)."""

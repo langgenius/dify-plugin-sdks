@@ -20,6 +20,12 @@ class TaskCommentUpdatedV1Event(Event):
         Handle task comment updated event.
 
         This event is triggered when a comment on a task is added or updated.
+
+        Returns:
+            The return value.
+
+        Raises:
+            ValueError: If input values are invalid.
         """
         event_data = dispatch_single_event(
             request,
@@ -27,7 +33,8 @@ class TaskCommentUpdatedV1Event(Event):
             lambda builder: builder.register_p2_task_task_comment_updated_v1,
         ).event
         if event_data is None:
-            raise ValueError("event_data is None")
+            msg = "event_data is None"
+            raise ValueError(msg)
 
         # Build variables dictionary
         variables_dict: dict[str, Any] = {

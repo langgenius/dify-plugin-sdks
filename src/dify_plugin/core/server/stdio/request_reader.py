@@ -15,7 +15,7 @@ from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 
 
 class StdioRequestReader(RequestReader):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def _read_async(self) -> bytes:
@@ -53,8 +53,8 @@ class StdioRequestReader(RequestReader):
                 buffer.write(remaining)
 
             # Process complete lines
-            for line in lines[:-1]:
-                line = line.strip()
+            for raw_line in lines[:-1]:
+                line = raw_line.strip()
                 if not line:
                     continue
 

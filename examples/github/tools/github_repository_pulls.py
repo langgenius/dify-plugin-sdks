@@ -1,6 +1,7 @@
 import json
 from collections.abc import Generator
-from datetime import datetime
+from datetime import UTC, datetime
+from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -9,6 +10,15 @@ from dify_plugin import Tool
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
+
+BODY_PREVIEW_LENGTH = 200
+GITHUB_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+DISPLAY_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+def _format_github_timestamp(value: str) -> str:
+    parsed = datetime.strptime(value, GITHUB_TIMESTAMP_FORMAT).replace(tzinfo=UTC)
+    return parsed.strftime(DISPLAY_DATETIME_FORMAT)
 
 
 class GithubRepositoryPullsTool(Tool):
@@ -73,7 +83,7 @@ class GithubRepositoryPullsTool(Tool):
                 params=params,
             )
 
-            if response.status_code == 200:
+            if response.status_code == HTTPStatus.OK:
                 response_data = response.json()
 
                 pulls = []
@@ -81,8 +91,9 @@ class GithubRepositoryPullsTool(Tool):
                     pull_info = {
                         "number": pull.get("number", 0),
                         "title": pull.get("title", ""),
-                        "body": (pull.get("body", "") or "")[:200] + "..."
-                        if len(pull.get("body", "") or "") > 200
+                        "body": (pull.get("body", "") or "")[:BODY_PREVIEW_LENGTH]
+                        + "..."
+                        if len(pull.get("body", "") or "") > BODY_PREVIEW_LENGTH
                         else (pull.get("body", "") or ""),
                         "state": pull.get("state", ""),
                         "url": pull.get("html_url", ""),
@@ -110,14 +121,14 @@ class GithubRepositoryPullsTool(Tool):
                             "ref": pull.get("base", {}).get("ref", ""),
                             "sha": pull.get("base", {}).get("sha", "")[:7],
                         },
-                        "created_at": datetime.strptime(
-                            pull.get("created_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                        ).strftime("%Y-%m-%d %H:%M:%S")
+                        "created_at": _format_github_timestamp(
+                            pull.get("created_at", "")
+                        )
                         if pull.get("created_at")
                         else "",
-                        "updated_at": datetime.strptime(
-                            pull.get("updated_at", ""), "%Y-%m-%dT%H:%M:%SZ"
-                        ).strftime("%Y-%m-%d %H:%M:%S")
+                        "updated_at": _format_github_timestamp(
+                            pull.get("updated_at", "")
+                        )
                         if pull.get("updated_at")
                         else "",
                     }
@@ -142,8 +153,10 @@ class GithubRepositoryPullsTool(Tool):
             else:
                 response_data = response.json()
                 message = response_data.get("message", "Unknown error")
-                raise InvokeError(f"Request failed: {response.status_code} {message}")
-        except InvokeError as e:
-            raise e
+                msg = f"Request failed: {response.status_code} {message}"
+                raise InvokeError(msg)
+        except InvokeError:
+            raise
         except Exception as e:
-            raise InvokeError(f"GitHub API request failed: {e}") from e
+            msg = f"GitHub API request failed: {e}"
+            raise InvokeError(msg) from e

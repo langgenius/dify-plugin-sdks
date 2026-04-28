@@ -1,5 +1,4 @@
 from enum import Enum, StrEnum
-from typing import Union
 
 from pydantic import BaseModel, Field
 
@@ -21,7 +20,7 @@ class LogMetadata(StrEnum):
     description="The type of the parameter",
 )
 class CommonParameterType(Enum):
-    SECRET_INPUT = "secret-input"
+    SECRET_INPUT = "secret-input"  # noqa: S105
     TEXT_INPUT = "text-input"
     SELECT = "select"
     STRING = "string"
@@ -98,22 +97,28 @@ class ProviderConfig(BaseModel):
 
         @classmethod
         def value_of(cls, value: str) -> "ProviderConfig.Config":
-            """
-            Get value of given mode.
+            """Get value of given mode.
 
             :param value: mode value
             :return: mode
+
+            Returns:
+                The return value.
+
+            Raises:
+                ValueError: If input values are invalid.
             """
             for mode in cls:
                 if mode.value == value:
                     return mode
-            raise ValueError(f"invalid mode value {value}")
+            msg = f"invalid mode value {value}"
+            raise ValueError(msg)
 
     name: str = Field(..., description="The name of the credentials")
     type: Config = Field(..., description="The type of the credentials")
     scope: str | None = None
     required: bool = False
-    default: Union[int, float, str, bool, list] | None = None
+    default: int | float | str | bool | list | None = None
     options: list[ConfigOption] | None = None
     multiple: bool | None = False
     label: I18nObject
