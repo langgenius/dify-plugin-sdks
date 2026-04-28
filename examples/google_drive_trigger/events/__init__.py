@@ -1,1 +1,0 @@
-"""Google Drive trigger events."""
