@@ -14,7 +14,7 @@ concurrency:
 jobs:
   verify-tag:
     name: Verify release tag
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     permissions:
       contents: read
     outputs:
@@ -54,7 +54,7 @@ jobs:
 
   build:
     name: Build release distributions
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     needs: verify-tag
     permissions:
       contents: read
@@ -82,7 +82,7 @@ jobs:
 
   pypi-publish:
     name: Publish package distributions to PyPI
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     needs:
       - verify-tag
       - build
