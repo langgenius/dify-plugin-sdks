@@ -295,7 +295,8 @@ class PluginExecutor:
                 data.model,
                 data.credentials,
                 data.texts,
-                data.user_id,
+                user=data.user_id,
+                input_type=data.input_type,
             )
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
