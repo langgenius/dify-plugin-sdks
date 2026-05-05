@@ -24,10 +24,10 @@ def test_text_embedding_request_defaults_input_type_to_document() -> None:
         action=ModelActions.InvokeTextEmbedding,
         user_id="user-id",
         provider="provider",
-        model_type=ModelType.TEXT_EMBEDDING,
         model="embedding-model",
         credentials={},
         texts=["document text"],
     )
 
+    assert request.model_type == ModelType.TEXT_EMBEDDING
     assert request.input_type == EmbeddingInputType.DOCUMENT
