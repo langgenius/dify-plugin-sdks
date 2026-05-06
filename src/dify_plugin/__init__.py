@@ -4,6 +4,7 @@ from gevent import monkey
 monkey.patch_all(sys=True)
 
 from dify_plugin.config.config import DifyPluginEnv
+from dify_plugin.core.session_context import get_current_session
 from dify_plugin.interfaces.agent import AgentProvider, AgentStrategy
 from dify_plugin.interfaces.endpoint import Endpoint
 from dify_plugin.interfaces.model import ModelProvider
@@ -51,4 +52,5 @@ __all__ = [
     "TextEmbeddingModel",
     "Tool",
     "ToolProvider",
+    "get_current_session",
 ]
