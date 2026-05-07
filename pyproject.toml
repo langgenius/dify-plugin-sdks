@@ -1,0 +1,109 @@
+[project]
+name = 'dify_plugin'
+version = '0.8.0'
+description = 'Dify Plugin SDK'
+authors = [{ name = 'langgenius', email = 'hello@dify.ai' }]
+dependencies = [
+    'Flask~=3.1.3',
+    'Werkzeug~=3.1.4',
+    'dpkt~=1.9.8',
+    'gevent~=25.5.1',
+    'httpx~=0.28.1',
+    'pydantic_settings>=2.5.0,<3.0.0',
+    'pydantic>=2.8.2',
+    'pyyaml~=6.0.1',
+    'requests~=2.32.3',
+    'socksio==1.0.0',
+    'tiktoken~=0.8.0',
+    'yarl>=1.9.4,<2.0',
+    'packaging>=25.0',
+    'urllib3>=2.6.3',  # common deps by plugins
+    'aiohttp>=3.13.3',  # common deps by plugins
+]
+requires-python = '>=3.12'
+readme = 'README.md'
+license = 'Apache-2.0'
+license-files = ['LICENSE']
+keywords = ['dify', 'plugin', 'sdk']
+
+[project.urls]
+source = 'https://github.com/langgenius/dify-plugin-sdks'
+homepage = 'https://github.com/langgenius/dify-plugin-sdks'
+issues = 'https://github.com/langgenius/dify-plugin-sdks/issues'
+
+[build-system]
+requires = ['uv_build~=0.11']
+build-backend = 'uv_build'
+
+[dependency-groups]
+dev = [
+    'prek',
+    'pytest',
+    'pytest-cov',
+    'pytest-mock',
+    'pytest-xdist',
+    'pytest-xprocess',
+    'ruff',
+    'ty',
+]
+
+[tool.uv]
+default-groups = ['dev']
+
+[tool.pytest]
+minversion = '9.0'
+addopts = ['-n', 'auto']
+testpaths = ['tests']
+
+[tool.ruff]
+fix = true
+preview = true
+required-version = '>=0.15'
+
+[tool.ruff.lint]
+select = ['ALL']
+ignore = [
+    'PLR0904',
+    'S104',
+    'N815',
+    'PLR0911',
+    'T201',
+    'B903',
+    'PLR1702',
+    'FIX002',
+    'TD002',
+    'TD003',
+    'PLR0915', # Too broad for orchestration-heavy SDK/example functions.
+    'E402',
+    'SLF001',
+    'ERA001',  # False positives are common.
+    'PLR0912',
+    'PLR0914',
+    'S101',
+    'TRY002',
+    'BLE001',
+    'TRY301',
+    'RUF067',
+    'PLR0913', # Explicit is better than implicit.
+    'PLR0917', # Complex is better than complicated.
+    'C901',
+    'PLC0415',
+    'FBT',     # Too strict.
+    'TRY004',
+    'TC',      # Runtime use of typing constructs is common now.
+    'TID252',  # Too absolute.
+    'ARG002',
+    'PLR6301', # Violates the usual practice.
+    'COM812',  # Conflicts with `ruff format`.
+    'CPY',     # Covered by the standalone LICENSE file.
+    'D',       # Too verbose.
+]
+
+[tool.ruff.lint.pydoclint]
+ignore-one-line-docstrings = true
+
+[tool.ruff.lint.per-file-ignores]
+'tests/**/*.py' = [
+    'S101',    # Assert statements used for pytest.
+    'PLR2004', # Magic value used in test cases.
+]

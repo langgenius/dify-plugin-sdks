@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ bot_name }}</title>
+    <!-- Live2D -->
+    <link href="https://cdn.jsdelivr.net/gh/stevenjoezhang/live2d-widget@latest/src/live2d.min.css" rel="stylesheet" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            /* Default Theme */
+            --primary-color: #F078A9;
+            --secondary-color: #FFD9E8;
+            --background-color: #FFF0F6;
+            --text-color: #4F0D23;
+            --chat-user-bg: #FFD9E8;
+            --chat-bot-bg: #FFF5FA;
+            --button-hover: #F495B6;
+            --shadow-color: rgba(240, 120, 169, 0.2);
+        }
+
+        /* Dark Theme */
+        [data-theme="dark"] {
+            --primary-color: #FF96B7;
+            --secondary-color: #4A314D;
+            --background-color: #2D1B2E;
+            --text-color: #FFE6F0;
+            --chat-user-bg: #4A314D;
+            --chat-bot-bg: #3D2840;
+            --button-hover: #FF7AA3;
+            --shadow-color: rgba(255, 150, 183, 0.2);
+        }
+
+        /* Pastel Theme */
+        [data-theme="pastel"] {
+            --primary-color: #B5D8F7;
+            --secondary-color: #E8F4FF;
+            --background-color: #F0F9FF;
+            --text-color: #2B5174;
+            --chat-user-bg: #E8F4FF;
+            --chat-bot-bg: #F5FAFF;
+            --button-hover: #9ECEF5;
+            --shadow-color: rgba(181, 216, 247, 0.2);
+        }
+
+        /* Mint Theme */
+        [data-theme="mint"] {
+            --primary-color: #7DCEA0;
+            --secondary-color: #E0F5E9;
+            --background-color: #F0FFF4;
+            --text-color: #2C4A3E;
+            --chat-user-bg: #E0F5E9;
+            --chat-bot-bg: #F0FAF5;
+            --button-hover: #6BB98D;
+            --shadow-color: rgba(125, 206, 160, 0.2);
+        }
+
+        /* Lavender Theme */
+        [data-theme="lavender"] {
+            --primary-color: #9B8AD8;
+            --secondary-color: #E8E4F5;
+            --background-color: #F5F2FF;
+            --text-color: #3A2F5B;
+            --chat-user-bg: #E8E4F5;
+            --chat-bot-bg: #F2EFFA;
+            --button-hover: #8878C7;
+            --shadow-color: rgba(155, 138, 216, 0.2);
+        }
+
+        /* Sunset Theme */
+        [data-theme="sunset"] {
+            --primary-color: #FF9B7D;
+            --secondary-color: #FFE8E0;
+            --background-color: #FFF4F0;
+            --text-color: #5B3629;
+            --chat-user-bg: #FFE8E0;
+            --chat-bot-bg: #FFF0EA;
+            --button-hover: #FF8A69;
+            --shadow-color: rgba(255, 155, 125, 0.2);
+        }
+
+        /* Trans Pride Theme */
+        [data-theme="trans"] {
+            --primary-color: #5BCEFA;
+            --secondary-color: #F5A9B8;
+            --background-color: #FFF5F8;
+            --text-color: #2D2D2D;
+            --chat-user-bg: #E0F4FF;
+            --chat-bot-bg: #FFE8EE;
+            --button-hover: #4AB3E4;
+            --shadow-color: rgba(91, 206, 250, 0.15);
+        }
+
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, var(--background-color) 0%, #FFFFFF 100%);
+            font-family: 'Quicksand', sans-serif;
+            color: var(--text-color);
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        header {
+            text-align: center;
+            padding: 1.5rem;
+            background-color: var(--secondary-color);
+            border-bottom: 2px solid var(--primary-color);
+            box-shadow: 0 2px 10px var(--shadow-color);
+            position: relative;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-color);
+            letter-spacing: 1px;
+        }
+
+        .theme-switcher {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        .theme-switcher select {
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: 2px solid var(--primary-color);
+            background: var(--secondary-color);
+            color: var(--text-color);
+            font-family: 'Quicksand', sans-serif;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .chat-container {
+            width: 90%;
+            max-width: 800px;
+            margin: 2rem auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px var(--shadow-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        #chat-log {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            max-height: 60vh;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            display: inline-block;
+            max-width: 80%;
+            word-wrap: break-word;
+            padding: 1rem 1.5rem;
+            border-radius: 20px;
+            font-size: 1rem;
+            animation: fadeIn 0.3s ease;
+            box-shadow: 0 2px 8px var(--shadow-color);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            background-color: var(--chat-user-bg);
+            color: var(--text-color);
+            text-align: right;
+            float: right;
+            clear: both;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot {
+            background-color: var(--chat-bot-bg);
+            color: var(--text-color);
+            text-align: left;
+            float: left;
+            clear: both;
+            border-bottom-left-radius: 4px;
+        }
+
+        .input-container {
+            display: flex;
+            padding: 1rem;
+            border-top: 2px solid var(--secondary-color);
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            gap: 10px;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: 2px solid var(--secondary-color);
+            border-radius: 25px;
+            outline: none;
+            font-size: 1rem;
+            background-color: rgba(255, 255, 255, 0.9);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        #user-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px var(--shadow-color);
+        }
+
+        #user-input::placeholder {
+            color: var(--text-color);
+            opacity: 0.6;
+        }
+
+        button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Quicksand', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px var(--shadow-color);
+        }
+
+        #send-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        #send-btn:hover {
+            background-color: var(--button-hover);
+            transform: translateY(-2px);
+        }
+
+        #reset-btn {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+        }
+
+        #reset-btn:hover {
+            background-color: var(--chat-user-bg);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 95%;
+                margin: 1rem auto;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .input-container {
+                flex-wrap: wrap;
+            }
+
+            button {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>{{ bot_name }}</h1>
+        <div class="theme-switcher">
+            <select id="theme-select">
+                <option value="default">Sweet Pink</option>
+                <option value="dark">Dark Enchanting</option>
+                <option value="pastel">Fresh & Elegant</option>
+                <option value="mint">Mint Garden</option>
+                <option value="lavender">Lavender Dream</option>
+                <option value="sunset">Warm Sunset</option>
+                <option value="trans">Trans Pride</option>
+            </select>
+            <select id="model-select">
+                <option value="koharu">Koharu</option>
+                <option value="haruto">Haruto</option>
+                <option value="chitose">Chitose</option>
+                <option value="miku">Miku</option>
+                <option value="shizuku">Shizuku</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="chat-container">
+        <div id="chat-log"></div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Chat with me ❤️" />
+            <button id="send-btn">Send</button>
+            <button id="reset-btn">Reset</button>
+        </div>
+    </div>
+
+    <!-- Live2D Widget -->
+    <script src="https://cdn.jsdelivr.net/gh/stevenjoezhang/live2d-widget@latest/autoload.js"></script>
+    <script>
+        // ==================== Live2D 配置 ====================
+        const modelMap = {
+            'koharu': "https://unpkg.com/live2d-widget-model-koharu@1.0.5/assets/koharu.model.json",
+            'haruto': "https://unpkg.com/live2d-widget-model-haruto@1.0.5/assets/haruto.model.json",
+            'chitose': "https://unpkg.com/live2d-widget-model-chitose@1.0.5/assets/chitose.model.json",
+            'miku': "https://unpkg.com/live2d-widget-model-miku@1.0.5/assets/miku.model.json",
+            'shizuku': "https://unpkg.com/live2d-widget-model-shizuku@1.0.5/assets/shizuku.model.json"
+        };
+
+        const modelSelect = document.getElementById('model-select');
+        const savedModel = localStorage.getItem('live2d_model') || 'koharu';
+        modelSelect.value = savedModel;
+
+        function initLive2D(modelName) {
+            if (window.L2Dwidget) {
+                L2Dwidget.init({
+                    "model": {
+                        jsonPath: modelMap[modelName],
+                        scale: 1
+                    },
+                    "display": {
+                        "position": "right",
+                        "width": 150,
+                        "height": 300,
+                        "hOffset": 0,
+                        "vOffset": -20
+                    },
+                    "mobile": {
+                        "show": true,
+                        "scale": 0.5
+                    },
+                    "react": {
+                        "opacityDefault": 0.7,
+                        "opacityOnHover": 0.2
+                    }
+                });
+            }
+        }
+
+        initLive2D(savedModel);
+
+        modelSelect.addEventListener('change', (e) => {
+            const modelName = e.target.value;
+            localStorage.setItem('live2d_model', modelName);
+            window.location.reload();
+        });
+
+        // ==================== 主题设置 ====================
+        const themeSelect = document.getElementById('theme-select');
+        const savedTheme = localStorage.getItem('theme') || 'pastel';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        themeSelect.value = savedTheme;
+
+        themeSelect.addEventListener('change', (e) => {
+            const theme = e.target.value;
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        });
+
+        // ==================== 聊天功能 ====================
+        const botName = '{{ bot_name }}';
+        let conversationId = localStorage.getItem('conversation_id') || '';
+
+        const chatLog = document.getElementById('chat-log');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', function (event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        resetBtn.addEventListener('click', resetConversation);
+
+        // ==================== TTS (并发 <=5) + 串行播放 + 保证顺序 ====================
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let currentAudioSource = null;
+        let isPlaying = false;
+
+        // ---- 并发控制 ----
+        const MAX_CONCURRENT_TTS = 5;
+        let currentTtsRequests = 0;       // 正在发 TTS 请求的数量
+        let ttsRequestQueue = [];         // 等待发起的 TTS 请求
+
+        // ---- 播放队列（串行） + 段编号保证顺序 ----
+        let ttsPlaybackQueue = [];        // 只是要播放的队列
+        let pendingSegments = {};         // segmentId -> { text, buffer, ready }
+        let globalSegmentId = 0;          // 自增分段ID
+        let lastPlayedId = -1;            // 上一个已播放的ID
+
+        // ---- SSE增量缓冲，避免一字一播 ----
+        let accumulatedSseBuffer = '';
+        const MIN_LENGTH = 20;            // 至少20字才强制一次
+        const SPLIT_PATTERN = /[。.!？?]/; // 句子终止符
+
+        /**
+         * 串行播放队列：一次只播一个
+         */
+        function processPlaybackQueue() {
+            if (isPlaying || ttsPlaybackQueue.length === 0) return;
+
+            const item = ttsPlaybackQueue.shift();
+            if (!item.buffer) return; // 理论上不会出现
+
+            isPlaying = true;
+
+            currentAudioSource = audioContext.createBufferSource();
+            currentAudioSource.buffer = item.buffer;
+            currentAudioSource.connect(audioContext.destination);
+
+            currentAudioSource.onended = () => {
+                isPlaying = false;
+                processPlaybackQueue();
+            };
+            currentAudioSource.start();
+        }
+
+        /**
+         * 当某个段的 TTS buffer 就绪后，检查能否按顺序推进
+         */
+        function attemptQueuePlay() {
+            // 不断查看 `lastPlayedId + 1` 这个段是否 ready
+            while (true) {
+                const nextId = lastPlayedId + 1;
+                if (!pendingSegments[nextId]) {
+                    break;  // 还没这个段
+                }
+                if (!pendingSegments[nextId].ready) {
+                    break;  // 还没解码完
+                }
+                // 可以播这个段了
+                const seg = pendingSegments[nextId];
+                lastPlayedId++;
+                // 推入播放队列
+                ttsPlaybackQueue.push({ buffer: seg.buffer });
+                // 移除记录
+                delete pendingSegments[nextId];
+            }
+            // 检查完毕后，尝试播放队列
+            processPlaybackQueue();
+        }
+
+        /**
+         * 发起并发受限的 TTS 请求
+         */
+        function limitedFetchTtsBuffer(text) {
+            return new Promise((resolve, reject) => {
+                ttsRequestQueue.push({ text, resolve, reject });
+                tryStartNextTtsRequest();
+            });
+        }
+
+        function tryStartNextTtsRequest() {
+            if (ttsRequestQueue.length === 0) return;
+            if (currentTtsRequests >= MAX_CONCURRENT_TTS) return;
+
+            const { text, resolve, reject } = ttsRequestQueue.shift();
+            currentTtsRequests++;
+
+            fetchTtsBuffer(text)
+                .then((buf) => {
+                    resolve(buf);
+                    currentTtsRequests--;
+                    tryStartNextTtsRequest(); // 再拉下一个
+                })
+                .catch((err) => {
+                    reject(err);
+                    currentTtsRequests--;
+                    tryStartNextTtsRequest();
+                });
+        }
+
+        /**
+         * 真正请求 /pink/tts 接口，返回解码后的 AudioBuffer
+         */
+        async function fetchTtsBuffer(text) {
+            const ttsResponse = await fetch('./pink/tts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    content_text: text,
+                    conversation_id: conversationId
+                })
+            });
+            if (!ttsResponse.ok) {
+                throw new Error('TTS response was not ok');
+            }
+            const reader = ttsResponse.body.getReader();
+            const chunks = [];
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+            }
+            const audioData = new Uint8Array(chunks.reduce((acc, c) => acc + c.length, 0));
+            let offset = 0;
+            for (const c of chunks) {
+                audioData.set(c, offset);
+                offset += c.length;
+            }
+            const audioBuffer = await audioContext.decodeAudioData(audioData.buffer);
+            return audioBuffer;
+        }
+
+        /**
+         * 新生成一个段，分配全局ID，并发请求 TTS
+         */
+        function pushSegmentForTts(textSegment) {
+            const segId = globalSegmentId++;
+            // 初始化 pendingSegments
+            pendingSegments[segId] = {
+                text: textSegment,
+                buffer: null,
+                ready: false
+            };
+            // 发起 TTS
+            limitedFetchTtsBuffer(textSegment)
+                .then((buf) => {
+                    pendingSegments[segId].buffer = buf;
+                    pendingSegments[segId].ready = true;
+                    // 尝试播放下一个可播段
+                    attemptQueuePlay();
+                })
+                .catch((err) => {
+                    console.error('TTS fetch error:', err);
+                    // 出错的段可以直接删除或保留
+                    delete pendingSegments[segId];
+                });
+        }
+
+        /**
+         * SSE 增量累加到缓冲; 当满足终止符或长度 >= 20，则切出段
+         */
+        function accumulateAndTts(newText) {
+            accumulatedSseBuffer += newText;
+
+            while (true) {
+                const match = accumulatedSseBuffer.match(SPLIT_PATTERN);
+                if (!match) {
+                    // 没有句子终止符
+                    if (accumulatedSseBuffer.length >= MIN_LENGTH) {
+                        // 已经超长 => 直接把这段全部拿去 TTS
+                        pushSegmentForTts(accumulatedSseBuffer.trim());
+                        accumulatedSseBuffer = '';
+                    }
+                    break;
+                } else {
+                    // 找到一个终止符
+                    const boundaryIndex = match.index;
+                    // segment包含这个标点
+                    let segment = accumulatedSseBuffer.slice(0, boundaryIndex + 1).trim();
+                    if (segment) {
+                        pushSegmentForTts(segment);
+                    }
+                    accumulatedSseBuffer = accumulatedSseBuffer.slice(boundaryIndex + 1);
+                    // while 循环继续看后续是否还有下一个终止符
+                }
+            }
+        }
+
+        // ==================== SSE + UI 显示 + 发送消息 ====================
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            appendMessage(message, 'user');
+            userInput.value = '';
+
+            const requestBody = {
+                query: message,
+                conversation_id: conversationId
+            };
+
+            try {
+                const response = await fetch('./pink/talk', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                let botMessageContainer = appendMessage('', 'bot');
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+                let accumulatedText = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (!line.trim()) continue;
+                        try {
+                            const data = JSON.parse(line);
+                            if (data.answer) {
+                                // 1) UI 显示
+                                accumulatedText += data.answer;
+                                botMessageContainer.textContent = botName + ': ' + accumulatedText;
+                                // add to #waifu-tips and add waifu-tips-active class to it
+                                const waifuTips = document.getElementById('waifu-tips');
+                                waifuTips.textContent += data.answer;
+                                waifuTips.classList.add('waifu-tips-active');
+                                // 2) 累加 -> 检查是否满足分段条件
+                                accumulateAndTts(data.answer);
+                            }
+                            if (data.conversation_id) {
+                                conversationId = data.conversation_id;
+                                localStorage.setItem('conversation_id', conversationId);
+                            }
+                        } catch (error) {
+                            console.error('Parsing SSE chunk error:', error, line);
+                        }
+                    }
+                }
+
+                // SSE 结束后，如果缓冲还有余料，最后flush一次
+                if (accumulatedSseBuffer.trim().length > 0) {
+                    pushSegmentForTts(accumulatedSseBuffer.trim());
+                    accumulatedSseBuffer = '';
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                appendMessage('Sorry, something went wrong. Please try again later!', 'bot');
+            }
+        }
+
+        // ==================== 工具函数 ====================
+        function appendMessage(text, sender) {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${sender}`;
+            if (sender === 'bot') {
+                messageEl.textContent = botName + ': ' + text;
+            } else {
+                messageEl.textContent = text;
+            }
+            chatLog.appendChild(messageEl);
+            chatLog.scrollTop = chatLog.scrollHeight;
+            return messageEl;
+        }
+
+        function resetConversation() {
+            localStorage.removeItem('conversation_id');
+            conversationId = '';
+            chatLog.innerHTML = '';
+            appendMessage('Let\'s start over!', 'bot');
+
+            // 清理各类队列 & 状态
+            ttsRequestQueue = [];
+            ttsPlaybackQueue = [];
+            pendingSegments = {};
+            globalSegmentId = 0;
+            lastPlayedId = -1;
+            accumulatedSseBuffer = '';
+
+            currentTtsRequests = 0;
+            isPlaying = false;
+
+            if (currentAudioSource) {
+                currentAudioSource.stop();
+            }
+        }
+
+        // 首次加载时的欢迎语
+        window.onload = () => {
+            const welcomeMessage = 'Hi! I\'m ' + botName + ', nice to meet you!';
+            appendMessage(welcomeMessage, 'bot');
+        };
+    </script>
+</body>
+
+</html>

@@ -1,16 +1,21 @@
-# IDE
-.idea
+# Python
+__pycache__/
 
-# secret keys
-**/*.pem
-**/*.key
-**/*.secret
-**/*.token
-**/*.pub
+# OS files
+.DS_Store
+
+# Distribution
+dist/
+
+# Unit test
+.pytest_cache/
+
+# Environments
+.venv/
+
+# ruff
+.ruff_cache/
 
 # dify plugins
-**/*.difypkg
-
-.vscode/
-
-**/.DS_Store
+*.difypkg
+.installed

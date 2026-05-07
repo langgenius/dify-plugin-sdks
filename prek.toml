@@ -1,0 +1,36 @@
+minimum_prek_version = "0.3.8"
+
+[[repos]]
+repo = 'builtin'
+hooks = [
+    {id = 'trailing-whitespace'},
+    {id = 'check-added-large-files'},
+    {id = 'check-case-conflict'},
+    {id = 'check-illegal-windows-names'},
+    {id = 'end-of-file-fixer'},
+    {id = 'fix-byte-order-marker'},
+    {id = 'check-json'},
+    {id = 'check-json5'},
+    {id = 'check-toml'},
+    {id = 'check-vcs-permalinks'},
+    {id = 'check-yaml'},
+    {id = 'check-xml'},
+    {id = 'mixed-line-ending'},
+    {id = 'check-symlinks'},
+    {id = 'destroyed-symlinks'},
+    {id = 'check-merge-conflict'},
+    {id = 'detect-private-key'},
+    {id = 'check-executables-have-shebangs'},
+    {id = 'check-shebang-scripts-are-executable'},
+]
+
+[[repos]]
+repo = 'local'
+
+[[repos.hooks]]
+id = 'make-check'
+name = 'make check'
+entry = 'make check'
+language = 'system'
+always_run = true
+pass_filenames = false

@@ -1,6 +1,0 @@
-path: "/pink/tts"
-method: "POST"
-extra:
-  python:
-    source: "endpoints/tts.py"
-

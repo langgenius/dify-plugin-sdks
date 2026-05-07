@@ -1,0 +1,38 @@
+name: Test
+
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.12"
+          - "3.13"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup uv and Python
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Setup dify-plugin-cli
+        run: ./scripts/setup-dify-plugin-cli.sh
+
+      - name: Install dependencies
+        run: make dev
+
+      - name: Run tests
+        run: make test

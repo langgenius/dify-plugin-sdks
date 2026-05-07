@@ -1,6 +1,0 @@
-path: "/pink/talk"
-method: "POST"
-extra:
-  python:
-    source: "endpoints/girls_talk.py"
-
