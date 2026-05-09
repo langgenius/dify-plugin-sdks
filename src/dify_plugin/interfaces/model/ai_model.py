@@ -388,9 +388,7 @@ class AIModel(ABC):
             return len(text)
 
         # check if gevent is patched to main thread
-        import socket
-
-        import tiktoken
+        import tiktoken  # noqa: PLC0415
 
         if socket.socket is gevent.socket.socket:
             # using gevent real thread to avoid blocking main thread

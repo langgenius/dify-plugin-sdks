@@ -1,6 +1,7 @@
 import pathlib
 
 import pytest
+import requests
 from yarl import URL
 
 from dify_plugin.config.integration_config import IntegrationConfig, find_dify_cli_path
@@ -23,8 +24,6 @@ pytestmark = pytest.mark.skipif(
 
 
 def test_invoke_llm(openai_mock_server: str) -> None:
-    import requests
-
     # download latest langgenius-openai plugin
     url = str(URL(_MARKETPLACE_API_URL) / "api/v1/plugins/batch")
     response = requests.post(

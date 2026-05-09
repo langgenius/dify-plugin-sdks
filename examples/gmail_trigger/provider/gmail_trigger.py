@@ -261,8 +261,10 @@ class GmailTrigger(Trigger):
     ) -> None:
         """Verify OIDC token from Pub/Sub push using google-auth if available."""
         try:
-            from google.auth.transport import requests as google_requests
-            from google.oauth2 import id_token
+            from google.auth.transport import (  # noqa: PLC0415
+                requests as google_requests,
+            )
+            from google.oauth2 import id_token  # noqa: PLC0415
 
             req = google_requests.Request()
             claims = id_token.verify_oauth2_token(token, req, audience=audience)
@@ -358,7 +360,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         expires_at: int = int(time.time()) + expires_in if expires_in else -1
 
         # 2. Parse and store GCP configuration from system_credentials
-        import json as _json
+        import json as _json  # noqa: PLC0415
 
         credentials: dict[str, str] = {"access_token": access_token}
         if refresh_token:
@@ -403,7 +405,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 raise TriggerProviderOAuthError(msg)
             credentials["gmail_email"] = email_addr
 
-            import hashlib as _hashlib
+            import hashlib as _hashlib  # noqa: PLC0415
 
             email_hash = _hashlib.sha256(email_addr.lower().encode()).hexdigest()[:16]
             topic_id = f"dify-gmail-{email_hash}"
@@ -480,8 +482,8 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         credential_type: CredentialType,
     ) -> Subscription:
         # Always watch the authenticated user (me)
-        import hashlib as _hashlib
-        import uuid as _uuid
+        import hashlib as _hashlib  # noqa: PLC0415
+        import uuid as _uuid  # noqa: PLC0415
 
         # 0) Basic inputs and validation
         subscription_key = _uuid.uuid4().hex
@@ -616,14 +618,14 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         self, project_id: str, sa_info: Mapping[str, Any], topic_id: str
     ) -> str:
         """Ensure the shared Pub/Sub topic exists and Gmail can publish to it."""
-        from google.api_core.exceptions import (
+        from google.api_core.exceptions import (  # noqa: PLC0415
             AlreadyExists,
             Forbidden,
             PermissionDenied,
         )
-        from google.cloud import pubsub_v1
-        from google.iam.v1 import policy_pb2
-        from google.oauth2 import service_account as _sa
+        from google.cloud import pubsub_v1  # noqa: PLC0415
+        from google.iam.v1 import policy_pb2  # noqa: PLC0415
+        from google.oauth2 import service_account as _sa  # noqa: PLC0415
 
         creds = _sa.Credentials.from_service_account_info(sa_info)
         publisher = pubsub_v1.PublisherClient(credentials=creds)
@@ -684,11 +686,11 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         require_oidc: bool,
         audience: str,
     ) -> dict[str, str]:
-        import json as _json
+        import json as _json  # noqa: PLC0415
 
-        from google.api_core.exceptions import AlreadyExists, NotFound
-        from google.cloud import pubsub_v1
-        from google.oauth2 import service_account as _sa
+        from google.api_core.exceptions import AlreadyExists, NotFound  # noqa: PLC0415
+        from google.cloud import pubsub_v1  # noqa: PLC0415
+        from google.oauth2 import service_account as _sa  # noqa: PLC0415
 
         info = _json.loads(sa_json) if isinstance(sa_json, str) else sa_json
         topic_path = self._ensure_topic(
@@ -728,7 +730,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 if require_oidc and (cur_sa != sa_email or cur_aud != audience):
                     need_recreate = True
             if need_recreate:
-                import contextlib
+                import contextlib  # noqa: PLC0415
 
                 with contextlib.suppress(NotFound):
                     subscriber.delete_subscription(subscription=sub_path)
@@ -797,11 +799,11 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         Topic deletion is skipped by default for safety.
         """
-        import json as _json
+        import json as _json  # noqa: PLC0415
 
-        from google.api_core.exceptions import NotFound
-        from google.cloud import pubsub_v1
-        from google.oauth2 import service_account as _sa
+        from google.api_core.exceptions import NotFound  # noqa: PLC0415
+        from google.cloud import pubsub_v1  # noqa: PLC0415
+        from google.oauth2 import service_account as _sa  # noqa: PLC0415
 
         info = _json.loads(sa_json) if isinstance(sa_json, str) else sa_json
         creds = _sa.Credentials.from_service_account_info(info)
@@ -809,7 +811,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         # Delete Push Subscription
         subscriber = pubsub_v1.SubscriberClient(credentials=creds)
         sub_path = subscriber.subscription_path(project_id, subscription_name)
-        import contextlib
+        import contextlib  # noqa: PLC0415
 
         with contextlib.suppress(NotFound):
             subscriber.delete_subscription(subscription=sub_path)
@@ -834,11 +836,11 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         if not topic_id:
             return ""
 
-        import json as _json
+        import json as _json  # noqa: PLC0415
 
-        from google.api_core.exceptions import NotFound
-        from google.cloud import pubsub_v1
-        from google.oauth2 import service_account as _sa
+        from google.api_core.exceptions import NotFound  # noqa: PLC0415
+        from google.cloud import pubsub_v1  # noqa: PLC0415
+        from google.oauth2 import service_account as _sa  # noqa: PLC0415
 
         info = _json.loads(sa_json) if isinstance(sa_json, str) else sa_json
         creds = _sa.Credentials.from_service_account_info(info)
@@ -863,7 +865,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                     stopped = True
                 except Exception:
                     stopped = False
-            import contextlib
+            import contextlib  # noqa: PLC0415
 
             with contextlib.suppress(NotFound):
                 publisher.delete_topic(topic=topic_path)

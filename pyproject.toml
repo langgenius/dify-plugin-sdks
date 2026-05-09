@@ -70,7 +70,6 @@ ignore = [
     'TD002',
     'TD003',
     'PLR0915', # Too broad for orchestration-heavy SDK/example functions.
-    'E402',
     'SLF001',
     'ERA001',  # False positives are common.
     'PLR0912',
@@ -79,11 +78,9 @@ ignore = [
     'TRY002',
     'BLE001',
     'TRY301',
-    'RUF067',
     'PLR0913', # Explicit is better than implicit.
     'PLR0917', # Complex is better than complicated.
     'C901',
-    'PLC0415',
     'FBT',     # Too strict.
     'TRY004',
     'TC',      # Runtime use of typing constructs is common now.
