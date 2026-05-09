@@ -28,11 +28,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install just
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+
       - name: Setup dify-plugin-cli
         run: ./scripts/setup-dify-plugin-cli.sh
 
       - name: Install dependencies
-        run: make dev
+        run: just dev
 
       - name: Run tests
-        run: make test
+        run: just test

@@ -1,4 +1,4 @@
-minimum_prek_version = "0.3.8"
+minimum_prek_version = "0.3.13"
 
 [[repos]]
 repo = 'builtin'
@@ -28,9 +28,9 @@ hooks = [
 repo = 'local'
 
 [[repos.hooks]]
-id = 'make-check'
-name = 'make check'
-entry = 'make check'
+id = 'just-check'
+name = 'just check'
+entry = 'just check'
 language = 'system'
 always_run = true
 pass_filenames = false
