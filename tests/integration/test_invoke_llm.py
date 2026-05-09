@@ -1,8 +1,9 @@
 import pathlib
 
+import pytest
 from yarl import URL
 
-from dify_plugin.config.integration_config import IntegrationConfig
+from dify_plugin.config.integration_config import IntegrationConfig, find_dify_cli_path
 from dify_plugin.core.entities.plugin.request import (
     ModelActions,
     ModelInvokeLLMRequest,
@@ -14,6 +15,11 @@ from dify_plugin.entities.model.message import UserPromptMessage
 from dify_plugin.integration.run import PluginRunner
 
 _MARKETPLACE_API_URL = "https://marketplace.dify.ai"
+
+pytestmark = pytest.mark.skipif(
+    find_dify_cli_path() is None,
+    reason="dify cli not found; install dify-plugin-cli to run integration tests",
+)
 
 
 def test_invoke_llm(openai_mock_server: str) -> None:

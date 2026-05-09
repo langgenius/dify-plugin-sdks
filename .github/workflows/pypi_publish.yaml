@@ -70,8 +70,11 @@ jobs:
           cache-dependency-glob: uv.lock
           python-version: "3.12"
 
+      - name: Install just
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+
       - name: Build distributions
-        run: make build
+        run: just build
 
       - name: Upload distributions
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

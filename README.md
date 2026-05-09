@@ -4,6 +4,24 @@ A Python SDK for building plugins for Dify.
 
 Here is a short introduction to Dify Plugin: <https://docs.dify.ai/plugins/introduction>
 
+## Development
+
+This repository uses [`just`](https://github.com/casey/just) as its command runner.
+Install it with your preferred package manager, or with uv:
+
+```bash
+uv tool install rust-just
+```
+
+Common development commands:
+
+```bash
+just dev      # Sync default dev dependencies
+just check    # Check lockfile, formatting, and linting
+just test     # Run all tests
+just build    # Build source and wheel distributions
+```
+
 ## Version Management
 
 This SDK follows Semantic Versioning (a.b.c):
@@ -22,7 +40,7 @@ When depending on this SDK, it's recommended to specify version constraints that
 Example in your project's dependency management:
 
 ```python
-dify_plugin~=0.7
+dify_plugin >= 0.8
 ```
 
 ## Manifest Version Reference
@@ -54,3 +72,4 @@ For the manifest specification, we've introduced two versioning fields:
 | 1.9.0                | 0.5.0         | Support Datasource functionality for plugins       |
 | 1.10.0               | 0.6.0         | Support Trigger functionality for plugins          |
 | 1.11.0               | 0.7.0         | Support Multimodal Reranking / Embeddings          |
+| 1.14.0               | 0.8.0         | Dependency and project structure cleanup           |

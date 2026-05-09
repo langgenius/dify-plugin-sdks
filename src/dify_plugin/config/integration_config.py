@@ -1,5 +1,6 @@
 """This file is used to hold the integration config for plugin testing."""
 
+import os
 import shutil
 import subprocess  # noqa: S404
 
@@ -21,6 +22,19 @@ _PLUGIN_NAMES = [
 ]
 
 
+def find_dify_cli_path() -> str | None:
+    configured_path = os.getenv("DIFY_CLI_PATH")
+    if configured_path:
+        return configured_path
+
+    for plugin_name in _PLUGIN_NAMES:
+        cli_path = shutil.which(plugin_name)
+        if cli_path:
+            return cli_path
+
+    return None
+
+
 class IntegrationConfig(BaseSettings):
     dify_cli_path: str = Field(default="", description="The path to the dify cli")
 
@@ -29,10 +43,7 @@ class IntegrationConfig(BaseSettings):
     def validate_dify_cli_path(cls, v: str) -> str:
         # find the dify cli path
         if not v:
-            for plugin_name in _PLUGIN_NAMES:
-                v = shutil.which(plugin_name)
-                if v:
-                    break
+            v = find_dify_cli_path()
 
             if not v:
                 msg = "dify cli not found"
