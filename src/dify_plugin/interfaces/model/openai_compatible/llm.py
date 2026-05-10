@@ -1051,34 +1051,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         for message in messages_dict:
             num_tokens += tokens_per_message
             for key, value in message.items():
-                # Cast str(value) in case the message value is not a string
-                # This occurs with function messages
-                # TODO: The current token calculation method for the image
-                #  type is not implemented, which need to download the image
-                #  and then get the resolution for calculation,
-                #  and will increase the request delay
-                message_value = value
-                if isinstance(message_value, list):
-                    text = ""
-                    for item in message_value:
-                        if isinstance(item, dict) and item["type"] == "text":
-                            text += item["text"]
-
-                    message_value = text
-
-                if key == "tool_calls":
-                    for tool_call in message_value or []:
-                        for t_key, t_value in tool_call.items():
-                            num_tokens += self._get_num_tokens_by_gpt2(t_key)
-                            if t_key == "function":
-                                for f_key, f_value in t_value.items():
-                                    num_tokens += self._get_num_tokens_by_gpt2(f_key)
-                                    num_tokens += self._get_num_tokens_by_gpt2(f_value)
-                            else:
-                                num_tokens += self._get_num_tokens_by_gpt2(t_key)
-                                num_tokens += self._get_num_tokens_by_gpt2(t_value)
-                else:
-                    num_tokens += self._get_num_tokens_by_gpt2(str(message_value))
+                num_tokens += self._num_tokens_for_message_value(key, value)
 
                 if key == "name":
                     num_tokens += tokens_per_name
@@ -1089,6 +1062,47 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if tools:
             num_tokens += self._num_tokens_for_tools(tools)
 
+        return num_tokens
+
+    def _num_tokens_for_message_value(self, key: str, value: object) -> int:
+        message_value = self._text_from_message_value(value)
+        if key == "tool_calls":
+            return sum(
+                self._num_tokens_for_tool_call(tool_call)
+                for tool_call in cast("list[dict]", message_value) or []
+            )
+
+        return self._get_num_tokens_by_gpt2(str(message_value))
+
+    def _text_from_message_value(self, value: object) -> object:
+        # TODO: The current token calculation method for the image type is not
+        # implemented. It needs to download the image and calculate resolution,
+        # which increases request delay.
+        if not isinstance(value, list):
+            return value
+
+        text = ""
+        for item in value:
+            if isinstance(item, dict) and item["type"] == "text":
+                text += item["text"]
+        return text
+
+    def _num_tokens_for_tool_call(self, tool_call: dict) -> int:
+        num_tokens = 0
+        for key, value in tool_call.items():
+            num_tokens += self._get_num_tokens_by_gpt2(key)
+            if key == "function":
+                num_tokens += self._num_tokens_for_function_call(value)
+            else:
+                num_tokens += self._get_num_tokens_by_gpt2(key)
+                num_tokens += self._get_num_tokens_by_gpt2(value)
+        return num_tokens
+
+    def _num_tokens_for_function_call(self, function_call: dict) -> int:
+        num_tokens = 0
+        for key, value in function_call.items():
+            num_tokens += self._get_num_tokens_by_gpt2(key)
+            num_tokens += self._get_num_tokens_by_gpt2(value)
         return num_tokens
 
     def _num_tokens_for_tools(self, tools: list[PromptMessageTool]) -> int:
@@ -1116,34 +1130,44 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             if hasattr(tool, "parameters"):
                 parameters = tool.parameters
                 num_tokens += self._get_num_tokens_by_gpt2("parameters")
-                if "title" in parameters:
-                    num_tokens += self._get_num_tokens_by_gpt2("title")
-                    num_tokens += self._get_num_tokens_by_gpt2(parameters.get("title"))
-                num_tokens += self._get_num_tokens_by_gpt2("type")
-                num_tokens += self._get_num_tokens_by_gpt2(parameters.get("type"))
-                if "properties" in parameters:
-                    num_tokens += self._get_num_tokens_by_gpt2("properties")
-                    for key, value in parameters.get("properties", {}).items():
-                        num_tokens += self._get_num_tokens_by_gpt2(key)
-                        for field_key, field_value in value.items():
-                            num_tokens += self._get_num_tokens_by_gpt2(field_key)
-                            if field_key == "enum":
-                                for enum_field in field_value:
-                                    num_tokens += 3
-                                    num_tokens += self._get_num_tokens_by_gpt2(
-                                        enum_field,
-                                    )
-                            else:
-                                num_tokens += self._get_num_tokens_by_gpt2(field_key)
-                                num_tokens += self._get_num_tokens_by_gpt2(
-                                    str(field_value),
-                                )
-                if "required" in parameters:
-                    num_tokens += self._get_num_tokens_by_gpt2("required")
-                    for required_field in parameters["required"]:
-                        num_tokens += 3
-                        num_tokens += self._get_num_tokens_by_gpt2(required_field)
+                num_tokens += self._num_tokens_for_tool_parameters(parameters)
 
+        return num_tokens
+
+    def _num_tokens_for_tool_parameters(self, parameters: dict) -> int:
+        num_tokens = 0
+        if "title" in parameters:
+            num_tokens += self._get_num_tokens_by_gpt2("title")
+            num_tokens += self._get_num_tokens_by_gpt2(parameters.get("title"))
+        num_tokens += self._get_num_tokens_by_gpt2("type")
+        num_tokens += self._get_num_tokens_by_gpt2(parameters.get("type"))
+        if "properties" in parameters:
+            num_tokens += self._get_num_tokens_by_gpt2("properties")
+            for key, value in parameters.get("properties", {}).items():
+                num_tokens += self._num_tokens_for_tool_property(key, value)
+        if "required" in parameters:
+            num_tokens += self._get_num_tokens_by_gpt2("required")
+            for required_field in parameters["required"]:
+                num_tokens += 3
+                num_tokens += self._get_num_tokens_by_gpt2(required_field)
+        return num_tokens
+
+    def _num_tokens_for_tool_property(self, key: str, value: dict) -> int:
+        num_tokens = self._get_num_tokens_by_gpt2(key)
+        for field_key, field_value in value.items():
+            num_tokens += self._get_num_tokens_by_gpt2(field_key)
+            if field_key == "enum":
+                num_tokens += self._num_tokens_for_enum_field(field_value)
+            else:
+                num_tokens += self._get_num_tokens_by_gpt2(field_key)
+                num_tokens += self._get_num_tokens_by_gpt2(str(field_value))
+        return num_tokens
+
+    def _num_tokens_for_enum_field(self, field_value: list[str]) -> int:
+        num_tokens = 0
+        for enum_field in field_value:
+            num_tokens += 3
+            num_tokens += self._get_num_tokens_by_gpt2(enum_field)
         return num_tokens
 
     def _extract_response_tool_calls(

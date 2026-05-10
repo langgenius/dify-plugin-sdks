@@ -90,7 +90,7 @@ if TYPE_CHECKING:
     from dify_plugin.interfaces.tool import Tool
 
 
-class PluginExecutor:
+class PluginExecutor:  # noqa: PLR0904
     def __init__(self, config: DifyPluginEnv, registration: PluginRegistration) -> None:
         self.config = config
         self.registration = registration
@@ -179,7 +179,7 @@ class PluginExecutor:
                 msg,
             )
 
-        if not tool_cls._is_get_runtime_parameters_overridden():
+        if not tool_cls.has_runtime_parameters():
             msg = f"Tool `{data.tool}` does not implement runtime parameters"
             raise ValueError(
                 msg,

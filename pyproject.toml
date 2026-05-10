@@ -59,18 +59,15 @@ required-version = '>=0.15'
 [tool.ruff.lint]
 select = ['ALL']
 ignore = [
-    'PLR0904',
     'S104',
     'N815',
     'PLR0911',
     'T201',
     'B903',
-    'PLR1702',
     'FIX002',
     'TD002',
     'TD003',
     'PLR0915', # Too broad for orchestration-heavy SDK/example functions.
-    'SLF001',
     'ERA001',  # False positives are common.
     'PLR0912',
     'PLR0914',
@@ -98,5 +95,6 @@ ignore-one-line-docstrings = true
 [tool.ruff.lint.per-file-ignores]
 'tests/**/*.py' = [
     'S101',    # Assert statements used for pytest.
+    'SLF001',  # Tests may inspect private implementation details.
     'PLR2004', # Magic value used in test cases.
 ]

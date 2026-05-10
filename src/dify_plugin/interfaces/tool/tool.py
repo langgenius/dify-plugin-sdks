@@ -215,7 +215,7 @@ class ToolLike[T: InvokeMessage](ABC):
         return []
 
     @classmethod
-    def _is_get_runtime_parameters_overridden(cls) -> bool:
+    def has_runtime_parameters(cls) -> bool:
         """
         check if the _get_runtime_parameters method is overridden by subclass
 
@@ -225,6 +225,18 @@ class ToolLike[T: InvokeMessage](ABC):
             The return value.
         """
         return "_get_runtime_parameters" in cls.__dict__
+
+    @classmethod
+    def _is_get_runtime_parameters_overridden(cls) -> bool:
+        """
+        check if the _get_runtime_parameters method is overridden by subclass
+
+        :return: True if overridden, False otherwise
+
+        Returns:
+            The return value.
+        """
+        return cls.has_runtime_parameters()
 
     @classmethod
     def _convert_parameters(cls, tool_parameters: dict) -> dict:

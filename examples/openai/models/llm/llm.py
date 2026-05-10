@@ -1220,34 +1220,11 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         for message in messages_dict:
             num_tokens += tokens_per_message
             for key, message_value in message.items():
-                # Cast str(value) in case the message value is not a string
-                # This occurs with function messages
-                # TODO: The current token calculation method for the image
-                # type is not implemented, which need to download the image
-                # and then get the resolution for calculation, and will
-                # increase the request delay
-                value = message_value
-                if isinstance(value, list):
-                    text = ""
-                    for item in value:
-                        if isinstance(item, dict) and item["type"] == "text":
-                            text += item["text"]
-
-                    value = text
-
-                if key == "tool_calls":
-                    for tool_call in value:
-                        for t_key, t_value in tool_call.items():
-                            num_tokens += len(encoding.encode(t_key))
-                            if t_key == "function":
-                                for f_key, f_value in t_value.items():
-                                    num_tokens += len(encoding.encode(f_key))
-                                    num_tokens += len(encoding.encode(f_value))
-                            else:
-                                num_tokens += len(encoding.encode(t_key))
-                                num_tokens += len(encoding.encode(t_value))
-                else:
-                    num_tokens += len(encoding.encode(str(value)))
+                num_tokens += self._num_tokens_for_message_value(
+                    encoding,
+                    key,
+                    message_value,
+                )
 
                 if key == "name":
                     num_tokens += tokens_per_name
@@ -1258,6 +1235,60 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         if tools:
             num_tokens += self._num_tokens_for_tools(encoding, tools)
 
+        return num_tokens
+
+    def _num_tokens_for_message_value(
+        self,
+        encoding: tiktoken.Encoding,
+        key: str,
+        value: object,
+    ) -> int:
+        message_value = self._text_from_message_value(value)
+        if key == "tool_calls":
+            return sum(
+                self._num_tokens_for_tool_call(encoding, tool_call)
+                for tool_call in cast("list[dict]", message_value)
+            )
+
+        return len(encoding.encode(str(message_value)))
+
+    def _text_from_message_value(self, value: object) -> object:
+        # TODO: The current token calculation method for the image type is not
+        # implemented. It needs to download the image and calculate resolution,
+        # which increases request delay.
+        if not isinstance(value, list):
+            return value
+
+        text = ""
+        for item in value:
+            if isinstance(item, dict) and item["type"] == "text":
+                text += item["text"]
+        return text
+
+    def _num_tokens_for_tool_call(
+        self,
+        encoding: tiktoken.Encoding,
+        tool_call: dict,
+    ) -> int:
+        num_tokens = 0
+        for key, value in tool_call.items():
+            num_tokens += len(encoding.encode(key))
+            if key == "function":
+                num_tokens += self._num_tokens_for_function_call(encoding, value)
+            else:
+                num_tokens += len(encoding.encode(key))
+                num_tokens += len(encoding.encode(value))
+        return num_tokens
+
+    def _num_tokens_for_function_call(
+        self,
+        encoding: tiktoken.Encoding,
+        function_call: dict,
+    ) -> int:
+        num_tokens = 0
+        for key, value in function_call.items():
+            num_tokens += len(encoding.encode(key))
+            num_tokens += len(encoding.encode(value))
         return num_tokens
 
     def _num_tokens_for_tools(
@@ -1286,30 +1317,57 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             num_tokens += len(encoding.encode(tool.description))
             parameters = tool.parameters
             num_tokens += len(encoding.encode("parameters"))
-            if "title" in parameters:
-                num_tokens += len(encoding.encode("title"))
-                num_tokens += len(encoding.encode(parameters.get("title")))
-            num_tokens += len(encoding.encode("type"))
-            num_tokens += len(encoding.encode(parameters.get("type")))
-            if "properties" in parameters:
-                num_tokens += len(encoding.encode("properties"))
-                for key, value in parameters.get("properties").items():
-                    num_tokens += len(encoding.encode(key))
-                    for field_key, field_value in value.items():
-                        num_tokens += len(encoding.encode(field_key))
-                        if field_key == "enum":
-                            for enum_field in field_value:
-                                num_tokens += 3
-                                num_tokens += len(encoding.encode(enum_field))
-                        else:
-                            num_tokens += len(encoding.encode(field_key))
-                            num_tokens += len(encoding.encode(str(field_value)))
-            if "required" in parameters:
-                num_tokens += len(encoding.encode("required"))
-                for required_field in parameters["required"]:
-                    num_tokens += 3
-                    num_tokens += len(encoding.encode(required_field))
+            num_tokens += self._num_tokens_for_tool_parameters(encoding, parameters)
 
+        return num_tokens
+
+    def _num_tokens_for_tool_parameters(
+        self,
+        encoding: tiktoken.Encoding,
+        parameters: dict,
+    ) -> int:
+        num_tokens = 0
+        if "title" in parameters:
+            num_tokens += len(encoding.encode("title"))
+            num_tokens += len(encoding.encode(parameters.get("title")))
+        num_tokens += len(encoding.encode("type"))
+        num_tokens += len(encoding.encode(parameters.get("type")))
+        if "properties" in parameters:
+            num_tokens += len(encoding.encode("properties"))
+            for key, value in parameters.get("properties").items():
+                num_tokens += self._num_tokens_for_tool_property(encoding, key, value)
+        if "required" in parameters:
+            num_tokens += len(encoding.encode("required"))
+            for required_field in parameters["required"]:
+                num_tokens += 3
+                num_tokens += len(encoding.encode(required_field))
+        return num_tokens
+
+    def _num_tokens_for_tool_property(
+        self,
+        encoding: tiktoken.Encoding,
+        key: str,
+        value: dict,
+    ) -> int:
+        num_tokens = len(encoding.encode(key))
+        for field_key, field_value in value.items():
+            num_tokens += len(encoding.encode(field_key))
+            if field_key == "enum":
+                num_tokens += self._num_tokens_for_enum_field(encoding, field_value)
+            else:
+                num_tokens += len(encoding.encode(field_key))
+                num_tokens += len(encoding.encode(str(field_value)))
+        return num_tokens
+
+    def _num_tokens_for_enum_field(
+        self,
+        encoding: tiktoken.Encoding,
+        field_value: list[str],
+    ) -> int:
+        num_tokens = 0
+        for enum_field in field_value:
+            num_tokens += 3
+            num_tokens += len(encoding.encode(enum_field))
         return num_tokens
 
     def get_customizable_model_schema(
