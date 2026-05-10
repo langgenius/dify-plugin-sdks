@@ -33,7 +33,7 @@ class CodeScanningAlertEvent(Event):
         alert = payload.get("alert")
         if not isinstance(alert, Mapping):
             msg = "No alert data in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         self._check_severity(alert, parameters.get("severity"))
         self._check_state(alert, parameters.get("state"))

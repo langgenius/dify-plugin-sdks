@@ -32,7 +32,7 @@ class DeployKeyUnifiedEvent(Event):
         key = payload.get("key") or payload.get("deploy_key")
         if not isinstance(key, Mapping):
             msg = "No deploy key in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         title_filter = parameters.get("title")
         if title_filter:

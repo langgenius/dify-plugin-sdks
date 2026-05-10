@@ -14,7 +14,7 @@ def prepare_model_factory(models: Mapping[ModelType, type[AIModel]]) -> ModelFac
     return ModelFactory(
         ModelProviderConfiguration(
             provider="test",
-            label=I18nObject(en_US="test"),
+            label=I18nObject(en_us="test"),
             supported_model_types=list(models.keys()),
             configurate_methods=[],
             extra=ModelProviderConfigurationExtra(

@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any
 
 from dify_plugin.core.runtime import Session
@@ -8,6 +9,7 @@ from dify_plugin.entities.trigger import (
 )
 
 
+@dataclass(frozen=True, slots=True)
 class TriggerRuntime:
     """
     Trigger Runtime
@@ -20,20 +22,11 @@ class TriggerRuntime:
     """
 
     session: Session
+    credential_type: CredentialType
     credentials: Mapping[str, Any] | None = None
-    credential_type: CredentialType = CredentialType.UNAUTHORIZED
-
-    def __init__(
-        self,
-        session: Session,
-        credential_type: CredentialType,
-        credentials: Mapping[str, Any] | None = None,
-    ) -> None:
-        self.session = session
-        self.credentials = credentials
-        self.credential_type = credential_type
 
 
+@dataclass(frozen=True, slots=True)
 class EventRuntime:
     """
     Event Runtime
@@ -42,18 +35,6 @@ class EventRuntime:
     session: Session
 
     # Only available when the on_event invoke
+    credential_type: CredentialType
     subscription: Subscription
     credentials: Mapping[str, Any] | None = None
-    credential_type: CredentialType = CredentialType.UNAUTHORIZED
-
-    def __init__(
-        self,
-        session: Session,
-        credential_type: CredentialType,
-        subscription: Subscription,
-        credentials: Mapping[str, Any] | None = None,
-    ) -> None:
-        self.session = session
-        self.subscription = subscription
-        self.credentials = credentials
-        self.credential_type = credential_type

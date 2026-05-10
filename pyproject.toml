@@ -60,10 +60,8 @@ required-version = '>=0.15'
 select = ['ALL']
 ignore = [
     'S104',
-    'N815',
     'PLR0911',
     'T201',
-    'B903',
     'FIX002',
     'TD002',
     'TD003',
@@ -79,7 +77,6 @@ ignore = [
     'PLR0917', # Complex is better than complicated.
     'C901',
     'FBT',     # Too strict.
-    'TRY004',
     'TC',      # Runtime use of typing constructs is common now.
     'TID252',  # Too absolute.
     'ARG002',

@@ -882,7 +882,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
                         options.append(
                             ParameterOption(
                                 value=str(calendar_id),
-                                label=I18nObject(en_US=str(summary)),
+                                label=I18nObject(en_us=str(summary)),
                             ),
                         )
 
@@ -897,7 +897,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
                 0,
                 ParameterOption(
                     value="primary",
-                    label=I18nObject(en_US="Primary Calendar"),
+                    label=I18nObject(en_us="Primary Calendar"),
                 ),
             )
         return options

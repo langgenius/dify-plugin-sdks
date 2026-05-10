@@ -77,7 +77,7 @@ def test_fetch_parameter_options() -> None:
             yield self.create_text_message("Hello, world!")
 
         def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
-            return [ParameterOption(value="test", label=I18nObject(en_US="test"))]
+            return [ParameterOption(value="test", label=I18nObject(en_us="test"))]
 
     session = Session(
         session_id="test",
@@ -91,5 +91,5 @@ def test_fetch_parameter_options() -> None:
         session=session,
     )
     assert tool.fetch_parameter_options("test") == [
-        ParameterOption(value="test", label=I18nObject(en_US="test"))
+        ParameterOption(value="test", label=I18nObject(en_us="test"))
     ]

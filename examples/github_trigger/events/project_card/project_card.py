@@ -32,7 +32,7 @@ class ProjectCardUnifiedEvent(Event):
         card = payload.get("project_card")
         if not isinstance(card, Mapping):
             msg = "No project_card in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         note_contains = parameters.get("note_contains")
         if note_contains:

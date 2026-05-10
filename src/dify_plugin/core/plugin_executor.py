@@ -416,7 +416,7 @@ class PluginExecutor:  # noqa: PLR0904
                 yield {"result": binascii.hexlify(chunk).decode()}
         else:
             msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
-            raise ValueError(
+            raise TypeError(
                 msg,
             )
 

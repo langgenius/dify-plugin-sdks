@@ -32,7 +32,7 @@ class ProjectUnifiedEvent(Event):
         project = payload.get("project")
         if not isinstance(project, Mapping):
             msg = "No project in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         name_filter = parameters.get("project_name")
         if name_filter:

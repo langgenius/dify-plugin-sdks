@@ -495,7 +495,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                     "Unexpected response format from GitHub API when "
                     "fetching repositories"
                 )
-                raise ValueError(msg)
+                raise TypeError(msg)
 
             repos = cast(list[dict[str, Any]], raw_repos)
             for repo in repos:
@@ -506,7 +506,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                     options.append(
                         ParameterOption(
                             value=full_name,
-                            label=I18nObject(en_US=full_name),
+                            label=I18nObject(en_us=full_name),
                             icon=avatar_url,
                         )
                     )

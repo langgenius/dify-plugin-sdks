@@ -303,7 +303,7 @@ class ProviderModel(BaseModel):
     @classmethod
     def validate_label(cls, data: dict) -> dict:
         if isinstance(data, dict) and not data.get("label"):
-            data["label"] = I18nObject(en_US=data["model"])
+            data["label"] = I18nObject(en_us=data["model"])
 
         return data
 
@@ -368,7 +368,7 @@ class ParameterRule(BaseModel):
                     pass
 
             if not data.get("label"):
-                data["label"] = I18nObject(en_US=data["name"])
+                data["label"] = I18nObject(en_us=data["name"])
 
         return data
 

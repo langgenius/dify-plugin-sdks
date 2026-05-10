@@ -150,7 +150,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
 
         return AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.TTS,
             model_properties={

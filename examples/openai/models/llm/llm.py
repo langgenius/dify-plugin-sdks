@@ -426,7 +426,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
             ai_model_entity = AIModelEntity(
                 model=model.id,
-                label=I18nObject(zh_Hans=model.id, en_US=model.id),
+                label=I18nObject(zh_hans=model.id, en_us=model.id),
                 model_type=ModelType.LLM,
                 features=base_model_schema.features,
                 fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
@@ -1138,7 +1138,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             }
         else:
             msg = f"Got unknown type {message}"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         if message.name:
             message_dict["name"] = message.name
@@ -1406,7 +1406,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         return AIModelEntity(
             model=model,
-            label=I18nObject(zh_Hans=model, en_US=model),
+            label=I18nObject(zh_hans=model, en_us=model),
             model_type=ModelType.LLM,
             features=list(base_model_schema_features),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,

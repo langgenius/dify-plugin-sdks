@@ -30,7 +30,7 @@ class CheckRunCompletedEvent(Event):
         run = payload.get("check_run")
         if not isinstance(run, Mapping):
             msg = "No check_run data in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         self._check_name(run, parameters.get("check_name"))
         self._check_branch(run, parameters.get("branch"))

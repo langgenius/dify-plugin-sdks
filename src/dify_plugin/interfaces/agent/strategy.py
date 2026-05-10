@@ -51,7 +51,7 @@ class AgentModelConfig(LLMModelConfig):
     def convert_prompt_messages(cls, v: list[object]) -> list[PromptMessage]:
         if not isinstance(v, list):
             msg = "prompt_messages must be a list"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         for i in range(len(v)):
             if v[i]["role"] == PromptMessageRole.USER.value:

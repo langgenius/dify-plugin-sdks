@@ -1,6 +1,6 @@
 from enum import StrEnum
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from dify_plugin.core.documentation.schema_doc import docs
 
@@ -11,26 +11,33 @@ from dify_plugin.core.documentation.schema_doc import docs
 class I18nObject(BaseModel):
     """Model class for i18n object."""
 
-    zh_Hans: str | None = None
-    pt_BR: str | None = None
-    ja_JP: str | None = None
-    en_US: str
+    model_config = ConfigDict(
+        serialize_by_alias=True,
+        validate_by_alias=True,
+        validate_by_name=True,
+    )
 
-    def __init__(self, **data: object) -> None:
-        super().__init__(**data)
-        if not self.zh_Hans:
-            self.zh_Hans = self.en_US
-        if not self.pt_BR:
-            self.pt_BR = self.en_US
-        if not self.ja_JP:
-            self.ja_JP = self.en_US
+    zh_hans: str | None = Field(default=None, alias="zh_Hans")
+    pt_br: str | None = Field(default=None, alias="pt_BR")
+    ja_jp: str | None = Field(default=None, alias="ja_JP")
+    en_us: str = Field(alias="en_US")
+
+    @model_validator(mode="after")
+    def fill_missing_translations(self) -> "I18nObject":
+        if not self.zh_hans:
+            self.zh_hans = self.en_us
+        if not self.pt_br:
+            self.pt_br = self.en_us
+        if not self.ja_jp:
+            self.ja_jp = self.en_us
+        return self
 
     def to_dict(self) -> dict:
         return {
-            "zh_Hans": self.zh_Hans,
-            "en_US": self.en_US,
-            "pt_BR": self.pt_BR,
-            "ja_JP": self.ja_JP,
+            "zh_Hans": self.zh_hans,
+            "en_US": self.en_us,
+            "pt_BR": self.pt_br,
+            "ja_JP": self.ja_jp,
         }
 
 

@@ -30,7 +30,7 @@ class ReleasePublishedEvent(Event):
         release = payload.get("release")
         if not isinstance(release, Mapping):
             msg = "No release data in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         self._check_tag_name(release, parameters.get("tag_name"))
         self._check_prerelease(release, parameters.get("prerelease"))

@@ -42,7 +42,7 @@ def test_model_provider_get_model_instance_delegates_to_factory() -> None:
 
     provider_schema = ProviderEntity(
         provider="test",
-        label=I18nObject(en_US="test"),
+        label=I18nObject(en_us="test"),
         supported_model_types=[ModelType.LLM],
         configurate_methods=[],
     )
@@ -60,7 +60,7 @@ def test_model_provider_get_model_instance_get_multiple_instances() -> None:
     provider = MockModelProvider(
         provider_schemas=ProviderEntity(
             provider="test",
-            label=I18nObject(en_US="test"),
+            label=I18nObject(en_us="test"),
             supported_model_types=[ModelType.LLM],
             configurate_methods=[],
         ),

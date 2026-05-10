@@ -68,7 +68,7 @@ class FormOption(BaseModel):
     def __init__(self, **data: object) -> None:
         super().__init__(**data)
         if not self.label:
-            self.label = I18nObject(en_US=self.value)
+            self.label = I18nObject(en_us=self.value)
 
 
 @docs(
@@ -236,7 +236,7 @@ class ProviderEntity(BaseModel):
         value = values.get("models", {})
         if not isinstance(value, dict):
             msg = "models should be a glob path list"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         cwd = pathlib.Path.cwd()
 
