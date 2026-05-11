@@ -51,6 +51,7 @@ class OAICompatRerankModel(RerankModel):
             CredentialsValidateFailedError: If credentials validation fails.
             InvokeServerUnavailableError: If model invocation fails.
         """
+        del user
         if len(docs) == 0:
             return RerankResult(model=model, docs=[])
 
@@ -172,9 +173,10 @@ class OAICompatRerankModel(RerankModel):
         """
         generate custom model entities from credentials
         """
+        del credentials
         return AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             model_type=ModelType.RERANK,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={},

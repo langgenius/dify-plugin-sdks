@@ -160,6 +160,8 @@ class ContactUserUpdatedV3Event(Event):
         payload: Mapping[str, Any],
     ) -> Variables:
         """Handle contact user updated events."""
+        del parameters
+        del payload
 
         event_data = dispatch_single_event(
             request,

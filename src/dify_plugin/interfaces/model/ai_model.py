@@ -292,28 +292,28 @@ class AIModel(ABC):
                         parameter_rule.required = default_parameter_rule["required"]
                     if not parameter_rule.help and "help" in default_parameter_rule:
                         parameter_rule.help = I18nObject(
-                            en_US=default_parameter_rule["help"]["en_US"],
+                            en_us=default_parameter_rule["help"]["en_US"],
                         )
                     if (
                         parameter_rule.help
-                        and not parameter_rule.help.en_US
+                        and not parameter_rule.help.en_us
                         and (
                             "help" in default_parameter_rule
                             and "en_US" in default_parameter_rule["help"]
                         )
                     ):
-                        parameter_rule.help.en_US = default_parameter_rule["help"][
+                        parameter_rule.help.en_us = default_parameter_rule["help"][
                             "en_US"
                         ]
                     if (
                         parameter_rule.help
-                        and not parameter_rule.help.zh_Hans
+                        and not parameter_rule.help.zh_hans
                         and (
                             "help" in default_parameter_rule
                             and "zh_Hans" in default_parameter_rule["help"]
                         )
                     ):
-                        parameter_rule.help.zh_Hans = default_parameter_rule[
+                        parameter_rule.help.zh_hans = default_parameter_rule[
                             "help"
                         ].get("zh_Hans", default_parameter_rule["help"]["en_US"])
                 except ValueError:
@@ -338,6 +338,8 @@ class AIModel(ABC):
         Returns:
             The return value.
         """
+        del model
+        del credentials
         return None
 
     def _get_default_parameter_rule_variable_map(
@@ -388,9 +390,7 @@ class AIModel(ABC):
             return len(text)
 
         # check if gevent is patched to main thread
-        import socket
-
-        import tiktoken
+        import tiktoken  # noqa: PLC0415
 
         if socket.socket is gevent.socket.socket:
             # using gevent real thread to avoid blocking main thread

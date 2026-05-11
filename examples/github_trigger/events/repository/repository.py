@@ -52,7 +52,7 @@ class RepositoryUnifiedEvent(Event):
         repo = payload.get("repository")
         if not isinstance(repo, Mapping):
             msg = "No repository in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         name_contains = parameters.get("name_contains")
         if name_contains:

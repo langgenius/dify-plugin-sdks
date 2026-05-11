@@ -1,11 +1,13 @@
 import logging
 import os
 import pathlib
+import select
 import shutil
 import signal
 import subprocess  # noqa: S404
 import tempfile
 import threading
+import time
 import uuid
 from collections.abc import Generator
 from queue import Queue
@@ -165,8 +167,6 @@ class PluginRunner:
         os.close(self.stdin_pipe_read)
 
     def _read_async(self, fd: int) -> bytes:
-        import select
-
         ready, _, _ = select.select([fd], [], [], 0.1)
         if not ready:
             return b""
@@ -180,8 +180,6 @@ class PluginRunner:
         return b
 
     def _message_reader(self, pipe: int) -> None:
-        import time
-
         # create a scanner to read the message line by line
         """Read messages line by line from the pipe."""
         buffer = b""

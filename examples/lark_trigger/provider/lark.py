@@ -272,6 +272,7 @@ class LarkTrigger(Trigger):
 
         :param event: Message received event
         """
+        del event
         response_cache_map[threading.get_ident()].append("message_receive_v1")
 
     def _handle_chat_disbanded_event(self, event: P2ImChatDisbandedV1) -> None:
@@ -280,6 +281,7 @@ class LarkTrigger(Trigger):
 
         :param event: Chat disbanded event
         """
+        del event
         response_cache_map[threading.get_ident()].append("chat_disbanded_v1")
 
     def _handle_chat_updated_event(self, event: P2ImChatUpdatedV1) -> None:
@@ -288,6 +290,7 @@ class LarkTrigger(Trigger):
 
         :param event: Chat updated event
         """
+        del event
         response_cache_map[threading.get_ident()].append("chat_updated_v1")
 
     def _handle_chat_member_user_added_event(
@@ -298,6 +301,7 @@ class LarkTrigger(Trigger):
 
         :param event: Chat member user added event
         """
+        del event
         response_cache_map[threading.get_ident()].append("chat_member_user_added_v1")
 
     def _handle_chat_member_user_removed_event(
@@ -308,6 +312,7 @@ class LarkTrigger(Trigger):
 
         :param event: Chat member user removed event
         """
+        del event
         response_cache_map[threading.get_ident()].append("chat_member_user_removed_v1")
 
     def _handle_message_reaction_added_event(
@@ -318,6 +323,7 @@ class LarkTrigger(Trigger):
 
         :param event: Message reaction added event
         """
+        del event
         response_cache_map[threading.get_ident()].append("message_reaction_added_v1")
 
     def _handle_message_recalled_event(self, event: P2ImMessageRecalledV1) -> None:
@@ -326,6 +332,7 @@ class LarkTrigger(Trigger):
 
         :param event: Message recalled event
         """
+        del event
         response_cache_map[threading.get_ident()].append("message_recalled_v1")
 
     def _handle_message_read_event(self, event: P2ImMessageMessageReadV1) -> None:
@@ -334,6 +341,7 @@ class LarkTrigger(Trigger):
 
         :param event: Message read event
         """
+        del event
         response_cache_map[threading.get_ident()].append("message_read_v1")
 
     def _handle_calendar_event_changed_event(
@@ -344,12 +352,14 @@ class LarkTrigger(Trigger):
 
         :param event: Calendar event changed event
         """
+        del event
         response_cache_map[threading.get_ident()].append("event_changed_v4")
 
     def _handle_calendar_acl_created_event(
         self, event: P2CalendarCalendarAclCreatedV4
     ) -> None:
         """Handle calendar ACL created events."""
+        del event
 
         response_cache_map[threading.get_ident()].append("calendar_acl_created_v4")
 
@@ -357,6 +367,7 @@ class LarkTrigger(Trigger):
         self, event: P2CalendarCalendarAclDeletedV4
     ) -> None:
         """Handle calendar ACL deleted events."""
+        del event
 
         response_cache_map[threading.get_ident()].append("calendar_acl_deleted_v4")
 
@@ -368,6 +379,7 @@ class LarkTrigger(Trigger):
 
         :param event: Approval updated event
         """
+        del event
         response_cache_map[threading.get_ident()].append("approval_updated_v4")
 
     def _handle_drive_file_created_event(
@@ -378,15 +390,18 @@ class LarkTrigger(Trigger):
 
         :param event: Drive file created event
         """
+        del event
         response_cache_map[threading.get_ident()].append("file_created_v1")
 
     def _handle_drive_file_deleted_event(self, event: P2DriveFileDeletedV1) -> None:
         """Handle drive file deleted events."""
+        del event
 
         response_cache_map[threading.get_ident()].append("file_deleted_v1")
 
     def _handle_drive_file_edited_event(self, event: P2DriveFileEditV1) -> None:
         """Handle drive file edited events."""
+        del event
 
         response_cache_map[threading.get_ident()].append("file_edit_v1")
 
@@ -394,6 +409,7 @@ class LarkTrigger(Trigger):
         self, event: P2DriveFilePermissionMemberAddedV1
     ) -> None:
         """Handle drive file permission member added events."""
+        del event
 
         response_cache_map[threading.get_ident()].append(
             "file_permission_member_added_v1"
@@ -403,6 +419,7 @@ class LarkTrigger(Trigger):
         self, event: P2DriveFilePermissionMemberRemovedV1
     ) -> None:
         """Handle drive file permission member removed events."""
+        del event
 
         response_cache_map[threading.get_ident()].append(
             "file_permission_member_removed_v1"
@@ -410,6 +427,7 @@ class LarkTrigger(Trigger):
 
     def _handle_drive_file_trashed_event(self, event: P2DriveFileTrashedV1) -> None:
         """Handle drive file trashed events."""
+        del event
 
         response_cache_map[threading.get_ident()].append("file_trashed_v1")
 
@@ -419,15 +437,18 @@ class LarkTrigger(Trigger):
 
         :param event: Contact user created event
         """
+        del event
         response_cache_map[threading.get_ident()].append("user_created_v3")
 
     def _handle_contact_user_updated_event(self, event: P2ContactUserUpdatedV3) -> None:
         """Handle contact user updated events."""
+        del event
 
         response_cache_map[threading.get_ident()].append("user_updated_v3")
 
     def _handle_contact_user_deleted_event(self, event: P2ContactUserDeletedV3) -> None:
         """Handle contact user deleted events."""
+        del event
 
         response_cache_map[threading.get_ident()].append("user_deleted_v3")
 
@@ -439,12 +460,14 @@ class LarkTrigger(Trigger):
 
         :param event: Contact department created event
         """
+        del event
         response_cache_map[threading.get_ident()].append("department_created_v3")
 
     def _handle_contact_department_updated_event(
         self, event: P2ContactDepartmentUpdatedV3
     ) -> None:
         """Handle contact department updated events."""
+        del event
 
         response_cache_map[threading.get_ident()].append("department_updated_v3")
 
@@ -452,6 +475,7 @@ class LarkTrigger(Trigger):
         self, event: P2ContactDepartmentDeletedV3
     ) -> None:
         """Handle contact department deleted events."""
+        del event
 
         response_cache_map[threading.get_ident()].append("department_deleted_v3")
 
@@ -463,6 +487,7 @@ class LarkTrigger(Trigger):
 
         :param event: Chat member user withdrawn event
         """
+        del event
         response_cache_map[threading.get_ident()].append(
             "chat_member_user_withdrawn_v1"
         )
@@ -475,6 +500,7 @@ class LarkTrigger(Trigger):
 
         :param event: Chat member bot added event
         """
+        del event
         response_cache_map[threading.get_ident()].append("chat_member_bot_added_v1")
 
     def _handle_chat_member_bot_deleted_event(
@@ -485,6 +511,7 @@ class LarkTrigger(Trigger):
 
         :param event: Chat member bot deleted event
         """
+        del event
         response_cache_map[threading.get_ident()].append("chat_member_bot_deleted_v1")
 
     def _handle_message_reaction_deleted_event(
@@ -495,6 +522,7 @@ class LarkTrigger(Trigger):
 
         :param event: Message reaction deleted event
         """
+        del event
         response_cache_map[threading.get_ident()].append("message_reaction_deleted_v1")
 
     def _handle_drive_file_read_event(self, event: P2DriveFileReadV1) -> None:
@@ -503,6 +531,7 @@ class LarkTrigger(Trigger):
 
         :param event: Drive file read event
         """
+        del event
         response_cache_map[threading.get_ident()].append("file_read_v1")
 
     def _handle_drive_file_title_updated_event(
@@ -513,6 +542,7 @@ class LarkTrigger(Trigger):
 
         :param event: Drive file title updated event
         """
+        del event
         response_cache_map[threading.get_ident()].append("file_title_updated_v1")
 
     def _handle_calendar_changed_event(
@@ -523,6 +553,7 @@ class LarkTrigger(Trigger):
 
         :param event: Calendar changed event
         """
+        del event
         response_cache_map[threading.get_ident()].append("calendar_changed_v4")
 
     def _handle_contact_scope_updated_event(
@@ -533,6 +564,7 @@ class LarkTrigger(Trigger):
 
         :param event: Contact scope updated event
         """
+        del event
         response_cache_map[threading.get_ident()].append("scope_updated_v3")
 
     def _handle_drive_file_bitable_record_changed_event(
@@ -543,6 +575,7 @@ class LarkTrigger(Trigger):
 
         :param event: Bitable record changed event
         """
+        del event
         response_cache_map[threading.get_ident()].append(
             "file_bitable_record_changed_v1"
         )
@@ -555,6 +588,7 @@ class LarkTrigger(Trigger):
 
         :param event: Bitable field changed event
         """
+        del event
         response_cache_map[threading.get_ident()].append(
             "file_bitable_field_changed_v1"
         )
@@ -565,6 +599,7 @@ class LarkTrigger(Trigger):
 
         :param event: Task updated event
         """
+        del event
         response_cache_map[threading.get_ident()].append("task_updated_v1")
 
     def _handle_task_comment_updated_event(
@@ -575,6 +610,7 @@ class LarkTrigger(Trigger):
 
         :param event: Task comment updated event
         """
+        del event
         response_cache_map[threading.get_ident()].append("task_comment_updated_v1")
 
     def _handle_meeting_room_created_event(
@@ -585,6 +621,7 @@ class LarkTrigger(Trigger):
 
         :param event: Meeting room created event
         """
+        del event
         response_cache_map[threading.get_ident()].append("meeting_room_created_v1")
 
     def _handle_meeting_room_status_changed_event(
@@ -595,6 +632,7 @@ class LarkTrigger(Trigger):
 
         :param event: Meeting room status changed event
         """
+        del event
         response_cache_map[threading.get_ident()].append(
             "meeting_room_status_changed_v1"
         )
@@ -607,6 +645,7 @@ class LarkTrigger(Trigger):
 
         :param event: VC meeting started event
         """
+        del event
         response_cache_map[threading.get_ident()].append("meeting_started_v1")
 
     def _handle_vc_meeting_ended_event(self, event: P2VcMeetingMeetingEndedV1) -> None:
@@ -615,6 +654,7 @@ class LarkTrigger(Trigger):
 
         :param event: VC meeting ended event
         """
+        del event
         response_cache_map[threading.get_ident()].append("meeting_ended_v1")
 
     def _handle_vc_recording_ready_event(
@@ -625,6 +665,7 @@ class LarkTrigger(Trigger):
 
         :param event: VC recording ready event
         """
+        del event
         response_cache_map[threading.get_ident()].append("recording_ready_v1")
 
     def _handle_vc_join_meeting_event(self, event: P2VcMeetingJoinMeetingV1) -> None:
@@ -633,6 +674,7 @@ class LarkTrigger(Trigger):
 
         :param event: VC join meeting event
         """
+        del event
         response_cache_map[threading.get_ident()].append("join_meeting_v1")
 
     def _handle_vc_leave_meeting_event(self, event: P2VcMeetingLeaveMeetingV1) -> None:
@@ -641,6 +683,7 @@ class LarkTrigger(Trigger):
 
         :param event: VC leave meeting event
         """
+        del event
         response_cache_map[threading.get_ident()].append("leave_meeting_v1")
 
     def _handle_vc_recording_started_event(
@@ -651,6 +694,7 @@ class LarkTrigger(Trigger):
 
         :param event: VC recording started event
         """
+        del event
         response_cache_map[threading.get_ident()].append("recording_started_v1")
 
     def _handle_vc_recording_ended_event(
@@ -661,4 +705,5 @@ class LarkTrigger(Trigger):
 
         :param event: VC recording ended event
         """
+        del event
         response_cache_map[threading.get_ident()].append("recording_ended_v1")

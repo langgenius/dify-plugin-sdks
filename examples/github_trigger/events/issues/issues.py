@@ -34,7 +34,7 @@ class IssuesUnifiedEvent(Event):
         issue = payload.get("issue")
         if not isinstance(issue, Mapping):
             msg = "No issue in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         isu.check_labels(issue, parameters.get("labels"))
         isu.check_assignee(issue, parameters.get("assignee"))

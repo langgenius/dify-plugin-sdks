@@ -37,6 +37,7 @@ class OAICompatSpeech2TextModel(_CommonOaiApiCompat, Speech2TextModel):
         Raises:
             InvokeBadRequestError: If model invocation fails.
         """
+        del user
         headers = {}
 
         api_key = credentials.get("api_key")

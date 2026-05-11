@@ -90,7 +90,7 @@ if TYPE_CHECKING:
     from dify_plugin.interfaces.tool import Tool
 
 
-class PluginExecutor:
+class PluginExecutor:  # noqa: PLR0904
     def __init__(self, config: DifyPluginEnv, registration: PluginRegistration) -> None:
         self.config = config
         self.registration = registration
@@ -100,6 +100,7 @@ class PluginExecutor:
         session: Session,
         data: ToolValidateCredentialsRequest,
     ) -> dict[str, bool]:
+        del session
         provider_instance = self.registration.get_tool_provider_cls(data.provider)
         if provider_instance is None:
             msg = f"Provider `{data.provider}` not found"
@@ -179,7 +180,7 @@ class PluginExecutor:
                 msg,
             )
 
-        if not tool_cls._is_get_runtime_parameters_overridden():
+        if not tool_cls.has_runtime_parameters():
             msg = f"Tool `{data.tool}` does not implement runtime parameters"
             raise ValueError(
                 msg,
@@ -203,6 +204,7 @@ class PluginExecutor:
         session: Session,
         data: ModelValidateProviderCredentialsRequest,
     ) -> dict[str, object]:
+        del session
         provider_instance = self.registration.get_model_provider_instance(data.provider)
         if provider_instance is None:
             msg = f"Provider `{data.provider}` not found"
@@ -217,6 +219,7 @@ class PluginExecutor:
         session: Session,
         data: ModelValidateModelCredentialsRequest,
     ) -> dict[str, object]:
+        del session
         provider_instance = self.registration.get_model_provider_instance(data.provider)
         if provider_instance is None:
             msg = f"Provider `{data.provider}` not found"
@@ -237,6 +240,7 @@ class PluginExecutor:
         return {"result": True, "credentials": data.credentials}
 
     def invoke_llm(self, session: Session, data: ModelInvokeLLMRequest) -> object:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -262,6 +266,7 @@ class PluginExecutor:
         session: Session,
         data: ModelGetLLMNumTokens,
     ) -> dict[str, int]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -286,6 +291,7 @@ class PluginExecutor:
         session: Session,
         data: ModelInvokeTextEmbeddingRequest,
     ) -> object:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -307,6 +313,7 @@ class PluginExecutor:
         session: Session,
         data: ModelInvokeMultimodalEmbeddingRequest,
     ) -> object:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -329,6 +336,7 @@ class PluginExecutor:
         session: Session,
         data: ModelGetTextEmbeddingNumTokens,
     ) -> dict[str, int]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -347,6 +355,7 @@ class PluginExecutor:
         )
 
     def invoke_rerank(self, session: Session, data: ModelInvokeRerankRequest) -> object:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -371,6 +380,7 @@ class PluginExecutor:
         session: Session,
         data: ModelInvokeMultimodalRerankRequest,
     ) -> object:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -395,6 +405,7 @@ class PluginExecutor:
         session: Session,
         data: ModelInvokeTTSRequest,
     ) -> Generator[dict[str, str], None, None]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -416,7 +427,7 @@ class PluginExecutor:
                 yield {"result": binascii.hexlify(chunk).decode()}
         else:
             msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
-            raise ValueError(
+            raise TypeError(
                 msg,
             )
 
@@ -425,6 +436,7 @@ class PluginExecutor:
         session: Session,
         data: ModelGetTTSVoices,
     ) -> dict[str, object]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -447,6 +459,7 @@ class PluginExecutor:
         session: Session,
         data: ModelInvokeSpeech2TextRequest,
     ) -> dict[str, str]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -479,6 +492,7 @@ class PluginExecutor:
         session: Session,
         data: ModelGetAIModelSchemas,
     ) -> dict[str, object]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -500,6 +514,7 @@ class PluginExecutor:
         session: Session,
         data: ModelInvokeModerationRequest,
     ) -> dict[str, bool]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -658,6 +673,7 @@ class PluginExecutor:
         session: Session,
         data: DatasourceValidateCredentialsRequest,
     ) -> dict[str, bool]:
+        del session
         provider_instance_cls: type[DatasourceProvider] = (
             self.registration.get_datasource_provider_cls(provider=data.provider)
         )

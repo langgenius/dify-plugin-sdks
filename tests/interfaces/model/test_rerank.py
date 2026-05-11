@@ -27,6 +27,11 @@ class MockRerankModel(RerankModel):
         top_n: int | None = None,
         user: str | None = None,
     ) -> RerankResult:
+        del credentials
+        del query
+        del score_threshold
+        del top_n
+        del user
         return RerankResult(
             model=model,
             docs=[RerankDocument(index=0, text=doc, score=0) for doc in docs],
@@ -92,6 +97,11 @@ class MockMultiModalRerankModel(RerankModel):
         top_n: int | None = None,
         user: str | None = None,
     ) -> MultiModalRerankResult:
+        del credentials
+        del query
+        del score_threshold
+        del top_n
+        del user
         return MultiModalRerankResult(
             model=model,
             docs=[RerankDocument(index=0, text=doc.content, score=0) for doc in docs],

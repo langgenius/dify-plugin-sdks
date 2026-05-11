@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from dataclasses import dataclass
 from enum import Enum, StrEnum
 from typing import Any
 
@@ -18,20 +19,11 @@ from dify_plugin.entities.provider_config import (
 from dify_plugin.entities.tool import ParameterAutoGenerate, ParameterTemplate
 
 
+@dataclass(frozen=True, slots=True)
 class TriggerSubscriptionConstructorRuntime:
     session: Session
-    credentials: Mapping[str, Any] | None
     credential_type: CredentialType
-
-    def __init__(
-        self,
-        session: Session,
-        credential_type: CredentialType,
-        credentials: Mapping[str, Any] | None = None,
-    ) -> None:
-        self.session = session
-        self.credentials = credentials
-        self.credential_type = credential_type
+    credentials: Mapping[str, Any] | None = None
 
 
 class EventDispatch(BaseModel):
@@ -315,7 +307,7 @@ class TriggerSubscriptionConstructorConfiguration(BaseModel):
 
         if not isinstance(data, dict):
             msg = "subscription_constructor should be defined as a mapping"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         normalised = dict(data)
         original_credentials_schema = normalised.get("credentials_schema", [])
@@ -329,7 +321,7 @@ class TriggerSubscriptionConstructorConfiguration(BaseModel):
             normalised["credentials_schema"] = original_credentials_schema
         else:
             msg = "credentials_schema should be a list or dict"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         return normalised
 
@@ -380,7 +372,7 @@ class TriggerProviderConfiguration(BaseModel):
             data["credentials_schema"] = original_credentials_schema
         else:
             msg = "credentials_schema should be a list or dict"
-            raise ValueError(msg)
+            raise TypeError(msg)
         return data
 
     @field_validator("events", mode="before")
@@ -388,7 +380,7 @@ class TriggerProviderConfiguration(BaseModel):
     def validate_events(cls, value: list[object]) -> list[EventConfiguration]:
         if not isinstance(value, list):
             msg = "events should be a list"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         events: list[EventConfiguration] = []
 
@@ -396,7 +388,7 @@ class TriggerProviderConfiguration(BaseModel):
             # read from yaml
             if not isinstance(event, str):
                 msg = "event path should be a string"
-                raise ValueError(msg)
+                raise TypeError(msg)
             try:
                 file = load_yaml_file(event)
                 events.append(

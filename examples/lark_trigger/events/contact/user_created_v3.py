@@ -27,6 +27,8 @@ class ContactUserCreatedV3Event(Event):
         Raises:
             ValueError: If input values are invalid.
         """
+        del parameters
+        del payload
         event_wrapper = dispatch_single_event(
             request,
             self.runtime,

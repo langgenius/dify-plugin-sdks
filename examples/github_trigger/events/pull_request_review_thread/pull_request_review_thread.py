@@ -34,7 +34,7 @@ class PullRequestReviewThreadUnifiedEvent(Event):
         thread = payload.get("thread")
         if not isinstance(thread, Mapping):
             msg = "No thread in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         if parameters.get("is_resolved") is not None:
             want = str(parameters.get("is_resolved")).lower() in TRUTHY_STRINGS

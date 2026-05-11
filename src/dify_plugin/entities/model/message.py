@@ -177,7 +177,7 @@ class PromptMessage(BaseModel):
                     continue
                 if not isinstance(content, dict):
                     msg = "invalid prompt message content"
-                    raise ValueError(msg)
+                    raise TypeError(msg)
                 value_type = content.get("type")
                 match value_type:
                     case PromptMessageContentType.TEXT:

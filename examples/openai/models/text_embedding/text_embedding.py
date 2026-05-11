@@ -38,6 +38,7 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
         Returns:
             The return value.
         """
+        del input_type
         # transform credentials to kwargs for model instance
         credentials_kwargs = self._to_credential_kwargs(credentials)
         # init model client
@@ -131,6 +132,7 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
         Returns:
             The return value.
         """
+        del credentials
         if len(texts) == 0:
             return []
 

@@ -159,7 +159,7 @@ class AgentStrategyProviderConfiguration(BaseModel):
     ) -> list[AgentStrategyConfiguration]:
         if not isinstance(value, list):
             msg = "strategies should be a list"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         strategies: list[AgentStrategyConfiguration] = []
 
@@ -167,7 +167,7 @@ class AgentStrategyProviderConfiguration(BaseModel):
             # read from yaml
             if not isinstance(strategy, str):
                 msg = "strategy path should be a string"
-                raise ValueError(msg)
+                raise TypeError(msg)
             try:
                 file = load_yaml_file(strategy)
                 strategies.append(

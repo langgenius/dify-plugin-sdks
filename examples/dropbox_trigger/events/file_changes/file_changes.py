@@ -16,6 +16,8 @@ class FileChangesEvent(Event):
         parameters: Mapping[str, Any],
         payload: Mapping[str, Any],
     ) -> Variables:
+        del request
+        del parameters
         return Variables(
             variables={
                 "changes": payload.get("changes", []),

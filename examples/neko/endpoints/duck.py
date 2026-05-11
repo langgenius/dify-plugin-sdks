@@ -30,6 +30,9 @@ class Duck(Endpoint):
         """
         Invokes the endpoint with the given request.
         """
+        del r
+        del values
+        del settings
 
         def generator() -> Generator[str, None, None]:
             try:

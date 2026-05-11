@@ -116,6 +116,7 @@ class PluginRegistration:
         """
         Initialize plugin
         """
+        del config
         self.tools_configuration = []
         self.models_configuration = []
         self.tools_mapping = {}
@@ -213,7 +214,7 @@ class PluginRegistration:
                     parent_type=Tool,
                 )
 
-                if tool_cls._is_get_runtime_parameters_overridden():
+                if tool_cls.has_runtime_parameters():
                     tool.has_runtime_parameters = True
 
                 tools[tool.identity.name] = (tool, tool_cls)

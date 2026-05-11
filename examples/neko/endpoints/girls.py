@@ -9,6 +9,8 @@ from dify_plugin import Endpoint
 class NekoEndpoint(Endpoint):
     def _invoke(self, r: Request, values: Mapping, settings: Mapping) -> Response:
         # read file from girls.html using current python file relative path
+        del r
+        del values
         html = (Path(__file__).parent / "girls.html").read_text()
         return Response(
             html.replace("{{ bot_name }}", settings.get("bot_name", "Candy")),

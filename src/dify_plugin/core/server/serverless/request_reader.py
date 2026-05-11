@@ -1,9 +1,12 @@
+import socket
 import threading
 import time
 from collections.abc import Generator
 from queue import Empty, Queue
 
+import gevent.socket
 from flask import Flask, request
+from gevent.pywsgi import WSGIServer
 
 from dify_plugin.core.entities.plugin.io import (
     PluginInStream,
@@ -98,13 +101,7 @@ class ServerlessRequestReader(RequestReader):
         self.app.route("/invoke", methods=["POST"])(self.handler)
         self.app.route("/health", methods=["GET"])(self.health)
 
-        import socket
-
-        import gevent.socket
-
         if socket.socket is gevent.socket.socket:
-            from gevent.pywsgi import WSGIServer
-
             server = WSGIServer((self.host, self.port), self.app)
             print(
                 "* Serving Flask app "

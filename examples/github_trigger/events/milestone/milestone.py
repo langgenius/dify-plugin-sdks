@@ -32,7 +32,7 @@ class MilestoneUnifiedEvent(Event):
         milestone = payload.get("milestone")
         if not isinstance(milestone, Mapping):
             msg = "No milestone in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         self._check_title(milestone, parameters.get("title"))
         self._check_state(milestone, parameters.get("state"))

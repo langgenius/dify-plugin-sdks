@@ -27,7 +27,7 @@ class GollumEvent(Event):
         pages = payload.get("pages")
         if not isinstance(pages, list):
             msg = "No pages in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         actions_filter = set(parameters.get("actions") or [])
         title_filter = parameters.get("title")

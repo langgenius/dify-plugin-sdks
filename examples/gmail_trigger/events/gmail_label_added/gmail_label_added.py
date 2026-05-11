@@ -19,6 +19,8 @@ class GmailLabelAddedEvent(Event):
         payload: Mapping[str, Any],
     ) -> Variables:
         # Prefer payload delivered from Trigger.dispatch_event
+        del request
+        del parameters
         history_id = payload.get("historyId")
         items: list[dict[str, Any]] = []
         raw_items = payload.get("label_added") or payload.get("items")

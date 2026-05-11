@@ -125,6 +125,7 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> Subscription:
+        del credential_type
         token = credentials.get("bot_token")
         if not token:
             msg = "Telegram Bot Token is required"
@@ -183,6 +184,8 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> UnsubscribeResult:
+        del subscription
+        del credential_type
         token = credentials.get("bot_token")
         if not token:
             raise UnsubscribeError(
@@ -212,6 +215,7 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> Subscription:
+        del credential_type
         token = credentials.get("bot_token")
         if not token:
             msg = "Telegram Bot Token is required"

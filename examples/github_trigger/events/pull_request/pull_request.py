@@ -37,7 +37,7 @@ class PullRequestUnifiedEvent(Event):
         pr = payload.get("pull_request")
         if not isinstance(pr, Mapping):
             msg = "No pull_request in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         apply_pull_request_common_filters(pr, parameters)
         if action == "closed":

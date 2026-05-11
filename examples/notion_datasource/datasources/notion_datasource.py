@@ -26,6 +26,7 @@ class NotionDataSource(OnlineDocumentDatasource):
         self, datasource_parameters: dict[str, Any]
     ) -> DatasourceGetPagesResponse:
         # Get integration token from credentials
+        del datasource_parameters
         access_token = self.runtime.credentials.get("integration_secret")
         if not access_token:
             msg = "Access token not found in credentials"
