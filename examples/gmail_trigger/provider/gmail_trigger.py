@@ -301,6 +301,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         Raises:
             TriggerProviderCredentialValidationError: If credentials validation fails.
         """
+        del credentials
         msg = (
             "Gmail trigger does not support API Key credentials. "
             "Please use OAuth authorization."
@@ -431,6 +432,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         system_credentials: Mapping[str, Any],
         credentials: Mapping[str, Any],
     ) -> OAuthCredentials:
+        del redirect_uri
         refresh_token = credentials.get("refresh_token")
         if not refresh_token:
             msg = "Missing refresh_token for OAuth refresh"
@@ -482,6 +484,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         credential_type: CredentialType,
     ) -> Subscription:
         # Always watch the authenticated user (me)
+        del credential_type
         import hashlib as _hashlib  # noqa: PLC0415
         import uuid as _uuid  # noqa: PLC0415
 
@@ -748,6 +751,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> UnsubscribeResult:
         # Only delete the dedicated Push Subscription; do not stop the global
         # Gmail watch by default.
+        del credential_type
         gcp_project_id = credentials.get("gcp_project_id")
         gcp_sa = credentials.get("gcp_service_account_json")
         if not gcp_project_id or not gcp_sa:
@@ -799,6 +803,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         Topic deletion is skipped by default for safety.
         """
+        del topic_name
         import json as _json  # noqa: PLC0415
 
         from google.api_core.exceptions import NotFound  # noqa: PLC0415
@@ -881,6 +886,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         credential_type: CredentialType,
     ) -> Subscription:
         # Re-issue users.watch with previous topic
+        del credential_type
         access_token = credentials.get("access_token")
         if not access_token:
             msg = "Missing access_token for Gmail API"
@@ -939,6 +945,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> list[ParameterOption]:
+        del credential_type
         if parameter != "label_ids":
             return []
 

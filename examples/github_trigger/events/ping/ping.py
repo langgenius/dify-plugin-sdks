@@ -18,6 +18,7 @@ class PingEvent(Event):
         parameters: Mapping[str, Any],
         payload: Mapping[str, Any],
     ) -> Variables:
+        del parameters
         payload = request.get_json()
         if not payload:
             msg = "No payload received"

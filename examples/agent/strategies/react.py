@@ -449,6 +449,7 @@ class ReActAgentStrategy(AgentStrategy):
         Raises:
             ValueError: If input values are invalid.
         """
+        del message_file_ids
         # action is tool call, invoke tool
         tool_call_name = action.action_name
         tool_call_args = action.action_input

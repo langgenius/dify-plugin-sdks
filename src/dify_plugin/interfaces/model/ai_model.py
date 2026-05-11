@@ -338,6 +338,8 @@ class AIModel(ABC):
         Returns:
             The return value.
         """
+        del model
+        del credentials
         return None
 
     def _get_default_parameter_rule_variable_map(

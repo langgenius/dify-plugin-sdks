@@ -19,6 +19,8 @@ class GmailMessageDeletedEvent(Event):
         payload: Mapping[str, Any],
     ) -> Variables:
         # Prefer payload delivered from Trigger.dispatch_event
+        del request
+        del parameters
         history_id = payload.get("historyId")
         items: list[dict[str, Any]] = []
         raw_items = payload.get("message_deleted") or payload.get("items")

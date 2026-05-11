@@ -50,6 +50,8 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         Raises:
             InvokeBadRequestError: If model invocation fails.
         """
+        del tenant_id
+        del user
         # Set up headers with authentication if provided
         headers = {}
         if api_key := credentials.get("api_key"):
@@ -167,6 +169,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         """
         Override base get_tts_model_voices to handle customizable voices
         """
+        del language
         model_schema = self.get_customizable_model_schema(model, credentials)
 
         if (

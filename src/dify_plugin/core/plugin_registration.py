@@ -116,6 +116,7 @@ class PluginRegistration:
         """
         Initialize plugin
         """
+        del config
         self.tools_configuration = []
         self.models_configuration = []
         self.tools_mapping = {}

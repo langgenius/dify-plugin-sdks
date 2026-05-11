@@ -70,6 +70,7 @@ class CatalogSlackEvent:
         parameters: Mapping[str, Any],
         payload: Mapping[str, Any],
     ) -> Variables:
+        del parameters
         metadata = self._get_metadata()
 
         payload = request.get_json(silent=True) or {}

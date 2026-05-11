@@ -261,6 +261,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
     _DEFAULT_SCOPE = "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.appdata"
 
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
+        del credentials
         msg = "Google Drive trigger only supports OAuth credentials."
         raise TriggerProviderCredentialValidationError(msg)
 
@@ -345,6 +346,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         system_credentials: Mapping[str, Any],
         credentials: Mapping[str, Any],
     ) -> OAuthCredentials:
+        del redirect_uri
         refresh_token = credentials.get("refresh_token")
         if not refresh_token:
             msg = "Refresh token is required to renew Google Drive access token"

@@ -518,6 +518,7 @@ class LargeLanguageModel(AIModel):
         Yields:
             Generated values.
         """
+        del prompt_messages
         state = "normal"
         backtick_count = 0
         for chunk in input_generator:
@@ -581,6 +582,7 @@ class LargeLanguageModel(AIModel):
         Yields:
             Generated values.
         """
+        del prompt_messages
         state = "search_start"
         backtick_count = 0
 

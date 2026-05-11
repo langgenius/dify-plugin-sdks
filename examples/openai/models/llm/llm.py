@@ -202,6 +202,12 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         response_format: str = "JSON",
     ) -> None:
         """Transform json prompts"""
+        del model
+        del credentials
+        del model_parameters
+        del tools
+        del stream
+        del user
         stop = stop or []
 
         if "```\n" not in stop:
@@ -253,6 +259,12 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         response_format: str = "JSON",
     ) -> None:
         """Transform json prompts"""
+        del model
+        del credentials
+        del model_parameters
+        del tools
+        del stream
+        del user
         stop = stop or []
 
         if "```\n" not in stop:
@@ -317,6 +329,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         Returns:
             The return value.
         """
+        del credentials
         # handle fine tune remote models
         base_model = model.removeprefix("ft:")
 
@@ -1389,6 +1402,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         Raises:
             ValueError: If input values are invalid.
         """
+        del credentials
         base_model = model.removeprefix("ft:")
 
         # get model schema

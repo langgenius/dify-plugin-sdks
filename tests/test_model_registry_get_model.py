@@ -65,6 +65,14 @@ class MockLLM(AIModel):
         Yields:
             Generated values.
         """
+        del model
+        del credentials
+        del prompt_messages
+        del model_parameters
+        del tools
+        del stop
+        del stream
+        del user
         yield LLMResultChunk(
             model="test",
             prompt_messages=[],
@@ -92,6 +100,10 @@ class MockLLM(AIModel):
         Returns:
             The return value.
         """
+        del model
+        del credentials
+        del prompt_messages
+        del tools
         return 0
 
     def validate_credentials(self, model: str, credentials: Mapping) -> None:

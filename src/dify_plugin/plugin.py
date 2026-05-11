@@ -72,6 +72,7 @@ class Plugin(IOServer, Router):
         config: DifyPluginEnv,
     ) -> tuple[RequestReader, ResponseWriter | None]:
         """Launch local stream"""
+        del config
         reader = StdioRequestReader()
         writer = StdioResponseWriter()
         writer.write(self.registration.configuration.model_dump_json() + "\n\n")

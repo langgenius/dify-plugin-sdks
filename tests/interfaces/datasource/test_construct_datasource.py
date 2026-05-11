@@ -56,6 +56,7 @@ def test_construct_online_document_datasource() -> None:
         def _get_pages(
             self, datasource_parameters: Mapping[str, Any]
         ) -> DatasourceGetPagesResponse:
+            del datasource_parameters
             return DatasourceGetPagesResponse(result=[])
 
         def _get_content(

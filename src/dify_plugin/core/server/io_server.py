@@ -33,6 +33,7 @@ class IOServer(ABC):
         self.request_reader = request_reader
 
     def close(self, *args: object) -> None:
+        del args
         self.request_reader.close()
 
     @abstractmethod

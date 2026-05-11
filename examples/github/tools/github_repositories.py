@@ -104,6 +104,7 @@ class GithubRepositoriesTool(Tool):
             )
 
     def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        del parameter
         return [
             ParameterOption(
                 value="iamjoel",

@@ -417,6 +417,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
 
     # ---------------- Credential handling -----------------
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
+        del credentials
         msg = (
             "Google Calendar trigger does not support API Key credentials. "
             "Please use OAuth authorization."
@@ -527,6 +528,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         system_credentials: Mapping[str, Any],
         credentials: Mapping[str, Any],
     ) -> OAuthCredentials:
+        del redirect_uri
         refresh_token = credentials.get("refresh_token")
         if not refresh_token:
             msg = "Missing refresh_token for OAuth refresh"
@@ -594,6 +596,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> Subscription:
+        del credential_type
         access_token = credentials.get("access_token")
         if not access_token:
             msg = "Missing access_token for Google Calendar API"
@@ -688,6 +691,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> Subscription:
+        del credential_type
         access_token = credentials.get("access_token")
         if not access_token:
             msg = "Missing access_token for Google Calendar API"
@@ -787,6 +791,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> UnsubscribeResult:
+        del credential_type
         access_token = credentials.get("access_token")
         if not access_token:
             return UnsubscribeResult(
@@ -842,6 +847,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> list[ParameterOption]:
+        del credential_type
         if parameter != "calendar_id":
             return []
 

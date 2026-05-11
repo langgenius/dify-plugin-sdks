@@ -177,6 +177,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         Returns:
             The return value.
         """
+        del model
         return self._num_tokens_from_messages(prompt_messages, tools, credentials)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:

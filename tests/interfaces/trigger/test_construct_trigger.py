@@ -28,6 +28,9 @@ def test_construct_trigger() -> None:
             parameters: Mapping[str, Any],
             payload: Mapping[str, Any],
         ) -> Variables:
+            del request
+            del parameters
+            del payload
             return Variables(variables={})
 
     session = Session(

@@ -53,6 +53,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         Returns:
             The return value.
         """
+        del input_type
 
         # Prepare headers and payload for the request
         headers = {"Content-Type": "application/json"}
@@ -146,6 +147,8 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         Returns:
             The return value.
         """
+        del model
+        del credentials
         return [self._get_num_tokens_by_gpt2(text) for text in texts]
 
     def validate_credentials(self, model: str, credentials: dict) -> None:

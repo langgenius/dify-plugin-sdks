@@ -28,6 +28,7 @@ class OpenAIModerationModel(_CommonOpenAI, ModerationModel):
         Returns:
             The return value.
         """
+        del user
         # transform credentials to kwargs for model instance
         credentials_kwargs = self._to_credential_kwargs(credentials)
 

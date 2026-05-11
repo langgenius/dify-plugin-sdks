@@ -44,6 +44,8 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         Raises:
             InvokeBadRequestError: If model invocation fails.
         """
+        del tenant_id
+        del user
         voices = self.get_tts_model_voices(model=model, credentials=credentials)
         if not voices:
             msg = "No voices found for the model"
@@ -76,6 +78,7 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
         Raises:
             CredentialsValidateFailedError: If credentials validation fails.
         """
+        del user
         try:
             self._tts_invoke(
                 model=model,

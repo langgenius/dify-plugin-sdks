@@ -24,6 +24,9 @@ class MockTextEmbeddingModel(TextEmbeddingModel):
         user: str | None = None,
         input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
     ) -> TextEmbeddingResult:
+        del credentials
+        del user
+        del input_type
         return TextEmbeddingResult(
             model=model,
             usage=EmbeddingUsage(
@@ -48,6 +51,8 @@ class MockTextEmbeddingModel(TextEmbeddingModel):
     def get_num_tokens(
         self, model: str, credentials: dict, texts: list[str]
     ) -> list[int]:
+        del model
+        del credentials
         return [0] * len(texts)
 
 
@@ -92,6 +97,9 @@ class MockMultiModalTextEmbeddingModel(TextEmbeddingModel):
         user: str | None = None,
         input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
     ) -> MultiModalEmbeddingResult:
+        del credentials
+        del user
+        del input_type
         return MultiModalEmbeddingResult(
             model=model,
             usage=EmbeddingUsage(
@@ -112,6 +120,8 @@ class MockMultiModalTextEmbeddingModel(TextEmbeddingModel):
     def get_num_tokens(
         self, model: str, credentials: dict, texts: list[str]
     ) -> list[int]:
+        del model
+        del credentials
         return [0] * len(texts)
 
     @property

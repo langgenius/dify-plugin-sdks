@@ -289,6 +289,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> Subscription:
+        del credential_type
         repository = parameters.get("repository")
         if not repository:
             msg = "repository is required (format: owner/repo)"
@@ -365,6 +366,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> UnsubscribeResult:
+        del credential_type
         external_id = subscription.properties.get("external_id")
         repository = subscription.properties.get("repository")
 
@@ -428,6 +430,8 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> Subscription:
+        del credentials
+        del credential_type
         return Subscription(
             expires_at=int(time.time()) + self._WEBHOOK_TTL,
             endpoint=subscription.endpoint,
@@ -440,6 +444,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> list[ParameterOption]:
+        del credential_type
         if parameter != "repository":
             return []
 

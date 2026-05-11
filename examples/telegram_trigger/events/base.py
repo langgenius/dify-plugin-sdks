@@ -49,4 +49,5 @@ class TelegramUpdateEvent:
         update: Mapping[str, Any] | list[Any] | str | int | None,
         parameters: Mapping[str, Any],
     ) -> dict[str, Any]:
+        del parameters
         return {"update_id": payload.get("update_id"), self.update_key: update}

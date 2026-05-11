@@ -62,6 +62,8 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
             InvokeRateLimitError: If model invocation fails.
             InvokeServerUnavailableError: If model invocation fails.
         """
+        del user
+        del input_type
         api_key = credentials["api_key"]
         if not api_key:
             msg = "api_key is required"
@@ -149,6 +151,8 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         Returns:
             The return value.
         """
+        del model
+        del credentials
         # use JinaTokenizer to get num tokens
         return [JinaTokenizer.get_num_tokens(text) for text in texts]
 

@@ -28,6 +28,8 @@ class MessageRecalledV1Event(Event):
         Raises:
             ValueError: If input values are invalid.
         """
+        del parameters
+        del payload
         event_data = dispatch_single_event(
             request,
             self.runtime,

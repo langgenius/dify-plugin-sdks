@@ -59,6 +59,7 @@ class JinaRerankModel(RerankModel):
         Raises:
             InvokeServerUnavailableError: If model invocation fails.
         """
+        del user
         if len(docs) == 0:
             return RerankResult(model=model, docs=[])
 

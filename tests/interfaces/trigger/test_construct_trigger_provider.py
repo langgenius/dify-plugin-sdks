@@ -31,6 +31,8 @@ def test_construct_trigger_provider() -> None:
         def _dispatch_event(
             self, subscription: Subscription, request: Request
         ) -> EventDispatch:
+            del subscription
+            del request
             return EventDispatch(
                 events=["test_event"], response=Response("OK", status=200)
             )
@@ -70,6 +72,9 @@ def test_oauth_get_authorization_url() -> None:
             """
             Create a subscription
             """
+            del parameters
+            del credentials
+            del credential_type
 
             return Subscription(
                 expires_at=1000,
@@ -86,6 +91,9 @@ def test_oauth_get_authorization_url() -> None:
             """
             Delete a subscription
             """
+            del subscription
+            del credentials
+            del credential_type
             return UnsubscribeResult(success=True, message="Successfully unsubscribed")
 
         def _refresh_subscription(
@@ -97,6 +105,8 @@ def test_oauth_get_authorization_url() -> None:
             """
             Refresh a subscription
             """
+            del credentials
+            del credential_type
             return Subscription(
                 expires_at=1000, properties={}, endpoint=subscription.endpoint
             )

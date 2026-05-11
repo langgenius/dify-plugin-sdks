@@ -22,6 +22,7 @@ def test_construct_tool() -> None:
         def _invoke(
             self, tool_parameters: Mapping
         ) -> Generator[ToolInvokeMessage, None, None]:
+            del tool_parameters
             yield self.create_text_message("Hello, world!")
 
     session = Session(
@@ -47,6 +48,7 @@ def test_construct_tool_default_credential_type() -> None:
         def _invoke(
             self, tool_parameters: Mapping
         ) -> Generator[ToolInvokeMessage, None, None]:
+            del tool_parameters
             yield self.create_text_message("Hello, world!")
 
     session = Session(
@@ -74,9 +76,11 @@ def test_fetch_parameter_options() -> None:
         def _invoke(
             self, tool_parameters: Mapping
         ) -> Generator[ToolInvokeMessage, None, None]:
+            del tool_parameters
             yield self.create_text_message("Hello, world!")
 
         def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+            del parameter
             return [ParameterOption(value="test", label=I18nObject(en_us="test"))]
 
     session = Session(

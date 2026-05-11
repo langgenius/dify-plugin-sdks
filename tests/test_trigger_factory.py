@@ -42,6 +42,8 @@ class MockTriggerProvider(Trigger):
         request: Request,
     ) -> EventDispatch:
         """Dispatch event from webhook"""
+        del subscription
+        del request
         return EventDispatch(events=["test_event"], response=Response("OK", status=200))
 
 
@@ -59,6 +61,8 @@ class MockTriggerSubscriptionConstructor(TriggerSubscriptionConstructor):
         parameters: Mapping[str, Any],
     ) -> Subscription:
         """Create subscription"""
+        del credentials
+        del parameters
         return Subscription(
             expires_at=1234567890,
             endpoint=endpoint,
@@ -75,6 +79,8 @@ class MockTriggerSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
     ) -> UnsubscribeResult:
         """Delete subscription"""
+        del subscription
+        del credentials
         return UnsubscribeResult(success=True, message="Successfully unsubscribed")
 
     def _refresh_subscription(
@@ -83,6 +89,7 @@ class MockTriggerSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
     ) -> Subscription:
         """Refresh subscription"""
+        del credentials
         return Subscription(
             expires_at=9999999999,
             endpoint=subscription.endpoint,
@@ -95,6 +102,8 @@ class MockTriggerSubscriptionConstructor(TriggerSubscriptionConstructor):
         parameter: str,
     ) -> list[ParameterOption]:
         """Fetch parameter options"""
+        del credentials
+        del parameter
         return [
             ParameterOption(value="option1", label=I18nObject(en_us="Option 1")),
             ParameterOption(value="option2", label=I18nObject(en_us="Option 2")),
@@ -111,6 +120,8 @@ class MockEventHandler(Event):
         payload: Mapping[str, Any],
     ) -> Variables:
         """Transform the webhook request into Variables"""
+        del parameters
+        del payload
         return Variables(
             variables={
                 "test_variable": "test_value",

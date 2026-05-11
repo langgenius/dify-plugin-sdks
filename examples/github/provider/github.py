@@ -77,6 +77,8 @@ class GithubProvider(ToolProvider):
         """
         Refresh the credentials
         """
+        del redirect_uri
+        del system_credentials
         # TODO: Implement the refresh credentials logic
         return ToolOAuthCredentials(credentials=credentials, expires_at=-1)
 

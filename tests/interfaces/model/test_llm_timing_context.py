@@ -55,6 +55,14 @@ class MockLLM(LargeLanguageModel):
         Yields:
             Generated values.
         """
+        del model
+        del credentials
+        del prompt_messages
+        del model_parameters
+        del tools
+        del stop
+        del stream
+        del user
         time.sleep(1)
         yield LLMResultChunk(
             model="test",
@@ -97,6 +105,10 @@ class MockLLM(LargeLanguageModel):
         Returns:
             The return value.
         """
+        del model
+        del credentials
+        del prompt_messages
+        del tools
         return 0
 
 
