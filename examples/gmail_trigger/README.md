@@ -21,7 +21,7 @@ Step-by-step Setup
 
 - Options:
   - If packaged as `.difypkg`, import it in Dify’s Plugin Center (Plugins → Import).
-  - For local run during development, ensure the runtime installs dependencies in `requirements.txt`.
+  - For local run during development, install dependencies from `pyproject.toml` with `uv sync`.
 
 2. Configure GCP resources (Administrator, one-time setup)
 
