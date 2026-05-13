@@ -443,6 +443,9 @@ class Tool(ToolLike[ToolInvokeMessage]):
         To be implemented by subclasses.
 
         Also, it's optional to implement, that's why it's not an abstract method.
+
+        For `dynamic-tree-select` parameters, you can return options with nested
+        `children` to build a hierarchical selection tree.
         """
         msg = (
             "This plugin should implement `_fetch_parameter_options` method "
