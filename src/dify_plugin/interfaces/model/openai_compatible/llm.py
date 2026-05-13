@@ -598,7 +598,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 data["functions"] = [
                     {
                         "name": tool.name,
-                        "description": tool.description,
+                        "description": tool.description or "",
                         "parameters": tool.parameters,
                     }
                     for tool in tools
@@ -1127,7 +1127,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 num_tokens += self._get_num_tokens_by_gpt2(tool.name)
             num_tokens += self._get_num_tokens_by_gpt2("description")
             if hasattr(tool, "description"):
-                num_tokens += self._get_num_tokens_by_gpt2(tool.description)
+                num_tokens += self._get_num_tokens_by_gpt2(tool.description or "")
             if hasattr(tool, "parameters"):
                 parameters = tool.parameters
                 num_tokens += self._get_num_tokens_by_gpt2("parameters")
