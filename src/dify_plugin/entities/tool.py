@@ -92,6 +92,22 @@ class ToolParameter(BaseModel):
         OBJECT = CommonParameterType.OBJECT.value
         ARRAY = CommonParameterType.ARRAY.value
         DYNAMIC_SELECT = CommonParameterType.DYNAMIC_SELECT.value
+        DATE = CommonParameterType.DATE.value
+        DATE_PICKER = CommonParameterType.DATE_PICKER.value
+
+        def to_prompt_schema(self, description: str) -> dict[str, Any]:
+            if self in {self.SELECT, self.SECRET_INPUT, self.DATE}:
+                return {"type": self.STRING.value, "description": description}
+            if self == self.DATE_PICKER:
+                return {
+                    "type": self.OBJECT.value,
+                    "description": description,
+                    "properties": {
+                        "start": {"type": self.STRING.value},
+                        "end": {"type": self.STRING.value},
+                    },
+                }
+            return {"type": self.value, "description": description}
 
     class ToolParameterForm(Enum):
         SCHEMA = "schema"  # should be set while adding tool
@@ -384,16 +400,16 @@ class ToolSelector(BaseModel):
         )
 
         for name, parameter in self.tool_parameters.items():
-            tool.parameters[name] = {
-                "type": parameter.type.value,
-                "description": parameter.description or "",
-            }
+            parameter_schema = parameter.type.to_prompt_schema(
+                parameter.description or "",
+            )
+            tool.parameters["properties"][name] = parameter_schema
 
             if parameter.required:
                 tool.parameters["required"].append(name)
 
             if parameter.options:
-                tool.parameters[name]["enum"] = [
+                parameter_schema["enum"] = [
                     option.value for option in parameter.options
                 ]
 

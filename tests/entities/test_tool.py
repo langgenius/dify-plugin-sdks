@@ -1,6 +1,6 @@
 import pytest
 
-from dify_plugin.entities.tool import ToolParameter
+from dify_plugin.entities.tool import ToolParameter, ToolSelector
 
 
 def test_tool_parameter_supports_multiple_select() -> None:
@@ -82,3 +82,59 @@ def test_tool_parameter_preserves_show_on_conditions() -> None:
     assert defaulted.show_on == []
     assert defaulted.options
     assert defaulted.options[0].show_on == []
+
+
+def test_tool_selector_converts_date_parameters_to_prompt_schema() -> None:
+    selector = ToolSelector.model_validate({
+        "provider_id": "calendar",
+        "tool_name": "schedule",
+        "tool_description": "Schedule an event",
+        "tool_configuration": {},
+        "tool_parameters": {
+            "day": {
+                "name": "day",
+                "type": "date",
+                "required": True,
+                "description": "Event date",
+            },
+            "range": {
+                "name": "range",
+                "type": "date-picker",
+                "required": False,
+                "description": "Event date range",
+            },
+            "timezone": {
+                "name": "timezone",
+                "type": "select",
+                "required": False,
+                "description": "Timezone",
+                "options": [
+                    {
+                        "value": "UTC",
+                        "label": {"en_US": "UTC"},
+                    }
+                ],
+            },
+        },
+    })
+
+    assert selector.to_prompt_message().parameters == {
+        "type": "object",
+        "properties": {
+            "day": {"type": "string", "description": "Event date"},
+            "range": {
+                "type": "object",
+                "description": "Event date range",
+                "properties": {
+                    "start": {"type": "string"},
+                    "end": {"type": "string"},
+                },
+            },
+            "timezone": {
+                "type": "string",
+                "description": "Timezone",
+                "enum": ["UTC"],
+            },
+        },
+        "required": ["day"],
+    }

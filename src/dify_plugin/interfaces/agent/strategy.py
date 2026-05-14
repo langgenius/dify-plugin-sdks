@@ -31,6 +31,7 @@ FILE_PARAMETER_TYPES = frozenset({
 STRING_PARAMETER_TYPES = frozenset({
     ToolParameter.ToolParameterType.SELECT,
     ToolParameter.ToolParameterType.SECRET_INPUT,
+    ToolParameter.ToolParameterType.DATE,
 })
 
 
@@ -299,17 +300,11 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         if parameter.form != ToolParameter.ToolParameterForm.LLM:
             return
 
-        parameter_type = parameter.type
         if parameter.type in FILE_PARAMETER_TYPES:
             return
-        if parameter.type in STRING_PARAMETER_TYPES:
-            parameter_type = ToolParameter.ToolParameterType.STRING
 
         prompt_tool.parameters["properties"][parameter.name] = (
-            {
-                "type": parameter_type,
-                "description": parameter.llm_description or "",
-            }
+            parameter.type.to_prompt_schema(parameter.llm_description or "")
             if parameter.input_schema is None
             else dict(parameter.input_schema)
         )

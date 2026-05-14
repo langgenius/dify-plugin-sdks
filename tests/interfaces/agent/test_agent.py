@@ -106,6 +106,30 @@ def test_agent_strategy_converts_tool_parameters_once() -> None:
                 type=ToolParameter.ToolParameterType.FILE,
                 form=ToolParameter.ToolParameterForm.LLM,
             ),
+            ToolParameter(
+                name="day",
+                label=label,
+                human_description=label,
+                type=ToolParameter.ToolParameterType.DATE,
+                form=ToolParameter.ToolParameterForm.LLM,
+                llm_description="Event date",
+            ),
+            ToolParameter(
+                name="range",
+                label=label,
+                human_description=label,
+                type=ToolParameter.ToolParameterType.DATE_PICKER,
+                form=ToolParameter.ToolParameterForm.LLM,
+                llm_description="Event date range",
+            ),
+            ToolParameter(
+                name="custom_range",
+                label=label,
+                human_description=label,
+                type=ToolParameter.ToolParameterType.DATE_PICKER,
+                form=ToolParameter.ToolParameterForm.LLM,
+                input_schema={"type": "string"},
+            ),
         ],
     )
 
@@ -120,3 +144,16 @@ def test_agent_strategy_converts_tool_parameters_once() -> None:
     assert tool.parameters[0].input_schema == {"type": "string"}
     assert "upload" not in prompt_tool.parameters["properties"]
     assert prompt_tool.parameters["required"] == ["query"]
+    assert prompt_tool.parameters["properties"]["day"] == {
+        "type": "string",
+        "description": "Event date",
+    }
+    assert prompt_tool.parameters["properties"]["range"] == {
+        "type": "object",
+        "description": "Event date range",
+        "properties": {
+            "start": {"type": "string"},
+            "end": {"type": "string"},
+        },
+    }
+    assert prompt_tool.parameters["properties"]["custom_range"] == {"type": "string"}
