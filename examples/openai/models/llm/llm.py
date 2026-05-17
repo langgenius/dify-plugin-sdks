@@ -65,6 +65,13 @@ OPENAI_BLOCK_MODE_PROMPT = (
 )
 
 
+def _require_text_content(content: object, field_name: str) -> str:
+    if not isinstance(content, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return content
+
+
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
     """Model class for OpenAI large language model."""
 
@@ -220,7 +227,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             prompt_messages[0],
             SystemPromptMessage,
         ):
-            system_content = cast("str", prompt_messages[0].content)
+            system_content = _require_text_content(
+                prompt_messages[0].content,
+                "System prompt message content",
+            )
             # override the system message
             prompt_messages[0] = SystemPromptMessage(
                 content=OPENAI_BLOCK_MODE_PROMPT.replace(
@@ -288,8 +298,14 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             msg = "User prompt message is required"
             raise ValueError(msg)
 
-        content = cast("str", prompt_messages[i].content)
-        user_content = cast("str", user_message.content)
+        content = _require_text_content(
+            prompt_messages[i].content,
+            "Prompt message content",
+        )
+        user_content = _require_text_content(
+            user_message.content,
+            "User prompt message content",
+        )
 
         if content[-11:] == "Assistant: ":
             # now we are in the chat app, remove the last assistant message
@@ -890,11 +906,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 # handle process of stream function call
                 if assistant_message_function_call:
                     # message has not ended ever
-                    stored_arguments = cast(
-                        "str",
-                        delta_assistant_message_function_call_storage.arguments,
+                    stored_arguments = (
+                        delta_assistant_message_function_call_storage.arguments or ""
                     )
-                    arguments = cast("str", assistant_message_function_call.arguments)
+                    arguments = assistant_message_function_call.arguments or ""
                     delta_assistant_message_function_call_storage.arguments = (
                         stored_arguments + arguments
                     )
@@ -1086,17 +1101,21 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         return prompt_messages
 
     def _convert_prompt_message_to_dict(self, message: PromptMessage) -> dict:
-        """Convert PromptMessage to dict for OpenAI API"""
+        """Convert PromptMessage to dict for OpenAI API.
+
+        Returns:
+            The prompt message as an OpenAI-compatible dictionary.
+
+        Raises:
+            TypeError: If user prompt content is neither text nor content parts.
+        """
         if isinstance(message, UserPromptMessage):
             message = cast("UserPromptMessage", message)
             if isinstance(message.content, str):
                 message_dict = {"role": "user", "content": message.content}
-            else:
+            elif isinstance(message.content, list):
                 sub_messages = []
-                for message_content in cast(
-                    "list[TextPromptMessageContent | ImagePromptMessageContent]",
-                    message.content,
-                ):
+                for message_content in message.content:
                     if message_content.type == PromptMessageContentType.TEXT:
                         message_content = cast(
                             "TextPromptMessageContent",
@@ -1122,6 +1141,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                         sub_messages.append(sub_message_dict)
 
                 message_dict = {"role": "user", "content": sub_messages}
+            else:
+                msg = "User prompt message content must be text or content parts"
+                raise TypeError(msg)
         elif isinstance(message, AssistantPromptMessage):
             message = cast("AssistantPromptMessage", message)
             message_dict = {"role": "assistant", "content": message.content}
