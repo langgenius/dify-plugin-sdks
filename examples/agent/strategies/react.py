@@ -202,7 +202,7 @@ class ReActAgentStrategy(AgentStrategy):
                 if isinstance(chunk, AgentScratchpadUnit.Action):
                     action = chunk
                     # detect action
-                    assert scratchpad.agent_response is not None
+                    scratchpad.agent_response = scratchpad.agent_response or ""
                     scratchpad.agent_response += json.dumps(chunk.model_dump())
 
                     scratchpad.action_str = json.dumps(chunk.model_dump())
@@ -297,7 +297,7 @@ class ReActAgentStrategy(AgentStrategy):
                     scratchpad.observation = tool_invoke_response
                     scratchpad.agent_response = tool_invoke_response
 
-                    # TODO: convert to agent invoke message
+                    # Conversion to an agent invoke message remains open here.
                     yield from additional_messages
                     yield self.finish_log_message(
                         log=tool_call_log,
@@ -393,20 +393,18 @@ class ReActAgentStrategy(AgentStrategy):
             assistant_messages = []
         else:
             assistant_message = AssistantPromptMessage(content="")
+            assistant_content = cast("str", assistant_message.content)
             for unit in agent_scratchpad:
                 if unit.is_final():
-                    assert isinstance(assistant_message.content, str)
-                    assistant_message.content += f"Final Answer: {unit.agent_response}"
+                    assistant_content += f"Final Answer: {unit.agent_response}"
                 else:
-                    assert isinstance(assistant_message.content, str)
-                    assistant_message.content += f"Thought: {unit.thought}\n\n"
+                    assistant_content += f"Thought: {unit.thought}\n\n"
                     if unit.action_str:
-                        assistant_message.content += f"Action: {unit.action_str}\n\n"
+                        assistant_content += f"Action: {unit.action_str}\n\n"
                     if unit.observation:
-                        assistant_message.content += (
-                            f"Observation: {unit.observation}\n\n"
-                        )
+                        assistant_content += f"Observation: {unit.observation}\n\n"
 
+            assistant_message.content = assistant_content
             assistant_messages = [assistant_message]
 
         # query messages

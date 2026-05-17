@@ -455,30 +455,33 @@ class SchemaDocumentationGenerator:
             The return value.
         """
         if field_type is None:
-            return "Any"
-
-        if isinstance(field_type, type):
+            type_name = "Any"
+        elif isinstance(field_type, type):
             if issubclass(field_type, (BaseModel, Enum)):
                 # Use schema name if available
                 schema = self._type_to_schema.get(field_type)
                 name = schema.name if schema else field_type.__name__
-                return f"[{name}](#{name.lower()})"
-            return field_type.__name__
-
-        if hasattr(field_type, "__origin__") and hasattr(field_type, "__args__"):
+                type_name = f"[{name}](#{name.lower()})"
+            else:
+                type_name = field_type.__name__
+        elif hasattr(field_type, "__origin__") and hasattr(field_type, "__args__"):
             origin = field_type.__origin__
             if origin in COLLECTION_ORIGINS:
                 inner_type = self._format_type_name(field_type.__args__[0])
-                return f"{origin.__name__}[{inner_type}]"
-            if origin is dict:
+                type_name = f"{origin.__name__}[{inner_type}]"
+            elif origin is dict:
                 key_type = self._format_type_name(field_type.__args__[0])
                 value_type = self._format_type_name(field_type.__args__[1])
-                return f"dict[{key_type}, {value_type}]"
-            if origin is tuple:
+                type_name = f"dict[{key_type}, {value_type}]"
+            elif origin is tuple:
                 types = [self._format_type_name(arg) for arg in field_type.__args__]
-                return f"tuple[{', '.join(types)}]"
-            if origin is Union:
+                type_name = f"tuple[{', '.join(types)}]"
+            elif origin is Union:
                 types = [self._format_type_name(arg) for arg in field_type.__args__]
-                return f"Union[{', '.join(types)}]"
+                type_name = f"Union[{', '.join(types)}]"
+            else:
+                type_name = str(field_type)
+        else:
+            type_name = str(field_type)
 
-        return str(field_type)
+        return type_name

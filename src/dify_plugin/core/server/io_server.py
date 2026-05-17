@@ -132,7 +132,9 @@ class IOServer(ABC):
         """
         send heartbeat to stdout
         """
-        assert self.default_writer
+        if self.default_writer is None:
+            msg = "Default writer is required for heartbeat"
+            raise RuntimeError(msg)
 
         while True:
             # timer

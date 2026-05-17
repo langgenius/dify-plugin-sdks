@@ -49,8 +49,6 @@ class NotionExtractor:
 
     def _get_notion_database_data(self, database_id: str) -> str:
         """Fetch all pages from a Notion database and return as a Markdown table."""
-        assert self._notion_access_token is not None, "Notion access token is required"
-
         # Retrieve database metadata
         database_data = self._client.retrieve_database(database_id=database_id)
 
@@ -100,7 +98,6 @@ class NotionExtractor:
 
     def _get_notion_block_data(self, page_id: str) -> str:
         """Fetch and process Notion block data."""
-        assert self._notion_access_token is not None, "Notion access token is required"
         result_lines_arr = []
 
         # Retrieve page metadata
@@ -208,41 +205,42 @@ class NotionExtractor:
         """Extract the value of a Notion property."""
         column_type = property_value["type"]
         if column_type == "multi_select":
-            return ", ".join(option["name"] for option in property_value[column_type])
-        if column_type in TEXT_PROPERTY_TYPES:
-            return (
+            value = ", ".join(option["name"] for option in property_value[column_type])
+        elif column_type in TEXT_PROPERTY_TYPES:
+            value = (
                 property_value[column_type][0]["plain_text"]
                 if property_value[column_type]
                 else ""
             )
-        if column_type in NAMED_PROPERTY_TYPES:
-            return (
+        elif column_type in NAMED_PROPERTY_TYPES:
+            value = (
                 property_value[column_type]["name"]
                 if property_value[column_type]
                 else ""
             )
-        if column_type == "number":
-            return property_value.get("number")
-        if column_type == "date":
+        elif column_type == "number":
+            value = property_value.get("number")
+        elif column_type == "date":
             date_data = property_value.get("date", {})
-            return (
+            value = (
                 {"start": date_data.get("start"), "end": date_data.get("end")}
                 if date_data
                 else None
             )
-        if column_type == "formula":
+        elif column_type == "formula":
             formula_value = property_value[column_type]
-            return (
+            value = (
                 formula_value.get("number")
                 if isinstance(formula_value, dict)
                 and formula_value.get("type") == "number"
                 else formula_value
             )
-        if column_type == "created_by":
-            # Handle created_by type
+        elif column_type == "created_by":
             created_by_data = property_value.get("created_by", {})
-            return created_by_data.get("name") if created_by_data else None
-        return property_value[column_type]
+            value = created_by_data.get("name") if created_by_data else None
+        else:
+            value = property_value[column_type]
+        return value
 
     def _extract_cell_text(self, cell: list[dict]) -> str:
         """Extract text content from a table cell."""
