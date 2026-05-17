@@ -107,7 +107,7 @@ Each example in `examples/` follows a consistent structure:
 
 ## Version Management
 
-- **SDK Version:** Currently 0.8.0 (semantic versioning)
+- **SDK Version:** Currently 0.8.1 (semantic versioning)
 - **Manifest Version:** Plugin compatibility version (currently 0.0.2)
 - **Minimum Dify Version:** Required Dify version for plugin features
 
