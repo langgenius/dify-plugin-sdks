@@ -50,6 +50,7 @@ from ..common_openai import _CommonOpenAI
 
 logger = logging.getLogger(__name__)
 EMPTY_STRING = ""
+ASSISTANT_PROMPT_SUFFIX = "Assistant: "
 STRUCTURED_RESPONSE_FORMATS = frozenset({"JSON", "XML"})
 
 OPENAI_BLOCK_MODE_PROMPT = (
@@ -307,9 +308,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             "User prompt message content",
         )
 
-        if content[-11:] == "Assistant: ":
+        if content.endswith(ASSISTANT_PROMPT_SUFFIX):
             # now we are in the chat app, remove the last assistant message
-            user_content = content[:-11]
+            user_content = content.removesuffix(ASSISTANT_PROMPT_SUFFIX)
             prompt_messages[i].content = user_content
             prompt_messages[i] = UserPromptMessage(
                 content=OPENAI_BLOCK_MODE_PROMPT.replace(

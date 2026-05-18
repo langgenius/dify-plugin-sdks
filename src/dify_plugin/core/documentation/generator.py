@@ -2,7 +2,8 @@ import importlib
 import pathlib
 from collections import defaultdict
 from enum import Enum
-from typing import TextIO, Union
+from types import UnionType
+from typing import TextIO, Union, get_args, get_origin
 
 from pydantic import BaseModel
 
@@ -464,23 +465,24 @@ class SchemaDocumentationGenerator:
                 type_name = f"[{name}](#{name.lower()})"
             else:
                 type_name = field_type.__name__
-        elif hasattr(field_type, "__origin__") and hasattr(field_type, "__args__"):
-            origin = field_type.__origin__
-            if origin in COLLECTION_ORIGINS:
-                inner_type = self._format_type_name(field_type.__args__[0])
-                type_name = f"{origin.__name__}[{inner_type}]"
-            elif origin is dict:
-                key_type = self._format_type_name(field_type.__args__[0])
-                value_type = self._format_type_name(field_type.__args__[1])
-                type_name = f"dict[{key_type}, {value_type}]"
-            elif origin is tuple:
-                types = [self._format_type_name(arg) for arg in field_type.__args__]
-                type_name = f"tuple[{', '.join(types)}]"
-            elif origin is Union:
-                types = [self._format_type_name(arg) for arg in field_type.__args__]
-                type_name = f"Union[{', '.join(types)}]"
-            else:
-                type_name = str(field_type)
+        elif (origin := get_origin(field_type)) is not None:
+            type_args = get_args(field_type)
+            match origin:
+                case _ if origin in COLLECTION_ORIGINS:
+                    inner_type = self._format_type_name(type_args[0])
+                    type_name = f"{origin.__name__}[{inner_type}]"
+                case _ if origin is dict:
+                    key_type = self._format_type_name(type_args[0])
+                    value_type = self._format_type_name(type_args[1])
+                    type_name = f"dict[{key_type}, {value_type}]"
+                case _ if origin is tuple:
+                    types = [self._format_type_name(arg) for arg in type_args]
+                    type_name = f"tuple[{', '.join(types)}]"
+                case _ if origin in {Union, UnionType}:
+                    types = [self._format_type_name(arg) for arg in type_args]
+                    type_name = f"Union[{', '.join(types)}]"
+                case _:
+                    type_name = str(field_type)
         else:
             type_name = str(field_type)
 

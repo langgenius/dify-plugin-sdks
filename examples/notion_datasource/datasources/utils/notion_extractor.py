@@ -204,42 +204,45 @@ class NotionExtractor:
     def _extract_property_value(self, property_value: dict[str, Any]) -> object:
         """Extract the value of a Notion property."""
         column_type = property_value["type"]
-        if column_type == "multi_select":
-            value = ", ".join(option["name"] for option in property_value[column_type])
-        elif column_type in TEXT_PROPERTY_TYPES:
-            value = (
-                property_value[column_type][0]["plain_text"]
-                if property_value[column_type]
-                else ""
-            )
-        elif column_type in NAMED_PROPERTY_TYPES:
-            value = (
-                property_value[column_type]["name"]
-                if property_value[column_type]
-                else ""
-            )
-        elif column_type == "number":
-            value = property_value.get("number")
-        elif column_type == "date":
-            date_data = property_value.get("date", {})
-            value = (
-                {"start": date_data.get("start"), "end": date_data.get("end")}
-                if date_data
-                else None
-            )
-        elif column_type == "formula":
-            formula_value = property_value[column_type]
-            value = (
-                formula_value.get("number")
-                if isinstance(formula_value, dict)
-                and formula_value.get("type") == "number"
-                else formula_value
-            )
-        elif column_type == "created_by":
-            created_by_data = property_value.get("created_by", {})
-            value = created_by_data.get("name") if created_by_data else None
-        else:
-            value = property_value[column_type]
+        match column_type:
+            case "multi_select":
+                value = ", ".join(
+                    option["name"] for option in property_value[column_type]
+                )
+            case _ if column_type in TEXT_PROPERTY_TYPES:
+                value = (
+                    property_value[column_type][0]["plain_text"]
+                    if property_value[column_type]
+                    else ""
+                )
+            case _ if column_type in NAMED_PROPERTY_TYPES:
+                value = (
+                    property_value[column_type]["name"]
+                    if property_value[column_type]
+                    else ""
+                )
+            case "number":
+                value = property_value.get("number")
+            case "date":
+                date_data = property_value.get("date", {})
+                value = (
+                    {"start": date_data.get("start"), "end": date_data.get("end")}
+                    if date_data
+                    else None
+                )
+            case "formula":
+                formula_value = property_value[column_type]
+                value = (
+                    formula_value.get("number")
+                    if isinstance(formula_value, dict)
+                    and formula_value.get("type") == "number"
+                    else formula_value
+                )
+            case "created_by":
+                created_by_data = property_value.get("created_by", {})
+                value = created_by_data.get("name") if created_by_data else None
+            case _:
+                value = property_value[column_type]
         return value
 
     def _extract_cell_text(self, cell: list[dict]) -> str:
