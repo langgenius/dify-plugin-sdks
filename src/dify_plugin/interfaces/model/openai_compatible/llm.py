@@ -897,15 +897,21 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             completion_tokens = usage["completion_tokens"]
         else:
             # calculate num tokens
-            assert prompt_messages[0].content is not None
+            if prompt_messages[0].content is None:
+                msg = "Prompt message content is required"
+                raise ValueError(msg)
+            prompt_content = cast("str", prompt_messages[0].content)
             prompt_tokens = self._num_tokens_from_string(
                 model,
-                prompt_messages[0].content,
+                prompt_content,
             )
-            assert assistant_message.content is not None
+            if assistant_message.content is None:
+                msg = "Assistant message content is required"
+                raise ValueError(msg)
+            assistant_content = cast("str", assistant_message.content)
             completion_tokens = self._num_tokens_from_string(
                 model,
-                assistant_message.content,
+                assistant_content,
             )
 
         # transform usage
@@ -1076,9 +1082,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         return self._get_num_tokens_by_gpt2(str(message_value))
 
     def _text_from_message_value(self, value: object) -> object:
-        # TODO: The current token calculation method for the image type is not
-        # implemented. It needs to download the image and calculate resolution,
-        # which increases request delay.
+        # Image token calculation remains approximate because exact sizing
+        # requires downloading images and measuring resolution.
         if not isinstance(value, list):
             return value
 

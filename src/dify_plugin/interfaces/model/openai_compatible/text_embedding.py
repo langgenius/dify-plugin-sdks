@@ -84,7 +84,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
 
         for i, text in enumerate(texts):
             # Here token count is only an approximation based on the GPT2 tokenizer
-            # TODO: Optimize for better token estimation and chunking
+            # Better token estimation would make chunking more precise.
             num_tokens = self._get_num_tokens_by_gpt2(text)
 
             if num_tokens >= context_size:

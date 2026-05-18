@@ -50,6 +50,7 @@ from ..common_openai import _CommonOpenAI
 
 logger = logging.getLogger(__name__)
 EMPTY_STRING = ""
+ASSISTANT_PROMPT_SUFFIX = "Assistant: "
 STRUCTURED_RESPONSE_FORMATS = frozenset({"JSON", "XML"})
 
 OPENAI_BLOCK_MODE_PROMPT = (
@@ -63,6 +64,13 @@ OPENAI_BLOCK_MODE_PROMPT = (
     "{{instructions}}\n"
     "</instructions>\n"
 )
+
+
+def _require_text_content(content: object, field_name: str) -> str:
+    if not isinstance(content, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return content
 
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
@@ -220,12 +228,15 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             prompt_messages[0],
             SystemPromptMessage,
         ):
-            assert isinstance(prompt_messages[0].content, str)
+            system_content = _require_text_content(
+                prompt_messages[0].content,
+                "System prompt message content",
+            )
             # override the system message
             prompt_messages[0] = SystemPromptMessage(
                 content=OPENAI_BLOCK_MODE_PROMPT.replace(
                     "{{instructions}}",
-                    prompt_messages[0].content,
+                    system_content,
                 ).replace("{{block}}", response_format),
             )
             prompt_messages.append(
@@ -258,7 +269,11 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         user: str | None = None,
         response_format: str = "JSON",
     ) -> None:
-        """Transform json prompts"""
+        """Transform json prompts.
+
+        Raises:
+            ValueError: If no user prompt message is available.
+        """
         del model
         del credentials
         del model_parameters
@@ -280,36 +295,39 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 user_message = prompt_messages[i]
                 break
 
-        assert isinstance(i, int)
+        if user_message is None or i is None:
+            msg = "User prompt message is required"
+            raise ValueError(msg)
 
-        if user_message:
-            assert isinstance(prompt_messages, list)
-            assert isinstance(prompt_messages[i], PromptMessage)
-            content = prompt_messages[i].content
-            assert isinstance(content, str)
+        content = _require_text_content(
+            prompt_messages[i].content,
+            "Prompt message content",
+        )
+        user_content = _require_text_content(
+            user_message.content,
+            "User prompt message content",
+        )
 
-            if content[-11:] == "Assistant: ":
-                assert isinstance(user_message.content, str)
-                # now we are in the chat app, remove the last assistant message
-                prompt_messages[i].content = content[:-11]
-                prompt_messages[i] = UserPromptMessage(
-                    content=OPENAI_BLOCK_MODE_PROMPT.replace(
-                        "{{instructions}}",
-                        user_message.content,
-                    ).replace("{{block}}", response_format),
-                )
-                prompt_messages[i].content += f"Assistant:\n```{response_format}\n"
-            else:
-                assert isinstance(user_message.content, str)
+        if content.endswith(ASSISTANT_PROMPT_SUFFIX):
+            # now we are in the chat app, remove the last assistant message
+            user_content = content.removesuffix(ASSISTANT_PROMPT_SUFFIX)
+            prompt_messages[i].content = user_content
+            prompt_messages[i] = UserPromptMessage(
+                content=OPENAI_BLOCK_MODE_PROMPT.replace(
+                    "{{instructions}}",
+                    user_content,
+                ).replace("{{block}}", response_format),
+            )
+            prompt_messages[i].content += f"Assistant:\n```{response_format}\n"
+        else:
+            prompt_messages[i] = UserPromptMessage(
+                content=OPENAI_BLOCK_MODE_PROMPT.replace(
+                    "{{instructions}}",
+                    user_content,
+                ).replace("{{block}}", response_format),
+            )
 
-                prompt_messages[i] = UserPromptMessage(
-                    content=OPENAI_BLOCK_MODE_PROMPT.replace(
-                        "{{instructions}}",
-                        user_message.content,
-                    ).replace("{{block}}", response_format),
-                )
-
-                prompt_messages[i].content += f"\n```{response_format}\n"
+            prompt_messages[i].content += f"\n```{response_format}\n"
 
     def get_num_tokens(
         self,
@@ -340,8 +358,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             # chat model
             return self._num_tokens_from_messages(base_model, prompt_messages, tools)
         # text completion model, do not support tool calling
-        content = prompt_messages[0].content
-        assert isinstance(content, str)
+        content = cast("str", prompt_messages[0].content)
         return self._num_tokens_from_string(base_model, content)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
@@ -499,10 +516,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             extra_model_kwargs["stream_options"] = {"include_usage": True}
 
         # text completion model
-        assert isinstance(prompt_messages[0].content, str)
+        prompt_content = cast("str", prompt_messages[0].content)
 
         response = client.completions.create(
-            prompt=prompt_messages[0].content,
+            prompt=prompt_content,
             model=model,
             stream=stream,
             **model_parameters,
@@ -510,19 +527,17 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         )
 
         if stream:
-            assert isinstance(response, Stream)
             return self._handle_generate_stream_response(
                 model,
                 credentials,
-                response,
+                cast("Stream[Completion]", response),
                 prompt_messages,
             )
 
-        assert isinstance(response, Completion)
         return self._handle_generate_response(
             model,
             credentials,
-            response,
+            cast("Completion", response),
             prompt_messages,
         )
 
@@ -556,10 +571,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             completion_tokens = response.usage.completion_tokens
         else:
             # calculate num tokens
-            assert isinstance(prompt_messages[0].content, str)
+            prompt_content = cast("str", prompt_messages[0].content)
             prompt_tokens = self._num_tokens_from_string(
                 model,
-                prompt_messages[0].content,
+                prompt_content,
             )
             completion_tokens = self._num_tokens_from_string(model, assistant_text)
 
@@ -648,10 +663,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 )
 
         if not prompt_tokens:
-            assert isinstance(prompt_messages[0].content, str)
+            prompt_content = cast("str", prompt_messages[0].content)
             prompt_tokens = self._num_tokens_from_string(
                 model,
-                prompt_messages[0].content,
+                prompt_content,
             )
 
         if not completion_tokens:
@@ -892,14 +907,12 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 # handle process of stream function call
                 if assistant_message_function_call:
                     # message has not ended ever
-                    assert isinstance(
-                        delta_assistant_message_function_call_storage.arguments,
-                        str,
+                    stored_arguments = (
+                        delta_assistant_message_function_call_storage.arguments or ""
                     )
-                    assert isinstance(assistant_message_function_call.arguments, str)
-
-                    delta_assistant_message_function_call_storage.arguments += (
-                        assistant_message_function_call.arguments
+                    arguments = assistant_message_function_call.arguments or ""
+                    delta_assistant_message_function_call_storage.arguments = (
+                        stored_arguments + arguments
                     )
                     continue
                 else:
@@ -999,9 +1012,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         tool_calls = []
         if response_tool_calls:
             for response_tool_call in response_tool_calls:
-                assert isinstance(
+                response_tool_call = cast(
+                    "ChatCompletionMessageToolCall | ChoiceDeltaToolCall",
                     response_tool_call,
-                    (ChatCompletionMessageToolCall, ChoiceDeltaToolCall),
                 )
                 if response_tool_call.function:
                     function = AssistantPromptMessage.ToolCall.ToolCallFunction(
@@ -1032,9 +1045,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         """
         tool_call = None
         if response_function_call:
-            assert isinstance(
+            response_function_call = cast(
+                "FunctionCall | ChoiceDeltaFunctionCall",
                 response_function_call,
-                (FunctionCall, ChoiceDeltaFunctionCall),
             )
 
             function = AssistantPromptMessage.ToolCall.ToolCallFunction(
@@ -1089,14 +1102,20 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         return prompt_messages
 
     def _convert_prompt_message_to_dict(self, message: PromptMessage) -> dict:
-        """Convert PromptMessage to dict for OpenAI API"""
+        """Convert PromptMessage to dict for OpenAI API.
+
+        Returns:
+            The prompt message as an OpenAI-compatible dictionary.
+
+        Raises:
+            TypeError: If user prompt content is neither text nor content parts.
+        """
         if isinstance(message, UserPromptMessage):
             message = cast("UserPromptMessage", message)
             if isinstance(message.content, str):
                 message_dict = {"role": "user", "content": message.content}
-            else:
+            elif isinstance(message.content, list):
                 sub_messages = []
-                assert isinstance(message.content, list)
                 for message_content in message.content:
                     if message_content.type == PromptMessageContentType.TEXT:
                         message_content = cast(
@@ -1123,6 +1142,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                         sub_messages.append(sub_message_dict)
 
                 message_dict = {"role": "user", "content": sub_messages}
+            else:
+                msg = "User prompt message content must be text or content parts"
+                raise TypeError(msg)
         elif isinstance(message, AssistantPromptMessage):
             message = cast("AssistantPromptMessage", message)
             message_dict = {"role": "assistant", "content": message.content}
@@ -1266,9 +1288,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         return len(encoding.encode(str(message_value)))
 
     def _text_from_message_value(self, value: object) -> object:
-        # TODO: The current token calculation method for the image type is not
-        # implemented. It needs to download the image and calculate resolution,
-        # which increases request delay.
+        # Image token calculation remains approximate because exact sizing
+        # requires downloading images and measuring resolution.
         if not isinstance(value, list):
             return value
 

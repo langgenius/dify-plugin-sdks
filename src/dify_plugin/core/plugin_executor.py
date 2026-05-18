@@ -917,7 +917,9 @@ class PluginExecutor:  # noqa: PLR0904
         action_instance: DynamicSelectProtocol | None = (
             self._get_dynamic_parameter_action(session=session, data=data)
         )
-        assert action_instance, f"Provider `{data.provider}` not found"
+        if action_instance is None:
+            msg = f"Provider `{data.provider}` not found"
+            raise ValueError(msg)
         return {
             "options": action_instance.fetch_parameter_options(
                 parameter=data.parameter,

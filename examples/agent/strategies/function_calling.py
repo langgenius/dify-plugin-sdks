@@ -537,7 +537,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             return
 
         if tool_invoke_response.type == ToolInvokeMessage.MessageType.BLOB:
-            # TODO: convert to agent invoke message
+            # Conversion to an agent invoke message remains open here.
             yield tool_invoke_response
             text_parts.append("Generated file ... ")
             return
@@ -556,7 +556,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             ).text
             yield from self._create_image_blob_message(file_info)
 
-        # TODO: convert to agent invoke message
+        # Conversion to an agent invoke message remains open here.
         yield tool_invoke_response
         text_parts.append(
             "image has been created and sent to user already, "

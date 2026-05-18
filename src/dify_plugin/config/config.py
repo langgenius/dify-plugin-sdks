@@ -44,7 +44,10 @@ class DifyPluginEnv(BaseSettings):
         default=None, description="Remote installation key"
     )
 
-    SERVERLESS_HOST: str = Field(default="0.0.0.0", description="Serverless host")
+    SERVERLESS_HOST: str = Field(
+        default="0.0.0.0",  # noqa: S104
+        description="Serverless host",
+    )
     SERVERLESS_PORT: int = Field(default=8080, description="Serverless port")
     SERVERLESS_WORKER_CLASS: str = Field(
         default="gevent", description="Serverless worker class"

@@ -84,7 +84,7 @@ class LLMInvocation(BackwardsInvocation[LLMResultChunk]):
             usage=LLMUsage.empty_usage(),
         )
 
-        assert isinstance(result.message.content, str)
+        result.message.content = cast("str", result.message.content)
 
         for llm_result in self._backwards_invoke(
             InvokeType.LLM,

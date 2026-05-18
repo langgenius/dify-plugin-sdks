@@ -9,8 +9,6 @@ HEADING_SPLITTER = {
     "heading_2": "## ",
     "heading_3": "### ",
 }
-TEXT_PROPERTY_TYPES = frozenset({"rich_text", "title"})
-NAMED_PROPERTY_TYPES = frozenset({"select", "status"})
 
 
 class NotionExtractor:
@@ -49,8 +47,6 @@ class NotionExtractor:
 
     def _get_notion_database_data(self, database_id: str) -> str:
         """Fetch all pages from a Notion database and return as a Markdown table."""
-        assert self._notion_access_token is not None, "Notion access token is required"
-
         # Retrieve database metadata
         database_data = self._client.retrieve_database(database_id=database_id)
 
@@ -100,7 +96,6 @@ class NotionExtractor:
 
     def _get_notion_block_data(self, page_id: str) -> str:
         """Fetch and process Notion block data."""
-        assert self._notion_access_token is not None, "Notion access token is required"
         result_lines_arr = []
 
         # Retrieve page metadata
@@ -207,42 +202,46 @@ class NotionExtractor:
     def _extract_property_value(self, property_value: dict[str, Any]) -> object:
         """Extract the value of a Notion property."""
         column_type = property_value["type"]
-        if column_type == "multi_select":
-            return ", ".join(option["name"] for option in property_value[column_type])
-        if column_type in TEXT_PROPERTY_TYPES:
-            return (
-                property_value[column_type][0]["plain_text"]
-                if property_value[column_type]
-                else ""
-            )
-        if column_type in NAMED_PROPERTY_TYPES:
-            return (
-                property_value[column_type]["name"]
-                if property_value[column_type]
-                else ""
-            )
-        if column_type == "number":
-            return property_value.get("number")
-        if column_type == "date":
-            date_data = property_value.get("date", {})
-            return (
-                {"start": date_data.get("start"), "end": date_data.get("end")}
-                if date_data
-                else None
-            )
-        if column_type == "formula":
-            formula_value = property_value[column_type]
-            return (
-                formula_value.get("number")
-                if isinstance(formula_value, dict)
-                and formula_value.get("type") == "number"
-                else formula_value
-            )
-        if column_type == "created_by":
-            # Handle created_by type
-            created_by_data = property_value.get("created_by", {})
-            return created_by_data.get("name") if created_by_data else None
-        return property_value[column_type]
+        match column_type:
+            case "multi_select":
+                value = ", ".join(
+                    option["name"] for option in property_value[column_type]
+                )
+            case "rich_text" | "title":
+                value = (
+                    property_value[column_type][0]["plain_text"]
+                    if property_value[column_type]
+                    else ""
+                )
+            case "select" | "status":
+                value = (
+                    property_value[column_type]["name"]
+                    if property_value[column_type]
+                    else ""
+                )
+            case "number":
+                value = property_value.get("number")
+            case "date":
+                date_data = property_value.get("date", {})
+                value = (
+                    {"start": date_data.get("start"), "end": date_data.get("end")}
+                    if date_data
+                    else None
+                )
+            case "formula":
+                formula_value = property_value[column_type]
+                value = (
+                    formula_value.get("number")
+                    if isinstance(formula_value, dict)
+                    and formula_value.get("type") == "number"
+                    else formula_value
+                )
+            case "created_by":
+                created_by_data = property_value.get("created_by", {})
+                value = created_by_data.get("name") if created_by_data else None
+            case _:
+                value = property_value[column_type]
+        return value
 
     def _extract_cell_text(self, cell: list[dict]) -> str:
         """Extract text content from a table cell."""

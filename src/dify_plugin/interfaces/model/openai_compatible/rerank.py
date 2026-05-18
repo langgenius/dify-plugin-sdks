@@ -71,7 +71,7 @@ class OAICompatRerankModel(RerankModel):
             "Content-Type": "application/json",
         }
 
-        # TODO: Do we need truncate docs to avoid llama.cpp return error?
+        # Open question: truncate docs before llama.cpp-compatible requests?
 
         data = {
             "model": credentials.get("endpoint_model_name", model),

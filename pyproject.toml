@@ -59,17 +59,10 @@ required-version = '>=0.15'
 [tool.ruff.lint]
 select = ['ALL']
 ignore = [
-    'S104',
-    'PLR0911',
-    'T201',
-    'FIX002',
-    'TD002',
-    'TD003',
     'PLR0915', # Too broad for orchestration-heavy SDK/example functions.
     'ERA001',  # False positives are common.
     'PLR0912',
     'PLR0914',
-    'S101',
     'TRY002',
     'BLE001',
     'TRY301',
