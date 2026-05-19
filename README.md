@@ -22,6 +22,19 @@ just test     # Run all tests
 just build    # Build source and wheel distributions
 ```
 
+## LLM Polling Support
+
+SDK 0.9.0 adds protocol hooks for polling-based LLM providers. A model can now
+declare the `polling` feature and implement polling hooks, allowing plugins to
+submit long-running provider jobs and return later checks through a short
+request/response flow.
+
+Polling results use three states:
+
+- `running` returns plugin-owned state for the next check.
+- `succeeded` returns the final LLM result.
+- `failed` returns a terminal error.
+
 ## Version Management
 
 This SDK follows Semantic Versioning (a.b.c):
@@ -73,3 +86,4 @@ For the manifest specification, we've introduced two versioning fields:
 | 1.10.0               | 0.6.0         | Support Trigger functionality for plugins          |
 | 1.11.0               | 0.7.0         | Support Multimodal Reranking / Embeddings          |
 | 1.14.0               | 0.8.1         | Dependency and project structure cleanup           |
+| 1.14.0               | 0.9.0         | Support polling-based LLM plugin protocol hooks    |
