@@ -1,4 +1,4 @@
-name: PyPI Publish
+name: Release
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: pypi-publish-${{ github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Python and uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
       - id: verify
         name: Verify tag matches pyproject.toml and main
@@ -52,10 +52,19 @@ jobs:
           printf 'tag=%s\n' "${tag}" >> "${GITHUB_OUTPUT}"
           printf 'version=%s\n' "${version}" >> "${GITHUB_OUTPUT}"
 
+  test:
+    name: Test
+    needs: verify-tag
+    permissions:
+      contents: read
+    uses: ./.github/workflows/test.yml
+
   build:
     name: Build release distributions
     runs-on: depot-ubuntu-24.04
-    needs: verify-tag
+    needs:
+      - verify-tag
+      - test
     permissions:
       contents: read
     steps:
@@ -65,10 +74,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Python and uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
-        with:
-          cache-dependency-glob: uv.lock
-          python-version: "3.12"
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
       - name: Install just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
@@ -83,16 +89,73 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
-  pypi-publish:
+  publish-github-draft:
+    name: Create GitHub draft release
+    runs-on: depot-ubuntu-24.04
+    needs:
+      - verify-tag
+      - build
+    permissions:
+      contents: write
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: python-package-distributions
+          path: dist
+
+      - name: Create or update GitHub draft release
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
+        with:
+          tag: ${{ needs.verify-tag.outputs.tag }}
+          name: ${{ needs.verify-tag.outputs.tag }}
+          draft: true
+          allowUpdates: true
+          artifacts: dist/*
+          artifactErrorsFailBuild: true
+          generateReleaseNotes: true
+          makeLatest: false
+          removeArtifacts: true
+          skipIfReleaseExists: true
+          updateOnlyUnreleased: true
+
+  publish-testpypi:
+    name: Publish package distributions to TestPyPI
+    runs-on: depot-ubuntu-24.04
+    needs:
+      - verify-tag
+      - build
+      - publish-github-draft
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/dify-plugin/${{ needs.verify-tag.outputs.version }}/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: python-package-distributions
+          path: dist
+
+      - name: Publish package distributions to TestPyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+  publish-pypi:
     name: Publish package distributions to PyPI
     runs-on: depot-ubuntu-24.04
     needs:
       - verify-tag
       - build
+      - publish-testpypi
     environment:
       name: pypi
       url: https://pypi.org/project/dify-plugin/${{ needs.verify-tag.outputs.version }}/
     permissions:
+      contents: write
       id-token: write
     steps:
       - name: Download distributions
@@ -103,3 +166,15 @@ jobs:
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
+
+      - name: Publish GitHub draft release
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
+        with:
+          tag: ${{ needs.verify-tag.outputs.tag }}
+          allowUpdates: true
+          draft: false
+          makeLatest: true
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          skipIfReleaseExists: true
+          updateOnlyUnreleased: true
