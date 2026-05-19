@@ -1,8 +1,9 @@
 from collections.abc import Mapping
 from decimal import Decimal
-from enum import Enum
+from enum import Enum, StrEnum
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from dify_plugin.entities.model import BaseModelConfig, ModelType, ModelUsage, PriceInfo
 from dify_plugin.entities.model.message import (
@@ -35,6 +36,12 @@ class LLMMode(Enum):
                 return mode
         msg = f"invalid mode value {value}"
         raise ValueError(msg)
+
+
+class LLMPollingStatus(StrEnum):
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
 
 
 class LLMUsage(ModelUsage):
@@ -172,6 +179,44 @@ class LLMResultWithStructuredOutput(LLMResult, LLMStructuredOutput):
             ),
             structured_output=self.structured_output,
         )
+
+
+class LLMPollingResult(BaseModel):
+    """Model class for llm polling result."""
+
+    status: LLMPollingStatus
+    plugin_state: dict[str, Any] | None = None
+    result: LLMResult | LLMResultWithStructuredOutput | None = None
+    error: str | None = None
+    next_check_after_seconds: int | None = None
+    expires_after_seconds: int | None = None
+    max_attempts: int | None = None
+
+    @model_validator(mode="after")
+    def validate_status_payload(self) -> "LLMPollingResult":
+        if self.status is LLMPollingStatus.RUNNING and self.plugin_state is None:
+            msg = "plugin_state is required when polling status is running."
+            raise ValueError(msg)
+
+        if self.status is LLMPollingStatus.SUCCEEDED and self.result is None:
+            msg = "result is required when polling status is succeeded."
+            raise ValueError(msg)
+
+        if self.status is LLMPollingStatus.FAILED and not self.error:
+            msg = "error is required when polling status is failed."
+            raise ValueError(msg)
+
+        for field_name in (
+            "next_check_after_seconds",
+            "expires_after_seconds",
+            "max_attempts",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and value <= 0:
+                msg = f"{field_name} must be greater than 0."
+                raise ValueError(msg)
+
+        return self
 
 
 class SummaryResult(BaseModel):

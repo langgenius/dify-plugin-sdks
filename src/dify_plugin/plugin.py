@@ -278,6 +278,22 @@ class Plugin(IOServer, Router):
         )
 
         self.register_route(
+            self.plugin_executer.start_llm_polling,
+            lambda data: (
+                data.get("type") == PluginInvokeType.Model.value
+                and data.get("action") == ModelActions.StartPolling.value
+            ),
+        )
+
+        self.register_route(
+            self.plugin_executer.check_llm_polling,
+            lambda data: (
+                data.get("type") == PluginInvokeType.Model.value
+                and data.get("action") == ModelActions.CheckPolling.value
+            ),
+        )
+
+        self.register_route(
             self.plugin_executer.get_llm_num_tokens,
             lambda data: (
                 data.get("type") == PluginInvokeType.Model.value
