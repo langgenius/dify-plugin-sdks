@@ -232,6 +232,7 @@ class ModelFeature(Enum):
     VIDEO = "video"
     AUDIO = "audio"
     STRUCTURED_OUTPUT = "structured-output"
+    POLLING = "polling"
 
 
 @docs(

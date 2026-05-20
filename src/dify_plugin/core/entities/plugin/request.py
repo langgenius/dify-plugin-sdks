@@ -1,8 +1,8 @@
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 
 from dify_plugin.entities.datasource import (
     GetOnlineDocumentPageContentRequest,
@@ -58,6 +58,8 @@ class ModelActions(StrEnum):
     ValidateProviderCredentials = "validate_provider_credentials"
     ValidateModelCredentials = "validate_model_credentials"
     InvokeLLM = "invoke_llm"
+    StartPolling = "start_polling"
+    CheckPolling = "check_polling"
     GetLLMNumTokens = "get_llm_num_tokens"
     InvokeTextEmbedding = "invoke_text_embedding"
     InvokeMultimodalEmbedding = "invoke_multimodal_embedding"
@@ -193,9 +195,26 @@ class ModelInvokeLLMRequest(PluginAccessModelRequest, PromptMessageMixin):
     model_parameters: dict[str, Any]
     stop: list[str] | None
     tools: list[PromptMessageTool] | None
+    json_schema: dict[str, JsonValue] | None = None
     stream: bool = True
 
     model_config = ConfigDict(protected_namespaces=())
+
+
+class ModelStartPollingRequest(ModelInvokeLLMRequest):
+    action: ModelActions = ModelActions.StartPolling
+    stream: Literal[False] = False
+
+    workflow_run_id: str
+    node_id: str
+
+
+class ModelCheckPollingRequest(PluginAccessModelRequest):
+    action: ModelActions = ModelActions.CheckPolling
+
+    workflow_run_id: str
+    node_id: str
+    plugin_state: dict[str, JsonValue]
 
 
 class ModelGetLLMNumTokens(PluginAccessModelRequest, PromptMessageMixin):
