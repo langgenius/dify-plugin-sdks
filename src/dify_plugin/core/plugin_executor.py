@@ -273,30 +273,31 @@ class PluginExecutor:  # noqa: PLR0904
             data.provider,
             data.model_type,
         )
-        if isinstance(model_instance, LargeLanguageModel):
-            if not model_instance.supports_polling(data.model, data.credentials):
-                msg = (
-                    f"Model `{data.model}` for provider `{data.provider}` "
-                    "does not support polling"
-                )
-                raise ValueError(msg)
-
-            return model_instance.start_polling(
-                model=data.model,
-                credentials=data.credentials,
-                prompt_messages=data.prompt_messages,
-                model_parameters=data.model_parameters,
-                tools=data.tools,
-                stop=data.stop,
-                stream=data.stream,
-                user=data.user_id,
-                json_schema=data.json_schema,
-                workflow_run_id=data.workflow_run_id,
-                node_id=data.node_id,
+        if not isinstance(model_instance, LargeLanguageModel):
+            msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
+            raise TypeError(
+                msg,
             )
-        msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
-        raise ValueError(
-            msg,
+
+        if not model_instance.supports_polling(data.model, data.credentials):
+            msg = (
+                f"Model `{data.model}` for provider `{data.provider}` "
+                "does not support polling"
+            )
+            raise ValueError(msg)
+
+        return model_instance.start_polling(
+            model=data.model,
+            credentials=data.credentials,
+            prompt_messages=data.prompt_messages,
+            model_parameters=data.model_parameters,
+            tools=data.tools,
+            stop=data.stop,
+            stream=data.stream,
+            user=data.user_id,
+            json_schema=data.json_schema,
+            workflow_run_id=data.workflow_run_id,
+            node_id=data.node_id,
         )
 
     def check_llm_polling(
@@ -309,25 +310,26 @@ class PluginExecutor:  # noqa: PLR0904
             data.provider,
             data.model_type,
         )
-        if isinstance(model_instance, LargeLanguageModel):
-            if not model_instance.supports_polling(data.model, data.credentials):
-                msg = (
-                    f"Model `{data.model}` for provider `{data.provider}` "
-                    "does not support polling"
-                )
-                raise ValueError(msg)
-
-            return model_instance.check_polling(
-                model=data.model,
-                credentials=data.credentials,
-                plugin_state=data.plugin_state,
-                user=data.user_id,
-                workflow_run_id=data.workflow_run_id,
-                node_id=data.node_id,
+        if not isinstance(model_instance, LargeLanguageModel):
+            msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
+            raise TypeError(
+                msg,
             )
-        msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
-        raise ValueError(
-            msg,
+
+        if not model_instance.supports_polling(data.model, data.credentials):
+            msg = (
+                f"Model `{data.model}` for provider `{data.provider}` "
+                "does not support polling"
+            )
+            raise ValueError(msg)
+
+        return model_instance.check_polling(
+            model=data.model,
+            credentials=data.credentials,
+            plugin_state=data.plugin_state,
+            user=data.user_id,
+            workflow_run_id=data.workflow_run_id,
+            node_id=data.node_id,
         )
 
     def get_llm_num_tokens(

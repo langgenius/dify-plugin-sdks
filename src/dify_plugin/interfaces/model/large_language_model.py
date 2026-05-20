@@ -4,9 +4,9 @@ import re
 import time
 from abc import abstractmethod
 from collections.abc import Generator, Mapping
-from typing import Any
+from typing import Literal
 
-from pydantic import ConfigDict
+from pydantic import ConfigDict, JsonValue
 
 from dify_plugin.entities.model import (
     ModelFeature,
@@ -86,12 +86,12 @@ class LargeLanguageModel(AIModel):
         model_parameters: dict,
         tools: list[PromptMessageTool] | None = None,
         stop: list[str] | None = None,
-        stream: bool = False,
+        stream: Literal[False] = False,
         user: str | None = None,
         *,
         workflow_run_id: str,
         node_id: str,
-        json_schema: dict[str, Any] | None = None,
+        json_schema: dict[str, JsonValue] | None = None,
     ) -> LLMPollingResult:
         """Start a polling-based large language model invocation."""
         del (
@@ -113,7 +113,7 @@ class LargeLanguageModel(AIModel):
         self,
         model: str,
         credentials: dict,
-        plugin_state: dict[str, Any],
+        plugin_state: dict[str, JsonValue],
         user: str | None = None,
         *,
         workflow_run_id: str,
@@ -766,9 +766,9 @@ class LargeLanguageModel(AIModel):
         model_parameters: dict | None = None,
         tools: list[PromptMessageTool] | None = None,
         stop: list[str] | None = None,
-        stream: bool = False,
+        stream: Literal[False] = False,
         user: str | None = None,
-        json_schema: dict[str, Any] | None = None,
+        json_schema: dict[str, JsonValue] | None = None,
         *,
         workflow_run_id: str,
         node_id: str,
@@ -809,7 +809,7 @@ class LargeLanguageModel(AIModel):
         self,
         model: str,
         credentials: dict,
-        plugin_state: dict[str, Any],
+        plugin_state: dict[str, JsonValue],
         user: str | None = None,
         *,
         workflow_run_id: str,

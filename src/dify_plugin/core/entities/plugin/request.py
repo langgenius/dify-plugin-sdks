@@ -1,8 +1,8 @@
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 
 from dify_plugin.entities.datasource import (
     GetOnlineDocumentPageContentRequest,
@@ -195,7 +195,7 @@ class ModelInvokeLLMRequest(PluginAccessModelRequest, PromptMessageMixin):
     model_parameters: dict[str, Any]
     stop: list[str] | None
     tools: list[PromptMessageTool] | None
-    json_schema: dict[str, Any] | None = None
+    json_schema: dict[str, JsonValue] | None = None
     stream: bool = True
 
     model_config = ConfigDict(protected_namespaces=())
@@ -203,7 +203,7 @@ class ModelInvokeLLMRequest(PluginAccessModelRequest, PromptMessageMixin):
 
 class ModelStartPollingRequest(ModelInvokeLLMRequest):
     action: ModelActions = ModelActions.StartPolling
-    stream: bool = False
+    stream: Literal[False] = False
 
     workflow_run_id: str
     node_id: str
@@ -214,7 +214,7 @@ class ModelCheckPollingRequest(PluginAccessModelRequest):
 
     workflow_run_id: str
     node_id: str
-    plugin_state: dict[str, Any]
+    plugin_state: dict[str, JsonValue]
 
 
 class ModelGetLLMNumTokens(PluginAccessModelRequest, PromptMessageMixin):

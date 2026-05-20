@@ -1,7 +1,9 @@
 from collections.abc import Generator, Mapping
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Literal
 
 import pytest
+from pydantic import JsonValue
 
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.entities.plugin.request import (
@@ -30,6 +32,105 @@ from dify_plugin.errors.model import InvokeError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
 
+@dataclass(frozen=True)
+class PollingScenario:
+    user_id: str = "user-1"
+    provider: str = "provider"
+    model: str = "llm"
+    api_key: str = "key"
+    workflow_run_id: str = "wr-1"
+    node_id: str = "node-1"
+    job_id: str = "job-1"
+    prompt_content: str = "hello"
+    result_content: str = "done"
+    next_check_after_seconds: int = 15
+    expires_after_seconds: int = 1800
+    max_attempts: int = 60
+
+    @property
+    def credentials(self) -> dict[str, str]:
+        return {"api_key": self.api_key}
+
+    @property
+    def json_schema(self) -> dict[str, JsonValue]:
+        return {"type": "object"}
+
+    @property
+    def plugin_state(self) -> dict[str, JsonValue]:
+        return {"job_id": self.job_id}
+
+    @property
+    def daemon_prompt_messages(self) -> list[dict[str, str]]:
+        return [{"role": "user", "content": self.prompt_content}]
+
+    @property
+    def prompt_messages(self) -> list[UserPromptMessage]:
+        return [UserPromptMessage(content=self.prompt_content)]
+
+    def model_entity(self) -> AIModelEntity:
+        return AIModelEntity(
+            model=self.model,
+            label=I18nObject(en_us=self.model),
+            model_type=ModelType.LLM,
+            features=[ModelFeature.POLLING],
+            fetch_from=FetchFrom.PREDEFINED_MODEL,
+            model_properties={},
+            parameter_rules=[],
+        )
+
+    def start_request(
+        self,
+        *,
+        prompt_messages: object | None = None,
+        model_parameters: dict[str, object] | None = None,
+        json_schema: dict[str, JsonValue] | None = None,
+        stream: bool | None = None,
+    ) -> ModelStartPollingRequest:
+        data: dict[str, object] = {
+            "user_id": self.user_id,
+            "provider": self.provider,
+            "model_type": ModelType.LLM,
+            "model": self.model,
+            "credentials": self.credentials,
+            "prompt_messages": prompt_messages or self.prompt_messages,
+            "model_parameters": model_parameters or {},
+            "stop": [],
+            "tools": [],
+            "workflow_run_id": self.workflow_run_id,
+            "node_id": self.node_id,
+        }
+        if json_schema is not None:
+            data["json_schema"] = json_schema
+        if stream is not None:
+            data["stream"] = stream
+
+        return ModelStartPollingRequest(**data)
+
+    def check_request(
+        self,
+        *,
+        plugin_state: dict[str, JsonValue] | None = None,
+    ) -> ModelCheckPollingRequest:
+        data: dict[str, object] = {
+            "user_id": self.user_id,
+            "provider": self.provider,
+            "model_type": ModelType.LLM,
+            "model": self.model,
+            "credentials": self.credentials,
+            "workflow_run_id": self.workflow_run_id,
+            "node_id": self.node_id,
+            "plugin_state": plugin_state or self.plugin_state,
+        }
+        return ModelCheckPollingRequest(**data)
+
+    def llm_result(self, content: str | None = None) -> LLMResult:
+        return LLMResult(
+            model=self.model,
+            message=AssistantPromptMessage(content=content or self.result_content),
+            usage=LLMUsage.empty_usage(),
+        )
+
+
 class ModelRegistration:
     def __init__(self, model_instance: LargeLanguageModel) -> None:
         self.model_instance = model_instance
@@ -49,19 +150,10 @@ class ModelRegistration:
 class PollingLLM(LargeLanguageModel):
     model_type = ModelType.LLM
 
-    def __init__(self) -> None:
+    def __init__(self, scenario: PollingScenario | None = None) -> None:
+        self.scenario = scenario or PollingScenario()
         super().__init__(
-            model_schemas=[
-                AIModelEntity(
-                    model="llm",
-                    label=I18nObject(en_us="llm"),
-                    model_type=ModelType.LLM,
-                    features=[ModelFeature.POLLING],
-                    fetch_from=FetchFrom.PREDEFINED_MODEL,
-                    model_properties={},
-                    parameter_rules=[],
-                ),
-            ],
+            model_schemas=[self.scenario.model_entity()],
         )
         self.start_call: dict[str, Any] | None = None
         self.check_call: dict[str, Any] | None = None
@@ -94,7 +186,7 @@ class PollingLLM(LargeLanguageModel):
             stream,
             user,
         )
-        return _llm_result("done")
+        return self.scenario.llm_result()
 
     def _start_polling(
         self,
@@ -104,12 +196,12 @@ class PollingLLM(LargeLanguageModel):
         model_parameters: dict,
         tools: list[PromptMessageTool] | None = None,
         stop: list[str] | None = None,
-        stream: bool = False,
+        stream: Literal[False] = False,
         user: str | None = None,
         *,
         workflow_run_id: str,
         node_id: str,
-        json_schema: dict[str, Any] | None = None,
+        json_schema: dict[str, JsonValue] | None = None,
     ) -> LLMPollingResult:
         self.start_call = {
             "model": model,
@@ -126,17 +218,17 @@ class PollingLLM(LargeLanguageModel):
         }
         return LLMPollingResult(
             status=LLMPollingStatus.RUNNING,
-            plugin_state={"job_id": "job-1"},
-            next_check_after_seconds=15,
-            expires_after_seconds=1800,
-            max_attempts=60,
+            plugin_state=self.scenario.plugin_state,
+            next_check_after_seconds=self.scenario.next_check_after_seconds,
+            expires_after_seconds=self.scenario.expires_after_seconds,
+            max_attempts=self.scenario.max_attempts,
         )
 
     def _check_polling(
         self,
         model: str,
         credentials: dict,
-        plugin_state: dict[str, Any],
+        plugin_state: dict[str, JsonValue],
         user: str | None = None,
         *,
         workflow_run_id: str,
@@ -152,7 +244,7 @@ class PollingLLM(LargeLanguageModel):
         }
         return LLMPollingResult(
             status=LLMPollingStatus.SUCCEEDED,
-            result=_llm_result("done"),
+            result=self.scenario.llm_result(),
         )
 
     def get_num_tokens(
@@ -167,129 +259,94 @@ class PollingLLM(LargeLanguageModel):
 
 
 class NonPollingLLM(PollingLLM):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, scenario: PollingScenario | None = None) -> None:
+        super().__init__(scenario)
         self.model_schemas[0].features = []
 
 
 def test_polling_requests_parse_daemon_payloads() -> None:
-    start_request = ModelStartPollingRequest(
-        user_id="user-1",
-        provider="provider",
-        model_type=ModelType.LLM,
-        model="llm",
-        credentials={"api_key": "key"},
-        prompt_messages=[{"role": "user", "content": "hello"}],
-        model_parameters={},
-        stop=[],
-        tools=[],
-        json_schema={"type": "object"},
-        workflow_run_id="wr-1",
-        node_id="node-1",
+    scenario = PollingScenario()
+
+    start_request = scenario.start_request(
+        prompt_messages=scenario.daemon_prompt_messages,
+        json_schema=scenario.json_schema,
     )
     assert start_request.action == ModelActions.StartPolling
     assert start_request.stream is False
     assert isinstance(start_request.prompt_messages[0], UserPromptMessage)
-    assert start_request.json_schema == {"type": "object"}
+    assert start_request.json_schema == scenario.json_schema
 
-    check_request = ModelCheckPollingRequest(
-        user_id="user-1",
-        provider="provider",
-        model_type=ModelType.LLM,
-        model="llm",
-        credentials={"api_key": "key"},
-        workflow_run_id="wr-1",
-        node_id="node-1",
-        plugin_state={"job_id": "job-1"},
-    )
+    check_request = scenario.check_request()
     assert check_request.action == ModelActions.CheckPolling
-    assert check_request.plugin_state == {"job_id": "job-1"}
+    assert check_request.plugin_state == scenario.plugin_state
+
+
+def test_start_polling_request_rejects_streaming() -> None:
+    scenario = PollingScenario()
+
+    with pytest.raises(ValueError, match="Input should be False"):
+        scenario.start_request(
+            prompt_messages=scenario.daemon_prompt_messages,
+            stream=True,
+        )
 
 
 def test_executor_starts_llm_polling() -> None:
-    model = PollingLLM()
+    scenario = PollingScenario()
+    model = PollingLLM(scenario)
     executor = PluginExecutor(DifyPluginEnv(), ModelRegistration(model))
 
     response = executor.start_llm_polling(
         Session.empty_session(),
-        ModelStartPollingRequest(
-            user_id="user-1",
-            provider="provider",
-            model_type=ModelType.LLM,
-            model="llm",
-            credentials={"api_key": "key"},
-            prompt_messages=[UserPromptMessage(content="hello")],
+        scenario.start_request(
             model_parameters={"temperature": 0.2},
-            stop=[],
-            tools=[],
-            json_schema={"type": "object"},
-            workflow_run_id="wr-1",
-            node_id="node-1",
+            json_schema=scenario.json_schema,
         ),
     )
 
     assert isinstance(response, LLMPollingResult)
     assert response.status == LLMPollingStatus.RUNNING
-    assert response.plugin_state == {"job_id": "job-1"}
-    assert response.next_check_after_seconds == 15
-    assert response.expires_after_seconds == 1800
-    assert response.max_attempts == 60
+    assert response.plugin_state == scenario.plugin_state
+    assert response.next_check_after_seconds == scenario.next_check_after_seconds
+    assert response.expires_after_seconds == scenario.expires_after_seconds
+    assert response.max_attempts == scenario.max_attempts
     assert model.start_call is not None
-    assert model.supports_polling("llm", {"api_key": "key"})
-    assert model.start_call["workflow_run_id"] == "wr-1"
-    assert model.start_call["node_id"] == "node-1"
-    assert model.start_call["json_schema"] == {"type": "object"}
+    assert model.supports_polling(scenario.model, scenario.credentials)
+    assert model.start_call["workflow_run_id"] == scenario.workflow_run_id
+    assert model.start_call["node_id"] == scenario.node_id
+    assert model.start_call["json_schema"] == scenario.json_schema
     assert model.start_call["model_parameters"] == {}
 
 
 def test_executor_checks_llm_polling() -> None:
-    model = PollingLLM()
+    scenario = PollingScenario()
+    model = PollingLLM(scenario)
     executor = PluginExecutor(DifyPluginEnv(), ModelRegistration(model))
 
     response = executor.check_llm_polling(
         Session.empty_session(),
-        ModelCheckPollingRequest(
-            user_id="user-1",
-            provider="provider",
-            model_type=ModelType.LLM,
-            model="llm",
-            credentials={"api_key": "key"},
-            workflow_run_id="wr-1",
-            node_id="node-1",
-            plugin_state={"job_id": "job-1"},
-        ),
+        scenario.check_request(),
     )
 
     assert isinstance(response, LLMPollingResult)
     assert response.status == LLMPollingStatus.SUCCEEDED
     assert response.result is not None
-    assert response.result.message.content == "done"
+    assert response.result.message.content == scenario.result_content
     assert model.check_call is not None
-    assert model.check_call["plugin_state"] == {"job_id": "job-1"}
-    assert model.check_call["workflow_run_id"] == "wr-1"
-    assert model.check_call["node_id"] == "node-1"
+    assert model.check_call["plugin_state"] == scenario.plugin_state
+    assert model.check_call["workflow_run_id"] == scenario.workflow_run_id
+    assert model.check_call["node_id"] == scenario.node_id
 
 
 def test_executor_rejects_llm_without_polling_feature() -> None:
-    model = NonPollingLLM()
+    scenario = PollingScenario()
+    model = NonPollingLLM(scenario)
     executor = PluginExecutor(DifyPluginEnv(), ModelRegistration(model))
 
     with pytest.raises(ValueError, match="does not support polling"):
         executor.start_llm_polling(
             Session.empty_session(),
-            ModelStartPollingRequest(
-                user_id="user-1",
-                provider="provider",
-                model_type=ModelType.LLM,
-                model="llm",
-                credentials={"api_key": "key"},
-                prompt_messages=[UserPromptMessage(content="hello")],
-                model_parameters={},
-                stop=[],
-                tools=[],
-                workflow_run_id="wr-1",
-                node_id="node-1",
-            ),
+            scenario.start_request(),
         )
 
 
@@ -309,17 +366,11 @@ def test_polling_result_validates_state_payloads() -> None:
     ["next_check_after_seconds", "expires_after_seconds", "max_attempts"],
 )
 def test_polling_result_rejects_non_positive_limits(field_name: str) -> None:
-    with pytest.raises(ValueError, match=f"{field_name} must be greater than 0"):
+    scenario = PollingScenario()
+
+    with pytest.raises(ValueError, match="Input should be greater than 0"):
         LLMPollingResult(
             status=LLMPollingStatus.RUNNING,
-            plugin_state={"job_id": "job-1"},
+            plugin_state=scenario.plugin_state,
             **{field_name: 0},
         )
-
-
-def _llm_result(content: str) -> LLMResult:
-    return LLMResult(
-        model="llm",
-        message=AssistantPromptMessage(content=content),
-        usage=LLMUsage.empty_usage(),
-    )

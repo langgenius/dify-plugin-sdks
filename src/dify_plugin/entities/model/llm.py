@@ -1,9 +1,16 @@
 from collections.abc import Mapping
 from decimal import Decimal
 from enum import Enum, StrEnum
-from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    PositiveInt,
+    field_validator,
+    model_validator,
+)
 
 from dify_plugin.entities.model import BaseModelConfig, ModelType, ModelUsage, PriceInfo
 from dify_plugin.entities.model.message import (
@@ -185,12 +192,12 @@ class LLMPollingResult(BaseModel):
     """Model class for llm polling result."""
 
     status: LLMPollingStatus
-    plugin_state: dict[str, Any] | None = None
+    plugin_state: dict[str, JsonValue] | None = None
     result: LLMResult | LLMResultWithStructuredOutput | None = None
     error: str | None = None
-    next_check_after_seconds: int | None = None
-    expires_after_seconds: int | None = None
-    max_attempts: int | None = None
+    next_check_after_seconds: PositiveInt | None = None
+    expires_after_seconds: PositiveInt | None = None
+    max_attempts: PositiveInt | None = None
 
     @model_validator(mode="after")
     def validate_status_payload(self) -> "LLMPollingResult":
@@ -205,16 +212,6 @@ class LLMPollingResult(BaseModel):
         if self.status == LLMPollingStatus.FAILED and not self.error:
             msg = "error is required when polling status is failed."
             raise ValueError(msg)
-
-        for field_name in (
-            "next_check_after_seconds",
-            "expires_after_seconds",
-            "max_attempts",
-        ):
-            value = getattr(self, field_name)
-            if value is not None and value <= 0:
-                msg = f"{field_name} must be greater than 0."
-                raise ValueError(msg)
 
         return self
 
