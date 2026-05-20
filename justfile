@@ -1,5 +1,6 @@
 dev:
     uv sync
+    uv run prek install
 
 format:
     uv run ruff format
