@@ -86,4 +86,4 @@ For the manifest specification, we've introduced two versioning fields:
 | 1.10.0               | 0.6.0         | Support Trigger functionality for plugins          |
 | 1.11.0               | 0.7.0         | Support Multimodal Reranking / Embeddings          |
 | 1.14.0               | 0.8.1         | Dependency and project structure cleanup           |
-| 1.14.0               | 0.9.0         | Support polling-based LLM plugin invocations       |
+| 1.14.2               | 0.9.0         | Support polling-based LLM plugin invocations       |
