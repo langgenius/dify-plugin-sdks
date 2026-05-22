@@ -214,7 +214,7 @@ class ModelCheckPollingRequest(PluginAccessModelRequest):
 
     workflow_run_id: str
     node_id: str
-    plugin_state: dict[str, JsonValue]
+    plugin_state: dict[str, JsonValue] = Field(min_length=1)
 
 
 class ModelGetLLMNumTokens(PluginAccessModelRequest, PromptMessageMixin):

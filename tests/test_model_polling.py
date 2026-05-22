@@ -291,6 +291,23 @@ def test_start_polling_request_rejects_streaming() -> None:
         )
 
 
+def test_check_polling_request_rejects_empty_plugin_state() -> None:
+    scenario = PollingScenario()
+    data: dict[str, object] = {
+        "user_id": scenario.user_id,
+        "provider": scenario.provider,
+        "model_type": ModelType.LLM,
+        "model": scenario.model,
+        "credentials": scenario.credentials,
+        "workflow_run_id": scenario.workflow_run_id,
+        "node_id": scenario.node_id,
+        "plugin_state": {},
+    }
+
+    with pytest.raises(ValueError, match="at least 1 item"):
+        ModelCheckPollingRequest(**data)
+
+
 def test_executor_starts_llm_polling() -> None:
     scenario = PollingScenario()
     model = PollingLLM(scenario)
@@ -353,6 +370,9 @@ def test_executor_rejects_llm_without_polling_feature() -> None:
 def test_polling_result_validates_state_payloads() -> None:
     with pytest.raises(ValueError, match="plugin_state is required"):
         LLMPollingResult(status=LLMPollingStatus.RUNNING)
+
+    with pytest.raises(ValueError, match="plugin_state is required"):
+        LLMPollingResult(status=LLMPollingStatus.RUNNING, plugin_state={})
 
     with pytest.raises(ValueError, match="result is required"):
         LLMPollingResult(status=LLMPollingStatus.SUCCEEDED)

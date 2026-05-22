@@ -201,7 +201,7 @@ class LLMPollingResult(BaseModel):
 
     @model_validator(mode="after")
     def validate_status_payload(self) -> "LLMPollingResult":
-        if self.status == LLMPollingStatus.RUNNING and self.plugin_state is None:
+        if self.status == LLMPollingStatus.RUNNING and not self.plugin_state:
             msg = "plugin_state is required when polling status is running."
             raise ValueError(msg)
 
