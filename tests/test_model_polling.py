@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 import pytest
-from pydantic import JsonValue
+from pydantic import JsonValue, ValidationError
 
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.entities.plugin.request import (
@@ -284,7 +284,7 @@ def test_polling_requests_parse_daemon_payloads() -> None:
 def test_start_polling_request_rejects_streaming() -> None:
     scenario = PollingScenario()
 
-    with pytest.raises(ValueError, match="Input should be False"):
+    with pytest.raises(ValidationError, match="Input should be False"):
         scenario.start_request(
             prompt_messages=scenario.daemon_prompt_messages,
             stream=True,
@@ -304,7 +304,7 @@ def test_check_polling_request_rejects_empty_plugin_state() -> None:
         "plugin_state": {},
     }
 
-    with pytest.raises(ValueError, match="at least 1 item"):
+    with pytest.raises(ValidationError, match="at least 1 item"):
         ModelCheckPollingRequest(**data)
 
 
@@ -368,16 +368,16 @@ def test_executor_rejects_llm_without_polling_feature() -> None:
 
 
 def test_polling_result_validates_state_payloads() -> None:
-    with pytest.raises(ValueError, match="plugin_state is required"):
+    with pytest.raises(ValidationError, match="plugin_state is required"):
         LLMPollingResult(status=LLMPollingStatus.RUNNING)
 
-    with pytest.raises(ValueError, match="plugin_state is required"):
+    with pytest.raises(ValidationError, match="plugin_state is required"):
         LLMPollingResult(status=LLMPollingStatus.RUNNING, plugin_state={})
 
-    with pytest.raises(ValueError, match="result is required"):
+    with pytest.raises(ValidationError, match="result is required"):
         LLMPollingResult(status=LLMPollingStatus.SUCCEEDED)
 
-    with pytest.raises(ValueError, match="error is required"):
+    with pytest.raises(ValidationError, match="error is required"):
         LLMPollingResult(status=LLMPollingStatus.FAILED)
 
 
@@ -388,7 +388,7 @@ def test_polling_result_validates_state_payloads() -> None:
 def test_polling_result_rejects_non_positive_limits(field_name: str) -> None:
     scenario = PollingScenario()
 
-    with pytest.raises(ValueError, match="Input should be greater than 0"):
+    with pytest.raises(ValidationError, match="Input should be greater than 0"):
         LLMPollingResult(
             status=LLMPollingStatus.RUNNING,
             plugin_state=scenario.plugin_state,
