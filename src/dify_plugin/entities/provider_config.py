@@ -38,6 +38,8 @@ class CommonParameterType(Enum):
     OBJECT = "object"
     ARRAY = "array"
     DYNAMIC_SELECT = "dynamic-select"
+    DATE = "date"
+    DATE_PICKER = "date-picker"
 
 
 @docs(
