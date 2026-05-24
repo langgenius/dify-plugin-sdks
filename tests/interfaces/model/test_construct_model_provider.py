@@ -19,7 +19,7 @@ def test_construct_model_provider() -> None:
 
     provider_schema = ProviderEntity(
         provider="test",
-        label=I18nObject(en_US="test"),
+        label=I18nObject(en_us="test"),
         supported_model_types=[ModelType.LLM],
         configurate_methods=[],
     )

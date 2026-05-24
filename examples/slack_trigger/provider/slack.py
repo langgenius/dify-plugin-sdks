@@ -134,6 +134,7 @@ class SlackTrigger(Trigger):
     def _determine_event(
         self, subscription: Subscription, payload: Mapping[str, Any]
     ) -> str:
+        del subscription
         if payload.get("type") != "event_callback":
             return ""
 

@@ -255,7 +255,7 @@ class ToolProviderConfiguration(BaseModel):
     def validate_tools(cls, value: list[object]) -> list[ToolConfiguration]:
         if not isinstance(value, list):
             msg = "tools should be a list"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         tools: list[ToolConfiguration] = []
 
@@ -263,7 +263,7 @@ class ToolProviderConfiguration(BaseModel):
             # read from yaml
             if not isinstance(tool, str):
                 msg = "tool path should be a string"
-                raise ValueError(msg)
+                raise TypeError(msg)
             try:
                 file = load_yaml_file(tool)
                 tools.append(

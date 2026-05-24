@@ -32,7 +32,7 @@ class CommitCommentEvent(Event):
         comment = payload.get("comment")
         if not isinstance(comment, Mapping):
             msg = "No comment in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         self._check_body_contains(comment, parameters.get("body_contains"))
         self._check_commenter(comment, parameters.get("commenter"))

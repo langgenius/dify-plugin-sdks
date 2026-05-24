@@ -79,6 +79,27 @@ ADDITIONAL_UNIFIED_EVENTS = frozenset({
     "deploy_key",
     "watch",
 })
+EVENT_ALIASES = {
+    **dict.fromkeys(SECRET_SCANNING_EVENTS, "secret_scanning"),
+    **dict.fromkeys(REF_CHANGE_EVENTS, "ref_change"),
+}
+UNIFIED_EVENTS = (
+    CORE_EVENTS
+    | REVIEW_AND_CI_EVENTS
+    | BRANCH_PROTECTION_EVENTS
+    | ADDITIONAL_UNIFIED_EVENTS
+    | frozenset({
+        "push",
+        "star",
+        "code_scanning_alert",
+        "commit_comment",
+        "status",
+        "deployment",
+        "dependabot_alert",
+        "repository_vulnerability_alert",
+        "repository_ruleset",
+    })
+)
 
 
 class GithubTrigger(Trigger):
@@ -111,12 +132,7 @@ class GithubTrigger(Trigger):
     ) -> list[str]:
         event_type = event_type.lower()
         action: str | None = payload.get("action")
-        # Unified core events (breaking change): issues / issue_comment / pull_request
-        if event_type in CORE_EVENTS:
-            return [event_type]
-
-        # Unified review & CI events (breaking change)
-        if event_type in REVIEW_AND_CI_EVENTS:
+        if event_type in UNIFIED_EVENTS:
             return [event_type]
 
         if event_type in ACTION_SUFFIX_EVENTS:
@@ -125,46 +141,9 @@ class GithubTrigger(Trigger):
                 raise TriggerDispatchError(msg)
             return [f"{event_type}_{action}"]
 
-        if event_type == "push":
-            return ["push"]
-
-        if event_type == "star":
-            return ["star"]
-
-        # Unified events without action splitting
-        if event_type == "code_scanning_alert":
-            return ["code_scanning_alert"]
-
-        if event_type in SECRET_SCANNING_EVENTS:
-            return ["secret_scanning"]
-
-        if event_type in REF_CHANGE_EVENTS:
-            return ["ref_change"]
-
-        if event_type == "commit_comment":
-            return ["commit_comment"]
-
-        if event_type == "status":
-            return ["status"]
-
-        if event_type == "deployment":
-            return ["deployment"]
-
-        if event_type == "dependabot_alert":
-            return ["dependabot_alert"]
-
-        if event_type == "repository_vulnerability_alert":
-            return ["repository_vulnerability_alert"]
-
-        if event_type in BRANCH_PROTECTION_EVENTS:
-            return [event_type]
-
-        if event_type == "repository_ruleset":
-            return ["repository_ruleset"]
-
-        # Additional unified GitHub events (breaking change by design)
-        if event_type in ADDITIONAL_UNIFIED_EVENTS:
-            return [event_type]
+        alias = EVENT_ALIASES.get(event_type)
+        if alias:
+            return [alias]
 
         return []
 
@@ -289,6 +268,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> Subscription:
+        del credential_type
         repository = parameters.get("repository")
         if not repository:
             msg = "repository is required (format: owner/repo)"
@@ -365,6 +345,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> UnsubscribeResult:
+        del credential_type
         external_id = subscription.properties.get("external_id")
         repository = subscription.properties.get("repository")
 
@@ -428,6 +409,8 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> Subscription:
+        del credentials
+        del credential_type
         return Subscription(
             expires_at=int(time.time()) + self._WEBHOOK_TTL,
             endpoint=subscription.endpoint,
@@ -440,6 +423,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> list[ParameterOption]:
+        del credential_type
         if parameter != "repository":
             return []
 
@@ -495,7 +479,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                     "Unexpected response format from GitHub API when "
                     "fetching repositories"
                 )
-                raise ValueError(msg)
+                raise TypeError(msg)
 
             repos = cast(list[dict[str, Any]], raw_repos)
             for repo in repos:
@@ -506,7 +490,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                     options.append(
                         ParameterOption(
                             value=full_name,
-                            label=I18nObject(en_US=full_name),
+                            label=I18nObject(en_us=full_name),
                             icon=avatar_url,
                         )
                     )

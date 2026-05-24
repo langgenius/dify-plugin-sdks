@@ -26,6 +26,10 @@ class MockLLM(LargeLanguageModel):
     def get_num_tokens(
         self, model: str, credentials: dict, prompt_messages: list, tools: list
     ) -> int:
+        del model
+        del credentials
+        del prompt_messages
+        del tools
         return 0
 
     def validate_credentials(self, model: str, credentials: dict) -> None:

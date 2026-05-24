@@ -30,7 +30,7 @@ class WorkflowRunInProgressEvent(Event):
         run = payload.get("workflow_run")
         if not isinstance(run, Mapping):
             msg = "No workflow_run data in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         self._check_name(run, parameters.get("workflow_name"))
         self._check_branch(run, parameters.get("branch"))

@@ -31,7 +31,7 @@ class DeploymentStatusCreatedEvent(Event):
         deployment = payload.get("deployment")
         if not isinstance(status, Mapping) or not isinstance(deployment, Mapping):
             msg = "Missing deployment or deployment_status in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         self._check_environment(deployment, parameters.get("environment"))
         self._check_state(status, parameters.get("state"))

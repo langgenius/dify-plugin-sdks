@@ -11,6 +11,7 @@ class Tts(Endpoint):
         """
         Invokes the endpoint with the given request.
         """
+        del values
         content_text = r.get_json().get("content_text")
 
         tts_model: dict | None = settings.get("tts_model")

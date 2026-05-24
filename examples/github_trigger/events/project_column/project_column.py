@@ -32,7 +32,7 @@ class ProjectColumnUnifiedEvent(Event):
         column = payload.get("project_column")
         if not isinstance(column, Mapping):
             msg = "No project_column in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         name_filter = parameters.get("column_name")
         if name_filter:

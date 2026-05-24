@@ -182,7 +182,7 @@ class TTSModel(AIModel):
             result.append(one_sentence)
         return result
 
-    # TODO: To improve the streaming function
+    # Streaming behavior can be improved independently of filename generation.
     @staticmethod
     def _get_file_name(file_content: str) -> str:
         hash_object = hashlib.sha256(file_content.encode())

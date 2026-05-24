@@ -19,6 +19,8 @@ class DriveFileEditV1Event(Event):
         payload: Mapping[str, Any],
     ) -> Variables:
         """Handle drive file edit events."""
+        del parameters
+        del payload
 
         event_data = dispatch_single_event(
             request,

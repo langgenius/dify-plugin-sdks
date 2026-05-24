@@ -28,13 +28,15 @@ from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstruct
 
 VALID_WEBHOOK_METHODS = frozenset({"POST", "GET"})
 CHANNEL_STOP_SUCCESS_STATUSES = frozenset({HTTPStatus.OK, HTTPStatus.NO_CONTENT})
+GOOGLE_DRIVE_EVENT_NAME = "drive_change_detected"
+GOOGLE_DRIVE_STORAGE_KEY = "google-drive-trigger:last-page-token"
 
 
 class GoogleDriveTrigger(Trigger):
     """Validate Google Drive webhook headers and dispatch change events."""
 
-    _EVENT_NAME = "drive_change_detected"
-    _STORAGE_KEY = "google-drive-trigger:last-page-token"
+    _EVENT_NAME = GOOGLE_DRIVE_EVENT_NAME
+    _STORAGE_KEY = GOOGLE_DRIVE_STORAGE_KEY
     _CHANGES_ENDPOINT = "https://www.googleapis.com/drive/v3/changes"
 
     def _dispatch_event(
@@ -248,6 +250,8 @@ class GoogleDriveTrigger(Trigger):
 class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
     """Manage Google Drive change notification channels."""
 
+    _EVENT_NAME = GOOGLE_DRIVE_EVENT_NAME
+    _STORAGE_KEY = GOOGLE_DRIVE_STORAGE_KEY
     _AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
     _OAUTH_ENDPOINT = "https://oauth2.googleapis.com/token"
     _ABOUT_URL = "https://www.googleapis.com/drive/v3/about"
@@ -257,6 +261,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
     _DEFAULT_SCOPE = "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.appdata"
 
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
+        del credentials
         msg = "Google Drive trigger only supports OAuth credentials."
         raise TriggerProviderCredentialValidationError(msg)
 
@@ -341,6 +346,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         system_credentials: Mapping[str, Any],
         credentials: Mapping[str, Any],
     ) -> OAuthCredentials:
+        del redirect_uri
         refresh_token = credentials.get("refresh_token")
         if not refresh_token:
             msg = "Refresh token is required to renew Google Drive access token"
@@ -430,7 +436,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         # set the start_page_token to the storage
         self.runtime.session.storage.set(
-            GoogleDriveTrigger._STORAGE_KEY, str(start_page_token).encode("utf-8")
+            GOOGLE_DRIVE_STORAGE_KEY, str(start_page_token).encode("utf-8")
         )
 
         channel_id = str(uuid.uuid4())
@@ -494,7 +500,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
             "watch_expiration": expiration,
             "start_page_token": start_page_token,
             "spaces": spaces,
-            "event_name": GoogleDriveTrigger._EVENT_NAME,
+            "event_name": GOOGLE_DRIVE_EVENT_NAME,
             "user": json.loads(credentials.get("user", "{}")),
         }
 

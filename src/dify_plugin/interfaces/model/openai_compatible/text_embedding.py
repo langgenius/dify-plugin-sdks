@@ -53,6 +53,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         Returns:
             The return value.
         """
+        del input_type
 
         # Prepare headers and payload for the request
         headers = {"Content-Type": "application/json"}
@@ -83,7 +84,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
 
         for i, text in enumerate(texts):
             # Here token count is only an approximation based on the GPT2 tokenizer
-            # TODO: Optimize for better token estimation and chunking
+            # Better token estimation would make chunking more precise.
             num_tokens = self._get_num_tokens_by_gpt2(text)
 
             if num_tokens >= context_size:
@@ -146,6 +147,8 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         Returns:
             The return value.
         """
+        del model
+        del credentials
         return [self._get_num_tokens_by_gpt2(text) for text in texts]
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
@@ -214,7 +217,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         """
         return AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             model_type=ModelType.TEXT_EMBEDDING,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={

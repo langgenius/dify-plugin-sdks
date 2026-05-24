@@ -76,6 +76,8 @@ class ContactDepartmentDeletedV3Event(Event):
         payload: Mapping[str, Any],
     ) -> Variables:
         """Handle contact department deleted events."""
+        del parameters
+        del payload
 
         event_data = dispatch_single_event(
             request,

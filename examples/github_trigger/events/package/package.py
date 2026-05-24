@@ -32,7 +32,7 @@ class PackageUnifiedEvent(Event):
         package = payload.get("package")
         if not isinstance(package, Mapping):
             msg = "No package in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         name_filter = parameters.get("name")
         if name_filter:

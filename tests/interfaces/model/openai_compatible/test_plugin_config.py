@@ -8,6 +8,8 @@ These tests verify:
 4. Configuration object has correct types
 """
 
+import importlib
+
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.interfaces.model.openai_compatible import llm
 
@@ -45,7 +47,7 @@ def test_plugin_config_singleton() -> None:
     config_id_1 = id(llm._plugin_config)
 
     # Import again, should be the same object
-    from dify_plugin.interfaces.model.openai_compatible import llm as llm2
+    llm2 = importlib.import_module("dify_plugin.interfaces.model.openai_compatible.llm")
 
     config_id_2 = id(llm2._plugin_config)
 

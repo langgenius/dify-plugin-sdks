@@ -11,6 +11,7 @@ class GirlsTalk(Endpoint):
         """
         Invokes the endpoint with the given request.
         """
+        del values
 
         app: dict | None = settings.get("app")
         if not app:

@@ -4,6 +4,37 @@ A Python SDK for building plugins for Dify.
 
 Here is a short introduction to Dify Plugin: <https://docs.dify.ai/plugins/introduction>
 
+## Development
+
+This repository uses [`just`](https://github.com/casey/just) as its command runner.
+Install it with your preferred package manager, or with uv:
+
+```bash
+uv tool install rust-just
+```
+
+Common development commands:
+
+```bash
+just dev      # Sync default dev dependencies
+just check    # Check lockfile, formatting, and linting
+just test     # Run all tests
+just build    # Build source and wheel distributions
+```
+
+## LLM Polling Support
+
+SDK 0.9.0 adds support for polling-based LLM invocation. A model can now
+declare the `polling` feature and implement polling methods, allowing plugins
+to submit long-running provider jobs and return later checks through a short
+request/response flow.
+
+Polling results use three states:
+
+- `running` returns plugin-owned state for the next check.
+- `succeeded` returns the final LLM result.
+- `failed` returns a terminal error.
+
 ## Version Management
 
 This SDK follows Semantic Versioning (a.b.c):
@@ -22,7 +53,7 @@ When depending on this SDK, it's recommended to specify version constraints that
 Example in your project's dependency management:
 
 ```python
-dify_plugin~=0.7
+dify_plugin >= 0.8
 ```
 
 ## Manifest Version Reference
@@ -54,3 +85,5 @@ For the manifest specification, we've introduced two versioning fields:
 | 1.9.0                | 0.5.0         | Support Datasource functionality for plugins       |
 | 1.10.0               | 0.6.0         | Support Trigger functionality for plugins          |
 | 1.11.0               | 0.7.0         | Support Multimodal Reranking / Embeddings          |
+| 1.14.0               | 0.8.1         | Dependency and project structure cleanup           |
+| 1.14.2               | 0.9.0         | Support polling-based LLM plugin invocations       |

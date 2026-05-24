@@ -32,7 +32,7 @@ class LabelUnifiedEvent(Event):
         label = payload.get("label")
         if not isinstance(label, Mapping):
             msg = "No label in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         self._check_name(label, parameters.get("name"))
         self._check_color(label, parameters.get("color"))

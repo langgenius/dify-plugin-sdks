@@ -72,6 +72,7 @@ class Plugin(IOServer, Router):
         config: DifyPluginEnv,
     ) -> tuple[RequestReader, ResponseWriter | None]:
         """Launch local stream"""
+        del config
         reader = StdioRequestReader()
         writer = StdioResponseWriter()
         writer.write(self.registration.configuration.model_dump_json() + "\n\n")
@@ -273,6 +274,22 @@ class Plugin(IOServer, Router):
             lambda data: (
                 data.get("type") == PluginInvokeType.Model.value
                 and data.get("action") == ModelActions.InvokeLLM.value
+            ),
+        )
+
+        self.register_route(
+            self.plugin_executer.start_llm_polling,
+            lambda data: (
+                data.get("type") == PluginInvokeType.Model.value
+                and data.get("action") == ModelActions.StartPolling.value
+            ),
+        )
+
+        self.register_route(
+            self.plugin_executer.check_llm_polling,
+            lambda data: (
+                data.get("type") == PluginInvokeType.Model.value
+                and data.get("action") == ModelActions.CheckPolling.value
             ),
         )
 

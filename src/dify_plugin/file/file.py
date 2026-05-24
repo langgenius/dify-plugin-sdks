@@ -46,5 +46,7 @@ class File(BaseModel):
                 )
                 raise ValueError(msg) from e
 
-        assert self._blob is not None
+        if self._blob is None:
+            msg = f"File URL '{self.url}' returned no content"
+            raise ValueError(msg)
         return self._blob

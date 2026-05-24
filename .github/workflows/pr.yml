@@ -19,7 +19,7 @@ concurrency:
 jobs:
   validate-pr-title:
     name: Validate PR title
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     permissions:
       pull-requests: read
     steps:
@@ -43,7 +43,7 @@ jobs:
 
   check:
     name: Check
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -53,13 +53,16 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv and Python
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           cache-dependency-glob: uv.lock
           python-version: "3.12"
 
+      - name: Install just
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+
       - name: Run checks
-        run: make check
+        run: just check
 
   test:
     name: Test

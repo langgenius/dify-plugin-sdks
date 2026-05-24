@@ -27,7 +27,7 @@ class PageBuildEvent(Event):
         build = payload.get("build")
         if not isinstance(build, Mapping):
             msg = "No build in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         status_filter = parameters.get("status")
         status = (build.get("status") or "").lower()

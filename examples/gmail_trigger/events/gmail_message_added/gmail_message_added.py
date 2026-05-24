@@ -37,6 +37,8 @@ class GmailMessageAddedEvent(Event):
         payload: Mapping[str, Any],
     ) -> Variables:
         # Prefer payload delivered from Trigger.dispatch_event
+        del request
+        del parameters
         history_id = payload.get("historyId")
         items: list[dict[str, Any]] = []
         raw_items = payload.get("message_added") or payload.get("items")
@@ -346,11 +348,7 @@ class GmailMessageAddedEvent(Event):
         headers: Mapping[str, str],
     ) -> tuple[bytes | None, int | None]:
         if inline_data:
-            try:
-                content = self._decode_base64url(inline_data)
-            except binascii.Error:
-                return None, None
-            return content, len(content)
+            return self._decode_attachment_data(inline_data)
 
         attachment_id = attachment.get("attachmentId")
         if not attachment_id:
@@ -368,7 +366,11 @@ class GmailMessageAddedEvent(Event):
             return None, None
 
         data = response.json() or {}
-        encoded = data.get("data")
+        return self._decode_attachment_data(data.get("data"), data.get("size"))
+
+    def _decode_attachment_data(
+        self, encoded: str | None, size: int | None = None
+    ) -> tuple[bytes | None, int | None]:
         if not encoded:
             return None, None
 
@@ -377,7 +379,6 @@ class GmailMessageAddedEvent(Event):
         except binascii.Error:
             return None, None
 
-        size = data.get("size")
         size_value = size if size is not None else len(content)
         return content, size_value
 

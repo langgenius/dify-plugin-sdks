@@ -79,6 +79,106 @@ class CotAgentOutputParser:
 
         last_character = ""
 
+        def track_code_block_delimiter(delta: str) -> list[str]:
+            nonlocal code_block_cache, code_block_delimiter_count, last_character
+
+            if delta == "`":
+                last_character = delta
+                code_block_cache += delta
+                code_block_delimiter_count += 1
+                return []
+
+            pending_output = []
+            if not in_code_block and code_block_delimiter_count > 0:
+                last_character = delta
+                pending_output.append(code_block_cache)
+            elif in_code_block:
+                last_character = delta
+                code_block_cache += delta
+
+            code_block_cache = "" if not in_code_block else code_block_cache
+            code_block_delimiter_count = 0
+            return pending_output
+
+        def track_marker(
+            delta: str,
+            marker: str,
+            marker_cache: str,
+            marker_index: int,
+        ) -> tuple[str, int, bool, bool, list[str]]:
+            nonlocal last_character
+
+            if delta.lower() != marker[marker_index]:
+                if marker_cache:
+                    last_character = delta
+                    return "", 0, False, False, [marker_cache]
+                return marker_cache, marker_index, False, False, []
+
+            if marker_index == 0 and last_character not in TRIM_BOUNDARY_CHARACTERS:
+                return marker_cache, marker_index, False, True, []
+
+            last_character = delta
+            marker_cache += delta
+            marker_index += 1
+            if marker_index == len(marker):
+                marker_cache = ""
+                marker_index = 0
+            return marker_cache, marker_index, True, False, []
+
+        def close_code_block() -> Generator[
+            str | AgentScratchpadUnit.Action, None, None
+        ]:
+            nonlocal \
+                code_block_cache, \
+                code_block_delimiter_count, \
+                in_code_block, \
+                last_character
+
+            if code_block_delimiter_count != CODE_BLOCK_DELIMITER_COUNT:
+                return
+
+            if in_code_block:
+                last_character = "`"
+                yield from extra_json_from_code_block(code_block_cache)
+                code_block_cache = ""
+
+            in_code_block = not in_code_block
+            code_block_delimiter_count = 0
+
+        def track_json(
+            delta: str,
+        ) -> tuple[bool, list[str | AgentScratchpadUnit.Action]]:
+            nonlocal got_json, in_json, json_cache, json_quote_count, last_character
+
+            if delta == "{":
+                json_quote_count += 1
+                in_json = True
+                last_character = delta
+                json_cache += delta
+            elif delta == "}":
+                last_character = delta
+                json_cache += delta
+                if json_quote_count > 0:
+                    json_quote_count -= 1
+                    if json_quote_count == 0:
+                        in_json = False
+                        got_json = True
+                        return True, []
+            elif in_json:
+                last_character = delta
+                json_cache += delta
+
+            if not got_json:
+                return False, []
+
+            got_json = False
+            last_character = delta
+            parsed_json = parse_action(json_cache)
+            json_cache = ""
+            json_quote_count = 0
+            in_json = False
+            return False, [parsed_json]
+
         for response in llm_response:
             if response.delta.usage:
                 usage_dict["usage"] = response.delta.usage
@@ -93,75 +193,29 @@ class CotAgentOutputParser:
                 delta = response_content[index : index + steps]
                 yield_delta = False
 
-                if delta == "`":
-                    last_character = delta
-                    code_block_cache += delta
-                    code_block_delimiter_count += 1
-                else:
-                    if not in_code_block:
-                        if code_block_delimiter_count > 0:
-                            last_character = delta
-                            yield code_block_cache
-                        code_block_cache = ""
-                    else:
-                        last_character = delta
-                        code_block_cache += delta
-                    code_block_delimiter_count = 0
+                yield from track_code_block_delimiter(delta)
 
                 if not in_code_block and not in_json:
-                    if delta.lower() == action_str[action_idx] and action_idx == 0:
-                        if last_character not in TRIM_BOUNDARY_CHARACTERS:
-                            yield_delta = True
-                        else:
-                            last_character = delta
-                            action_cache += delta
-                            action_idx += 1
-                            if action_idx == len(action_str):
-                                action_cache = ""
-                                action_idx = 0
-                            index += steps
-                            continue
-                    elif delta.lower() == action_str[action_idx] and action_idx > 0:
-                        last_character = delta
-                        action_cache += delta
-                        action_idx += 1
-                        if action_idx == len(action_str):
-                            action_cache = ""
-                            action_idx = 0
+                    action_cache, action_idx, consumed, yield_delta, output = (
+                        track_marker(delta, action_str, action_cache, action_idx)
+                    )
+                    yield from output
+                    if consumed:
                         index += steps
                         continue
-                    elif action_cache:
-                        last_character = delta
-                        yield action_cache
-                        action_cache = ""
-                        action_idx = 0
 
-                    if delta.lower() == thought_str[thought_idx] and thought_idx == 0:
-                        if last_character not in TRIM_BOUNDARY_CHARACTERS:
-                            yield_delta = True
-                        else:
-                            last_character = delta
-                            thought_cache += delta
-                            thought_idx += 1
-                            if thought_idx == len(thought_str):
-                                thought_cache = ""
-                                thought_idx = 0
-                            index += steps
-                            continue
-                    elif delta.lower() == thought_str[thought_idx] and thought_idx > 0:
-                        last_character = delta
-                        thought_cache += delta
-                        thought_idx += 1
-                        if thought_idx == len(thought_str):
-                            thought_cache = ""
-                            thought_idx = 0
+                    (
+                        thought_cache,
+                        thought_idx,
+                        consumed,
+                        thought_yield_delta,
+                        output,
+                    ) = track_marker(delta, thought_str, thought_cache, thought_idx)
+                    yield_delta = yield_delta or thought_yield_delta
+                    yield from output
+                    if consumed:
                         index += steps
                         continue
-                    elif thought_cache:
-                        last_character = delta
-                        yield thought_cache
-                        thought_cache = ""
-                        thought_idx = 0
 
                     if yield_delta:
                         index += steps
@@ -169,43 +223,15 @@ class CotAgentOutputParser:
                         yield delta
                         continue
 
-                if code_block_delimiter_count == CODE_BLOCK_DELIMITER_COUNT:
-                    if in_code_block:
-                        last_character = delta
-                        yield from extra_json_from_code_block(code_block_cache)
-                        code_block_cache = ""
-
-                    in_code_block = not in_code_block
-                    code_block_delimiter_count = 0
+                yield from close_code_block()
 
                 if not in_code_block:
                     # handle single json
-                    if delta == "{":
-                        json_quote_count += 1
-                        in_json = True
-                        last_character = delta
-                        json_cache += delta
-                    elif delta == "}":
-                        last_character = delta
-                        json_cache += delta
-                        if json_quote_count > 0:
-                            json_quote_count -= 1
-                            if json_quote_count == 0:
-                                in_json = False
-                                got_json = True
-                                index += steps
-                                continue
-                    elif in_json:
-                        last_character = delta
-                        json_cache += delta
-
-                    if got_json:
-                        got_json = False
-                        last_character = delta
-                        yield parse_action(json_cache)
-                        json_cache = ""
-                        json_quote_count = 0
-                        in_json = False
+                    consumed, output = track_json(delta)
+                    yield from output
+                    if consumed:
+                        index += steps
+                        continue
 
                 if not in_code_block and not in_json:
                     last_character = delta

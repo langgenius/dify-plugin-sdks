@@ -72,9 +72,9 @@ Now you can edit the `manifest.yaml` file to describe your Plugin, here is the b
 - First of all, you need a Python 3.12+ environment, as our SDK requires that.
 - Then, install the dependencies:
     ```bash
-    pip install -r requirements.txt
+    uv sync
     ```
-- If you want to add more dependencies, you can add them to the `requirements.txt` file, once you have set the runner to python in the `manifest.yaml` file, `requirements.txt` will be automatically generated and used for packaging and deployment.
+- If you want to add more dependencies, add them to `pyproject.toml` and refresh `uv.lock` with `uv lock`.
 
 ### Implement the Plugin
 

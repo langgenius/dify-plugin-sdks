@@ -32,7 +32,7 @@ class RepositoryAdvisoryUnifiedEvent(Event):
         advisory = payload.get("repository_advisory")
         if not isinstance(advisory, Mapping):
             msg = "No repository_advisory in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         severity_filter = parameters.get("severity")
         if severity_filter:

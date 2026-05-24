@@ -1,8 +1,16 @@
 from collections.abc import Mapping
 from decimal import Decimal
-from enum import Enum
+from enum import Enum, StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    PositiveInt,
+    field_validator,
+    model_validator,
+)
 
 from dify_plugin.entities.model import BaseModelConfig, ModelType, ModelUsage, PriceInfo
 from dify_plugin.entities.model.message import (
@@ -35,6 +43,12 @@ class LLMMode(Enum):
                 return mode
         msg = f"invalid mode value {value}"
         raise ValueError(msg)
+
+
+class LLMPollingStatus(StrEnum):
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
 
 
 class LLMUsage(ModelUsage):
@@ -172,6 +186,34 @@ class LLMResultWithStructuredOutput(LLMResult, LLMStructuredOutput):
             ),
             structured_output=self.structured_output,
         )
+
+
+class LLMPollingResult(BaseModel):
+    """Model class for llm polling result."""
+
+    status: LLMPollingStatus
+    plugin_state: dict[str, JsonValue] | None = None
+    result: LLMResult | LLMResultWithStructuredOutput | None = None
+    error: str | None = None
+    next_check_after_seconds: PositiveInt | None = None
+    expires_after_seconds: PositiveInt | None = None
+    max_attempts: PositiveInt | None = None
+
+    @model_validator(mode="after")
+    def validate_status_payload(self) -> "LLMPollingResult":
+        if self.status == LLMPollingStatus.RUNNING and not self.plugin_state:
+            msg = "plugin_state is required when polling status is running."
+            raise ValueError(msg)
+
+        if self.status == LLMPollingStatus.SUCCEEDED and self.result is None:
+            msg = "result is required when polling status is succeeded."
+            raise ValueError(msg)
+
+        if self.status == LLMPollingStatus.FAILED and not self.error:
+            msg = "error is required when polling status is failed."
+            raise ValueError(msg)
+
+        return self
 
 
 class SummaryResult(BaseModel):

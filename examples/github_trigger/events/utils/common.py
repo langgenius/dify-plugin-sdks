@@ -31,5 +31,5 @@ def require_mapping(payload: Mapping[str, Any], key: str) -> Mapping[str, Any]:
     value = payload.get(key)
     if not isinstance(value, Mapping):
         msg = f"No {key} data in payload"
-        raise ValueError(msg)
+        raise TypeError(msg)
     return value

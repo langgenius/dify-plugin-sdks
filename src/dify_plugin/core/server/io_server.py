@@ -33,6 +33,7 @@ class IOServer(ABC):
         self.request_reader = request_reader
 
     def close(self, *args: object) -> None:
+        del args
         self.request_reader.close()
 
     @abstractmethod
@@ -131,7 +132,9 @@ class IOServer(ABC):
         """
         send heartbeat to stdout
         """
-        assert self.default_writer
+        if self.default_writer is None:
+            msg = "Default writer is required for heartbeat"
+            raise RuntimeError(msg)
 
         while True:
             # timer

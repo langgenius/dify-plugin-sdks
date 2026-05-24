@@ -47,7 +47,7 @@ class EndpointProviderConfiguration(BaseModel):
     def validate_endpoints(cls, value: list[object]) -> list[EndpointConfiguration]:
         if not isinstance(value, list):
             msg = "endpoints should be a list"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         endpoints: list[EndpointConfiguration] = []
 
@@ -64,7 +64,7 @@ class EndpointProviderConfiguration(BaseModel):
 
             if not isinstance(raw_endpoint, str):
                 msg = "endpoint path should be a string"
-                raise ValueError(msg)
+                raise TypeError(msg)
 
             try:
                 file = cls._load_yaml_file(raw_endpoint)

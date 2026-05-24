@@ -77,7 +77,9 @@ class GithubProvider(ToolProvider):
         """
         Refresh the credentials
         """
-        # TODO: Implement the refresh credentials logic
+        del redirect_uri
+        del system_credentials
+        # Credential refresh is currently a no-op; credentials are returned unchanged.
         return ToolOAuthCredentials(credentials=credentials, expires_at=-1)
 
     def _validate_credentials(self, credentials: dict) -> None:

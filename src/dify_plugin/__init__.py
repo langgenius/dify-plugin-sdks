@@ -1,8 +1,4 @@
-from gevent import monkey
-
-# patch all the blocking calls
-monkey.patch_all(sys=True)
-
+from dify_plugin import _gevent  # noqa: F401 - import applies gevent patching
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.session_context import get_current_session
 from dify_plugin.interfaces.agent import AgentProvider, AgentStrategy
