@@ -6,9 +6,12 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.5.0",
+    "dify_plugin",
     "google-auth>=2.0.0",
     "google-cloud-pubsub>=2.20.0",
     "requests>=2.31.0",
     "werkzeug>=3.1.0",
 ]
+
+[tool.uv.sources]
+dify_plugin = { path = "../..", editable = true }

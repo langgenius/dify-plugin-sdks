@@ -214,10 +214,6 @@ class Plugin(IOServer, Router):
         serverless = ServerlessRequestReader(
             host=config.SERVERLESS_HOST,
             port=config.SERVERLESS_PORT,
-            worker_class=config.SERVERLESS_WORKER_CLASS,
-            workers=config.SERVERLESS_WORKERS,
-            worker_connections=config.SERVERLESS_WORKER_CONNECTIONS,
-            threads=config.SERVERLESS_THREADS,
             max_single_connection_lifetime=config.MAX_REQUEST_TIMEOUT,
         )
         serverless.launch()

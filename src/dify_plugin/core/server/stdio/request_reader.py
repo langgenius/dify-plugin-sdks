@@ -1,9 +1,9 @@
+import os
 import sys
 from collections.abc import Generator
 from io import BytesIO
 from typing import Any
 
-from gevent.os import tp_read
 from pydantic import TypeAdapter
 
 from dify_plugin.core.entities.plugin.io import (
@@ -19,10 +19,10 @@ class StdioRequestReader(RequestReader):
         super().__init__()
 
     def _read_async(self) -> bytes:
-        # read data from stdin using tp_read in 64KB chunks.
+        # read data from stdin in 64KB chunks.
         # the OS buffer for stdin is usually 64KB, so using a larger value
         # doesn't make sense.
-        return tp_read(sys.stdin.fileno(), 65536)
+        return os.read(sys.stdin.fileno(), 65536)
 
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
         buffer = BytesIO()

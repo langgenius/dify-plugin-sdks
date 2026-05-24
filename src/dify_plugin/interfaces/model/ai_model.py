@@ -1,12 +1,10 @@
 import decimal
-import socket
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from typing import final
 
-import gevent.socket
 from pydantic import ConfigDict
 
 from dify_plugin.entities import I18nObject
@@ -21,11 +19,6 @@ from dify_plugin.entities.model import (
 )
 from dify_plugin.errors.model import InvokeAuthorizationError, InvokeError
 from dify_plugin.interfaces.exec.ai_model import TimingContextRaceConditionError
-
-if socket.socket is gevent.socket.socket:
-    import gevent.threadpool
-
-    threadpool = gevent.threadpool.ThreadPool(1)
 
 TOKEN_ESTIMATION_TEXT_LIMIT = 100_000
 
@@ -389,14 +382,6 @@ class AIModel(ABC):
         if len(text) >= TOKEN_ESTIMATION_TEXT_LIMIT:
             return len(text)
 
-        # check if gevent is patched to main thread
         import tiktoken  # noqa: PLC0415
-
-        if socket.socket is gevent.socket.socket:
-            # using gevent real thread to avoid blocking main thread
-            result = threadpool.spawn(
-                lambda: len(tiktoken.encoding_for_model("gpt2").encode(text))
-            )
-            return result.get(block=True) or 0
 
         return len(tiktoken.encoding_for_model("gpt2").encode(text))

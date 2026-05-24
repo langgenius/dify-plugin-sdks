@@ -2,15 +2,13 @@ import errno
 import logging
 import os
 import signal
-import socket as native_socket
+import socket
 import time
 from collections.abc import Callable, Generator
+from select import select
 from threading import Lock
 from typing import Any
 
-from gevent import sleep
-from gevent import socket as gevent_socket
-from gevent.select import select
 from pydantic import TypeAdapter
 
 from dify_plugin.core.entities.message import InitializeMessage
@@ -48,7 +46,6 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         self.on_connected = on_connected
         self.opt_lock = Lock()
 
-        # handle SIGINT to exit the program smoothly due to the gevent limitation
         signal.signal(signal.SIGINT, lambda *_args, **_kwargs: os._exit(0))
 
     def launch(self) -> None:
@@ -58,13 +55,14 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
     def close(self) -> None:
         """Close the connection"""
         if self.alive:
-            self.sock.close()
+            with self.opt_lock:
+                self.sock.close()
             self.alive = False
 
-    def _write_to_sock(self, data: bytes) -> int:
+    def _write_to_sock(self, data: bytes) -> None:
         """Write data to the socket"""
         with self.opt_lock:
-            return self.sock.send(data)
+            self.sock.sendall(data)
 
     def _recv_from_sock(self, size: int) -> bytes:
         """Receive data from the socket"""
@@ -76,22 +74,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             raise Exception(msg)
 
         try:
-            if native_socket.socket is gevent_socket.socket:
-                """
-                gevent socket is non-blocking, to avoid BlockingIOError
-                send data bytes by bytes
-                """
-                data_bytes = data.encode()
-                while data_bytes:
-                    try:
-                        sent = self._write_to_sock(data_bytes)
-                        data_bytes = data_bytes[sent:]
-                    except BlockingIOError as e:
-                        if e.errno != errno.EAGAIN:
-                            raise
-                        sleep(0)
-            else:
-                self.sock.sendall(data.encode())
+            self._write_to_sock(data.encode())
         except Exception:
             logger.exception("Failed to write data")
             self._launch()
@@ -116,10 +99,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
     def _connect(self) -> None:
         """Connect to the target"""
         try:
-            if native_socket.socket is gevent_socket.socket:
-                self.sock = gevent_socket.create_connection((self.host, self.port))
-            else:
-                self.sock = native_socket.create_connection((self.host, self.port))
+            self.sock = socket.create_connection((self.host, self.port))
             self.alive = True
             handshake_message = InitializeMessage(
                 type=InitializeMessage.Type.HANDSHAKE,
@@ -149,13 +129,9 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                 try:
                     data = self._recv_from_sock(1048576)
                 except BlockingIOError as e:
-                    if native_socket.socket is gevent_socket.socket:
-                        if e.errno != errno.EAGAIN:
-                            raise
-                        sleep(0)
-                        continue
-                    else:
+                    if e.errno != errno.EAGAIN:
                         raise
+                    continue
                 if data == b"":
                     msg = "Connection is closed"
                     raise Exception(msg)

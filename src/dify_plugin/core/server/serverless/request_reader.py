@@ -1,13 +1,10 @@
-import socket
 import sys
 import threading
 import time
 from collections.abc import Generator
 from queue import Empty, Queue
 
-import gevent.socket
 from flask import Flask, request
-from gevent.pywsgi import WSGIServer
 
 from dify_plugin.core.entities.plugin.io import (
     PluginInStream,
@@ -22,10 +19,6 @@ class ServerlessRequestReader(RequestReader):
         self,
         host: str = "0.0.0.0",  # noqa: S104
         port: int = 8080,
-        worker_class: str = "gevent",
-        workers: int = 5,
-        worker_connections: int = 1000,
-        threads: int = 5,
         max_single_connection_lifetime: int = 300,
     ) -> None:
         """
@@ -35,10 +28,6 @@ class ServerlessRequestReader(RequestReader):
         self.app = Flask(__name__)
         self.host = host
         self.port = port
-        self.workers = workers
-        self.worker_class = worker_class
-        self.threads = threads
-        self.worker_connections = worker_connections
         self.max_single_connection_lifetime = max_single_connection_lifetime
         self.request_queue = Queue[PluginInStream]()
 
@@ -102,20 +91,19 @@ class ServerlessRequestReader(RequestReader):
         self.app.route("/invoke", methods=["POST"])(self.handler)
         self.app.route("/health", methods=["GET"])(self.health)
 
-        if socket.socket is gevent.socket.socket:
-            server = WSGIServer((self.host, self.port), self.app)
-            sys.stdout.write(
-                "* Serving Flask app "
-                "'dify_plugin.core.server.serverless.request_reader'\n"
-            )
-            sys.stdout.write(
-                f"* Running on http://{self.host}:{self.port} (Press CTRL+C to quit)\n"
-            )
-            sys.stdout.write("* Server Worker: gevent.wsgi.WSGIServer\n")
-            sys.stdout.flush()
-            server.serve_forever()
-        else:
-            self.app.run(host=self.host, port=self.port, threaded=True)
+        sys.stdout.write(
+            "* Serving Flask app 'dify_plugin.core.server.serverless.request_reader'\n"
+        )
+        sys.stdout.write(
+            f"* Running on http://{self.host}:{self.port} (Press CTRL+C to quit)\n"
+        )
+        sys.stdout.flush()
+        self.app.run(
+            host=self.host,
+            port=self.port,
+            threaded=True,
+            use_reloader=False,
+        )
 
     def launch(self) -> None:
         """

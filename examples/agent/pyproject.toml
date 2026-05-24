@@ -6,6 +6,9 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.5.0",
+    "dify_plugin",
     "pydantic>=2.0.0",
 ]
+
+[tool.uv.sources]
+dify_plugin = { path = "../..", editable = true }
