@@ -243,7 +243,6 @@ class PluginExecutor:  # noqa: PLR0904
         return {"result": True, "credentials": data.credentials}
 
     def invoke_llm(self, session: Session, data: ModelInvokeLLMRequest) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -371,7 +370,6 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeTextEmbeddingRequest,
     ) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -397,7 +395,6 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeMultimodalEmbeddingRequest,
     ) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -443,7 +440,6 @@ class PluginExecutor:  # noqa: PLR0904
         )
 
     def invoke_rerank(self, session: Session, data: ModelInvokeRerankRequest) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -472,7 +468,6 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeMultimodalRerankRequest,
     ) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -501,7 +496,6 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeTTSRequest,
     ) -> Generator[dict[str, str], None, None]:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -559,7 +553,6 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeSpeech2TextRequest,
     ) -> dict[str, str]:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -618,7 +611,6 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeModerationRequest,
     ) -> dict[str, bool]:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
