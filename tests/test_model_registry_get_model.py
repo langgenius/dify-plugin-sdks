@@ -147,7 +147,7 @@ def test_model_registry_get_model(monkeypatch: pytest.MonkeyPatch) -> None:
         # add MockLLM to models_mapping
         provider_configuration = ModelProviderConfiguration(
             provider="test",
-            label=I18nObject(zh_hans="test", en_us="test"),
+            label=I18nObject(zh_Hans="test", en_US="test"),
             models={},
             supported_model_types=[ModelType.LLM],
             extra=ModelProviderConfigurationExtra(
@@ -165,7 +165,7 @@ def test_model_registry_get_model(monkeypatch: pytest.MonkeyPatch) -> None:
                 MockModelProvider(
                     provider_schemas=ProviderEntity(
                         provider="test",
-                        label=I18nObject(zh_hans="test", en_us="test"),
+                        label=I18nObject(zh_Hans="test", en_US="test"),
                         supported_model_types=[ModelType.LLM],
                         configurate_methods=[],
                     ),

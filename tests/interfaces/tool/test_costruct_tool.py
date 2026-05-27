@@ -81,7 +81,7 @@ def test_fetch_parameter_options() -> None:
 
         def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
             del parameter
-            return [ParameterOption(value="test", label=I18nObject(en_us="test"))]
+            return [ParameterOption(value="test", label=I18nObject(en_US="test"))]
 
     session = Session(
         session_id="test",
@@ -95,5 +95,5 @@ def test_fetch_parameter_options() -> None:
         session=session,
     )
     assert tool.fetch_parameter_options("test") == [
-        ParameterOption(value="test", label=I18nObject(en_us="test"))
+        ParameterOption(value="test", label=I18nObject(en_US="test"))
     ]

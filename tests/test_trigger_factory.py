@@ -105,8 +105,8 @@ class MockTriggerSubscriptionConstructor(TriggerSubscriptionConstructor):
         del credentials
         del parameter
         return [
-            ParameterOption(value="option1", label=I18nObject(en_us="Option 1")),
-            ParameterOption(value="option2", label=I18nObject(en_us="Option 2")),
+            ParameterOption(value="option1", label=I18nObject(en_US="Option 1")),
+            ParameterOption(value="option2", label=I18nObject(en_US="Option 2")),
         ]
 
 
@@ -140,8 +140,8 @@ def test_trigger_factory_register_and_get_provider() -> None:
         identity=TriggerProviderIdentity(
             author="test",
             name="test_provider",
-            label=I18nObject(en_us="Test Provider"),
-            description=I18nObject(en_us="Test Provider Description"),
+            label=I18nObject(en_US="Test Provider"),
+            description=I18nObject(en_US="Test Provider Description"),
         ),
         subscription_constructor=TriggerSubscriptionConstructorConfiguration(
             parameters=[],
@@ -162,16 +162,16 @@ def test_trigger_factory_register_and_get_provider() -> None:
         identity=EventIdentity(
             author="test",
             name="test_event",
-            label=I18nObject(en_us="Test Event"),
+            label=I18nObject(en_US="Test Event"),
         ),
         parameters=[
             EventParameter(
                 name="test_param",
-                label=I18nObject(en_us="Test Parameter"),
+                label=I18nObject(en_US="Test Parameter"),
                 type=EventParameter.EventParameterType.STRING,
             ),
         ],
-        description=I18nObject(en_us="Human description"),
+        description=I18nObject(en_US="Human description"),
         extra=EventConfigurationExtra(
             python=EventConfigurationExtra.Python(source="test_event.py"),
         ),
@@ -214,8 +214,8 @@ def test_trigger_factory_subscription_constructor() -> None:
         identity=TriggerProviderIdentity(
             author="test",
             name="test_provider",
-            label=I18nObject(en_us="Test Provider"),
-            description=I18nObject(en_us="Test Provider Description"),
+            label=I18nObject(en_US="Test Provider"),
+            description=I18nObject(en_US="Test Provider Description"),
         ),
         subscription_constructor=TriggerSubscriptionConstructorConfiguration(
             parameters=[],
@@ -262,8 +262,8 @@ def test_trigger_factory_trigger_events() -> None:
         identity=TriggerProviderIdentity(
             author="test",
             name="test_provider",
-            label=I18nObject(en_us="Test Provider"),
-            description=I18nObject(en_us="Test Provider Description"),
+            label=I18nObject(en_US="Test Provider"),
+            description=I18nObject(en_US="Test Provider Description"),
         ),
         extra=TriggerProviderConfigurationExtra(
             python=TriggerProviderConfigurationExtra.Python(source="test_provider.py"),
@@ -274,10 +274,10 @@ def test_trigger_factory_trigger_events() -> None:
         identity=EventIdentity(
             author="test",
             name="test_event",
-            label=I18nObject(en_us="Test Event"),
+            label=I18nObject(en_US="Test Event"),
         ),
         parameters=[],
-        description=I18nObject(en_us="Human description"),
+        description=I18nObject(en_US="Human description"),
         extra=EventConfigurationExtra(
             python=EventConfigurationExtra.Python(source="test_event.py"),
         ),
@@ -343,8 +343,8 @@ def test_trigger_factory_error_handling() -> None:
         identity=TriggerProviderIdentity(
             author="test",
             name="test_provider",
-            label=I18nObject(en_us="Test Provider"),
-            description=I18nObject(en_us="Test Provider Description"),
+            label=I18nObject(en_US="Test Provider"),
+            description=I18nObject(en_US="Test Provider Description"),
         ),
         extra=TriggerProviderConfigurationExtra(
             python=TriggerProviderConfigurationExtra.Python(source="test_provider.py"),

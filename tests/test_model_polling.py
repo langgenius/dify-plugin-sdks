@@ -70,7 +70,7 @@ class PollingScenario:
     def model_entity(self) -> AIModelEntity:
         return AIModelEntity(
             model=self.model,
-            label=I18nObject(en_us=self.model),
+            label=I18nObject(en_US=self.model),
             model_type=ModelType.LLM,
             features=[ModelFeature.POLLING],
             fetch_from=FetchFrom.PREDEFINED_MODEL,

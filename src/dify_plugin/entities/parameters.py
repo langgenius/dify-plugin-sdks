@@ -17,27 +17,27 @@ class I18nObject(BaseModel):
         validate_by_name=True,
     )
 
-    zh_hans: str | None = Field(default=None, alias="zh_Hans")
-    pt_br: str | None = Field(default=None, alias="pt_BR")
-    ja_jp: str | None = Field(default=None, alias="ja_JP")
-    en_us: str = Field(alias="en_US")
+    zh_Hans: str | None = Field(default=None)  # noqa: N815
+    pt_BR: str | None = Field(default=None)  # noqa: N815
+    ja_JP: str | None = Field(default=None)  # noqa: N815
+    en_US: str  # noqa: N815
 
     @model_validator(mode="after")
     def fill_missing_translations(self) -> "I18nObject":
-        if not self.zh_hans:
-            self.zh_hans = self.en_us
-        if not self.pt_br:
-            self.pt_br = self.en_us
-        if not self.ja_jp:
-            self.ja_jp = self.en_us
+        if not self.zh_Hans:
+            self.zh_Hans = self.en_US
+        if not self.pt_BR:
+            self.pt_BR = self.en_US
+        if not self.ja_JP:
+            self.ja_JP = self.en_US
         return self
 
     def to_dict(self) -> dict:
         return {
-            "zh_Hans": self.zh_hans,
-            "en_US": self.en_us,
-            "pt_BR": self.pt_br,
-            "ja_JP": self.ja_jp,
+            "zh_Hans": self.zh_Hans,
+            "en_US": self.en_US,
+            "pt_BR": self.pt_BR,
+            "ja_JP": self.ja_JP,
         }
 
 
