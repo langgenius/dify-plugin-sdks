@@ -44,6 +44,7 @@ def test_constructor_of_agent_strategy() -> None:
         def _invoke(
             self, parameters: dict
         ) -> Generator[AgentInvokeMessage, None, None]:
+            del parameters
             yield self.create_text_message("Hello, world!")
 
     session = Session(

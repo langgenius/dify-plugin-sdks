@@ -1,6 +1,7 @@
 import inspect
 import logging
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.__base.request_reader import RequestReader
@@ -9,17 +10,10 @@ from dify_plugin.core.server.__base.response_writer import ResponseWriter
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True, slots=True)
 class Route:
     filter: Callable[[dict], bool]
     func: Callable[..., object]
-
-    def __init__(
-        self,
-        filter: Callable[[dict], bool],  # noqa: A002
-        func: Callable[..., object],
-    ) -> None:
-        self.filter = filter
-        self.func = func
 
 
 class Router:

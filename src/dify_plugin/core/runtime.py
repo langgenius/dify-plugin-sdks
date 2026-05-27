@@ -28,15 +28,26 @@ FULL_DUPLEX_INSTALL_METHODS = frozenset({InstallMethod.Local, InstallMethod.Remo
 
 class ModelInvocations:
     def __init__(self, session: "Session") -> None:
-        from dify_plugin.invocations.model.llm import LLMInvocation, SummaryInvocation
-        from dify_plugin.invocations.model.llm_structured_output import (
+        from dify_plugin.invocations.model.llm import (  # noqa: PLC0415
+            LLMInvocation,
+            SummaryInvocation,
+        )
+        from dify_plugin.invocations.model.llm_structured_output import (  # noqa: PLC0415
             LLMStructuredOutputInvocation,
         )
-        from dify_plugin.invocations.model.moderation import ModerationInvocation
-        from dify_plugin.invocations.model.rerank import RerankInvocation
-        from dify_plugin.invocations.model.speech2text import Speech2TextInvocation
-        from dify_plugin.invocations.model.text_embedding import TextEmbeddingInvocation
-        from dify_plugin.invocations.model.tts import TTSInvocation
+        from dify_plugin.invocations.model.moderation import (  # noqa: PLC0415
+            ModerationInvocation,
+        )
+        from dify_plugin.invocations.model.rerank import (  # noqa: PLC0415
+            RerankInvocation,
+        )
+        from dify_plugin.invocations.model.speech2text import (  # noqa: PLC0415
+            Speech2TextInvocation,
+        )
+        from dify_plugin.invocations.model.text_embedding import (  # noqa: PLC0415
+            TextEmbeddingInvocation,
+        )
+        from dify_plugin.invocations.model.tts import TTSInvocation  # noqa: PLC0415
 
         self.llm = LLMInvocation(session)
         self.llm_structured_output = LLMStructuredOutputInvocation(session)
@@ -50,10 +61,14 @@ class ModelInvocations:
 
 class AppInvocations:
     def __init__(self, session: "Session") -> None:
-        from dify_plugin.invocations.app import FetchAppInvocation
-        from dify_plugin.invocations.app.chat import ChatAppInvocation
-        from dify_plugin.invocations.app.completion import CompletionAppInvocation
-        from dify_plugin.invocations.app.workflow import WorkflowAppInvocation
+        from dify_plugin.invocations.app import FetchAppInvocation  # noqa: PLC0415
+        from dify_plugin.invocations.app.chat import ChatAppInvocation  # noqa: PLC0415
+        from dify_plugin.invocations.app.completion import (  # noqa: PLC0415
+            CompletionAppInvocation,
+        )
+        from dify_plugin.invocations.app.workflow import (  # noqa: PLC0415
+            WorkflowAppInvocation,
+        )
 
         self.chat = ChatAppInvocation(session)
         self.completion = CompletionAppInvocation(session)
@@ -66,10 +81,10 @@ class AppInvocations:
 
 class WorkflowNodeInvocations:
     def __init__(self, session: "Session") -> None:
-        from dify_plugin.invocations.workflow_node.parameter_extractor import (
+        from dify_plugin.invocations.workflow_node.parameter_extractor import (  # noqa: PLC0415
             ParameterExtractorNodeInvocation,
         )
-        from dify_plugin.invocations.workflow_node.question_classifier import (
+        from dify_plugin.invocations.workflow_node.question_classifier import (  # noqa: PLC0415
             QuestionClassifierNodeInvocation,
         )
 
@@ -170,9 +185,9 @@ class Session:
         self._register_invocations()
 
     def _register_invocations(self) -> None:
-        from dify_plugin.invocations.file import File
-        from dify_plugin.invocations.storage import StorageInvocation
-        from dify_plugin.invocations.tool import ToolInvocation
+        from dify_plugin.invocations.file import File  # noqa: PLC0415
+        from dify_plugin.invocations.storage import StorageInvocation  # noqa: PLC0415
+        from dify_plugin.invocations.tool import ToolInvocation  # noqa: PLC0415
 
         self.model = ModelInvocations(self)
         self.tool = ToolInvocation(self)

@@ -30,7 +30,7 @@ class CheckSuiteCompletedEvent(Event):
         suite = payload.get("check_suite")
         if not isinstance(suite, Mapping):
             msg = "No check_suite data in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         self._check_conclusion(suite, parameters.get("conclusion"))
         self._check_branch(suite, parameters.get("branch"))

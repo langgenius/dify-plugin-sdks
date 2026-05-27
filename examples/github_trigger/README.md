@@ -6,7 +6,7 @@ Overview
 - Each event exposes clear parameters and a comprehensive output schema (including full repository and sender objects) for reliable automation.
 
 Quick Start
-- Install dependencies: `pip install -r requirements.txt`
+- Install dependencies: `uv sync`
 - In Dify, add the GitHub Trigger provider and configure Credentials.
 - Create a Subscription with:
   - `repository`: pick one repository (dynamic select)

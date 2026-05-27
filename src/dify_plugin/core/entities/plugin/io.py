@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -19,29 +20,23 @@ class PluginInStreamEvent(Enum):
         raise ValueError(msg)
 
 
+@dataclass(frozen=True, slots=True)
 class PluginInStreamBase:
-    def __init__(
-        self,
-        session_id: str,
-        event: PluginInStreamEvent,
-        data: dict,
-        conversation_id: str | None = None,
-        message_id: str | None = None,
-        app_id: str | None = None,
-        endpoint_id: str | None = None,
-        context: dict | None = None,
-    ) -> None:
-        self.session_id = session_id
-        self.event = event
-        self.data = data
-        self.conversation_id = conversation_id
-        self.message_id = message_id
-        self.app_id = app_id
-        self.endpoint_id = endpoint_id
-        self.context = context
+    session_id: str
+    event: PluginInStreamEvent
+    data: dict
+    conversation_id: str | None = None
+    message_id: str | None = None
+    app_id: str | None = None
+    endpoint_id: str | None = None
+    context: dict | None = None
 
 
+@dataclass(frozen=True, slots=True, init=False)
 class PluginInStream(PluginInStreamBase):
+    reader: "RequestReader"
+    writer: "ResponseWriter"
+
     def __init__(
         self,
         session_id: str,
@@ -55,9 +50,10 @@ class PluginInStream(PluginInStreamBase):
         endpoint_id: str | None = None,
         context: dict | None = None,
     ) -> None:
-        self.reader = reader
-        self.writer = writer
-        super().__init__(
+        object.__setattr__(self, "reader", reader)
+        object.__setattr__(self, "writer", writer)
+        PluginInStreamBase.__init__(
+            self,
             session_id,
             event,
             data,

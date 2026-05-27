@@ -104,15 +104,16 @@ class GithubRepositoriesTool(Tool):
             )
 
     def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        del parameter
         return [
             ParameterOption(
                 value="iamjoel",
-                label=I18nObject(en_US="Joel"),
+                label=I18nObject(en_us="Joel"),
                 icon="https://avatars.githubusercontent.com/u/2120155?s=40&v=4",
             ),
             ParameterOption(
                 value="yeuoly",
-                label=I18nObject(en_US="Yeuoly"),
+                label=I18nObject(en_us="Yeuoly"),
                 icon="https://avatars.githubusercontent.com/u/45712896?s=60&v=4",
             ),
         ]

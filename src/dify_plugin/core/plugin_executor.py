@@ -17,6 +17,7 @@ from dify_plugin.core.entities.plugin.request import (
     DatasourceValidateCredentialsRequest,
     DynamicParameterFetchParameterOptionsRequest,
     EndpointInvokeRequest,
+    ModelCheckPollingRequest,
     ModelGetAIModelSchemas,
     ModelGetLLMNumTokens,
     ModelGetTextEmbeddingNumTokens,
@@ -29,6 +30,7 @@ from dify_plugin.core.entities.plugin.request import (
     ModelInvokeSpeech2TextRequest,
     ModelInvokeTextEmbeddingRequest,
     ModelInvokeTTSRequest,
+    ModelStartPollingRequest,
     ModelValidateModelCredentialsRequest,
     ModelValidateProviderCredentialsRequest,
     OAuthGetAuthorizationUrlRequest,
@@ -90,7 +92,7 @@ if TYPE_CHECKING:
     from dify_plugin.interfaces.tool import Tool
 
 
-class PluginExecutor:
+class PluginExecutor:  # noqa: PLR0904
     def __init__(self, config: DifyPluginEnv, registration: PluginRegistration) -> None:
         self.config = config
         self.registration = registration
@@ -100,6 +102,7 @@ class PluginExecutor:
         session: Session,
         data: ToolValidateCredentialsRequest,
     ) -> dict[str, bool]:
+        del session
         provider_instance = self.registration.get_tool_provider_cls(data.provider)
         if provider_instance is None:
             msg = f"Provider `{data.provider}` not found"
@@ -179,7 +182,7 @@ class PluginExecutor:
                 msg,
             )
 
-        if not tool_cls._is_get_runtime_parameters_overridden():
+        if not tool_cls.has_runtime_parameters():
             msg = f"Tool `{data.tool}` does not implement runtime parameters"
             raise ValueError(
                 msg,
@@ -203,6 +206,7 @@ class PluginExecutor:
         session: Session,
         data: ModelValidateProviderCredentialsRequest,
     ) -> dict[str, object]:
+        del session
         provider_instance = self.registration.get_model_provider_instance(data.provider)
         if provider_instance is None:
             msg = f"Provider `{data.provider}` not found"
@@ -217,6 +221,7 @@ class PluginExecutor:
         session: Session,
         data: ModelValidateModelCredentialsRequest,
     ) -> dict[str, object]:
+        del session
         provider_instance = self.registration.get_model_provider_instance(data.provider)
         if provider_instance is None:
             msg = f"Provider `{data.provider}` not found"
@@ -237,6 +242,7 @@ class PluginExecutor:
         return {"result": True, "credentials": data.credentials}
 
     def invoke_llm(self, session: Session, data: ModelInvokeLLMRequest) -> object:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -257,11 +263,81 @@ class PluginExecutor:
             msg,
         )
 
+    def start_llm_polling(
+        self,
+        session: Session,
+        data: ModelStartPollingRequest,
+    ) -> object:
+        del session
+        model_instance = self.registration.get_model_instance(
+            data.provider,
+            data.model_type,
+        )
+        if not isinstance(model_instance, LargeLanguageModel):
+            msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
+            raise TypeError(
+                msg,
+            )
+
+        if not model_instance.supports_polling(data.model, data.credentials):
+            msg = (
+                f"Model `{data.model}` for provider `{data.provider}` "
+                "does not support polling"
+            )
+            raise ValueError(msg)
+
+        return model_instance.start_polling(
+            model=data.model,
+            credentials=data.credentials,
+            prompt_messages=data.prompt_messages,
+            model_parameters=data.model_parameters,
+            tools=data.tools,
+            stop=data.stop,
+            stream=data.stream,
+            user=data.user_id,
+            json_schema=data.json_schema,
+            workflow_run_id=data.workflow_run_id,
+            node_id=data.node_id,
+        )
+
+    def check_llm_polling(
+        self,
+        session: Session,
+        data: ModelCheckPollingRequest,
+    ) -> object:
+        del session
+        model_instance = self.registration.get_model_instance(
+            data.provider,
+            data.model_type,
+        )
+        if not isinstance(model_instance, LargeLanguageModel):
+            msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
+            raise TypeError(
+                msg,
+            )
+
+        if not model_instance.supports_polling(data.model, data.credentials):
+            msg = (
+                f"Model `{data.model}` for provider `{data.provider}` "
+                "does not support polling"
+            )
+            raise ValueError(msg)
+
+        return model_instance.check_polling(
+            model=data.model,
+            credentials=data.credentials,
+            plugin_state=data.plugin_state,
+            user=data.user_id,
+            workflow_run_id=data.workflow_run_id,
+            node_id=data.node_id,
+        )
+
     def get_llm_num_tokens(
         self,
         session: Session,
         data: ModelGetLLMNumTokens,
     ) -> dict[str, int]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -286,6 +362,7 @@ class PluginExecutor:
         session: Session,
         data: ModelInvokeTextEmbeddingRequest,
     ) -> object:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -307,6 +384,7 @@ class PluginExecutor:
         session: Session,
         data: ModelInvokeMultimodalEmbeddingRequest,
     ) -> object:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -329,6 +407,7 @@ class PluginExecutor:
         session: Session,
         data: ModelGetTextEmbeddingNumTokens,
     ) -> dict[str, int]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -347,6 +426,7 @@ class PluginExecutor:
         )
 
     def invoke_rerank(self, session: Session, data: ModelInvokeRerankRequest) -> object:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -371,6 +451,7 @@ class PluginExecutor:
         session: Session,
         data: ModelInvokeMultimodalRerankRequest,
     ) -> object:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -395,6 +476,7 @@ class PluginExecutor:
         session: Session,
         data: ModelInvokeTTSRequest,
     ) -> Generator[dict[str, str], None, None]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -416,7 +498,7 @@ class PluginExecutor:
                 yield {"result": binascii.hexlify(chunk).decode()}
         else:
             msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
-            raise ValueError(
+            raise TypeError(
                 msg,
             )
 
@@ -425,6 +507,7 @@ class PluginExecutor:
         session: Session,
         data: ModelGetTTSVoices,
     ) -> dict[str, object]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -447,6 +530,7 @@ class PluginExecutor:
         session: Session,
         data: ModelInvokeSpeech2TextRequest,
     ) -> dict[str, str]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -479,6 +563,7 @@ class PluginExecutor:
         session: Session,
         data: ModelGetAIModelSchemas,
     ) -> dict[str, object]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -500,6 +585,7 @@ class PluginExecutor:
         session: Session,
         data: ModelInvokeModerationRequest,
     ) -> dict[str, bool]:
+        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -658,6 +744,7 @@ class PluginExecutor:
         session: Session,
         data: DatasourceValidateCredentialsRequest,
     ) -> dict[str, bool]:
+        del session
         provider_instance_cls: type[DatasourceProvider] = (
             self.registration.get_datasource_provider_cls(provider=data.provider)
         )
@@ -901,7 +988,9 @@ class PluginExecutor:
         action_instance: DynamicSelectProtocol | None = (
             self._get_dynamic_parameter_action(session=session, data=data)
         )
-        assert action_instance, f"Provider `{data.provider}` not found"
+        if action_instance is None:
+            msg = f"Provider `{data.provider}` not found"
+            raise ValueError(msg)
         return {
             "options": action_instance.fetch_parameter_options(
                 parameter=data.parameter,

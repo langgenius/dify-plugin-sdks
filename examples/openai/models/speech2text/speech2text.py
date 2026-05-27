@@ -30,6 +30,7 @@ class OpenAISpeech2TextModel(_CommonOpenAI, Speech2TextModel):
         Returns:
             The return value.
         """
+        del user
         return self._speech2text_invoke(model, credentials, file)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:

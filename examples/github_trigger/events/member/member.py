@@ -32,7 +32,7 @@ class MemberUnifiedEvent(Event):
         member = payload.get("member")
         if not isinstance(member, Mapping):
             msg = "No member in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         filter_login = parameters.get("member")
         if filter_login:

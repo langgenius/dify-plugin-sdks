@@ -23,6 +23,8 @@ class DriveFilePermissionMemberAddedV1Event(Event):
         payload: Mapping[str, Any],
     ) -> Variables:
         """Handle drive file permission member added events."""
+        del parameters
+        del payload
 
         event_data = dispatch_single_event(
             request,

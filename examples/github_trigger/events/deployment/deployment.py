@@ -32,7 +32,7 @@ class DeploymentEvent(Event):
         deployment = payload.get("deployment")
         if not isinstance(deployment, Mapping):
             msg = "No deployment in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         self._check_environment(deployment, parameters.get("environment"))
         self._check_ref(deployment, parameters.get("ref"))

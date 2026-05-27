@@ -177,6 +177,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         Returns:
             The return value.
         """
+        del model
         return self._num_tokens_from_messages(prompt_messages, tools, credentials)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
@@ -362,7 +363,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             model_type=ModelType.LLM,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             features=features,
@@ -375,16 +376,16 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             parameter_rules=[
                 ParameterRule(
                     name=DefaultParameterName.TEMPERATURE.value,
-                    label=I18nObject(en_US="Temperature", zh_Hans="温度"),
+                    label=I18nObject(en_us="Temperature", zh_hans="温度"),
                     help=I18nObject(
-                        en_US=(
+                        en_us=(
                             "Kernel sampling threshold. Used to determine the "
                             "randomness of the results."
                             "The higher the value, the stronger the randomness."
                             "The higher the possibility of getting different "
                             "answers to the same question."
                         ),
-                        zh_Hans=(
+                        zh_hans=(
                             "核采样阈值。用于决定结果随机性，取值越高随机性越强即"
                             "相同的问题得到的不同答案的可能性越高。"
                         ),
@@ -397,9 +398,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 ),
                 ParameterRule(
                     name=DefaultParameterName.TOP_P.value,
-                    label=I18nObject(en_US="Top P", zh_Hans="Top P"),
+                    label=I18nObject(en_us="Top P", zh_hans="Top P"),
                     help=I18nObject(
-                        en_US=(
+                        en_us=(
                             "The probability threshold of the nucleus sampling "
                             "method during the generation process."
                             "The larger the value is, the higher the randomness "
@@ -407,7 +408,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                             "The smaller the value is, the higher the certainty "
                             "of generation will be."
                         ),
-                        zh_Hans=(
+                        zh_hans=(
                             "生成过程中核采样方法概率阈值。取值越大，生成的随机性"
                             "越高；取值越小，生成的确定性越高。"
                         ),
@@ -420,15 +421,15 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 ),
                 ParameterRule(
                     name=DefaultParameterName.FREQUENCY_PENALTY.value,
-                    label=I18nObject(en_US="Frequency Penalty", zh_Hans="频率惩罚"),
+                    label=I18nObject(en_us="Frequency Penalty", zh_hans="频率惩罚"),
                     help=I18nObject(
-                        en_US=(
+                        en_us=(
                             "For controlling the repetition rate of words used "
                             "by the model."
                             "Increasing this can reduce the repetition of the "
                             "same words in the model's output."
                         ),
-                        zh_Hans=(
+                        zh_hans=(
                             "用于控制模型已使用字词的重复率。 提高此项可以降低模型在"
                             "输出中重复相同字词的重复度。"
                         ),
@@ -440,15 +441,15 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 ),
                 ParameterRule(
                     name=DefaultParameterName.PRESENCE_PENALTY.value,
-                    label=I18nObject(en_US="Presence Penalty", zh_Hans="存在惩罚"),
+                    label=I18nObject(en_us="Presence Penalty", zh_hans="存在惩罚"),
                     help=I18nObject(
-                        en_US=(
+                        en_us=(
                             "Used to control the repetition rate when "
                             "generating models."
                             "Increasing this can reduce the repetition rate "
                             "of model generation."
                         ),
-                        zh_Hans="用于控制模型生成时的重复度。提高此项可以降低模型生成的重复度。",
+                        zh_hans="用于控制模型生成时的重复度。提高此项可以降低模型生成的重复度。",
                     ),
                     type=ParameterType.FLOAT,
                     default=float(credentials.get("presence_penalty", 0)),
@@ -457,10 +458,10 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 ),
                 ParameterRule(
                     name=DefaultParameterName.MAX_TOKENS.value,
-                    label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
+                    label=I18nObject(en_us="Max Tokens", zh_hans="最大标记"),
                     help=I18nObject(
-                        en_US="Maximum length of tokens for the model response.",
-                        zh_Hans="模型回答的tokens的最大长度。",
+                        en_us="Maximum length of tokens for the model response.",
+                        zh_hans="模型回答的tokens的最大长度。",
                     ),
                     type=ParameterType.INT,
                     default=512,
@@ -896,15 +897,21 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             completion_tokens = usage["completion_tokens"]
         else:
             # calculate num tokens
-            assert prompt_messages[0].content is not None
+            if prompt_messages[0].content is None:
+                msg = "Prompt message content is required"
+                raise ValueError(msg)
+            prompt_content = cast("str", prompt_messages[0].content)
             prompt_tokens = self._num_tokens_from_string(
                 model,
-                prompt_messages[0].content,
+                prompt_content,
             )
-            assert assistant_message.content is not None
+            if assistant_message.content is None:
+                msg = "Assistant message content is required"
+                raise ValueError(msg)
+            assistant_content = cast("str", assistant_message.content)
             completion_tokens = self._num_tokens_from_string(
                 model,
-                assistant_message.content,
+                assistant_content,
             )
 
         # transform usage
@@ -997,7 +1004,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 }
         else:
             msg = f"Got unknown type {message}"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         if message.name and message_dict.get("role", "") != "tool":
             message_dict["name"] = message.name
@@ -1051,34 +1058,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         for message in messages_dict:
             num_tokens += tokens_per_message
             for key, value in message.items():
-                # Cast str(value) in case the message value is not a string
-                # This occurs with function messages
-                # TODO: The current token calculation method for the image
-                #  type is not implemented, which need to download the image
-                #  and then get the resolution for calculation,
-                #  and will increase the request delay
-                message_value = value
-                if isinstance(message_value, list):
-                    text = ""
-                    for item in message_value:
-                        if isinstance(item, dict) and item["type"] == "text":
-                            text += item["text"]
-
-                    message_value = text
-
-                if key == "tool_calls":
-                    for tool_call in message_value or []:
-                        for t_key, t_value in tool_call.items():
-                            num_tokens += self._get_num_tokens_by_gpt2(t_key)
-                            if t_key == "function":
-                                for f_key, f_value in t_value.items():
-                                    num_tokens += self._get_num_tokens_by_gpt2(f_key)
-                                    num_tokens += self._get_num_tokens_by_gpt2(f_value)
-                            else:
-                                num_tokens += self._get_num_tokens_by_gpt2(t_key)
-                                num_tokens += self._get_num_tokens_by_gpt2(t_value)
-                else:
-                    num_tokens += self._get_num_tokens_by_gpt2(str(message_value))
+                num_tokens += self._num_tokens_for_message_value(key, value)
 
                 if key == "name":
                     num_tokens += tokens_per_name
@@ -1089,6 +1069,46 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if tools:
             num_tokens += self._num_tokens_for_tools(tools)
 
+        return num_tokens
+
+    def _num_tokens_for_message_value(self, key: str, value: object) -> int:
+        message_value = self._text_from_message_value(value)
+        if key == "tool_calls":
+            return sum(
+                self._num_tokens_for_tool_call(tool_call)
+                for tool_call in cast("list[dict]", message_value) or []
+            )
+
+        return self._get_num_tokens_by_gpt2(str(message_value))
+
+    def _text_from_message_value(self, value: object) -> object:
+        # Image token calculation remains approximate because exact sizing
+        # requires downloading images and measuring resolution.
+        if not isinstance(value, list):
+            return value
+
+        text = ""
+        for item in value:
+            if isinstance(item, dict) and item["type"] == "text":
+                text += item["text"]
+        return text
+
+    def _num_tokens_for_tool_call(self, tool_call: dict) -> int:
+        num_tokens = 0
+        for key, value in tool_call.items():
+            num_tokens += self._get_num_tokens_by_gpt2(key)
+            if key == "function":
+                num_tokens += self._num_tokens_for_function_call(value)
+            else:
+                num_tokens += self._get_num_tokens_by_gpt2(key)
+                num_tokens += self._get_num_tokens_by_gpt2(value)
+        return num_tokens
+
+    def _num_tokens_for_function_call(self, function_call: dict) -> int:
+        num_tokens = 0
+        for key, value in function_call.items():
+            num_tokens += self._get_num_tokens_by_gpt2(key)
+            num_tokens += self._get_num_tokens_by_gpt2(value)
         return num_tokens
 
     def _num_tokens_for_tools(self, tools: list[PromptMessageTool]) -> int:
@@ -1116,34 +1136,44 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             if hasattr(tool, "parameters"):
                 parameters = tool.parameters
                 num_tokens += self._get_num_tokens_by_gpt2("parameters")
-                if "title" in parameters:
-                    num_tokens += self._get_num_tokens_by_gpt2("title")
-                    num_tokens += self._get_num_tokens_by_gpt2(parameters.get("title"))
-                num_tokens += self._get_num_tokens_by_gpt2("type")
-                num_tokens += self._get_num_tokens_by_gpt2(parameters.get("type"))
-                if "properties" in parameters:
-                    num_tokens += self._get_num_tokens_by_gpt2("properties")
-                    for key, value in parameters.get("properties", {}).items():
-                        num_tokens += self._get_num_tokens_by_gpt2(key)
-                        for field_key, field_value in value.items():
-                            num_tokens += self._get_num_tokens_by_gpt2(field_key)
-                            if field_key == "enum":
-                                for enum_field in field_value:
-                                    num_tokens += 3
-                                    num_tokens += self._get_num_tokens_by_gpt2(
-                                        enum_field,
-                                    )
-                            else:
-                                num_tokens += self._get_num_tokens_by_gpt2(field_key)
-                                num_tokens += self._get_num_tokens_by_gpt2(
-                                    str(field_value),
-                                )
-                if "required" in parameters:
-                    num_tokens += self._get_num_tokens_by_gpt2("required")
-                    for required_field in parameters["required"]:
-                        num_tokens += 3
-                        num_tokens += self._get_num_tokens_by_gpt2(required_field)
+                num_tokens += self._num_tokens_for_tool_parameters(parameters)
 
+        return num_tokens
+
+    def _num_tokens_for_tool_parameters(self, parameters: dict) -> int:
+        num_tokens = 0
+        if "title" in parameters:
+            num_tokens += self._get_num_tokens_by_gpt2("title")
+            num_tokens += self._get_num_tokens_by_gpt2(parameters.get("title"))
+        num_tokens += self._get_num_tokens_by_gpt2("type")
+        num_tokens += self._get_num_tokens_by_gpt2(parameters.get("type"))
+        if "properties" in parameters:
+            num_tokens += self._get_num_tokens_by_gpt2("properties")
+            for key, value in parameters.get("properties", {}).items():
+                num_tokens += self._num_tokens_for_tool_property(key, value)
+        if "required" in parameters:
+            num_tokens += self._get_num_tokens_by_gpt2("required")
+            for required_field in parameters["required"]:
+                num_tokens += 3
+                num_tokens += self._get_num_tokens_by_gpt2(required_field)
+        return num_tokens
+
+    def _num_tokens_for_tool_property(self, key: str, value: dict) -> int:
+        num_tokens = self._get_num_tokens_by_gpt2(key)
+        for field_key, field_value in value.items():
+            num_tokens += self._get_num_tokens_by_gpt2(field_key)
+            if field_key == "enum":
+                num_tokens += self._num_tokens_for_enum_field(field_value)
+            else:
+                num_tokens += self._get_num_tokens_by_gpt2(field_key)
+                num_tokens += self._get_num_tokens_by_gpt2(str(field_value))
+        return num_tokens
+
+    def _num_tokens_for_enum_field(self, field_value: list[str]) -> int:
+        num_tokens = 0
+        for enum_field in field_value:
+            num_tokens += 3
+            num_tokens += self._get_num_tokens_by_gpt2(enum_field)
         return num_tokens
 
     def _extract_response_tool_calls(

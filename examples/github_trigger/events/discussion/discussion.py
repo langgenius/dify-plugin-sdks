@@ -36,7 +36,7 @@ class DiscussionUnifiedEvent(Event):
         discussion = payload.get("discussion")
         if not isinstance(discussion, Mapping):
             msg = "No discussion in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         self._check_category(discussion, parameters.get("category"))
         self._check_author(discussion, parameters.get("author"))

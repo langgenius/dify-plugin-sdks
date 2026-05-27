@@ -4,6 +4,7 @@ import pathlib
 import time
 from collections.abc import Generator
 from copy import deepcopy
+from dataclasses import dataclass, field
 from typing import Any, cast
 
 from pydantic import BaseModel
@@ -39,6 +40,16 @@ IMAGE_RESPONSE_TYPES = frozenset({
     ToolInvokeMessage.MessageType.IMAGE_LINK,
     ToolInvokeMessage.MessageType.IMAGE,
 })
+ToolCall = tuple[str, str, dict[str, Any]]
+
+
+@dataclass
+class FunctionCallingRoundResult:
+    response: str = ""
+    tool_calls: list[ToolCall] = field(default_factory=list)
+    tool_call_names: str = ""
+    current_llm_usage: LLMUsage | None = None
+    function_call_state: bool = False
 
 
 class FunctionCallingParams(BaseModel):
@@ -156,78 +167,19 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 )
             )
 
-            tool_calls: list[tuple[str, str, dict[str, Any]]] = []
-
-            # save full response
-            response = ""
-
-            # save tool call names and inputs
-            tool_call_names = ""
-
-            current_llm_usage = None
-
-            if isinstance(chunks, Generator):
-                for chunk in chunks:
-                    # check if there is any tool call
-                    if self.check_tool_calls(chunk):
-                        function_call_state = True
-                        tool_calls.extend(self.extract_tool_calls(chunk) or [])
-                        tool_call_names = ";".join([
-                            tool_call[1] for tool_call in tool_calls
-                        ])
-
-                    if chunk.delta.message and chunk.delta.message.content:
-                        if isinstance(chunk.delta.message.content, list):
-                            for content in chunk.delta.message.content:
-                                response += content.data
-                                if (
-                                    not function_call_state
-                                    or iteration_step == max_iteration_steps
-                                ):
-                                    yield self.create_text_message(content.data)
-                        else:
-                            response += str(chunk.delta.message.content)
-                            if (
-                                not function_call_state
-                                or iteration_step == max_iteration_steps
-                            ):
-                                yield self.create_text_message(
-                                    str(chunk.delta.message.content),
-                                )
-
-                    if chunk.delta.usage:
-                        self.increase_usage(llm_usage, chunk.delta.usage)
-                        current_llm_usage = chunk.delta.usage
-
-            else:
-                result = chunks
-                result = cast("LLMResult", result)
-                # check if there is any tool call
-                if self.check_blocking_tool_calls(result):
-                    function_call_state = True
-                    tool_calls.extend(self.extract_blocking_tool_calls(result) or [])
-                    tool_call_names = ";".join([
-                        tool_call[1] for tool_call in tool_calls
-                    ])
-
-                if result.usage:
-                    self.increase_usage(llm_usage, result.usage)
-                    current_llm_usage = result.usage
-
-                if result.message and result.message.content:
-                    if isinstance(result.message.content, list):
-                        for content in result.message.content:
-                            response += content.data
-                    else:
-                        response += str(result.message.content)
-
-                if not result.message.content:
-                    result.message.content = ""
-                if isinstance(result.message.content, str):
-                    yield self.create_text_message(result.message.content)
-                elif isinstance(result.message.content, list):
-                    for content in result.message.content:
-                        yield self.create_text_message(content.data)
+            round_result = FunctionCallingRoundResult()
+            yield from self._process_model_response(
+                chunks=chunks,
+                iteration_step=iteration_step,
+                max_iteration_steps=max_iteration_steps,
+                llm_usage=llm_usage,
+                round_result=round_result,
+            )
+            function_call_state = round_result.function_call_state
+            tool_calls = round_result.tool_calls
+            tool_call_names = round_result.tool_call_names
+            response = round_result.response
+            current_llm_usage = round_result.current_llm_usage
 
             yield self.finish_log_message(
                 log=model_log,
@@ -296,125 +248,14 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     status=ToolInvokeMessage.LogMessage.LogStatus.START,
                 )
                 yield tool_call_log
-                if not tool_instance:
-                    tool_response = {
-                        "tool_call_id": tool_call_id,
-                        "tool_call_name": tool_call_name,
-                        "tool_response": f"there is not a tool named {tool_call_name}",
-                        "meta": ToolInvokeMeta.error_instance(
-                            f"there is not a tool named {tool_call_name}",
-                        ).to_dict(),
-                    }
-                else:
-                    # invoke tool
-                    try:
-                        tool_invoke_responses = self.session.tool.invoke(
-                            provider_type=ToolProviderType(tool_instance.provider_type),
-                            provider=tool_instance.identity.provider,
-                            tool_name=tool_instance.identity.name,
-                            parameters={
-                                **tool_instance.runtime_parameters,
-                                **tool_call_args,
-                            },
-                            credential_id=tool_instance.credential_id,
-                        )
-                        tool_result = ""
-                        for tool_invoke_response in tool_invoke_responses:
-                            if (
-                                tool_invoke_response.type
-                                == ToolInvokeMessage.MessageType.TEXT
-                            ):
-                                tool_result += cast(
-                                    "ToolInvokeMessage.TextMessage",
-                                    tool_invoke_response.message,
-                                ).text
-                            elif (
-                                tool_invoke_response.type
-                                == ToolInvokeMessage.MessageType.LINK
-                            ):
-                                tool_result += (
-                                    "result link: "
-                                    + cast(
-                                        "ToolInvokeMessage.TextMessage",
-                                        tool_invoke_response.message,
-                                    ).text
-                                    + "."
-                                    + " please tell user to check it."
-                                )
-                            elif tool_invoke_response.type in IMAGE_RESPONSE_TYPES:
-                                # Extract the file path or URL from the message
-                                if hasattr(tool_invoke_response.message, "text"):
-                                    file_info = cast(
-                                        "ToolInvokeMessage.TextMessage",
-                                        tool_invoke_response.message,
-                                    ).text
-                                    # Try to create a blob message with the file content
-                                    try:
-                                        # If it's a local file path, try to read it
-                                        if (
-                                            file_info.startswith(
-                                                "/files/",
-                                            )
-                                            and pathlib.Path(file_info).exists()
-                                        ):
-                                            file_content = pathlib.Path(
-                                                file_info,
-                                            ).read_bytes()
-                                            # Create a blob with the file content.
-                                            yield self.create_blob_message(
-                                                blob=file_content,
-                                                meta={
-                                                    "mime_type": "image/png",
-                                                    "filename": pathlib.Path(
-                                                        file_info,
-                                                    ).name,
-                                                },
-                                            )
-                                    except Exception:
-                                        logger.exception(
-                                            "Failed to create blob message",
-                                        )
-                                tool_result += (
-                                    "image has been created and sent to user already, "
-                                    "you do not need to create it, just tell "
-                                    "the user to check it now."
-                                )
-                                # TODO: convert to agent invoke message
-                                yield tool_invoke_response
-                            elif (
-                                tool_invoke_response.type
-                                == ToolInvokeMessage.MessageType.JSON
-                            ):
-                                text = json.dumps(
-                                    cast(
-                                        "ToolInvokeMessage.JsonMessage",
-                                        tool_invoke_response.message,
-                                    ).json_object,
-                                    ensure_ascii=False,
-                                )
-                                tool_result += f"tool response: {text}."
-                            elif (
-                                tool_invoke_response.type
-                                == ToolInvokeMessage.MessageType.BLOB
-                            ):
-                                tool_result += "Generated file ... "
-                                # TODO: convert to agent invoke message
-                                yield tool_invoke_response
-                            else:
-                                tool_result += (
-                                    f"tool response: {tool_invoke_response.message!r}."
-                                )
-                    except Exception as e:
-                        tool_result = f"tool invoke error: {e!s}"
-                    tool_response = {
-                        "tool_call_id": tool_call_id,
-                        "tool_call_name": tool_call_name,
-                        "tool_call_input": {
-                            **tool_instance.runtime_parameters,
-                            **tool_call_args,
-                        },
-                        "tool_response": tool_result,
-                    }
+                tool_response = {}
+                yield from self._invoke_tool_call(
+                    tool_instance=tool_instance,
+                    tool_call_id=tool_call_id,
+                    tool_call_name=tool_call_name,
+                    tool_call_args=tool_call_args,
+                    tool_response=tool_response,
+                )
 
                 yield self.finish_log_message(
                     log=tool_call_log,
@@ -486,6 +327,260 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 else 0,
             },
         })
+
+    def _process_model_response(
+        self,
+        chunks: Generator[LLMResultChunk, None, None] | LLMResult,
+        iteration_step: int,
+        max_iteration_steps: int,
+        llm_usage: dict[str, LLMUsage | None],
+        round_result: FunctionCallingRoundResult,
+    ) -> Generator[AgentInvokeMessage, None, None]:
+        if isinstance(chunks, Generator):
+            yield from self._process_stream_response(
+                chunks=chunks,
+                iteration_step=iteration_step,
+                max_iteration_steps=max_iteration_steps,
+                llm_usage=llm_usage,
+                round_result=round_result,
+            )
+            return
+
+        yield from self._process_blocking_response(
+            result=cast("LLMResult", chunks),
+            llm_usage=llm_usage,
+            round_result=round_result,
+        )
+
+    def _process_stream_response(
+        self,
+        chunks: Generator[LLMResultChunk, None, None],
+        iteration_step: int,
+        max_iteration_steps: int,
+        llm_usage: dict[str, LLMUsage | None],
+        round_result: FunctionCallingRoundResult,
+    ) -> Generator[AgentInvokeMessage, None, None]:
+        for chunk in chunks:
+            if self.check_tool_calls(chunk):
+                round_result.function_call_state = True
+                round_result.tool_calls.extend(self.extract_tool_calls(chunk) or [])
+
+            if chunk.delta.message and chunk.delta.message.content:
+                yield from self._stream_text_messages(
+                    chunk.delta.message.content,
+                    should_yield=(
+                        not round_result.function_call_state
+                        or iteration_step == max_iteration_steps
+                    ),
+                    round_result=round_result,
+                )
+
+            if chunk.delta.usage:
+                self.increase_usage(llm_usage, chunk.delta.usage)
+                round_result.current_llm_usage = chunk.delta.usage
+
+        round_result.tool_call_names = self._format_tool_call_names(
+            round_result.tool_calls,
+        )
+
+    def _stream_text_messages(
+        self,
+        content: object,
+        should_yield: bool,
+        round_result: FunctionCallingRoundResult,
+    ) -> Generator[AgentInvokeMessage, None, None]:
+        if isinstance(content, list):
+            for content_part in content:
+                round_result.response += content_part.data
+                if should_yield:
+                    yield self.create_text_message(content_part.data)
+            return
+
+        text = str(content)
+        round_result.response += text
+        if should_yield:
+            yield self.create_text_message(text)
+
+    def _process_blocking_response(
+        self,
+        result: LLMResult,
+        llm_usage: dict[str, LLMUsage | None],
+        round_result: FunctionCallingRoundResult,
+    ) -> Generator[AgentInvokeMessage, None, None]:
+        if self.check_blocking_tool_calls(result):
+            round_result.function_call_state = True
+            round_result.tool_calls.extend(
+                self.extract_blocking_tool_calls(result) or []
+            )
+
+        if result.usage:
+            self.increase_usage(llm_usage, result.usage)
+            round_result.current_llm_usage = result.usage
+
+        round_result.response = self._message_content_to_text(result.message.content)
+        if not result.message.content:
+            result.message.content = ""
+
+        yield from self._blocking_text_messages(result.message.content)
+        round_result.tool_call_names = self._format_tool_call_names(
+            round_result.tool_calls,
+        )
+
+    def _message_content_to_text(self, content: object) -> str:
+        if isinstance(content, list):
+            return "".join(item.data for item in content)
+        if content:
+            return str(content)
+        return ""
+
+    def _blocking_text_messages(
+        self,
+        content: object,
+    ) -> Generator[AgentInvokeMessage, None, None]:
+        if isinstance(content, str):
+            yield self.create_text_message(content)
+        elif isinstance(content, list):
+            for content_part in content:
+                yield self.create_text_message(content_part.data)
+
+    def _format_tool_call_names(self, tool_calls: list[ToolCall]) -> str:
+        return ";".join([tool_call[1] for tool_call in tool_calls])
+
+    def _invoke_tool_call(
+        self,
+        tool_instance: ToolEntity,
+        tool_call_id: str,
+        tool_call_name: str,
+        tool_call_args: dict[str, Any],
+        tool_response: dict,
+    ) -> Generator[AgentInvokeMessage, None, None]:
+        if not tool_instance:
+            tool_response.update({
+                "tool_call_id": tool_call_id,
+                "tool_call_name": tool_call_name,
+                "tool_response": f"there is not a tool named {tool_call_name}",
+                "meta": ToolInvokeMeta.error_instance(
+                    f"there is not a tool named {tool_call_name}",
+                ).to_dict(),
+            })
+            return
+
+        try:
+            tool_invoke_responses = self.session.tool.invoke(
+                provider_type=ToolProviderType(tool_instance.provider_type),
+                provider=tool_instance.identity.provider,
+                tool_name=tool_instance.identity.name,
+                parameters={
+                    **tool_instance.runtime_parameters,
+                    **tool_call_args,
+                },
+                credential_id=tool_instance.credential_id,
+            )
+            tool_result = ""
+            for tool_invoke_response in tool_invoke_responses:
+                text_parts: list[str] = []
+                yield from self._append_tool_invoke_response_text(
+                    tool_invoke_response,
+                    text_parts,
+                )
+                tool_result += "".join(text_parts)
+        except Exception as e:
+            tool_result = f"tool invoke error: {e!s}"
+
+        tool_response.update({
+            "tool_call_id": tool_call_id,
+            "tool_call_name": tool_call_name,
+            "tool_call_input": {
+                **tool_instance.runtime_parameters,
+                **tool_call_args,
+            },
+            "tool_response": tool_result,
+        })
+
+    def _append_tool_invoke_response_text(
+        self,
+        tool_invoke_response: ToolInvokeMessage,
+        text_parts: list[str],
+    ) -> Generator[AgentInvokeMessage, None, None]:
+        if tool_invoke_response.type == ToolInvokeMessage.MessageType.TEXT:
+            text_parts.append(
+                cast(
+                    "ToolInvokeMessage.TextMessage",
+                    tool_invoke_response.message,
+                ).text,
+            )
+            return
+
+        if tool_invoke_response.type == ToolInvokeMessage.MessageType.LINK:
+            text = cast(
+                "ToolInvokeMessage.TextMessage",
+                tool_invoke_response.message,
+            ).text
+            text_parts.append(f"result link: {text}. please tell user to check it.")
+            return
+
+        if tool_invoke_response.type in IMAGE_RESPONSE_TYPES:
+            yield from self._handle_image_tool_response(
+                tool_invoke_response, text_parts
+            )
+            return
+
+        if tool_invoke_response.type == ToolInvokeMessage.MessageType.JSON:
+            text = json.dumps(
+                cast(
+                    "ToolInvokeMessage.JsonMessage",
+                    tool_invoke_response.message,
+                ).json_object,
+                ensure_ascii=False,
+            )
+            text_parts.append(f"tool response: {text}.")
+            return
+
+        if tool_invoke_response.type == ToolInvokeMessage.MessageType.BLOB:
+            # Conversion to an agent invoke message remains open here.
+            yield tool_invoke_response
+            text_parts.append("Generated file ... ")
+            return
+
+        text_parts.append(f"tool response: {tool_invoke_response.message!r}.")
+
+    def _handle_image_tool_response(
+        self,
+        tool_invoke_response: ToolInvokeMessage,
+        text_parts: list[str],
+    ) -> Generator[AgentInvokeMessage, None, None]:
+        if hasattr(tool_invoke_response.message, "text"):
+            file_info = cast(
+                "ToolInvokeMessage.TextMessage",
+                tool_invoke_response.message,
+            ).text
+            yield from self._create_image_blob_message(file_info)
+
+        # Conversion to an agent invoke message remains open here.
+        yield tool_invoke_response
+        text_parts.append(
+            "image has been created and sent to user already, "
+            "you do not need to create it, just tell the user to check it now."
+        )
+
+    def _create_image_blob_message(
+        self,
+        file_info: str,
+    ) -> Generator[AgentInvokeMessage, None, None]:
+        try:
+            file_path = pathlib.Path(file_info)
+            if not (file_info.startswith("/files/") and file_path.exists()):
+                return
+
+            yield self.create_blob_message(
+                blob=file_path.read_bytes(),
+                meta={
+                    "mime_type": "image/png",
+                    "filename": file_path.name,
+                },
+            )
+        except Exception:
+            logger.exception("Failed to create blob message")
 
     def check_tool_calls(self, llm_result_chunk: LLMResultChunk) -> bool:
         """Check if there is any tool call in llm result chunk"""

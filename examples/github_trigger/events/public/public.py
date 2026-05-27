@@ -27,7 +27,7 @@ class PublicEvent(Event):
         repo = payload.get("repository")
         if not isinstance(repo, Mapping):
             msg = "No repository in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         repo_filter = parameters.get("repository_name")
         if repo_filter:

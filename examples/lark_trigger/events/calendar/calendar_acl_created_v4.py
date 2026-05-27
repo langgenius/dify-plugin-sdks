@@ -23,6 +23,8 @@ class CalendarAclCreatedV4Event(Event):
         payload: Mapping[str, Any],
     ) -> Variables:
         """Handle calendar ACL creation events."""
+        del parameters
+        del payload
 
         event_data = dispatch_single_event(
             request,

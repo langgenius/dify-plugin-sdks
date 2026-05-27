@@ -1,9 +1,13 @@
+import socket
+import sys
 import threading
 import time
 from collections.abc import Generator
 from queue import Empty, Queue
 
+import gevent.socket
 from flask import Flask, request
+from gevent.pywsgi import WSGIServer
 
 from dify_plugin.core.entities.plugin.io import (
     PluginInStream,
@@ -16,7 +20,7 @@ from dify_plugin.core.server.serverless.response_writer import ServerlessRespons
 class ServerlessRequestReader(RequestReader):
     def __init__(
         self,
-        host: str = "0.0.0.0",
+        host: str = "0.0.0.0",  # noqa: S104
         port: int = 8080,
         worker_class: str = "gevent",
         workers: int = 5,
@@ -98,20 +102,17 @@ class ServerlessRequestReader(RequestReader):
         self.app.route("/invoke", methods=["POST"])(self.handler)
         self.app.route("/health", methods=["GET"])(self.health)
 
-        import socket
-
-        import gevent.socket
-
         if socket.socket is gevent.socket.socket:
-            from gevent.pywsgi import WSGIServer
-
             server = WSGIServer((self.host, self.port), self.app)
-            print(
+            sys.stdout.write(
                 "* Serving Flask app "
-                "'dify_plugin.core.server.serverless.request_reader'"
+                "'dify_plugin.core.server.serverless.request_reader'\n"
             )
-            print(f"* Running on http://{self.host}:{self.port} (Press CTRL+C to quit)")
-            print("* Server Worker: gevent.wsgi.WSGIServer", flush=True)
+            sys.stdout.write(
+                f"* Running on http://{self.host}:{self.port} (Press CTRL+C to quit)\n"
+            )
+            sys.stdout.write("* Server Worker: gevent.wsgi.WSGIServer\n")
+            sys.stdout.flush()
             server.serve_forever()
         else:
             self.app.run(host=self.host, port=self.port, threaded=True)

@@ -11,6 +11,9 @@ app = Flask(__name__)
 
 class NekoEndpoint(Endpoint):
     def _invoke(self, r: Request, values: Mapping, settings: Mapping) -> Response:
+        del r
+        del values
+        del settings
         try:
             visitors = int(self.session.storage.get("visitors").decode())
         except Exception:

@@ -32,7 +32,7 @@ class RegistryPackageUnifiedEvent(Event):
         registry_package = payload.get("registry_package")
         if not isinstance(registry_package, Mapping):
             msg = "No registry_package in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         name_filter = parameters.get("name")
         if name_filter:

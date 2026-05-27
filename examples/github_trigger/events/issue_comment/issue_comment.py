@@ -35,7 +35,7 @@ class IssueCommentUnifiedEvent(Event):
         issue = payload.get("issue")
         if not isinstance(comment, Mapping) or not isinstance(issue, Mapping):
             msg = "Missing comment or issue in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         icu.check_comment_body_contains(
             comment, parameters.get("comment_body_contains")

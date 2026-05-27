@@ -24,6 +24,7 @@ class GoogleDriveChangeDetectedEvent(Event):
         parameters: Mapping[str, Any],
         payload: Mapping[str, Any],
     ) -> Variables:
+        del request
         credentials = self.runtime.credentials or {}
         access_token = credentials.get("access_token")
         if not access_token:

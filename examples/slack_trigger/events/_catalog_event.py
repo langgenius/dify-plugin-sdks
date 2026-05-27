@@ -70,13 +70,14 @@ class CatalogSlackEvent:
         parameters: Mapping[str, Any],
         payload: Mapping[str, Any],
     ) -> Variables:
+        del parameters
         metadata = self._get_metadata()
 
         payload = request.get_json(silent=True) or {}
         event = payload.get("event")
         if not isinstance(event, Mapping):
             msg = "Slack event payload is missing the event body"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         event_type = str(event.get("type") or "")
         expected_event_type = str(metadata.get("event_type") or "")

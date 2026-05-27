@@ -8,7 +8,7 @@ permissions: {}
 jobs:
   test:
     name: Test (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     permissions:
       contents: read
     strategy:
@@ -24,15 +24,18 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv and Python
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Install just
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
 
       - name: Setup dify-plugin-cli
         run: ./scripts/setup-dify-plugin-cli.sh
 
       - name: Install dependencies
-        run: make dev
+        run: just dev
 
       - name: Run tests
-        run: make test
+        run: just test

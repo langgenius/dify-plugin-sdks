@@ -65,6 +65,14 @@ class MockLLM(AIModel):
         Yields:
             Generated values.
         """
+        del model
+        del credentials
+        del prompt_messages
+        del model_parameters
+        del tools
+        del stop
+        del stream
+        del user
         yield LLMResultChunk(
             model="test",
             prompt_messages=[],
@@ -92,6 +100,10 @@ class MockLLM(AIModel):
         Returns:
             The return value.
         """
+        del model
+        del credentials
+        del prompt_messages
+        del tools
         return 0
 
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
@@ -135,7 +147,7 @@ def test_model_registry_get_model(monkeypatch: pytest.MonkeyPatch) -> None:
         # add MockLLM to models_mapping
         provider_configuration = ModelProviderConfiguration(
             provider="test",
-            label=I18nObject(zh_Hans="test", en_US="test"),
+            label=I18nObject(zh_hans="test", en_us="test"),
             models={},
             supported_model_types=[ModelType.LLM],
             extra=ModelProviderConfigurationExtra(
@@ -153,7 +165,7 @@ def test_model_registry_get_model(monkeypatch: pytest.MonkeyPatch) -> None:
                 MockModelProvider(
                     provider_schemas=ProviderEntity(
                         provider="test",
-                        label=I18nObject(zh_Hans="test", en_US="test"),
+                        label=I18nObject(zh_hans="test", en_us="test"),
                         supported_model_types=[ModelType.LLM],
                         configurate_methods=[],
                     ),

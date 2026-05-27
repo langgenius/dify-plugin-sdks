@@ -50,6 +50,7 @@ from ..common_openai import _CommonOpenAI
 
 logger = logging.getLogger(__name__)
 EMPTY_STRING = ""
+ASSISTANT_PROMPT_SUFFIX = "Assistant: "
 STRUCTURED_RESPONSE_FORMATS = frozenset({"JSON", "XML"})
 
 OPENAI_BLOCK_MODE_PROMPT = (
@@ -63,6 +64,13 @@ OPENAI_BLOCK_MODE_PROMPT = (
     "{{instructions}}\n"
     "</instructions>\n"
 )
+
+
+def _require_text_content(content: object, field_name: str) -> str:
+    if not isinstance(content, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return content
 
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
@@ -202,6 +210,12 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         response_format: str = "JSON",
     ) -> None:
         """Transform json prompts"""
+        del model
+        del credentials
+        del model_parameters
+        del tools
+        del stream
+        del user
         stop = stop or []
 
         if "```\n" not in stop:
@@ -214,12 +228,15 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             prompt_messages[0],
             SystemPromptMessage,
         ):
-            assert isinstance(prompt_messages[0].content, str)
+            system_content = _require_text_content(
+                prompt_messages[0].content,
+                "System prompt message content",
+            )
             # override the system message
             prompt_messages[0] = SystemPromptMessage(
                 content=OPENAI_BLOCK_MODE_PROMPT.replace(
                     "{{instructions}}",
-                    prompt_messages[0].content,
+                    system_content,
                 ).replace("{{block}}", response_format),
             )
             prompt_messages.append(
@@ -252,7 +269,17 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         user: str | None = None,
         response_format: str = "JSON",
     ) -> None:
-        """Transform json prompts"""
+        """Transform json prompts.
+
+        Raises:
+            ValueError: If no user prompt message is available.
+        """
+        del model
+        del credentials
+        del model_parameters
+        del tools
+        del stream
+        del user
         stop = stop or []
 
         if "```\n" not in stop:
@@ -268,36 +295,39 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 user_message = prompt_messages[i]
                 break
 
-        assert isinstance(i, int)
+        if user_message is None or i is None:
+            msg = "User prompt message is required"
+            raise ValueError(msg)
 
-        if user_message:
-            assert isinstance(prompt_messages, list)
-            assert isinstance(prompt_messages[i], PromptMessage)
-            content = prompt_messages[i].content
-            assert isinstance(content, str)
+        content = _require_text_content(
+            prompt_messages[i].content,
+            "Prompt message content",
+        )
+        user_content = _require_text_content(
+            user_message.content,
+            "User prompt message content",
+        )
 
-            if content[-11:] == "Assistant: ":
-                assert isinstance(user_message.content, str)
-                # now we are in the chat app, remove the last assistant message
-                prompt_messages[i].content = content[:-11]
-                prompt_messages[i] = UserPromptMessage(
-                    content=OPENAI_BLOCK_MODE_PROMPT.replace(
-                        "{{instructions}}",
-                        user_message.content,
-                    ).replace("{{block}}", response_format),
-                )
-                prompt_messages[i].content += f"Assistant:\n```{response_format}\n"
-            else:
-                assert isinstance(user_message.content, str)
+        if content.endswith(ASSISTANT_PROMPT_SUFFIX):
+            # now we are in the chat app, remove the last assistant message
+            user_content = content.removesuffix(ASSISTANT_PROMPT_SUFFIX)
+            prompt_messages[i].content = user_content
+            prompt_messages[i] = UserPromptMessage(
+                content=OPENAI_BLOCK_MODE_PROMPT.replace(
+                    "{{instructions}}",
+                    user_content,
+                ).replace("{{block}}", response_format),
+            )
+            prompt_messages[i].content += f"Assistant:\n```{response_format}\n"
+        else:
+            prompt_messages[i] = UserPromptMessage(
+                content=OPENAI_BLOCK_MODE_PROMPT.replace(
+                    "{{instructions}}",
+                    user_content,
+                ).replace("{{block}}", response_format),
+            )
 
-                prompt_messages[i] = UserPromptMessage(
-                    content=OPENAI_BLOCK_MODE_PROMPT.replace(
-                        "{{instructions}}",
-                        user_message.content,
-                    ).replace("{{block}}", response_format),
-                )
-
-                prompt_messages[i].content += f"\n```{response_format}\n"
+            prompt_messages[i].content += f"\n```{response_format}\n"
 
     def get_num_tokens(
         self,
@@ -317,6 +347,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         Returns:
             The return value.
         """
+        del credentials
         # handle fine tune remote models
         base_model = model.removeprefix("ft:")
 
@@ -327,8 +358,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             # chat model
             return self._num_tokens_from_messages(base_model, prompt_messages, tools)
         # text completion model, do not support tool calling
-        content = prompt_messages[0].content
-        assert isinstance(content, str)
+        content = cast("str", prompt_messages[0].content)
         return self._num_tokens_from_string(base_model, content)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
@@ -426,7 +456,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
             ai_model_entity = AIModelEntity(
                 model=model.id,
-                label=I18nObject(zh_Hans=model.id, en_US=model.id),
+                label=I18nObject(zh_hans=model.id, en_us=model.id),
                 model_type=ModelType.LLM,
                 features=base_model_schema.features,
                 fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
@@ -486,10 +516,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             extra_model_kwargs["stream_options"] = {"include_usage": True}
 
         # text completion model
-        assert isinstance(prompt_messages[0].content, str)
+        prompt_content = cast("str", prompt_messages[0].content)
 
         response = client.completions.create(
-            prompt=prompt_messages[0].content,
+            prompt=prompt_content,
             model=model,
             stream=stream,
             **model_parameters,
@@ -497,19 +527,17 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         )
 
         if stream:
-            assert isinstance(response, Stream)
             return self._handle_generate_stream_response(
                 model,
                 credentials,
-                response,
+                cast("Stream[Completion]", response),
                 prompt_messages,
             )
 
-        assert isinstance(response, Completion)
         return self._handle_generate_response(
             model,
             credentials,
-            response,
+            cast("Completion", response),
             prompt_messages,
         )
 
@@ -543,10 +571,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             completion_tokens = response.usage.completion_tokens
         else:
             # calculate num tokens
-            assert isinstance(prompt_messages[0].content, str)
+            prompt_content = cast("str", prompt_messages[0].content)
             prompt_tokens = self._num_tokens_from_string(
                 model,
-                prompt_messages[0].content,
+                prompt_content,
             )
             completion_tokens = self._num_tokens_from_string(model, assistant_text)
 
@@ -635,10 +663,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 )
 
         if not prompt_tokens:
-            assert isinstance(prompt_messages[0].content, str)
+            prompt_content = cast("str", prompt_messages[0].content)
             prompt_tokens = self._num_tokens_from_string(
                 model,
-                prompt_messages[0].content,
+                prompt_content,
             )
 
         if not completion_tokens:
@@ -879,14 +907,12 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 # handle process of stream function call
                 if assistant_message_function_call:
                     # message has not ended ever
-                    assert isinstance(
-                        delta_assistant_message_function_call_storage.arguments,
-                        str,
+                    stored_arguments = (
+                        delta_assistant_message_function_call_storage.arguments or ""
                     )
-                    assert isinstance(assistant_message_function_call.arguments, str)
-
-                    delta_assistant_message_function_call_storage.arguments += (
-                        assistant_message_function_call.arguments
+                    arguments = assistant_message_function_call.arguments or ""
+                    delta_assistant_message_function_call_storage.arguments = (
+                        stored_arguments + arguments
                     )
                     continue
                 else:
@@ -986,9 +1012,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         tool_calls = []
         if response_tool_calls:
             for response_tool_call in response_tool_calls:
-                assert isinstance(
+                response_tool_call = cast(
+                    "ChatCompletionMessageToolCall | ChoiceDeltaToolCall",
                     response_tool_call,
-                    (ChatCompletionMessageToolCall, ChoiceDeltaToolCall),
                 )
                 if response_tool_call.function:
                     function = AssistantPromptMessage.ToolCall.ToolCallFunction(
@@ -1019,9 +1045,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         """
         tool_call = None
         if response_function_call:
-            assert isinstance(
+            response_function_call = cast(
+                "FunctionCall | ChoiceDeltaFunctionCall",
                 response_function_call,
-                (FunctionCall, ChoiceDeltaFunctionCall),
             )
 
             function = AssistantPromptMessage.ToolCall.ToolCallFunction(
@@ -1076,14 +1102,20 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         return prompt_messages
 
     def _convert_prompt_message_to_dict(self, message: PromptMessage) -> dict:
-        """Convert PromptMessage to dict for OpenAI API"""
+        """Convert PromptMessage to dict for OpenAI API.
+
+        Returns:
+            The prompt message as an OpenAI-compatible dictionary.
+
+        Raises:
+            TypeError: If user prompt content is neither text nor content parts.
+        """
         if isinstance(message, UserPromptMessage):
             message = cast("UserPromptMessage", message)
             if isinstance(message.content, str):
                 message_dict = {"role": "user", "content": message.content}
-            else:
+            elif isinstance(message.content, list):
                 sub_messages = []
-                assert isinstance(message.content, list)
                 for message_content in message.content:
                     if message_content.type == PromptMessageContentType.TEXT:
                         message_content = cast(
@@ -1110,6 +1142,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                         sub_messages.append(sub_message_dict)
 
                 message_dict = {"role": "user", "content": sub_messages}
+            else:
+                msg = "User prompt message content must be text or content parts"
+                raise TypeError(msg)
         elif isinstance(message, AssistantPromptMessage):
             message = cast("AssistantPromptMessage", message)
             message_dict = {"role": "assistant", "content": message.content}
@@ -1138,7 +1173,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             }
         else:
             msg = f"Got unknown type {message}"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         if message.name:
             message_dict["name"] = message.name
@@ -1220,34 +1255,11 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         for message in messages_dict:
             num_tokens += tokens_per_message
             for key, message_value in message.items():
-                # Cast str(value) in case the message value is not a string
-                # This occurs with function messages
-                # TODO: The current token calculation method for the image
-                # type is not implemented, which need to download the image
-                # and then get the resolution for calculation, and will
-                # increase the request delay
-                value = message_value
-                if isinstance(value, list):
-                    text = ""
-                    for item in value:
-                        if isinstance(item, dict) and item["type"] == "text":
-                            text += item["text"]
-
-                    value = text
-
-                if key == "tool_calls":
-                    for tool_call in value:
-                        for t_key, t_value in tool_call.items():
-                            num_tokens += len(encoding.encode(t_key))
-                            if t_key == "function":
-                                for f_key, f_value in t_value.items():
-                                    num_tokens += len(encoding.encode(f_key))
-                                    num_tokens += len(encoding.encode(f_value))
-                            else:
-                                num_tokens += len(encoding.encode(t_key))
-                                num_tokens += len(encoding.encode(t_value))
-                else:
-                    num_tokens += len(encoding.encode(str(value)))
+                num_tokens += self._num_tokens_for_message_value(
+                    encoding,
+                    key,
+                    message_value,
+                )
 
                 if key == "name":
                     num_tokens += tokens_per_name
@@ -1258,6 +1270,59 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         if tools:
             num_tokens += self._num_tokens_for_tools(encoding, tools)
 
+        return num_tokens
+
+    def _num_tokens_for_message_value(
+        self,
+        encoding: tiktoken.Encoding,
+        key: str,
+        value: object,
+    ) -> int:
+        message_value = self._text_from_message_value(value)
+        if key == "tool_calls":
+            return sum(
+                self._num_tokens_for_tool_call(encoding, tool_call)
+                for tool_call in cast("list[dict]", message_value)
+            )
+
+        return len(encoding.encode(str(message_value)))
+
+    def _text_from_message_value(self, value: object) -> object:
+        # Image token calculation remains approximate because exact sizing
+        # requires downloading images and measuring resolution.
+        if not isinstance(value, list):
+            return value
+
+        text = ""
+        for item in value:
+            if isinstance(item, dict) and item["type"] == "text":
+                text += item["text"]
+        return text
+
+    def _num_tokens_for_tool_call(
+        self,
+        encoding: tiktoken.Encoding,
+        tool_call: dict,
+    ) -> int:
+        num_tokens = 0
+        for key, value in tool_call.items():
+            num_tokens += len(encoding.encode(key))
+            if key == "function":
+                num_tokens += self._num_tokens_for_function_call(encoding, value)
+            else:
+                num_tokens += len(encoding.encode(key))
+                num_tokens += len(encoding.encode(value))
+        return num_tokens
+
+    def _num_tokens_for_function_call(
+        self,
+        encoding: tiktoken.Encoding,
+        function_call: dict,
+    ) -> int:
+        num_tokens = 0
+        for key, value in function_call.items():
+            num_tokens += len(encoding.encode(key))
+            num_tokens += len(encoding.encode(value))
         return num_tokens
 
     def _num_tokens_for_tools(
@@ -1286,30 +1351,57 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             num_tokens += len(encoding.encode(tool.description))
             parameters = tool.parameters
             num_tokens += len(encoding.encode("parameters"))
-            if "title" in parameters:
-                num_tokens += len(encoding.encode("title"))
-                num_tokens += len(encoding.encode(parameters.get("title")))
-            num_tokens += len(encoding.encode("type"))
-            num_tokens += len(encoding.encode(parameters.get("type")))
-            if "properties" in parameters:
-                num_tokens += len(encoding.encode("properties"))
-                for key, value in parameters.get("properties").items():
-                    num_tokens += len(encoding.encode(key))
-                    for field_key, field_value in value.items():
-                        num_tokens += len(encoding.encode(field_key))
-                        if field_key == "enum":
-                            for enum_field in field_value:
-                                num_tokens += 3
-                                num_tokens += len(encoding.encode(enum_field))
-                        else:
-                            num_tokens += len(encoding.encode(field_key))
-                            num_tokens += len(encoding.encode(str(field_value)))
-            if "required" in parameters:
-                num_tokens += len(encoding.encode("required"))
-                for required_field in parameters["required"]:
-                    num_tokens += 3
-                    num_tokens += len(encoding.encode(required_field))
+            num_tokens += self._num_tokens_for_tool_parameters(encoding, parameters)
 
+        return num_tokens
+
+    def _num_tokens_for_tool_parameters(
+        self,
+        encoding: tiktoken.Encoding,
+        parameters: dict,
+    ) -> int:
+        num_tokens = 0
+        if "title" in parameters:
+            num_tokens += len(encoding.encode("title"))
+            num_tokens += len(encoding.encode(parameters.get("title")))
+        num_tokens += len(encoding.encode("type"))
+        num_tokens += len(encoding.encode(parameters.get("type")))
+        if "properties" in parameters:
+            num_tokens += len(encoding.encode("properties"))
+            for key, value in parameters.get("properties").items():
+                num_tokens += self._num_tokens_for_tool_property(encoding, key, value)
+        if "required" in parameters:
+            num_tokens += len(encoding.encode("required"))
+            for required_field in parameters["required"]:
+                num_tokens += 3
+                num_tokens += len(encoding.encode(required_field))
+        return num_tokens
+
+    def _num_tokens_for_tool_property(
+        self,
+        encoding: tiktoken.Encoding,
+        key: str,
+        value: dict,
+    ) -> int:
+        num_tokens = len(encoding.encode(key))
+        for field_key, field_value in value.items():
+            num_tokens += len(encoding.encode(field_key))
+            if field_key == "enum":
+                num_tokens += self._num_tokens_for_enum_field(encoding, field_value)
+            else:
+                num_tokens += len(encoding.encode(field_key))
+                num_tokens += len(encoding.encode(str(field_value)))
+        return num_tokens
+
+    def _num_tokens_for_enum_field(
+        self,
+        encoding: tiktoken.Encoding,
+        field_value: list[str],
+    ) -> int:
+        num_tokens = 0
+        for enum_field in field_value:
+            num_tokens += 3
+            num_tokens += len(encoding.encode(enum_field))
         return num_tokens
 
     def get_customizable_model_schema(
@@ -1331,6 +1423,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         Raises:
             ValueError: If input values are invalid.
         """
+        del credentials
         base_model = model.removeprefix("ft:")
 
         # get model schema
@@ -1348,7 +1441,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         return AIModelEntity(
             model=model,
-            label=I18nObject(zh_Hans=model, en_US=model),
+            label=I18nObject(zh_hans=model, en_us=model),
             model_type=ModelType.LLM,
             features=list(base_model_schema_features),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,

@@ -62,6 +62,8 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
             InvokeRateLimitError: If model invocation fails.
             InvokeServerUnavailableError: If model invocation fails.
         """
+        del user
+        del input_type
         api_key = credentials["api_key"]
         if not api_key:
             msg = "api_key is required"
@@ -149,6 +151,8 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         Returns:
             The return value.
         """
+        del model
+        del credentials
         # use JinaTokenizer to get num tokens
         return [JinaTokenizer.get_num_tokens(text) for text in texts]
 
@@ -223,7 +227,7 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         """Generate custom model entities from credentials"""
         return AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             model_type=ModelType.TEXT_EMBEDDING,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={

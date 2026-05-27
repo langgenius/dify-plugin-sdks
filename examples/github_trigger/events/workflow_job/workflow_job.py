@@ -32,7 +32,7 @@ class WorkflowJobUnifiedEvent(Event):
         job = payload.get("workflow_job")
         if not isinstance(job, Mapping):
             msg = "No workflow_job in payload"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         self._check_workflow_name(job, parameters.get("workflow_name"))
         self._check_job_name(job, parameters.get("job_name"))
