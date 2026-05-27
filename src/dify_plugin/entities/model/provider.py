@@ -65,10 +65,13 @@ class FormOption(BaseModel):
     value: str
     show_on: list[FormShowOnObject] = Field(default_factory=list)
 
-    def __init__(self, **data: object) -> None:
-        super().__init__(**data)
-        if not self.label:
-            self.label = I18nObject(en_US=self.value)
+    @model_validator(mode="before")
+    @classmethod
+    def validate_label(cls, data: dict) -> dict:
+        if isinstance(data, dict) and not data.get("label") and "value" in data:
+            data["label"] = I18nObject(en_US=str(data["value"]))
+
+        return data
 
 
 @docs(
