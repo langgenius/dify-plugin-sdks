@@ -32,12 +32,14 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     UserPromptMessage,
 )
+from dify_plugin.errors.model import InvokeError
 from dify_plugin.interfaces.model.ai_model import AIModel
 
 logger = logging.getLogger(__name__)
 
 CODE_FENCE_BACKTICK_COUNT = 3
 STRUCTURED_RESPONSE_FORMATS = frozenset({"JSON", "XML"})
+OBSOLETE_POLLING_CONTEXT_PARAMETERS = frozenset({"workflow_run_id", "node_id"})
 
 
 class LargeLanguageModel(AIModel):
@@ -89,8 +91,6 @@ class LargeLanguageModel(AIModel):
         stream: Literal[False] = False,
         user: str | None = None,
         *,
-        workflow_run_id: str,
-        node_id: str,
         json_schema: dict[str, JsonValue] | None = None,
     ) -> LLMPollingResult:
         """Start a polling-based large language model invocation."""
@@ -103,8 +103,6 @@ class LargeLanguageModel(AIModel):
             stop,
             stream,
             user,
-            workflow_run_id,
-            node_id,
             json_schema,
         )
         raise NotImplementedError
@@ -115,12 +113,9 @@ class LargeLanguageModel(AIModel):
         credentials: dict,
         plugin_state: dict[str, JsonValue],
         user: str | None = None,
-        *,
-        workflow_run_id: str,
-        node_id: str,
     ) -> LLMPollingResult:
         """Check a polling-based large language model invocation."""
-        del model, credentials, plugin_state, user, workflow_run_id, node_id
+        del model, credentials, plugin_state, user
         raise NotImplementedError
 
     @abstractmethod
@@ -208,6 +203,27 @@ class LargeLanguageModel(AIModel):
         )
 
         return has_feature and has_methods
+
+    def _raise_if_polling_interface_outdated(self) -> None:
+        outdated_methods: list[str] = []
+        for method_name in ("_start_polling", "_check_polling"):
+            parameters = inspect.signature(getattr(type(self), method_name)).parameters
+            if OBSOLETE_POLLING_CONTEXT_PARAMETERS.intersection(parameters):
+                outdated_methods.append(method_name)
+
+        if not outdated_methods:
+            return
+
+        outdated_method_list = ", ".join(
+            f"`{method_name}`" for method_name in outdated_methods
+        )
+        raise InvokeError(
+            description=(
+                "Outdated polling interface detected. Remove `workflow_run_id` "
+                f"and `node_id` from {outdated_method_list} to match the current "
+                "SDK polling contract."
+            )
+        )
 
     def _calc_response_usage(
         self,
@@ -769,14 +785,12 @@ class LargeLanguageModel(AIModel):
         stream: Literal[False] = False,
         user: str | None = None,
         json_schema: dict[str, JsonValue] | None = None,
-        *,
-        workflow_run_id: str,
-        node_id: str,
     ) -> LLMPollingResult:
         """Start a polling-based large language model invocation."""
         if not self.supports_polling(model, credentials):
             msg = f"Model `{model}` does not support polling."
             raise NotImplementedError(msg)
+        self._raise_if_polling_interface_outdated()
 
         if model_parameters is None:
             model_parameters = {}
@@ -798,8 +812,6 @@ class LargeLanguageModel(AIModel):
                     stop=stop,
                     stream=stream,
                     user=user,
-                    workflow_run_id=workflow_run_id,
-                    node_id=node_id,
                     json_schema=json_schema,
                 )
             except Exception as e:
@@ -811,14 +823,12 @@ class LargeLanguageModel(AIModel):
         credentials: dict,
         plugin_state: dict[str, JsonValue],
         user: str | None = None,
-        *,
-        workflow_run_id: str,
-        node_id: str,
     ) -> LLMPollingResult:
         """Check a polling-based large language model invocation."""
         if not self.supports_polling(model, credentials):
             msg = f"Model `{model}` does not support polling."
             raise NotImplementedError(msg)
+        self._raise_if_polling_interface_outdated()
 
         with self.timing_context():
             try:
@@ -827,8 +837,6 @@ class LargeLanguageModel(AIModel):
                     credentials=credentials,
                     plugin_state=plugin_state,
                     user=user,
-                    workflow_run_id=workflow_run_id,
-                    node_id=node_id,
                 )
             except Exception as e:
                 raise self._transform_invoke_error(e) from e
