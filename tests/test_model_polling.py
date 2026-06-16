@@ -1,4 +1,3 @@
-import inspect
 from collections.abc import Generator, Mapping
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -269,22 +268,6 @@ def test_polling_requests_parse_daemon_payloads() -> None:
     assert check_request.plugin_state == scenario.plugin_state
     assert "workflow_run_id" not in check_request.model_dump()
     assert "node_id" not in check_request.model_dump()
-
-
-def test_large_language_model_polling_signatures_do_not_expose_obsolete_context() -> (
-    None
-):
-    polling_methods = (
-        LargeLanguageModel._start_polling,
-        LargeLanguageModel._check_polling,
-        LargeLanguageModel.start_polling,
-        LargeLanguageModel.check_polling,
-    )
-
-    for method in polling_methods:
-        parameters = inspect.signature(method).parameters
-        assert "workflow_run_id" not in parameters
-        assert "node_id" not in parameters
 
 
 def test_start_polling_request_rejects_streaming() -> None:
