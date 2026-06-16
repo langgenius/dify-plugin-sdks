@@ -205,15 +205,10 @@ class ModelStartPollingRequest(ModelInvokeLLMRequest):
     action: ModelActions = ModelActions.StartPolling
     stream: Literal[False] = False
 
-    workflow_run_id: str
-    node_id: str
-
 
 class ModelCheckPollingRequest(PluginAccessModelRequest):
     action: ModelActions = ModelActions.CheckPolling
 
-    workflow_run_id: str
-    node_id: str
     plugin_state: dict[str, JsonValue] = Field(min_length=1)
 
 

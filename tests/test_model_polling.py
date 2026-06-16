@@ -38,8 +38,6 @@ class PollingScenario:
     provider: str = "provider"
     model: str = "llm"
     api_key: str = "key"
-    workflow_run_id: str = "wr-1"
-    node_id: str = "node-1"
     job_id: str = "job-1"
     prompt_content: str = "hello"
     result_content: str = "done"
@@ -96,8 +94,6 @@ class PollingScenario:
             "model_parameters": model_parameters or {},
             "stop": [],
             "tools": [],
-            "workflow_run_id": self.workflow_run_id,
-            "node_id": self.node_id,
         }
         if json_schema is not None:
             data["json_schema"] = json_schema
@@ -117,8 +113,6 @@ class PollingScenario:
             "model_type": ModelType.LLM,
             "model": self.model,
             "credentials": self.credentials,
-            "workflow_run_id": self.workflow_run_id,
-            "node_id": self.node_id,
             "plugin_state": plugin_state or self.plugin_state,
         }
         return ModelCheckPollingRequest(**data)
@@ -199,8 +193,6 @@ class PollingLLM(LargeLanguageModel):
         stream: Literal[False] = False,
         user: str | None = None,
         *,
-        workflow_run_id: str,
-        node_id: str,
         json_schema: dict[str, JsonValue] | None = None,
     ) -> LLMPollingResult:
         self.start_call = {
@@ -212,8 +204,6 @@ class PollingLLM(LargeLanguageModel):
             "stop": stop,
             "stream": stream,
             "user": user,
-            "workflow_run_id": workflow_run_id,
-            "node_id": node_id,
             "json_schema": json_schema,
         }
         return LLMPollingResult(
@@ -230,17 +220,12 @@ class PollingLLM(LargeLanguageModel):
         credentials: dict,
         plugin_state: dict[str, JsonValue],
         user: str | None = None,
-        *,
-        workflow_run_id: str,
-        node_id: str,
     ) -> LLMPollingResult:
         self.check_call = {
             "model": model,
             "credentials": credentials,
             "plugin_state": plugin_state,
             "user": user,
-            "workflow_run_id": workflow_run_id,
-            "node_id": node_id,
         }
         return LLMPollingResult(
             status=LLMPollingStatus.SUCCEEDED,
@@ -275,10 +260,14 @@ def test_polling_requests_parse_daemon_payloads() -> None:
     assert start_request.stream is False
     assert isinstance(start_request.prompt_messages[0], UserPromptMessage)
     assert start_request.json_schema == scenario.json_schema
+    assert "workflow_run_id" not in start_request.model_dump()
+    assert "node_id" not in start_request.model_dump()
 
     check_request = scenario.check_request()
     assert check_request.action == ModelActions.CheckPolling
     assert check_request.plugin_state == scenario.plugin_state
+    assert "workflow_run_id" not in check_request.model_dump()
+    assert "node_id" not in check_request.model_dump()
 
 
 def test_start_polling_request_rejects_streaming() -> None:
@@ -299,8 +288,6 @@ def test_check_polling_request_rejects_empty_plugin_state() -> None:
         "model_type": ModelType.LLM,
         "model": scenario.model,
         "credentials": scenario.credentials,
-        "workflow_run_id": scenario.workflow_run_id,
-        "node_id": scenario.node_id,
         "plugin_state": {},
     }
 
@@ -329,10 +316,10 @@ def test_executor_starts_llm_polling() -> None:
     assert response.max_attempts == scenario.max_attempts
     assert model.start_call is not None
     assert model.supports_polling(scenario.model, scenario.credentials)
-    assert model.start_call["workflow_run_id"] == scenario.workflow_run_id
-    assert model.start_call["node_id"] == scenario.node_id
     assert model.start_call["json_schema"] == scenario.json_schema
     assert model.start_call["model_parameters"] == {}
+    assert "workflow_run_id" not in model.start_call
+    assert "node_id" not in model.start_call
 
 
 def test_executor_checks_llm_polling() -> None:
@@ -351,8 +338,8 @@ def test_executor_checks_llm_polling() -> None:
     assert response.result.message.content == scenario.result_content
     assert model.check_call is not None
     assert model.check_call["plugin_state"] == scenario.plugin_state
-    assert model.check_call["workflow_run_id"] == scenario.workflow_run_id
-    assert model.check_call["node_id"] == scenario.node_id
+    assert "workflow_run_id" not in model.check_call
+    assert "node_id" not in model.check_call
 
 
 def test_executor_rejects_llm_without_polling_feature() -> None:

@@ -296,8 +296,6 @@ class PluginExecutor:  # noqa: PLR0904
             stream=data.stream,
             user=data.user_id,
             json_schema=data.json_schema,
-            workflow_run_id=data.workflow_run_id,
-            node_id=data.node_id,
         )
 
     def check_llm_polling(
@@ -328,8 +326,6 @@ class PluginExecutor:  # noqa: PLR0904
             credentials=data.credentials,
             plugin_state=data.plugin_state,
             user=data.user_id,
-            workflow_run_id=data.workflow_run_id,
-            node_id=data.node_id,
         )
 
     def get_llm_num_tokens(

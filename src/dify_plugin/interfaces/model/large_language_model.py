@@ -89,8 +89,6 @@ class LargeLanguageModel(AIModel):
         stream: Literal[False] = False,
         user: str | None = None,
         *,
-        workflow_run_id: str,
-        node_id: str,
         json_schema: dict[str, JsonValue] | None = None,
     ) -> LLMPollingResult:
         """Start a polling-based large language model invocation."""
@@ -103,8 +101,6 @@ class LargeLanguageModel(AIModel):
             stop,
             stream,
             user,
-            workflow_run_id,
-            node_id,
             json_schema,
         )
         raise NotImplementedError
@@ -115,12 +111,9 @@ class LargeLanguageModel(AIModel):
         credentials: dict,
         plugin_state: dict[str, JsonValue],
         user: str | None = None,
-        *,
-        workflow_run_id: str,
-        node_id: str,
     ) -> LLMPollingResult:
         """Check a polling-based large language model invocation."""
-        del model, credentials, plugin_state, user, workflow_run_id, node_id
+        del model, credentials, plugin_state, user
         raise NotImplementedError
 
     @abstractmethod
@@ -769,9 +762,6 @@ class LargeLanguageModel(AIModel):
         stream: Literal[False] = False,
         user: str | None = None,
         json_schema: dict[str, JsonValue] | None = None,
-        *,
-        workflow_run_id: str,
-        node_id: str,
     ) -> LLMPollingResult:
         """Start a polling-based large language model invocation."""
         if not self.supports_polling(model, credentials):
@@ -798,8 +788,6 @@ class LargeLanguageModel(AIModel):
                     stop=stop,
                     stream=stream,
                     user=user,
-                    workflow_run_id=workflow_run_id,
-                    node_id=node_id,
                     json_schema=json_schema,
                 )
             except Exception as e:
@@ -811,9 +799,6 @@ class LargeLanguageModel(AIModel):
         credentials: dict,
         plugin_state: dict[str, JsonValue],
         user: str | None = None,
-        *,
-        workflow_run_id: str,
-        node_id: str,
     ) -> LLMPollingResult:
         """Check a polling-based large language model invocation."""
         if not self.supports_polling(model, credentials):
@@ -827,8 +812,6 @@ class LargeLanguageModel(AIModel):
                     credentials=credentials,
                     plugin_state=plugin_state,
                     user=user,
-                    workflow_run_id=workflow_run_id,
-                    node_id=node_id,
                 )
             except Exception as e:
                 raise self._transform_invoke_error(e) from e
