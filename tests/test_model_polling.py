@@ -250,54 +250,6 @@ class NonPollingLLM(PollingLLM):
         self.model_schemas[0].features = []
 
 
-class LegacyPollingLLM(PollingLLM):
-    def _start_polling(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        tools: list[PromptMessageTool] | None = None,
-        stop: list[str] | None = None,
-        stream: Literal[False] = False,
-        user: str | None = None,
-        *,
-        workflow_run_id: str,
-        node_id: str,
-        json_schema: dict[str, JsonValue] | None = None,
-    ) -> LLMPollingResult:
-        del workflow_run_id, node_id
-        return super()._start_polling(
-            model=model,
-            credentials=credentials,
-            prompt_messages=prompt_messages,
-            model_parameters=model_parameters,
-            tools=tools,
-            stop=stop,
-            stream=stream,
-            user=user,
-            json_schema=json_schema,
-        )
-
-    def _check_polling(
-        self,
-        model: str,
-        credentials: dict,
-        plugin_state: dict[str, JsonValue],
-        user: str | None = None,
-        *,
-        workflow_run_id: str,
-        node_id: str,
-    ) -> LLMPollingResult:
-        del workflow_run_id, node_id
-        return super()._check_polling(
-            model=model,
-            credentials=credentials,
-            plugin_state=plugin_state,
-            user=user,
-        )
-
-
 def test_polling_requests_parse_daemon_payloads() -> None:
     scenario = PollingScenario()
 
@@ -416,36 +368,6 @@ def test_executor_rejects_llm_without_polling_feature() -> None:
         executor.start_llm_polling(
             Session.empty_session(),
             scenario.start_request(),
-        )
-
-
-def test_executor_rejects_legacy_polling_start_signature_with_migration_error() -> None:
-    scenario = PollingScenario()
-    model = LegacyPollingLLM(scenario)
-    executor = PluginExecutor(DifyPluginEnv(), ModelRegistration(model))
-
-    with pytest.raises(
-        InvokeError,
-        match="Remove `workflow_run_id` and `node_id`",
-    ):
-        executor.start_llm_polling(
-            Session.empty_session(),
-            scenario.start_request(),
-        )
-
-
-def test_executor_rejects_legacy_polling_check_signature_with_migration_error() -> None:
-    scenario = PollingScenario()
-    model = LegacyPollingLLM(scenario)
-    executor = PluginExecutor(DifyPluginEnv(), ModelRegistration(model))
-
-    with pytest.raises(
-        InvokeError,
-        match="Remove `workflow_run_id` and `node_id`",
-    ):
-        executor.check_llm_polling(
-            Session.empty_session(),
-            scenario.check_request(),
         )
 
 
