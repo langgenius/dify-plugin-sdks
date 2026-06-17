@@ -220,8 +220,10 @@ class ModelGetLLMNumTokens(PluginAccessModelRequest, PromptMessageMixin):
 
 class ModelInvokeTextEmbeddingRequest(PluginAccessModelRequest):
     action: ModelActions = ModelActions.InvokeTextEmbedding
+    model_type: ModelType = ModelType.TEXT_EMBEDDING
 
     texts: list[str]
+    input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT
 
 
 class ModelInvokeMultimodalEmbeddingRequest(PluginAccessModelRequest):
