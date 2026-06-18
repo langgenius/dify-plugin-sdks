@@ -9,7 +9,7 @@ class DynamicSelectProtocol(Protocol):
         Fetch the parameter options.
 
         Classes that implement this protocol should have at least one
-        parameter with type `dynamic-select`.
+        parameter with type `dynamic-select` or `dynamic-tree-select`.
 
         At some scenarios, we don't know the available options,
         it could not be defined in the plugin directly.
