@@ -75,6 +75,7 @@ def test_constructor_of_agent_strategy() -> None:
 
 def test_agent_strategy_converts_tool_parameters_once() -> None:
     label = I18nObject(en_US="Search")
+    input_schema = {"type": "string"}
     tool = ToolEntity(
         identity=AgentToolIdentity(
             author="test",
@@ -92,6 +93,7 @@ def test_agent_strategy_converts_tool_parameters_once() -> None:
                 form=ToolParameter.ToolParameterForm.LLM,
                 llm_description="Query",
                 required=True,
+                input_schema=input_schema,
                 options=[
                     ToolParameterOption(value="docs", label=label),
                     ToolParameterOption(value="web", label=label),
@@ -114,5 +116,7 @@ def test_agent_strategy_converts_tool_parameters_once() -> None:
     query_schema = prompt_tool.parameters["properties"]["query"]
     assert query_schema["type"] == ToolParameter.ToolParameterType.STRING
     assert query_schema["enum"] == ["docs", "web"]
+    assert query_schema is not tool.parameters[0].input_schema
+    assert tool.parameters[0].input_schema == {"type": "string"}
     assert "upload" not in prompt_tool.parameters["properties"]
     assert prompt_tool.parameters["required"] == ["query"]

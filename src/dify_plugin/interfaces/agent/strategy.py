@@ -299,7 +299,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
                 "description": parameter.llm_description or "",
             }
             if parameter.input_schema is None
-            else parameter.input_schema
+            else dict(parameter.input_schema)
         )
 
         if (

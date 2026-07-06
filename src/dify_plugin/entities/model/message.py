@@ -286,6 +286,10 @@ def ensure_prompt_message(value: PromptMessage | Mapping[str, object]) -> Prompt
     if isinstance(value, PromptMessage):
         return value
 
+    if not isinstance(value, Mapping):
+        msg = "prompt message must be a PromptMessage or a Mapping"
+        raise TypeError(msg)
+
     role = value.get("role")
     if isinstance(role, PromptMessageRole):
         role = role.value

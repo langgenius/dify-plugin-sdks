@@ -1,3 +1,5 @@
+import pytest
+
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     ImagePromptMessageContent,
@@ -67,3 +69,8 @@ def test_ensure_prompt_message_uses_role_specific_class() -> None:
         {"role": PromptMessageRole.USER, "content": "hello"},
     )
     assert isinstance(enum_message, UserPromptMessage)
+
+
+def test_ensure_prompt_message_rejects_non_mapping() -> None:
+    with pytest.raises(TypeError, match="PromptMessage or a Mapping"):
+        ensure_prompt_message("assistant")
