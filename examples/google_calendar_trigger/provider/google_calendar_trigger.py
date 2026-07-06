@@ -35,6 +35,7 @@ TRUTHY_STRINGS = frozenset({"true", "1", "yes", "on"})
 FALSY_STRINGS = frozenset({"false", "0", "no", "off"})
 WATCH_SUCCESS_STATUSES = frozenset({HTTPStatus.OK, HTTPStatus.CREATED})
 CHANNEL_STOP_SUCCESS_STATUSES = frozenset({HTTPStatus.OK, HTTPStatus.NO_CONTENT})
+RFC3339_UTC_SUFFIX = "Z"
 
 
 class SyncTokenExpiredError(TriggerError):
@@ -146,8 +147,8 @@ def _parse_rfc3339(value: object) -> datetime.datetime | None:
         return None
     try:
         text = value.strip()
-        if text.endswith("Z"):
-            text = text[:-1] + "+00:00"
+        if text.endswith(RFC3339_UTC_SUFFIX):
+            text = f"{text.removesuffix(RFC3339_UTC_SUFFIX)}+00:00"
         return datetime.datetime.fromisoformat(text)
     except Exception:
         return None

@@ -304,40 +304,35 @@ class NotionExtractor:
             prop_type = prop_data.get("type")
 
             # Extract value based on property type
-            if prop_type == "title":
-                title_content = prop_data.get("title", [])
-                value = self._client.extract_plain_text(title_content)
-                if value:
-                    title = value  # Save title for the result
-            elif prop_type == "rich_text":
-                text_content = prop_data.get("rich_text", [])
-                value = self._client.extract_plain_text(text_content)
-            elif prop_type == "number":
-                value = prop_data.get("number")
-            elif prop_type == "select":
-                select_data = prop_data.get("select", {})
-                value = select_data.get("name") if select_data else None
-            elif prop_type == "multi_select":
-                multi_select = prop_data.get("multi_select", [])
-                value = (
-                    [item.get("name") for item in multi_select] if multi_select else []
-                )
-            elif prop_type == "date":
-                date_data = prop_data.get("date", {})
-                start = date_data.get("start") if date_data else None
-                end = date_data.get("end") if date_data else None
-                value = {"start": start, "end": end} if start else None
-            elif prop_type == "checkbox":
-                value = prop_data.get("checkbox")
-            elif prop_type == "url":
-                value = prop_data.get("url")
-            elif prop_type == "email":
-                value = prop_data.get("email")
-            elif prop_type == "phone_number":
-                value = prop_data.get("phone_number")
-            else:
-                # For other property types, just note the type
-                value = f"<{prop_type}>"
+            match prop_type:
+                case "title":
+                    title_content = prop_data.get("title", [])
+                    value = self._client.extract_plain_text(title_content)
+                    if value:
+                        title = value  # Save title for the result
+                case "rich_text":
+                    text_content = prop_data.get("rich_text", [])
+                    value = self._client.extract_plain_text(text_content)
+                case "number" | "checkbox" | "url" | "email" | "phone_number":
+                    value = prop_data.get(prop_type)
+                case "select":
+                    select_data = prop_data.get("select", {})
+                    value = select_data.get("name") if select_data else None
+                case "multi_select":
+                    multi_select = prop_data.get("multi_select", [])
+                    value = (
+                        [item.get("name") for item in multi_select]
+                        if multi_select
+                        else []
+                    )
+                case "date":
+                    date_data = prop_data.get("date", {})
+                    start = date_data.get("start") if date_data else None
+                    end = date_data.get("end") if date_data else None
+                    value = {"start": start, "end": end} if start else None
+                case _:
+                    # For other property types, just note the type
+                    value = f"<{prop_type}>"
 
             formatted_properties[prop_name] = value
 

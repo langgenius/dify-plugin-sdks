@@ -8,7 +8,6 @@ from collections.abc import Generator, Mapping
 from decimal import Decimal
 from http import HTTPStatus
 from typing import Any, cast
-from urllib.parse import urljoin
 
 import requests
 from pydantic import TypeAdapter, ValidationError
@@ -201,8 +200,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 headers["Authorization"] = f"Bearer {api_key}"
 
             endpoint_url = credentials["endpoint_url"]
-            if not endpoint_url.endswith("/"):
-                endpoint_url += "/"
 
             # prepare the payload for a simple ping to the model
             validate_credentials_max_tokens = (
@@ -219,10 +216,13 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 data["messages"] = [
                     {"role": "user", "content": "ping"},
                 ]
-                endpoint_url = urljoin(endpoint_url, "chat/completions")
+                endpoint_url = self._join_endpoint_url(
+                    endpoint_url,
+                    "chat/completions",
+                )
             elif completion_type is LLMMode.COMPLETION:
                 data["prompt"] = "ping"
-                endpoint_url = urljoin(endpoint_url, "completions")
+                endpoint_url = self._join_endpoint_url(endpoint_url, "completions")
             else:
                 msg = "Unsupported completion type for model configuration."
                 raise ValueError(msg)
@@ -537,8 +537,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             headers["Authorization"] = f"Bearer {api_key}"
 
         endpoint_url = credentials["endpoint_url"]
-        if not endpoint_url.endswith("/"):
-            endpoint_url += "/"
 
         response_format = model_parameters.get("response_format")
         if response_format:
@@ -578,13 +576,13 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         completion_type = LLMMode.value_of(credentials["mode"])
 
         if completion_type is LLMMode.CHAT:
-            endpoint_url = urljoin(endpoint_url, "chat/completions")
+            endpoint_url = self._join_endpoint_url(endpoint_url, "chat/completions")
             data["messages"] = [
                 self._convert_prompt_message_to_dict(m, credentials)
                 for m in prompt_messages
             ]
         elif completion_type is LLMMode.COMPLETION:
-            endpoint_url = urljoin(endpoint_url, "completions")
+            endpoint_url = self._join_endpoint_url(endpoint_url, "completions")
             data["prompt"] = prompt_messages[0].content
         else:
             msg = "Unsupported completion type for model configuration."

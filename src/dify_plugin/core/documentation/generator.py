@@ -262,12 +262,8 @@ class SchemaDocumentationGenerator:
         if isinstance(field_type, type):
             if issubclass(field_type, (BaseModel, Enum)):
                 referenced.add(field_type)
-        # Handle generic types (List, Dict, Union, etc)
-        elif (
-            hasattr(field_type, "__origin__") and field_type.__origin__ == Union
-        ) or hasattr(field_type, "__args__"):
-            # Handle Union types
-            for arg in field_type.__args__:
+        else:
+            for arg in get_args(field_type):
                 referenced.update(self._extract_referenced_types(arg))
 
         return referenced
@@ -347,22 +343,13 @@ class SchemaDocumentationGenerator:
         container_types: tuple[type, ...] = (list, set),
     ) -> bool:
         """Check if a field type is a container type (list, set, etc)."""
-        try:
-            return (
-                hasattr(field_type, "__origin__")
-                and isinstance(getattr(field_type, "__origin__", None), type)
-                and getattr(field_type, "__origin__", None) in container_types
-            )
-        except Exception:
-            return False
+        origin = get_origin(field_type)
+        return isinstance(origin, type) and origin in container_types
 
     def _get_container_name(self, field_type: object) -> str:
         """Get the name of a container type."""
-        try:
-            origin = getattr(field_type, "__origin__", None)
-            return origin.__name__ if origin else str(field_type)
-        except Exception:
-            return str(field_type)
+        origin = get_origin(field_type)
+        return origin.__name__ if isinstance(origin, type) else str(field_type)
 
     def _write_schema_doc(self, f: TextIO, type_: type) -> None:
         """Write documentation for a single schema."""

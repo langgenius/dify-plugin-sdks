@@ -474,6 +474,35 @@ class NotionClient:
         """
         return self.create_rich_text(content)
 
+    def _normalize_icon(
+        self, page_icon: dict[str, Any] | None
+    ) -> dict[str, str] | None:
+        if not page_icon:
+            return None
+
+        icon_type = page_icon["type"]
+        if icon_type in FILE_ICON_TYPES:
+            url = page_icon[icon_type]["url"]
+            return {
+                "type": "url",
+                "url": url if url.startswith("http") else f"https://www.notion.so{url}",
+            }
+
+        return {"type": "emoji", "emoji": page_icon[icon_type]}
+
+    def _resolve_parent_id(self, access_token: str, parent: dict[str, Any]) -> str:
+        parent_type = parent["type"]
+        match parent_type:
+            case "block_id":
+                return self._resolve_block_parent_page_id(
+                    access_token,
+                    parent[parent_type],
+                )
+            case "workspace":
+                return "root"
+            case _:
+                return parent[parent_type]
+
     def get_authorized_pages(self) -> list[OnlineDocumentPage]:
         pages: list[OnlineDocumentPage] = []
         access_token = self.integration_token
@@ -489,33 +518,10 @@ class NotionClient:
                     and page_result["properties"][key]["title"]
                 ):
                     title_list = page_result["properties"][key]["title"]
-                    if len(title_list) > 0 and "plain_text" in title_list[0]:
+                    if title_list and "plain_text" in title_list[0]:
                         page_name = title_list[0]["plain_text"]
-            page_icon = page_result["icon"]
-            if page_icon:
-                icon_type = page_icon["type"]
-                if icon_type in FILE_ICON_TYPES:
-                    url = page_icon[icon_type]["url"]
-                    icon = {
-                        "type": "url",
-                        "url": url
-                        if url.startswith("http")
-                        else f"https://www.notion.so{url}",
-                    }
-                else:
-                    icon = {"type": "emoji", "emoji": page_icon[icon_type]}
-            else:
-                icon = None
-            parent = page_result["parent"]
-            parent_type = parent["type"]
-            if parent_type == "block_id":
-                parent_id = self._resolve_block_parent_page_id(
-                    access_token, parent[parent_type]
-                )
-            elif parent_type == "workspace":
-                parent_id = "root"
-            else:
-                parent_id = parent[parent_type]
+            icon = self._normalize_icon(page_result["icon"])
+            parent_id = self._resolve_parent_id(access_token, page_result["parent"])
             page = OnlineDocumentPage(
                 page_id=page_id,
                 page_name=page_name,
@@ -530,35 +536,12 @@ class NotionClient:
             page_id = database_result["id"]
             page_name = (
                 database_result["title"][0]["plain_text"]
-                if len(database_result["title"]) > 0
+                if database_result["title"]
                 else "Untitled"
             )
 
-            page_icon = database_result["icon"]
-            if page_icon:
-                icon_type = page_icon["type"]
-                if icon_type in FILE_ICON_TYPES:
-                    url = page_icon[icon_type]["url"]
-                    icon = {
-                        "type": "url",
-                        "url": url
-                        if url.startswith("http")
-                        else f"https://www.notion.so{url}",
-                    }
-                else:
-                    icon = {"type": "emoji", "emoji": page_icon[icon_type]}
-            else:
-                icon = None
-            parent = database_result["parent"]
-            parent_type = parent["type"]
-            if parent_type == "block_id":
-                parent_id = self._resolve_block_parent_page_id(
-                    access_token, parent[parent_type]
-                )
-            elif parent_type == "workspace":
-                parent_id = "root"
-            else:
-                parent_id = parent[parent_type]
+            icon = self._normalize_icon(database_result["icon"])
+            parent_id = self._resolve_parent_id(access_token, database_result["parent"])
             page = OnlineDocumentPage(
                 page_id=page_id,
                 page_name=page_name,

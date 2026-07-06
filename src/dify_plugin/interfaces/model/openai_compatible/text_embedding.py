@@ -2,7 +2,6 @@ import json
 import time
 from decimal import Decimal
 from http import HTTPStatus
-from urllib.parse import urljoin
 
 import requests
 
@@ -62,11 +61,10 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        endpoint_url = credentials.get("endpoint_url", "")
-        if not endpoint_url.endswith("/"):
-            endpoint_url += "/"
-
-        endpoint_url = urljoin(endpoint_url, "embeddings")
+        endpoint_url = self._join_endpoint_url(
+            credentials.get("endpoint_url", ""),
+            "embeddings",
+        )
 
         extra_model_kwargs = {}
         if user:
@@ -170,11 +168,10 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
 
-            endpoint_url = credentials.get("endpoint_url", "")
-            if not endpoint_url.endswith("/"):
-                endpoint_url += "/"
-
-            endpoint_url = urljoin(endpoint_url, "embeddings")
+            endpoint_url = self._join_endpoint_url(
+                credentials.get("endpoint_url", ""),
+                "embeddings",
+            )
 
             payload = {
                 "input": ["ping"],

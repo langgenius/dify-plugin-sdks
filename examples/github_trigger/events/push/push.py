@@ -62,11 +62,7 @@ class PushEvent(Event):
             return
 
         current_ref = payload.get("ref") or ""
-        branch = (
-            current_ref.split("/", 2)[-1]
-            if current_ref.startswith("refs/heads/")
-            else current_ref
-        )
+        branch = current_ref.removeprefix("refs/heads/")
         if branch not in allowed_branches:
             raise EventIgnoreError
 

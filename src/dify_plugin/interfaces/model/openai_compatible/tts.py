@@ -1,6 +1,5 @@
 from collections.abc import Generator
 from http import HTTPStatus
-from urllib.parse import urljoin
 
 import requests
 
@@ -58,10 +57,10 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
             headers["Authorization"] = f"Bearer {api_key}"
 
         # Construct endpoint URL
-        endpoint_url = credentials.get("endpoint_url", "")
-        if not endpoint_url.endswith("/"):
-            endpoint_url += "/"
-        endpoint_url = urljoin(endpoint_url, "audio/speech")
+        endpoint_url = self._join_endpoint_url(
+            credentials.get("endpoint_url", ""),
+            "audio/speech",
+        )
 
         # Get audio format from model properties
         audio_format = self._get_model_audio_type(model, credentials)

@@ -87,6 +87,6 @@ class SecretScanningEvent(Event):
         ref = (payload.get("alert") or {}).get("most_recent_instance", {}).get(
             "ref"
         ) or ""
-        branch = ref.split("/", 2)[-1] if ref.startswith("refs/heads/") else ref
+        branch = ref.removeprefix("refs/heads/")
         if branch and branch not in branches:
             raise EventIgnoreError
