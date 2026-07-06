@@ -91,7 +91,6 @@ class CodeScanningAlertEvent(Event):
             or alert.get("ref")
             or ""
         )
-        # Convert refs/heads/main -> main
-        branch = ref.split("/", 2)[-1] if ref.startswith("refs/heads/") else ref
+        branch = ref.removeprefix("refs/heads/")
         if branch not in branches:
             raise EventIgnoreError

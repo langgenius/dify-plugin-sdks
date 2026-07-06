@@ -1,3 +1,5 @@
+from urllib.parse import urljoin
+
 import requests
 
 from dify_plugin.errors.model import (
@@ -11,6 +13,9 @@ from dify_plugin.errors.model import (
 
 
 class _CommonOaiApiCompat:
+    def _join_endpoint_url(self, endpoint_url: str, path: str) -> str:
+        return urljoin(f"{endpoint_url.rstrip('/')}/", path)
+
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """

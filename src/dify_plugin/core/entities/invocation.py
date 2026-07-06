@@ -30,12 +30,5 @@ class InvokeType(Enum):
 
         Returns:
             The return value.
-
-        Raises:
-            ValueError: If input values are invalid.
         """
-        for mode in cls:
-            if mode.value == value:
-                return mode
-        msg = f"invalid type value {value}"
-        raise ValueError(msg)
+        return cls(value)

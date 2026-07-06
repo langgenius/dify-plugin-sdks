@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from enum import Enum, StrEnum
 from typing import Annotated, Literal
 
@@ -25,15 +25,8 @@ class PromptMessageRole(Enum):
 
         Returns:
             The return value.
-
-        Raises:
-            ValueError: If input values are invalid.
         """
-        for mode in cls:
-            if mode.value == value:
-                return mode
-        msg = f"invalid prompt message type value {value}"
-        raise ValueError(msg)
+        return cls(value)
 
 
 class PromptMessageTool(BaseModel):
@@ -278,3 +271,28 @@ class ToolPromptMessage(PromptMessage):
             The return value.
         """
         return not (not super().is_empty() and not self.tool_call_id)
+
+
+PROMPT_MESSAGE_TYPES_BY_ROLE: dict[str, type[PromptMessage]] = {
+    PromptMessageRole.USER.value: UserPromptMessage,
+    PromptMessageRole.ASSISTANT.value: AssistantPromptMessage,
+    PromptMessageRole.SYSTEM.value: SystemPromptMessage,
+    PromptMessageRole.DEVELOPER.value: DeveloperPromptMessage,
+    PromptMessageRole.TOOL.value: ToolPromptMessage,
+}
+
+
+def ensure_prompt_message(value: PromptMessage | Mapping[str, object]) -> PromptMessage:
+    if isinstance(value, PromptMessage):
+        return value
+
+    if not isinstance(value, Mapping):
+        msg = "prompt message must be a PromptMessage or a Mapping"
+        raise TypeError(msg)
+
+    role = value.get("role")
+    if isinstance(role, PromptMessageRole):
+        role = role.value
+
+    message_cls = PROMPT_MESSAGE_TYPES_BY_ROLE.get(role, PromptMessage)
+    return message_cls(**dict(value))

@@ -10,13 +10,9 @@ from dify_plugin.entities.agent import AgentInvokeMessage, AgentRuntime
 from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
 from dify_plugin.entities.model.llm import LLMModelConfig, LLMUsage
 from dify_plugin.entities.model.message import (
-    AssistantPromptMessage,
     PromptMessage,
-    PromptMessageRole,
     PromptMessageTool,
-    SystemPromptMessage,
-    ToolPromptMessage,
-    UserPromptMessage,
+    ensure_prompt_message,
 )
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import (
@@ -53,19 +49,7 @@ class AgentModelConfig(LLMModelConfig):
             msg = "prompt_messages must be a list"
             raise TypeError(msg)
 
-        for i in range(len(v)):
-            if v[i]["role"] == PromptMessageRole.USER.value:
-                v[i] = UserPromptMessage(**v[i])
-            elif v[i]["role"] == PromptMessageRole.ASSISTANT.value:
-                v[i] = AssistantPromptMessage(**v[i])
-            elif v[i]["role"] == PromptMessageRole.SYSTEM.value:
-                v[i] = SystemPromptMessage(**v[i])
-            elif v[i]["role"] == PromptMessageRole.TOOL.value:
-                v[i] = ToolPromptMessage(**v[i])
-            else:
-                v[i] = PromptMessage(**v[i])
-
-        return v
+        return [ensure_prompt_message(item) for item in v]
 
 
 class AgentScratchpadUnit(BaseModel):
@@ -295,6 +279,43 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
 
         return prompt_messages_tools
 
+    def _set_prompt_tool_parameter(
+        self,
+        prompt_tool: PromptMessageTool,
+        parameter: ToolParameter,
+    ) -> None:
+        if parameter.form != ToolParameter.ToolParameterForm.LLM:
+            return
+
+        parameter_type = parameter.type
+        if parameter.type in FILE_PARAMETER_TYPES:
+            return
+        if parameter.type in STRING_PARAMETER_TYPES:
+            parameter_type = ToolParameter.ToolParameterType.STRING
+
+        prompt_tool.parameters["properties"][parameter.name] = (
+            {
+                "type": parameter_type,
+                "description": parameter.llm_description or "",
+            }
+            if parameter.input_schema is None
+            else dict(parameter.input_schema)
+        )
+
+        if (
+            parameter.type == ToolParameter.ToolParameterType.SELECT
+            and parameter.options
+        ):
+            prompt_tool.parameters["properties"][parameter.name]["enum"] = [
+                option.value for option in parameter.options
+            ]
+
+        if (
+            parameter.required
+            and parameter.name not in prompt_tool.parameters["required"]
+        ):
+            prompt_tool.parameters["required"].append(parameter.name)
+
     def _convert_tool_to_prompt_message_tool(
         self,
         tool: ToolEntity,
@@ -312,36 +333,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
 
         parameters = tool.parameters
         for parameter in parameters:
-            if parameter.form != ToolParameter.ToolParameterForm.LLM:
-                continue
-
-            parameter_type = parameter.type
-            if parameter.type in FILE_PARAMETER_TYPES:
-                continue
-            if parameter.type in STRING_PARAMETER_TYPES:
-                parameter_type = ToolParameter.ToolParameterType.STRING
-            enum = []
-            if parameter.type == ToolParameter.ToolParameterType.SELECT:
-                enum = (
-                    [option.value for option in parameter.options]
-                    if parameter.options
-                    else []
-                )
-
-            message_tool.parameters["properties"][parameter.name] = (
-                {
-                    "type": parameter_type,
-                    "description": parameter.llm_description or "",
-                }
-                if parameter.input_schema is None
-                else parameter.input_schema
-            )
-
-            if len(enum) > 0:
-                message_tool.parameters["properties"][parameter.name]["enum"] = enum
-
-            if parameter.required:
-                message_tool.parameters["required"].append(parameter.name)
+            self._set_prompt_tool_parameter(message_tool, parameter)
 
         return message_tool
 
@@ -355,38 +347,6 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         tool_runtime_parameters = tool.parameters
 
         for parameter in tool_runtime_parameters:
-            if parameter.form != ToolParameter.ToolParameterForm.LLM:
-                continue
-
-            parameter_type = parameter.type
-            if parameter.type in FILE_PARAMETER_TYPES:
-                continue
-            if parameter.type in STRING_PARAMETER_TYPES:
-                parameter_type = ToolParameter.ToolParameterType.STRING
-            enum = []
-            if parameter.type == ToolParameter.ToolParameterType.SELECT:
-                enum = (
-                    [option.value for option in parameter.options]
-                    if parameter.options
-                    else []
-                )
-
-            prompt_tool.parameters["properties"][parameter.name] = (
-                {
-                    "type": parameter_type,
-                    "description": parameter.llm_description or "",
-                }
-                if parameter.input_schema is None
-                else parameter.input_schema
-            )
-
-            if len(enum) > 0:
-                prompt_tool.parameters["properties"][parameter.name]["enum"] = enum
-
-            if (
-                parameter.required
-                and parameter.name not in prompt_tool.parameters["required"]
-            ):
-                prompt_tool.parameters["required"].append(parameter.name)
+            self._set_prompt_tool_parameter(prompt_tool, parameter)
 
         return prompt_tool

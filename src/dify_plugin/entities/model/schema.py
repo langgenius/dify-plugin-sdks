@@ -37,15 +37,8 @@ class DefaultParameterName(Enum):
 
         Returns:
             The return value.
-
-        Raises:
-            ValueError: If input values are invalid.
         """
-        for name in cls:
-            if name.value == value:
-                return name
-        msg = f"invalid parameter name {value}"
-        raise ValueError(msg)
+        return cls(value)
 
 
 PARAMETER_RULE_TEMPLATE: dict[DefaultParameterName, dict] = {
