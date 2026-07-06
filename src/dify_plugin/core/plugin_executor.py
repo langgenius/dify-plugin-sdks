@@ -53,6 +53,7 @@ from dify_plugin.core.entities.plugin.request import (
 )
 from dify_plugin.core.plugin_registration import PluginRegistration
 from dify_plugin.core.runtime import Session
+from dify_plugin.core.session_context import use_current_session
 from dify_plugin.core.utils.http_parser import deserialize_request, serialize_response
 from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.agent import AgentRuntime
@@ -242,22 +243,30 @@ class PluginExecutor:  # noqa: PLR0904
         return {"result": True, "credentials": data.credentials}
 
     def invoke_llm(self, session: Session, data: ModelInvokeLLMRequest) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if isinstance(model_instance, LargeLanguageModel):
-            return model_instance.invoke(
-                data.model,
-                data.credentials,
-                data.prompt_messages,
-                data.model_parameters,
-                data.tools,
-                data.stop,
-                data.stream,
-                data.user_id,
-            )
+            with use_current_session(session):
+                result = model_instance.invoke(
+                    data.model,
+                    data.credentials,
+                    data.prompt_messages,
+                    data.model_parameters,
+                    data.tools,
+                    data.stop,
+                    data.stream,
+                    data.user_id,
+                )
+            if not isinstance(result, Generator):
+                return result
+
+            def generator() -> Generator[object, None, None]:
+                with use_current_session(session):
+                    yield from result
+
+            return generator()
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
             msg,
@@ -358,18 +367,18 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeTextEmbeddingRequest,
     ) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if isinstance(model_instance, TextEmbeddingModel):
-            return model_instance.invoke(
-                data.model,
-                data.credentials,
-                data.texts,
-                data.user_id,
-            )
+            with use_current_session(session):
+                return model_instance.invoke(
+                    data.model,
+                    data.credentials,
+                    data.texts,
+                    data.user_id,
+                )
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
             msg,
@@ -380,19 +389,19 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeMultimodalEmbeddingRequest,
     ) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if isinstance(model_instance, TextEmbeddingModel):
-            return model_instance.invoke_multimodal(
-                data.model,
-                data.credentials,
-                data.documents,
-                user=data.user_id,
-                input_type=data.input_type,
-            )
+            with use_current_session(session):
+                return model_instance.invoke_multimodal(
+                    data.model,
+                    data.credentials,
+                    data.documents,
+                    user=data.user_id,
+                    input_type=data.input_type,
+                )
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
             msg,
@@ -422,21 +431,21 @@ class PluginExecutor:  # noqa: PLR0904
         )
 
     def invoke_rerank(self, session: Session, data: ModelInvokeRerankRequest) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if isinstance(model_instance, RerankModel):
-            return model_instance.invoke(
-                data.model,
-                data.credentials,
-                data.query,
-                data.docs,
-                data.score_threshold,
-                data.top_n,
-                data.user_id,
-            )
+            with use_current_session(session):
+                return model_instance.invoke(
+                    data.model,
+                    data.credentials,
+                    data.query,
+                    data.docs,
+                    data.score_threshold,
+                    data.top_n,
+                    data.user_id,
+                )
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
             msg,
@@ -447,21 +456,21 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeMultimodalRerankRequest,
     ) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if isinstance(model_instance, RerankModel):
-            return model_instance.invoke_multimodal(
-                data.model,
-                data.credentials,
-                data.query,
-                data.docs,
-                score_threshold=data.score_threshold,
-                top_n=data.top_n,
-                user=data.user_id,
-            )
+            with use_current_session(session):
+                return model_instance.invoke_multimodal(
+                    data.model,
+                    data.credentials,
+                    data.query,
+                    data.docs,
+                    score_threshold=data.score_threshold,
+                    top_n=data.top_n,
+                    user=data.user_id,
+                )
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
             msg,
@@ -472,26 +481,26 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeTTSRequest,
     ) -> Generator[dict[str, str], None, None]:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if isinstance(model_instance, TTSModel):
-            b = model_instance.invoke(
-                data.model,
-                data.tenant_id,
-                data.credentials,
-                data.content_text,
-                data.voice,
-                data.user_id,
-            )
-            if isinstance(b, bytes | bytearray | memoryview):
-                yield {"result": binascii.hexlify(b).decode()}
-                return
+            with use_current_session(session):
+                b = model_instance.invoke(
+                    data.model,
+                    data.tenant_id,
+                    data.credentials,
+                    data.content_text,
+                    data.voice,
+                    data.user_id,
+                )
+                if isinstance(b, bytes | bytearray | memoryview):
+                    yield {"result": binascii.hexlify(b).decode()}
+                    return
 
-            for chunk in b:
-                yield {"result": binascii.hexlify(chunk).decode()}
+                for chunk in b:
+                    yield {"result": binascii.hexlify(chunk).decode()}
         else:
             msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
             raise TypeError(
@@ -526,7 +535,6 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeSpeech2TextRequest,
     ) -> dict[str, str]:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
@@ -538,14 +546,14 @@ class PluginExecutor:  # noqa: PLR0904
 
             with pathlib.Path(temp.name).open("rb") as f:
                 if isinstance(model_instance, Speech2TextModel):
-                    return {
-                        "result": model_instance.invoke(
+                    with use_current_session(session):
+                        result = model_instance.invoke(
                             data.model,
                             data.credentials,
                             f,
                             data.user_id,
-                        ),
-                    }
+                        )
+                    return {"result": result}
                 msg = (
                     f"Model `{data.model_type}` not found for provider "
                     f"`{data.provider}`"
@@ -581,21 +589,20 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeModerationRequest,
     ) -> dict[str, bool]:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
 
         if isinstance(model_instance, ModerationModel):
-            return {
-                "result": model_instance.invoke(
+            with use_current_session(session):
+                result = model_instance.invoke(
                     data.model,
                     data.credentials,
                     data.text,
                     data.user_id,
-                ),
-            }
+                )
+            return {"result": result}
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
             msg,
