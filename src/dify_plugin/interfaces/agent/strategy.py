@@ -270,8 +270,20 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
             try:
                 prompt_tool = self._convert_tool_to_prompt_message_tool(tool)
             except Exception:
-                # api tool may be deleted
-                logger.exception("Failed to convert tool to prompt message tool")
+                # api tool may be deleted (e.g. its provider was recreated and
+                # the app's stored provider_id no longer matches any row in
+                # tool_api_providers). Naming the tool lets operators grep for
+                # the drop in plugin_daemon logs instead of guessing why the
+                # model can't see it.
+                tool_name = getattr(
+                    getattr(tool, "identity", None), "name", "<unknown>"
+                )
+                logger.warning(
+                    "Dropping tool %r from prompt: conversion failed "
+                    "(provider may be deleted or its schema is stale)",
+                    tool_name,
+                    exc_info=True,
+                )
                 continue
 
             # save prompt tool
