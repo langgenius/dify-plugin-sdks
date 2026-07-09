@@ -352,7 +352,7 @@ class ToolSelector(BaseModel):
         for name, parameter in self.tool_parameters.items():
             tool.parameters[name] = {
                 "type": parameter.type.value,
-                "description": parameter.description,
+                "description": parameter.description or "",
             }
 
             if parameter.required:

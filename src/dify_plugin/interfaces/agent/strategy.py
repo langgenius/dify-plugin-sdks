@@ -323,7 +323,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         """Convert tool to prompt message tool"""
         message_tool = PromptMessageTool(
             name=tool.identity.name,
-            description=tool.description.llm if tool.description else "",
+            description=(tool.description.llm or "") if tool.description else "",
             parameters={
                 "type": "object",
                 "properties": {},
