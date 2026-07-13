@@ -1,7 +1,6 @@
 import pathlib
 
 import pytest
-import requests
 from yarl import URL
 
 from dify_plugin.config.integration_config import IntegrationConfig, find_dify_cli_path
@@ -15,7 +14,16 @@ from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.entities.model.message import UserPromptMessage
 from dify_plugin.integration.run import PluginRunner
 
+# Import requests only after dify_plugin applies its gevent patch.
+# isort: split
+
+import requests
+
 _MARKETPLACE_API_URL = "https://marketplace.dify.ai"
+_OPENAI_PLUGIN_IDENTIFIER = (
+    "langgenius/openai:1.0.0@"
+    "c645d52efece517b10435f28da529156a86050dfa28fc4fde8089c038eee7f5a"
+)
 
 pytestmark = pytest.mark.skipif(
     find_dify_cli_path() is None,
@@ -24,21 +32,13 @@ pytestmark = pytest.mark.skipif(
 
 
 def test_invoke_llm(openai_mock_server: str) -> None:
-    # download latest langgenius-openai plugin
-    url = str(URL(_MARKETPLACE_API_URL) / "api/v1/plugins/batch")
-    response = requests.post(
-        url, json={"plugin_ids": ["langgenius/openai"]}, timeout=10
-    )
-    latest_identifier = response.json()["data"]["plugins"][0][
-        "latest_package_identifier"
-    ]
-
     url = str(
         (URL(_MARKETPLACE_API_URL) / "api/v1/plugins/download").with_query(
-            unique_identifier=latest_identifier
+            unique_identifier=_OPENAI_PLUGIN_IDENTIFIER
         )
     )
     response = requests.get(url, timeout=10)
+    response.raise_for_status()
 
     # save the response to a file
     pathlib.Path("langgenius-openai.difypkg").write_bytes(response.content)
@@ -57,8 +57,9 @@ def test_invoke_llm(openai_mock_server: str) -> None:
                 user_id="",
                 provider="openai",
                 model_type=ModelType.LLM,
-                model="gpt-3.5-turbo",
+                model="gpt-5.6",
                 credentials={
+                    "api_protocol": "chat",
                     "openai_api_base": openai_mock_server,
                     "openai_api_key": "test",
                 },
