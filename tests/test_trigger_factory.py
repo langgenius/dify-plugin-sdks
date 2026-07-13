@@ -334,6 +334,13 @@ def test_trigger_factory_error_handling() -> None:
     factory = TriggerFactory()
     session = MagicMock(spec=Session)
 
+    assert (
+        factory.get_trigger_event_handler_safely(
+            "non_existent", "non_existent", MagicMock(spec=EventRuntime)
+        )
+        is None
+    )
+
     # Test getting non-existent provider
     with pytest.raises(ValueError, match="Trigger provider `non_existent` not found"):
         factory.get_trigger_provider("non_existent", session, None, None)
