@@ -7,6 +7,24 @@ from dify_plugin.entities.model.provider import ProviderEntity
 from dify_plugin.interfaces.model import ModelProvider
 
 
+def test_provider_dark_icons_are_preserved() -> None:
+    icon_small_dark = I18nObject(en_us="small-dark.svg")
+    icon_large_dark = I18nObject(en_us="large-dark.svg")
+    provider = ProviderEntity(
+        provider="test",
+        label=I18nObject(en_us="test"),
+        icon_small_dark=icon_small_dark,
+        icon_large_dark=icon_large_dark,
+        supported_model_types=[ModelType.LLM],
+        configurate_methods=[],
+    )
+
+    simple_provider = provider.to_simple_provider()
+
+    assert simple_provider.icon_small_dark == icon_small_dark
+    assert simple_provider.icon_large_dark == icon_large_dark
+
+
 def test_construct_model_provider() -> None:
     """
     Ensure ModelProvider constructor is intact and usable.
