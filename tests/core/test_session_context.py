@@ -2,9 +2,11 @@ from collections.abc import Generator
 from unittest.mock import MagicMock
 
 import dify_plugin
+from dify_plugin.core.entities.plugin.request import ModelInvokeTextEmbeddingRequest
 from dify_plugin.core.plugin_executor import PluginExecutor
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.session_context import get_current_session
+from dify_plugin.entities.model import EmbeddingInputType
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 
@@ -36,15 +38,18 @@ def _llm_data() -> MagicMock:
     return data
 
 
-def _text_embedding_data() -> MagicMock:
-    data = MagicMock()
-    data.provider = "provider"
-    data.model_type = "text-embedding"
-    data.model = "model"
-    data.credentials = {}
-    data.texts = ["hello"]
-    data.user_id = "user"
-    return data
+def _text_embedding_data() -> ModelInvokeTextEmbeddingRequest:
+    return ModelInvokeTextEmbeddingRequest.model_validate({
+        "type": "model",
+        "action": "invoke_text_embedding",
+        "user_id": "user",
+        "provider": "provider",
+        "model_type": "text-embedding",
+        "model": "model",
+        "credentials": {},
+        "texts": ["hello"],
+        "input_type": "query",
+    })
 
 
 def test_get_current_session_is_public() -> None:
@@ -71,10 +76,10 @@ def test_llm_stream_keeps_session_until_consumed() -> None:
     assert get_current_session() is None
 
 
-def test_text_embedding_exposes_session_during_invoke() -> None:
+def test_text_embedding_forwards_input_type_and_exposes_session() -> None:
     seen: list[Session | None] = []
 
-    def invoke(*_args: object) -> list[str]:
+    def invoke(*_args: object, **_kwargs: object) -> list[str]:
         seen.append(get_current_session())
         return ["embedding"]
 
@@ -87,3 +92,10 @@ def test_text_embedding_exposes_session_during_invoke() -> None:
     assert seen[0] is not None
     assert seen[0].app_id == "app-1"
     assert get_current_session() is None
+    model.invoke.assert_called_once_with(
+        "model",
+        {},
+        ["hello"],
+        user="user",
+        input_type=EmbeddingInputType.QUERY,
+    )

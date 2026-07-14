@@ -203,6 +203,7 @@ class ModelInvokeTextEmbeddingRequest(PluginAccessModelRequest):
     action: ModelActions = ModelActions.InvokeTextEmbedding
 
     texts: list[str]
+    input_type: EmbeddingInputType
 
 
 class ModelInvokeMultimodalEmbeddingRequest(PluginAccessModelRequest):
