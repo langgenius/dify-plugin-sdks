@@ -62,7 +62,7 @@ export PATH="${DIFY_BIN}:${PATH}"
 # Add to PATH if not already there and if not in CI environment
 if [[ ":$PATH:" != *":${DIFY_BIN}:"* ]] && [[ -z "${CI}" ]]; then
   echo "Adding ${DIFY_BIN} to PATH in your profile..."
-  
+
   # Determine shell profile file
   SHELL_PROFILE=""
   if [[ -n "$BASH_VERSION" ]]; then
@@ -74,7 +74,7 @@ if [[ ":$PATH:" != *":${DIFY_BIN}:"* ]] && [[ -z "${CI}" ]]; then
   elif [[ -n "$ZSH_VERSION" ]]; then
     SHELL_PROFILE="$HOME/.zshrc"
   fi
-  
+
   if [[ -n "$SHELL_PROFILE" ]]; then
     echo "export PATH=\"${DIFY_BIN}:\$PATH\"" >> "$SHELL_PROFILE"
     echo "Added ${DIFY_BIN} to PATH in ${SHELL_PROFILE}"

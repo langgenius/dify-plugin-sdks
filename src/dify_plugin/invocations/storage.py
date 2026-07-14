@@ -1,0 +1,108 @@
+from binascii import hexlify, unhexlify
+
+from dify_plugin.core.entities.invocation import InvokeType
+from dify_plugin.core.runtime import BackwardsInvocation
+
+
+class StorageInvocationError(Exception):
+    """StorageInvocationError is a custom exception raised
+    when an issue occurs during the execution of a storage invocation.
+    """
+
+
+class StorageInvocation(BackwardsInvocation[dict]):
+    def set(self, key: str, val: bytes) -> None:
+        """Set a value into persistence storage.
+
+        :raises:
+            StorageInvocationError: If the invocation returns an invalid data.
+
+        Raises:
+            StorageInvocationError: If the storage invocation fails.
+        """
+        for data in self._backwards_invoke(
+            InvokeType.Storage,
+            dict,
+            {"opt": "set", "key": key, "value": hexlify(val).decode()},
+        ):
+            if data["data"] == "ok":
+                return
+
+            msg = f"unexpected data: {data['data']}"
+            raise StorageInvocationError(msg)
+
+    def get(self, key: str) -> bytes:
+        """Get a key from persistence storage.
+
+        :raises:
+            NotFoundError: If the caller gets a key that does not exist.
+
+        Returns:
+            The return value.
+
+        Raises:
+            StorageInvocationError: If the storage invocation fails.
+        """
+        for data in self._backwards_invoke(
+            InvokeType.Storage,
+            dict,
+            {
+                "opt": "get",
+                "key": key,
+            },
+        ):
+            return unhexlify(data["data"])
+
+        msg = "no data found"
+        raise StorageInvocationError(msg)
+
+    def delete(self, key: str) -> None:
+        """Delete a key from persistence storage.
+
+        :raises:
+            StorageInvocationError: If the invocation returns an invalid data.
+
+        Raises:
+            StorageInvocationError: If the storage invocation fails.
+        """
+        for data in self._backwards_invoke(
+            InvokeType.Storage,
+            dict,
+            {
+                "opt": "del",
+                "key": key,
+            },
+        ):
+            if data["data"] == "ok":
+                return
+
+            msg = f"unexpected data: {data['data']}"
+            raise StorageInvocationError(msg)
+
+        msg = "no data found"
+        raise StorageInvocationError(msg)
+
+    def exist(self, key: str) -> bool:
+        """Check for the existence of a key in persistence storage.
+
+        :raises:
+            StorageInvocationError: If the invocation does not return any data.
+
+        Returns:
+            The return value.
+
+        Raises:
+            StorageInvocationError: If the storage invocation fails.
+        """
+        for data in self._backwards_invoke(
+            InvokeType.Storage,
+            dict,
+            {
+                "opt": "exist",
+                "key": key,
+            },
+        ):
+            return data["data"]
+
+        msg = "no data found"
+        raise StorageInvocationError(msg)

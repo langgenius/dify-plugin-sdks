@@ -1,16 +1,60 @@
-## Dify Plugin SDK
+# Dify Plugin SDK
 
-A SDK sets for building plugins for Dify, including the following languages:
-
-- Python
+A Python SDK for building plugins for Dify.
 
 Here is a short introduction to Dify Plugin: <https://docs.dify.ai/plugins/introduction>
 
-## SDK Version Management
+## Development
 
-### Python SDK
+This repository uses [`just`](https://github.com/casey/just) as its command runner.
+Install it with your preferred package manager, or with uv:
 
-Always follow the [Semantic Versioning](https://semver.org/) for the Python SDK, for more details, please refer to [Python SDK README](./python/README.md).
+```bash
+uv tool install rust-just
+```
+
+Common development commands:
+
+```bash
+just dev      # Sync default dev dependencies
+just check    # Check lockfile, formatting, and linting
+just test     # Run all tests
+just build    # Build source and wheel distributions
+```
+
+## LLM Polling Support
+
+SDK 0.9.0 adds support for polling-based LLM invocation. A model can now
+declare the `polling` feature and implement polling methods, allowing plugins
+to submit long-running provider jobs and return later checks through a short
+request/response flow.
+
+Polling results use three states:
+
+- `running` returns plugin-owned state for the next check.
+- `succeeded` returns the final LLM result.
+- `failed` returns a terminal error.
+
+## Version Management
+
+This SDK follows Semantic Versioning (a.b.c):
+
+- a: Major version - Indicates significant architectural changes or incompatible API modifications
+- b: Minor version - Indicates new feature additions while maintaining backward compatibility
+- c: Patch version - Indicates backward-compatible bug fixes
+
+### For SDK Users
+
+When depending on this SDK, it's recommended to specify version constraints that:
+
+- Allow patch and minor updates for bug fixes and new features
+- Prevent major version updates to avoid breaking changes
+
+Example in your project's dependency management:
+
+```python
+dify_plugin >= 0.8
+```
 
 ## Manifest Version Reference
 
@@ -41,3 +85,5 @@ For the manifest specification, we've introduced two versioning fields:
 | 1.9.0                | 0.5.0         | Support Datasource functionality for plugins       |
 | 1.10.0               | 0.6.0         | Support Trigger functionality for plugins          |
 | 1.11.0               | 0.7.0         | Support Multimodal Reranking / Embeddings          |
+| 1.14.0               | 0.8.1         | Dependency and project structure cleanup           |
+| 1.14.2               | 0.9.0         | Support polling-based LLM plugin invocations       |

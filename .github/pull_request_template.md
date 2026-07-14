@@ -12,5 +12,5 @@ Thank you for your contribution! Before submitting your PR, please make sure you
 
 ## Available Checks
 
-- [ ] Code has passed local tests
+- [ ] `just build` has passed
 - [ ] Relevant documentation has been updated (if necessary)
