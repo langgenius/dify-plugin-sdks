@@ -5,18 +5,15 @@ from typing import Any
 from pydantic import BaseModel
 
 from dify_plugin.core.entities.plugin.request import (
-    AgentActions,
-    EndpointActions,
-    ModelActions,
+    PluginAccessAction,
     PluginInvokeType,
-    ToolActions,
 )
 
 
 class PluginInvokeRequest[T: BaseModel](BaseModel):
     invoke_id: str
     type: PluginInvokeType
-    action: AgentActions | ToolActions | ModelActions | EndpointActions
+    action: PluginAccessAction
     request: T
 
 
