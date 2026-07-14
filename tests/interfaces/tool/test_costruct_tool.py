@@ -97,3 +97,59 @@ def test_fetch_parameter_options() -> None:
     assert tool.fetch_parameter_options("test") == [
         ParameterOption(value="test", label=I18nObject(en_us="test"))
     ]
+
+
+def test_fetch_tree_parameter_options() -> None:
+    """
+    Test that the Tool can fetch tree parameter options with nested children
+    """
+
+    class ToolImpl(Tool):
+        def _invoke(
+            self, tool_parameters: Mapping
+        ) -> Generator[ToolInvokeMessage, None, None]:
+            del tool_parameters
+            yield self.create_text_message("Hello, world!")
+
+        def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+            del parameter
+            return [
+                ParameterOption(
+                    value="root",
+                    label=I18nObject(en_us="Root"),
+                    children=[
+                        ParameterOption(
+                            value="child1", label=I18nObject(en_us="Child 1")
+                        ),
+                        ParameterOption(
+                            value="child2",
+                            label=I18nObject(en_us="Child 2"),
+                            children=[
+                                ParameterOption(
+                                    value="grandchild",
+                                    label=I18nObject(en_us="Grandchild"),
+                                )
+                            ],
+                        ),
+                    ],
+                )
+            ]
+
+    session = Session(
+        session_id="test",
+        executor=ThreadPoolExecutor(max_workers=1),
+        reader=StdioRequestReader(),
+        writer=StdioResponseWriter(),
+    )
+
+    tool = ToolImpl(
+        runtime=ToolRuntime(credentials={}, user_id="test", session_id="test"),
+        session=session,
+    )
+    options = tool.fetch_parameter_options("test")
+    assert len(options) == 1
+    assert options[0].value == "root"
+    assert options[0].children is not None
+    assert len(options[0].children) == 2
+    assert options[0].children[1].children is not None
+    assert options[0].children[1].children[0].value == "grandchild"
