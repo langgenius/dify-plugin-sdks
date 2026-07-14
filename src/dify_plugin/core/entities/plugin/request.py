@@ -103,6 +103,7 @@ PluginAccessAction = (
     | ToolActions
     | ModelActions
     | EndpointActions
+    | OAuthActions
     | DynamicParameterActions
     | DatasourceActions
 )
