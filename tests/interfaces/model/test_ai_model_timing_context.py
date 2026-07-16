@@ -68,8 +68,11 @@ def test_ai_model_timing_context_multiple_sequential_uses() -> None:
 def test_ai_model_timing_context_resets_after_error() -> None:
     model = MockAIModel(model_schemas=[])
 
-    with pytest.raises(RuntimeError), model.timing_context():
+    def fail() -> None:
         raise RuntimeError
+
+    with pytest.raises(RuntimeError), model.timing_context():
+        fail()
 
     assert model.started_at == 0
 

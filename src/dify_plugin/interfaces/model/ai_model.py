@@ -283,7 +283,7 @@ class AIModel(ABC):
                     if not rule.help.zh_hans and "zh_Hans" in help_template:
                         rule.help.zh_hans = help_template["zh_Hans"]
             except ValueError:
-                pass
+                continue
         return schema
 
     def get_customizable_model_schema(

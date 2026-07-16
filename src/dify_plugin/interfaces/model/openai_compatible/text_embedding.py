@@ -1,5 +1,6 @@
 import json
 import time
+from contextlib import suppress
 from decimal import Decimal
 from http import HTTPStatus
 
@@ -202,7 +203,8 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
                 msg = "Credentials validation failed: invalid response"
                 raise CredentialsValidateFailedError(msg)
         finally:
-            response.close()
+            with suppress(Exception):
+                response.close()
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict
