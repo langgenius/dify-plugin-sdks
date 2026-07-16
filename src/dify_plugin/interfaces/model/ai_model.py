@@ -257,13 +257,6 @@ class AIModel(ABC):
         if not schema:
             return None
 
-        # Preserve the legacy override hook without reapplying the built-in template.
-        if (
-            type(self)._get_default_parameter_rule_variable_map  # noqa: SLF001
-            is AIModel._get_default_parameter_rule_variable_map
-        ):
-            return schema
-
         for rule in schema.parameter_rules:
             if not rule.use_template:
                 continue
@@ -271,19 +264,19 @@ class AIModel(ABC):
                 template = self._get_default_parameter_rule_variable_map(
                     DefaultParameterName.value_of(rule.use_template)
                 )
-                for field in ("max", "min", "default", "precision"):
-                    if getattr(rule, field) is None and field in template:
-                        setattr(rule, field, template[field])
-                help_template = template.get("help", {})
-                if not rule.help and "help" in template:
-                    rule.help = I18nObject(en_us=help_template["en_US"])
-                elif rule.help:
-                    if not rule.help.en_us and "en_US" in help_template:
-                        rule.help.en_us = help_template["en_US"]
-                    if not rule.help.zh_hans and "zh_Hans" in help_template:
-                        rule.help.zh_hans = help_template["zh_Hans"]
             except ValueError:
                 continue
+            for field in ("max", "min", "default", "precision"):
+                if getattr(rule, field) is None and field in template:
+                    setattr(rule, field, template[field])
+            help_template = template.get("help", {})
+            if not rule.help and "help" in template:
+                rule.help = I18nObject(en_us=help_template["en_US"])
+            elif rule.help:
+                if not rule.help.en_us and "en_US" in help_template:
+                    rule.help.en_us = help_template["en_US"]
+                if not rule.help.zh_hans and "zh_Hans" in help_template:
+                    rule.help.zh_hans = help_template["zh_Hans"]
         return schema
 
     def get_customizable_model_schema(

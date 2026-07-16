@@ -72,7 +72,6 @@ ignore = [
     'TC',      # Runtime use of typing constructs is common now.
     'TID252',  # Too absolute.
     'PLR6301', # Violates the usual practice.
-    'PLW0717',
     'COM812',  # Conflicts with `ruff format`.
     'CPY',     # Covered by the standalone LICENSE file.
     'D',       # Too verbose.

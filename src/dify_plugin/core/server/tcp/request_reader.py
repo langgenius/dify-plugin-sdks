@@ -181,9 +181,9 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                     self._launch()
                 continue
 
+            with self._state_lock:
+                sock = self.sock
             try:
-                with self._state_lock:
-                    sock = self.sock
                 data = self._receive_available(sock)
                 if data == b"":
                     msg = "Connection is closed"
