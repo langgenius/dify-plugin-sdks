@@ -2,7 +2,7 @@
 
 import os
 import shutil
-import subprocess  # noqa: S404
+import subprocess  # ruff:ignore[suspicious-subprocess-import]
 
 from packaging.version import Version
 from pydantic import Field, field_validator
@@ -50,7 +50,7 @@ class IntegrationConfig(BaseSettings):
                 raise ValueError(msg)
 
         # check dify version
-        version = subprocess.check_output([v, "version"]).decode("utf-8")  # noqa: S603
+        version = subprocess.check_output([v, "version"]).decode("utf-8")  # ruff:ignore[subprocess-without-shell-equals-true]
 
         try:
             version = Version(version)

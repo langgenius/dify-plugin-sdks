@@ -251,7 +251,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         Returns:
             The return value.
         """
-        import tiktoken  # noqa: PLC0415
+        import tiktoken  # ruff:ignore[import-outside-top-level]
 
         text = " ".join([
             prompt.content

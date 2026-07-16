@@ -69,7 +69,7 @@ class RequestReader(ABC):
             except Exception:
                 logger.exception("Error writing to reader")
 
-    def read(self, filter: Callable[["PluginInStream"], bool]) -> FilterReader:  # noqa: A002
+    def read(self, filter: Callable[["PluginInStream"], bool]) -> FilterReader:  # ruff:ignore[builtin-argument-shadowing]
         def close(reader: FilterReader) -> None:
             self.lock.acquire()
             try:

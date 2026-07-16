@@ -20,7 +20,7 @@ from dify_plugin.core.server.serverless.response_writer import ServerlessRespons
 class ServerlessRequestReader(RequestReader):
     def __init__(
         self,
-        host: str = "0.0.0.0",  # noqa: S104
+        host: str = "0.0.0.0",  # ruff:ignore[hardcoded-bind-all-interfaces]
         port: int = 8080,
         worker_class: str = "gevent",
         workers: int = 5,

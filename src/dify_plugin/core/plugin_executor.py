@@ -93,7 +93,7 @@ if TYPE_CHECKING:
     from dify_plugin.interfaces.tool import Tool
 
 
-class PluginExecutor:  # noqa: PLR0904
+class PluginExecutor:  # ruff:ignore[too-many-public-methods]
     def __init__(self, config: DifyPluginEnv, registration: PluginRegistration) -> None:
         self.config = config
         self.registration = registration

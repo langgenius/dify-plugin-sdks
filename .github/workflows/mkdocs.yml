@@ -20,12 +20,12 @@ jobs:
     runs-on: depot-ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
       - name: Setup uv and Python
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
           cache-dependency-glob: uv.lock
           python-version: ${{ matrix.python-version }}
@@ -40,7 +40,7 @@ jobs:
         run: just docs
 
       - name: Deploy docs
-        uses: mhausenblas/mkdocs-deploy-gh-pages@master
+        uses: mhausenblas/mkdocs-deploy-gh-pages@d77dd03172e96abbcdb081d8c948224762033653 # 1.26
         # Or use mhausenblas/mkdocs-deploy-gh-pages@nomaterial to build without the mkdocs-material theme
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

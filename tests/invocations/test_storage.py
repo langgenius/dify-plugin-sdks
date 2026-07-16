@@ -19,7 +19,7 @@ class DummyStorageInvocation(StorageInvocation):
 
     def _backwards_invoke(
         self,
-        type: InvokeType,  # noqa: A002
+        type: InvokeType,  # ruff:ignore[builtin-argument-shadowing]
         data_type: type[dict],
         data: dict,
     ) -> Generator[dict, None, None]:

@@ -394,7 +394,7 @@ class AIModel(ABC):
             return len(text)
 
         # check if gevent is patched to main thread
-        import tiktoken  # noqa: PLC0415
+        import tiktoken  # ruff:ignore[import-outside-top-level]
 
         if socket.socket is gevent.socket.socket:
             # using gevent real thread to avoid blocking main thread

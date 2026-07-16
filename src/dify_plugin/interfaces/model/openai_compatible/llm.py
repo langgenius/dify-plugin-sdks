@@ -1,4 +1,4 @@
-# ruff: noqa: RUF001
+# ruff:file-ignore[ambiguous-unicode-character-string]
 
 import codecs
 import json
