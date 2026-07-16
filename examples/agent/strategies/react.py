@@ -256,15 +256,14 @@ class ReActAgentStrategy(AgentStrategy):
             else:
                 if scratchpad.action.action_name.lower() == "final answer":
                     # action is final answer, return final answer directly
-                    try:
-                        if isinstance(scratchpad.action.action_input, dict):
-                            final_answer = json.dumps(scratchpad.action.action_input)
-                        elif isinstance(scratchpad.action.action_input, str):
-                            final_answer = scratchpad.action.action_input
-                        else:
-                            final_answer = f"{scratchpad.action.action_input}"
-                    except json.JSONDecodeError:
-                        final_answer = f"{scratchpad.action.action_input}"
+                    action_input = scratchpad.action.action_input
+                    if isinstance(action_input, dict):
+                        try:
+                            final_answer = json.dumps(action_input)
+                        except (TypeError, ValueError):
+                            final_answer = str(action_input)
+                    else:
+                        final_answer = str(action_input)
                 else:
                     run_agent_state = True
                     # action is tool call, invoke tool
@@ -481,20 +480,19 @@ class ReActAgentStrategy(AgentStrategy):
                 credential_id=tool_instance.credential_id,
             )
             result = ""
-            additional_messages = []  # Collect messages that need to be yielded
+            additional_messages: list[ToolInvokeMessage] = []
             for response in tool_invoke_responses:
                 if response.type == ToolInvokeMessage.MessageType.TEXT:
                     result += cast(
-                        "ToolInvokeMessage.TextMessage", response.message
+                        "ToolInvokeMessage.TextMessage",
+                        response.message,
                     ).text
                 elif response.type == ToolInvokeMessage.MessageType.LINK:
                     link_text = cast(
                         "ToolInvokeMessage.TextMessage",
                         response.message,
                     ).text
-                    result += (
-                        f"result link: {link_text}." + " please tell user to check it."
-                    )
+                    result += f"result link: {link_text}. please tell user to check it."
                 elif response.type in IMAGE_RESPONSE_TYPES:
                     # Pass through the original image response for upper layers.
                     additional_messages.append(response)

@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from http import HTTPStatus
 from typing import Any
 
-import requests
+import urllib3_future
 
 from dify_plugin import Tool
 from dify_plugin.entities.provider_config import CredentialType
@@ -59,91 +59,79 @@ class GithubRepositoryIssuesTool(Tool):
             return
 
         access_token = self.runtime.credentials.get("access_tokens")
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {access_token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        url = f"https://api.github.com/repos/{owner}/{repo}/issues"
+        params = {
+            "state": state,
+            "per_page": per_page,
+            "sort": sort,
+            "direction": direction,
+        }
+
         try:
-            headers = {
-                "Content-Type": "application/vnd.github+json",
-                "Authorization": f"Bearer {access_token}",
-                "X-GitHub-Api-Version": "2022-11-28",
-            }
-            s = requests.session()
-            api_domain = "https://api.github.com"
-            url = f"{api_domain}/repos/{owner}/{repo}/issues"
-
-            params = {
-                "state": state,
-                "per_page": per_page,
-                "sort": sort,
-                "direction": direction,
-            }
-
-            response = s.request(
-                method="GET",
+            response = urllib3_future.request(
+                "GET",
                 headers=headers,
                 url=url,
-                params=params,
+                fields=params,
+                timeout=10,
             )
-
-            if response.status_code == HTTPStatus.OK:
-                response_data = response.json()
-
-                issues = []
-                for issue in response_data:
-                    # Skip pull requests (they also appear in issues API)
-                    if issue.get("pull_request"):
-                        continue
-
-                    issue_info = {
-                        "number": issue.get("number", 0),
-                        "title": issue.get("title", ""),
-                        "body": (issue.get("body", "") or "")[:BODY_PREVIEW_LENGTH]
-                        + "..."
-                        if len(issue.get("body", "") or "") > BODY_PREVIEW_LENGTH
-                        else (issue.get("body", "") or ""),
-                        "state": issue.get("state", ""),
-                        "url": issue.get("html_url", ""),
-                        "user": issue.get("user", {}).get("login", ""),
-                        "assignee": issue.get("assignee", {}).get("login", "")
-                        if issue.get("assignee")
-                        else "",
-                        "labels": [
-                            label.get("name", "") for label in issue.get("labels", [])
-                        ],
-                        "comments": issue.get("comments", 0),
-                        "created_at": _format_github_timestamp(
-                            issue.get("created_at", "")
-                        )
-                        if issue.get("created_at")
-                        else "",
-                        "updated_at": _format_github_timestamp(
-                            issue.get("updated_at", "")
-                        )
-                        if issue.get("updated_at")
-                        else "",
-                    }
-                    issues.append(issue_info)
-
-                s.close()
-
-                if not issues:
-                    yield self.create_text_message(
-                        f"No {state} issues found in {owner}/{repo}"
-                    )
-                else:
-                    yield self.create_text_message(
-                        self.session.model.summary.invoke(
-                            text=json.dumps(issues, ensure_ascii=False),
-                            instruction=(
-                                "Summarize the GitHub issues in a structured format"
-                            ),
-                        )
-                    )
-            else:
-                response_data = response.json()
+            response_data = response.json()
+            if response.status != HTTPStatus.OK:
                 message = response_data.get("message", "Unknown error")
-                msg = f"Request failed: {response.status_code} {message}"
+                msg = f"Request failed: {response.status} {message}"
                 raise InvokeError(msg)
+
+            issues = []
+            for issue in response_data:
+                # Skip pull requests (they also appear in issues API)
+                if issue.get("pull_request"):
+                    continue
+
+                issue_info = {
+                    "number": issue.get("number", 0),
+                    "title": issue.get("title", ""),
+                    "body": (issue.get("body", "") or "")[:BODY_PREVIEW_LENGTH] + "..."
+                    if len(issue.get("body", "") or "") > BODY_PREVIEW_LENGTH
+                    else (issue.get("body", "") or ""),
+                    "state": issue.get("state", ""),
+                    "url": issue.get("html_url", ""),
+                    "user": issue.get("user", {}).get("login", ""),
+                    "assignee": issue.get("assignee", {}).get("login", "")
+                    if issue.get("assignee")
+                    else "",
+                    "labels": [
+                        label.get("name", "") for label in issue.get("labels", [])
+                    ],
+                    "comments": issue.get("comments", 0),
+                    "created_at": _format_github_timestamp(issue.get("created_at", ""))
+                    if issue.get("created_at")
+                    else "",
+                    "updated_at": _format_github_timestamp(issue.get("updated_at", ""))
+                    if issue.get("updated_at")
+                    else "",
+                }
+                issues.append(issue_info)
+
+            if not issues:
+                yield self.create_text_message(
+                    f"No {state} issues found in {owner}/{repo}"
+                )
+            else:
+                yield self.create_text_message(
+                    self.session.model.summary.invoke(
+                        text=json.dumps(issues, ensure_ascii=False),
+                        instruction=(
+                            "Summarize the GitHub issues in a structured format"
+                        ),
+                    )
+                )
         except InvokeError:
             raise
-        except Exception as e:
-            msg = f"GitHub API request failed: {e}"
-            raise InvokeError(msg) from e
+        except Exception as exc:
+            msg = f"GitHub API request failed: {exc}"
+            raise InvokeError(msg) from exc

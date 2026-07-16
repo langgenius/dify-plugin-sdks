@@ -5,6 +5,7 @@ import json
 import logging
 import uuid
 from collections.abc import Generator, Mapping
+from contextlib import suppress
 from decimal import Decimal
 from http import HTTPStatus
 from typing import Any, cast
@@ -191,41 +192,27 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             CredentialsValidateFailedError: If credentials validation fails.
             ValueError: If input values are invalid.
         """
-        response: requests.Response | None = None
         try:
             headers = {"Content-Type": "application/json"}
             extra_headers = credentials.get("extra_headers")
             if extra_headers is not None:
-                headers = {
-                    **headers,
-                    **extra_headers,
-                }
+                headers = {**headers, **extra_headers}
 
-            api_key = credentials.get("api_key")
-            if api_key:
+            if api_key := credentials.get("api_key"):
                 headers["Authorization"] = f"Bearer {api_key}"
 
             endpoint_url = credentials["endpoint_url"]
-
-            # prepare the payload for a simple ping to the model
-            validate_credentials_max_tokens = (
-                credentials.get("validate_credentials_max_tokens", 5) or 5
-            )
-            data = {
+            stream = credentials.get("stream_mode_auth", "not_use") == "use"
+            data: dict[str, Any] = {
                 "model": credentials.get("endpoint_model_name", model),
-                "max_tokens": validate_credentials_max_tokens,
+                "max_tokens": credentials.get("validate_credentials_max_tokens")
+                or (10 if stream else 5),
             }
-
             completion_type = LLMMode.value_of(credentials["mode"])
 
             if completion_type is LLMMode.CHAT:
-                data["messages"] = [
-                    {"role": "user", "content": "ping"},
-                ]
-                endpoint_url = self._join_endpoint_url(
-                    endpoint_url,
-                    "chat/completions",
-                )
+                data["messages"] = [{"role": "user", "content": "ping"}]
+                endpoint_url = self._join_endpoint_url(endpoint_url, "chat/completions")
             elif completion_type is LLMMode.COMPLETION:
                 data["prompt"] = "ping"
                 endpoint_url = self._join_endpoint_url(endpoint_url, "completions")
@@ -233,110 +220,72 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 msg = "Unsupported completion type for model configuration."
                 raise ValueError(msg)
 
-            # ADD stream validate_credentials
-            stream_mode_auth = credentials.get("stream_mode_auth", "not_use")
-            if stream_mode_auth == "use":
-                stream_validate_max_tokens = (
-                    credentials.get("validate_credentials_max_tokens") or 10
-                )
+            if stream:
                 data["stream"] = True
-                # default 10 (introduced in PR #93) to ensure streaming
-                # endpoints emit a token chunk;
-                # allow overriding via credentials when explicitly provided.
-                data["max_tokens"] = stream_validate_max_tokens
-                response = requests.post(
-                    endpoint_url,
-                    headers=headers,
-                    json=data,
-                    timeout=(10, 300),
-                    stream=True,
-                )
-                if response.status_code != HTTPStatus.OK:
-                    msg = (
-                        "Credentials validation failed with status code "
-                        f"{response.status_code} and response body {response.text}"
-                    )
-                    raise CredentialsValidateFailedError(
-                        msg,
-                    )
-                return
 
-            # send a post request to validate the credentials
             response = requests.post(
                 endpoint_url,
                 headers=headers,
                 json=data,
                 timeout=(10, 300),
+                **({"stream": True} if stream else {}),
             )
+        except Exception as ex:
+            msg = f"An error occurred during credentials validation: {ex!s}"
+            raise CredentialsValidateFailedError(msg) from ex
 
-            if response.status_code != HTTPStatus.OK:
+        try:
+            try:
+                status_code = response.status_code
+                response_body = response.text if status_code != HTTPStatus.OK else None
+            except Exception as ex:
+                msg = f"An error occurred during credentials validation: {ex!s}"
+                raise CredentialsValidateFailedError(msg) from ex
+
+            if status_code != HTTPStatus.OK:
                 msg = (
                     "Credentials validation failed with status code "
-                    f"{response.status_code} and response body {response.text}"
+                    f"{status_code} and response body {response_body}"
                 )
-                raise CredentialsValidateFailedError(
-                    msg,
-                )
+                raise CredentialsValidateFailedError(msg)
+            if stream:
+                return
 
             try:
-                json_result = response.json()
-            except json.JSONDecodeError:
-                msg = (
-                    "Credentials validation failed: JSON decode error, "
-                    f"response body {response.text}"
-                )
-                raise CredentialsValidateFailedError(
-                    msg,
-                ) from None
+                try:
+                    json_result = response.json()
+                except json.JSONDecodeError:
+                    msg = (
+                        "Credentials validation failed: JSON decode error, "
+                        f"response body {response.text}"
+                    )
+                    raise CredentialsValidateFailedError(msg) from None
 
-            if (
-                completion_type is LLMMode.CHAT
-                and json_result.get("object", "") == EMPTY_STRING
-            ):
-                json_result["object"] = "chat.completion"
-            elif (
-                completion_type is LLMMode.COMPLETION
-                and json_result.get("object", "") == EMPTY_STRING
-            ):
-                json_result["object"] = "text_completion"
+                expected_object = (
+                    "chat.completion"
+                    if completion_type is LLMMode.CHAT
+                    else "text_completion"
+                )
+                if json_result.get("object", "") == EMPTY_STRING:
+                    json_result["object"] = expected_object
 
-            if completion_type is LLMMode.CHAT and (
-                "object" not in json_result
-                or json_result["object"] != "chat.completion"
-            ):
-                msg = (
-                    f"Credentials validation failed: invalid response object, "
-                    f"must be 'chat.completion', response body {response.text}"
-                )
-                raise CredentialsValidateFailedError(
-                    msg,
-                )
-            if completion_type is LLMMode.COMPLETION and (
-                "object" not in json_result
-                or json_result["object"] != "text_completion"
-            ):
-                msg = (
-                    f"Credentials validation failed: invalid response object, "
-                    f"must be 'text_completion', response body {response.text}"
-                )
-                raise CredentialsValidateFailedError(
-                    msg,
-                )
-        except CredentialsValidateFailedError:
-            raise
-        except Exception as ex:
-            if response:
+                if json_result["object"] != expected_object:
+                    msg = (
+                        "Credentials validation failed: invalid response object, "
+                        f"must be '{expected_object}', response body {response.text}"
+                    )
+                    raise CredentialsValidateFailedError(msg)
+            except CredentialsValidateFailedError:
+                raise
+            except Exception as ex:
                 msg = (
                     "An error occurred during credentials validation: "
                     f"{ex!s}, response body {response.text}"
                 )
-                raise CredentialsValidateFailedError(
-                    msg,
-                ) from ex
-            msg = f"An error occurred during credentials validation: {ex!s}"
-            raise CredentialsValidateFailedError(
-                msg,
-            ) from ex
+                raise CredentialsValidateFailedError(msg) from ex
+        finally:
+            with suppress(Exception):
+                response.close()
 
     def get_customizable_model_schema(
         self,

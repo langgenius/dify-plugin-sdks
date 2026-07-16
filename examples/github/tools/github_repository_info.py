@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from http import HTTPStatus
 from typing import Any
 
-import requests
+import urllib3_future
 
 from dify_plugin import Tool
 from dify_plugin.entities.provider_config import CredentialType
@@ -55,84 +55,66 @@ class GithubRepositoryInfoTool(Tool):
         access_token = self.runtime.credentials.get("access_tokens")
         try:
             headers = {
-                "Content-Type": "application/vnd.github+json",
+                "Accept": "application/vnd.github+json",
                 "Authorization": f"Bearer {access_token}",
                 "X-GitHub-Api-Version": "2022-11-28",
             }
-            s = requests.session()
-            api_domain = "https://api.github.com"
-            url = f"{api_domain}/repos/{owner}/{repo}"
+            url = f"https://api.github.com/repos/{owner}/{repo}"
 
-            response = s.request(
-                method="GET",
-                headers=headers,
-                url=url,
-            )
+            response = urllib3_future.request("GET", url, headers=headers, timeout=10)
+            response_data = response.json()
 
-            if response.status_code == HTTPStatus.OK:
-                response_data = response.json()
-
-                # Extract key information
-                repo_info = {
-                    "name": response_data.get("name", ""),
-                    "full_name": response_data.get("full_name", ""),
-                    "description": response_data.get("description", ""),
-                    "url": response_data.get("html_url", ""),
-                    "clone_url": response_data.get("clone_url", ""),
-                    "ssh_url": response_data.get("ssh_url", ""),
-                    "language": response_data.get("language", ""),
-                    "stars": response_data.get("stargazers_count", 0),
-                    "forks": response_data.get("forks_count", 0),
-                    "watchers": response_data.get("watchers_count", 0),
-                    "open_issues": response_data.get("open_issues_count", 0),
-                    "size": response_data.get("size", 0),
-                    "default_branch": response_data.get("default_branch", ""),
-                    "is_private": response_data.get("private", False),
-                    "is_fork": response_data.get("fork", False),
-                    "is_archived": response_data.get("archived", False),
-                    "license": response_data.get("license", {}).get("name", "")
-                    if response_data.get("license")
-                    else "",
-                    "created_at": _format_github_timestamp(
-                        response_data.get("created_at", "")
-                    )
-                    if response_data.get("created_at")
-                    else "",
-                    "updated_at": _format_github_timestamp(
-                        response_data.get("updated_at", "")
-                    )
-                    if response_data.get("updated_at")
-                    else "",
-                    "pushed_at": _format_github_timestamp(
-                        response_data.get("pushed_at", "")
-                    )
-                    if response_data.get("pushed_at")
-                    else "",
-                    "topics": response_data.get("topics", []),
-                    "owner": {
-                        "login": response_data.get("owner", {}).get("login", ""),
-                        "type": response_data.get("owner", {}).get("type", ""),
-                        "url": response_data.get("owner", {}).get("html_url", ""),
-                    },
-                }
-
-                s.close()
-                yield self.create_text_message(
-                    self.session.model.summary.invoke(
-                        text=json.dumps(repo_info, ensure_ascii=False),
-                        instruction=(
-                            "Summarize the repository information in a "
-                            "structured format"
-                        ),
-                    )
-                )
-            else:
-                response_data = response.json()
+            if response.status != HTTPStatus.OK:
                 message = response_data.get("message", "Unknown error")
-                msg = f"Request failed: {response.status_code} {message}"
+                msg = f"Request failed: {response.status} {message}"
                 raise InvokeError(msg)
+
+            license_info = response_data.get("license") or {}
+            owner_info = response_data.get("owner", {})
+            repo_info = {
+                "name": response_data.get("name", ""),
+                "full_name": response_data.get("full_name", ""),
+                "description": response_data.get("description", ""),
+                "url": response_data.get("html_url", ""),
+                "clone_url": response_data.get("clone_url", ""),
+                "ssh_url": response_data.get("ssh_url", ""),
+                "language": response_data.get("language", ""),
+                "stars": response_data.get("stargazers_count", 0),
+                "forks": response_data.get("forks_count", 0),
+                "watchers": response_data.get("watchers_count", 0),
+                "open_issues": response_data.get("open_issues_count", 0),
+                "size": response_data.get("size", 0),
+                "default_branch": response_data.get("default_branch", ""),
+                "is_private": response_data.get("private", False),
+                "is_fork": response_data.get("fork", False),
+                "is_archived": response_data.get("archived", False),
+                "license": license_info.get("name", ""),
+                "created_at": _format_github_timestamp(response_data["created_at"])
+                if response_data.get("created_at")
+                else "",
+                "updated_at": _format_github_timestamp(response_data["updated_at"])
+                if response_data.get("updated_at")
+                else "",
+                "pushed_at": _format_github_timestamp(response_data["pushed_at"])
+                if response_data.get("pushed_at")
+                else "",
+                "topics": response_data.get("topics", []),
+                "owner": {
+                    "login": owner_info.get("login", ""),
+                    "type": owner_info.get("type", ""),
+                    "url": owner_info.get("html_url", ""),
+                },
+            }
+            yield self.create_text_message(
+                self.session.model.summary.invoke(
+                    text=json.dumps(repo_info, ensure_ascii=False),
+                    instruction=(
+                        "Summarize the repository information in a structured format"
+                    ),
+                )
+            )
         except InvokeError:
             raise
-        except Exception as e:
-            msg = f"GitHub API request failed: {e}"
-            raise InvokeError(msg) from e
+        except Exception as exc:
+            msg = f"GitHub API request failed: {exc}"
+            raise InvokeError(msg) from exc

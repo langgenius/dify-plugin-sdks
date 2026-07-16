@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
-import hashlib as _hashlib
 import hmac
 import json
 import time
@@ -10,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from http import HTTPStatus
 from typing import Any
 
-import requests
+import urllib3_future
 from werkzeug import Request, Response
 
 from dify_plugin.entities.trigger import EventDispatch, Subscription
@@ -78,14 +77,15 @@ class DropboxTrigger(Trigger):
         changes: list[dict[str, Any]] = []
 
         if access_token:
-            storage_key = self._cursor_storage_key(access_token)
-            cursor_before = self._get_cursor(storage_key)
+            token_hash = hashlib.sha256(access_token.encode()).hexdigest()[:16]
+            storage_key = f"dropbox:last-cursor:{token_hash}"
+            cursor_before = self._get_storage(storage_key)
 
             if not cursor_before:
                 # First time: get latest cursor as starting point
                 cursor_before = self._get_latest_cursor(access_token)
                 # Save the cursor for next time use
-                self._set_cursor(storage_key, cursor_before)
+                self._set_storage(storage_key, cursor_before)
                 # Next time: fetch changes since cursor_before
                 return EventDispatch(
                     events=[], response=self._ok_response(), payload={}
@@ -102,7 +102,7 @@ class DropboxTrigger(Trigger):
                     break
 
             # Save the new cursor for next time
-            self._set_cursor(storage_key, cursor)
+            self._set_storage(storage_key, cursor)
             cursor_after = cursor
 
         payload_out = {
@@ -149,7 +149,6 @@ class DropboxTrigger(Trigger):
         """Get the latest cursor without fetching file list."""
         headers = {
             "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
         }
         body = {
             "path": "",
@@ -158,7 +157,8 @@ class DropboxTrigger(Trigger):
             "include_non_downloadable_files": True,
         }
         try:
-            resp = requests.post(
+            resp = urllib3_future.request(
+                "POST",
                 "https://api.dropboxapi.com/2/files/list_folder/get_latest_cursor",
                 headers=headers,
                 json=body,
@@ -167,8 +167,8 @@ class DropboxTrigger(Trigger):
         except Exception as exc:
             msg = f"Failed to get Dropbox cursor: {exc}"
             raise TriggerDispatchError(msg) from exc
-        data = resp.json() if resp.content else {}
-        if resp.status_code != HTTPStatus.OK:
+        data = resp.json() if resp.data else {}
+        if resp.status != HTTPStatus.OK:
             msg = f"Dropbox get_latest_cursor error: {data}"
             raise TriggerDispatchError(msg)
         cursor = str(data.get("cursor") or "")
@@ -182,11 +182,11 @@ class DropboxTrigger(Trigger):
     ) -> tuple[list[Mapping[str, Any]], str, bool]:
         headers = {
             "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
         }
         body = {"cursor": cursor}
         try:
-            resp = requests.post(
+            resp = urllib3_future.request(
+                "POST",
                 "https://api.dropboxapi.com/2/files/list_folder/continue",
                 headers=headers,
                 json=body,
@@ -195,8 +195,8 @@ class DropboxTrigger(Trigger):
         except Exception as exc:
             msg = f"Failed to fetch Dropbox changes: {exc}"
             raise TriggerDispatchError(msg) from exc
-        data = resp.json() if resp.content else {}
-        if resp.status_code != HTTPStatus.OK:
+        data = resp.json() if resp.data else {}
+        if resp.status != HTTPStatus.OK:
             msg = f"Dropbox list_folder/continue error: {data}"
             raise TriggerDispatchError(msg)
         entries = data.get("entries") or []
@@ -232,17 +232,6 @@ class DropboxTrigger(Trigger):
             })
         return results
 
-    @staticmethod
-    def _token_hash(token: str) -> str:
-        return _hashlib.sha256(token.encode("utf-8")).hexdigest()[:16]
-
-    def _cursor_storage_key(self, access_token: str) -> str:
-        return f"dropbox:last-cursor:{self._token_hash(access_token)}"
-
-    def _account_id_storage_key(self, access_token: str) -> str:
-        return f"dropbox:account-id:{self._token_hash(access_token)}"
-
-    # simple storage wrappers
     def _get_storage(self, key: str) -> str:
         try:
             raw = self.runtime.session.storage.get(key)
@@ -253,9 +242,3 @@ class DropboxTrigger(Trigger):
     def _set_storage(self, key: str, value: str) -> None:
         with contextlib.suppress(Exception):
             self.runtime.session.storage.set(key, value.encode("utf-8"))
-
-    def _get_cursor(self, key: str) -> str:
-        return self._get_storage(key)
-
-    def _set_cursor(self, key: str, cursor: str) -> None:
-        self._set_storage(key, cursor)

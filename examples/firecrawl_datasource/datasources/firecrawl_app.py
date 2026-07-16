@@ -4,8 +4,7 @@ import time
 from collections.abc import Mapping
 from typing import Any
 
-import requests
-from requests.exceptions import HTTPError
+import urllib3_future
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +19,6 @@ class FirecrawlApp:
 
     def _prepare_headers(self, idempotency_key: str | None = None) -> dict[str, str]:
         headers = {
-            "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
         }
         if idempotency_key:
@@ -33,47 +31,26 @@ class FirecrawlApp:
         url: str,
         data: Mapping[str, Any] | None = None,
         headers: Mapping[str, str] | None = None,
-        retries: int = 3,
-        backoff_factor: float = 0.3,
-    ) -> Mapping[str, Any] | None:
-        if not headers:
-            headers = self._prepare_headers()
-        for i in range(retries):
-            try:
-                response = requests.request(
-                    method,
-                    url,
-                    json=data,
-                    headers=headers,
-                    timeout=30,
-                )
-                return response.json()
-            except requests.exceptions.RequestException:
-                if i < retries - 1:
-                    time.sleep(backoff_factor * (2**i))
-                else:
-                    raise
-        return None
+    ) -> Mapping[str, Any]:
+        return urllib3_future.request(
+            method,
+            url,
+            json=data,
+            headers=headers or self._prepare_headers(),
+            timeout=30,
+        ).json()
 
     def scrape_url(self, url: str, **kwargs: object) -> Mapping[str, Any]:
         endpoint = f"{self.base_url}/v1/scrape"
         data = {"url": url, **kwargs}
         logger.debug("Sent request to %s body=%s", endpoint, data)
-        response = self._request("POST", endpoint, data)
-        if response is None:
-            msg = "Failed to scrape URL after multiple retries"
-            raise HTTPError(msg)
-        return response
+        return self._request("POST", endpoint, data)
 
     def map(self, url: str, **kwargs: object) -> Mapping[str, Any]:
         endpoint = f"{self.base_url}/v1/map"
         data = {"url": url, **kwargs}
         logger.debug("Sent request to %s body=%s", endpoint, data)
-        response = self._request("POST", endpoint, data)
-        if response is None:
-            msg = "Failed to perform map after multiple retries"
-            raise HTTPError(msg)
-        return response
+        return self._request("POST", endpoint, data)
 
     def crawl_url(
         self,
@@ -88,34 +65,19 @@ class FirecrawlApp:
         data = {"url": url, **kwargs}
         logger.debug("Sent request to %s body=%s", endpoint, data)
         response = self._request("POST", endpoint, data, headers)
-        if response is None:
-            msg = "Failed to initiate crawl after multiple retries"
-            raise HTTPError(msg)
         if not response.get("success"):
             msg = f"Failed to crawl: {response.get('error')}"
-            raise HTTPError(msg)
+            raise urllib3_future.exceptions.HTTPError(msg)
         job_id: str = response["id"]
         if wait:
             return self._monitor_job_status(job_id=job_id, poll_interval=poll_interval)
         return response
 
     def check_crawl_status(self, job_id: str) -> Mapping[str, Any]:
-        endpoint = f"{self.base_url}/v1/crawl/{job_id}"
-        response = self._request("GET", endpoint)
-        if response is None:
-            msg = f"Failed to check status for job {job_id} after multiple retries"
-            raise HTTPError(
-                msg,
-            )
-        return response
+        return self._request("GET", f"{self.base_url}/v1/crawl/{job_id}")
 
     def cancel_crawl_job(self, job_id: str) -> Mapping[str, Any]:
-        endpoint = f"{self.base_url}/v1/crawl/{job_id}"
-        response = self._request("DELETE", endpoint)
-        if response is None:
-            msg = f"Failed to cancel job {job_id} after multiple retries"
-            raise HTTPError(msg)
-        return response
+        return self._request("DELETE", f"{self.base_url}/v1/crawl/{job_id}")
 
     def _monitor_job_status(
         self,
@@ -128,7 +90,7 @@ class FirecrawlApp:
                 return self.format_crawl_status_response(status["status"], status)
             if status["status"] == "failed":
                 msg = f"Job {job_id} failed: {status['error']}"
-                raise HTTPError(msg)
+                raise urllib3_future.exceptions.HTTPError(msg)
             time.sleep(poll_interval)
 
     def format_crawl_status_response(

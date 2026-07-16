@@ -1,7 +1,7 @@
 import os
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any
 
 import werkzeug.exceptions
 from werkzeug import Request
@@ -59,8 +59,6 @@ from dify_plugin.interfaces.trigger import (
 )
 from dify_plugin.protocol.oauth import OAuthProviderProtocol
 
-T = TypeVar("T")
-
 
 def _source_to_module_name(source: str) -> str:
     return Path(source).with_suffix("").as_posix().replace("/", ".")
@@ -68,6 +66,14 @@ def _source_to_module_name(source: str) -> str:
 
 def _source_to_script_path(source: str) -> str:
     return str(Path.cwd() / source)
+
+
+def _load_configuration[T](file_path: str, configuration_type: type[T]) -> T:
+    try:
+        return configuration_type(**load_yaml_file(file_path))
+    except Exception as e:
+        msg = f"Error loading plugin configuration: {e!s}"
+        raise ValueError(msg) from e
 
 
 class PluginRegistration:
@@ -155,38 +161,31 @@ class PluginRegistration:
         """
         load basic plugin configuration from manifest.yaml
         """
-        try:
-            file = load_yaml_file("manifest.yaml")
-            self.configuration = PluginConfiguration(**file)
-
-            for provider in self.configuration.plugins.tools:
-                fs = load_yaml_file(provider)
-                tool_provider_configuration = ToolProviderConfiguration(**fs)
-                self.tools_configuration.append(tool_provider_configuration)
-            for provider in self.configuration.plugins.models:
-                fs = load_yaml_file(provider)
-                model_provider_configuration = ModelProviderConfiguration(**fs)
-                self.models_configuration.append(model_provider_configuration)
-            for provider in self.configuration.plugins.endpoints:
-                fs = load_yaml_file(provider)
-                endpoint_configuration = EndpointProviderConfiguration(**fs)
-                self.endpoints_configuration.append(endpoint_configuration)
-            for provider in self.configuration.plugins.agent_strategies:
-                fs = load_yaml_file(provider)
-                agent_provider_configuration = AgentStrategyProviderConfiguration(**fs)
-                self.agent_strategies_configuration.append(agent_provider_configuration)
-            for provider in self.configuration.plugins.datasources:
-                fs = load_yaml_file(provider)
-                datasource_provider_configuration = DatasourceProviderManifest(**fs)
-                self.datasource_configuration.append(datasource_provider_configuration)
-            for provider in self.configuration.plugins.triggers:
-                fs = load_yaml_file(provider)
-                trigger_provider_configuration = TriggerProviderConfiguration(**fs)
-                self.triggers_configuration.append(trigger_provider_configuration)
-
-        except Exception as e:
-            msg = f"Error loading plugin configuration: {e!s}"
-            raise ValueError(msg) from e
+        self.configuration = _load_configuration("manifest.yaml", PluginConfiguration)
+        self.tools_configuration.extend(
+            _load_configuration(provider, ToolProviderConfiguration)
+            for provider in self.configuration.plugins.tools
+        )
+        self.models_configuration.extend(
+            _load_configuration(provider, ModelProviderConfiguration)
+            for provider in self.configuration.plugins.models
+        )
+        self.endpoints_configuration.extend(
+            _load_configuration(provider, EndpointProviderConfiguration)
+            for provider in self.configuration.plugins.endpoints
+        )
+        self.agent_strategies_configuration.extend(
+            _load_configuration(provider, AgentStrategyProviderConfiguration)
+            for provider in self.configuration.plugins.agent_strategies
+        )
+        self.datasource_configuration.extend(
+            _load_configuration(provider, DatasourceProviderManifest)
+            for provider in self.configuration.plugins.datasources
+        )
+        self.triggers_configuration.extend(
+            _load_configuration(provider, TriggerProviderConfiguration)
+            for provider in self.configuration.plugins.triggers
+        )
 
     def _resolve_tool_providers(self) -> None:
         """
@@ -374,7 +373,7 @@ class PluginRegistration:
                     trigger_cls=trigger_cls,
                 )
 
-    def _is_strict_subclass(self, cls: type[T], *parent_cls: type[T]) -> bool:
+    def _is_strict_subclass[T](self, cls: type[T], *parent_cls: type[T]) -> bool:
         """
         check if the class is a strict subclass of one of the parent classes
         """

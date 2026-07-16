@@ -372,30 +372,18 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
-            # transform credentials to kwargs for model instance
-            credentials_kwargs = self._to_credential_kwargs(credentials)
-            client = OpenAI(**credentials_kwargs)
+            client = OpenAI(**self._to_credential_kwargs(credentials))
 
-            # handle fine tune remote models
             base_model = model
             # fine-tuned model name likes ft:gpt-3.5-turbo-0613:personal::xxxxx
             if model.startswith("ft:"):
                 base_model = model.split(":")[1]
-
-                # check if model exists
-                remote_models = self.remote_models(credentials)
-                remote_model_map = {model.model: model for model in remote_models}
-                if model not in remote_model_map:
+                if not any(m.model == model for m in self.remote_models(credentials)):
                     msg = f"Fine-tuned model {model} not found"
-                    raise CredentialsValidateFailedError(
-                        msg,
-                    )
+                    raise CredentialsValidateFailedError(msg)
 
-            # get model mode
             model_mode = self.get_model_mode(base_model, credentials)
-
             if model_mode == LLMMode.CHAT:
-                # chat model
                 client.chat.completions.create(
                     messages=[{"role": "user", "content": "ping"}],
                     model=model,
@@ -404,7 +392,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                     stream=False,
                 )
             else:
-                # text completion model
                 client.completions.create(
                     prompt="ping",
                     model=model,

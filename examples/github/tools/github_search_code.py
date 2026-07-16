@@ -3,7 +3,7 @@ from collections.abc import Generator
 from http import HTTPStatus
 from typing import Any
 
-import requests
+import urllib3_future
 
 from dify_plugin import Tool
 from dify_plugin.entities.provider_config import CredentialType
@@ -44,116 +44,94 @@ class GithubSearchCodeTool(Tool):
             return
 
         access_token = self.runtime.credentials.get("access_tokens")
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {access_token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        params = {"q": query, "per_page": per_page, "order": order}
+        if sort:
+            params["sort"] = sort
+
         try:
-            headers = {
-                "Content-Type": "application/vnd.github+json",
-                "Authorization": f"Bearer {access_token}",
-                "X-GitHub-Api-Version": "2022-11-28",
-            }
-            s = requests.session()
-            api_domain = "https://api.github.com"
-            url = f"{api_domain}/search/code"
-
-            params = {"q": query, "per_page": per_page, "order": order}
-
-            if sort:
-                params["sort"] = sort
-
-            response = s.request(
-                method="GET",
+            response = urllib3_future.request(
+                "GET",
                 headers=headers,
-                url=url,
-                params=params,
+                url="https://api.github.com/search/code",
+                fields=params,
+                timeout=10,
             )
-
-            if response.status_code == HTTPStatus.OK:
-                response_data = response.json()
-
-                total_count = response_data.get("total_count", 0)
-                items = response_data.get("items", [])
-
-                search_results = []
-                for item in items:
-                    result_info = {
-                        "name": item.get("name", ""),
-                        "path": item.get("path", ""),
-                        "sha": item.get("sha", "")[:7],
-                        "url": item.get("html_url", ""),
-                        "git_url": item.get("git_url", ""),
-                        "download_url": item.get("download_url", ""),
-                        "score": item.get("score", 0),
-                        "repository": {
-                            "id": item.get("repository", {}).get("id", 0),
-                            "name": item.get("repository", {}).get("name", ""),
-                            "full_name": item.get("repository", {}).get(
-                                "full_name", ""
-                            ),
-                            "url": item.get("repository", {}).get("html_url", ""),
-                            "description": item.get("repository", {}).get(
-                                "description", ""
-                            ),
-                            "language": item.get("repository", {}).get("language", ""),
-                            "stars": item.get("repository", {}).get(
-                                "stargazers_count", 0
-                            ),
-                            "forks": item.get("repository", {}).get("forks_count", 0),
-                            "is_private": item.get("repository", {}).get(
-                                "private", False
-                            ),
-                            "owner": {
-                                "login": item
-                                .get("repository", {})
-                                .get("owner", {})
-                                .get("login", ""),
-                                "type": item
-                                .get("repository", {})
-                                .get("owner", {})
-                                .get("type", ""),
-                            },
-                        },
-                        "text_matches": [
-                            {
-                                "fragment": match.get("fragment", ""),
-                                "matches": [
-                                    {
-                                        "text": m.get("text", ""),
-                                        "indices": m.get("indices", []),
-                                    }
-                                    for m in match.get("matches", [])
-                                ],
-                            }
-                            for match in item.get("text_matches", [])
-                        ],
-                    }
-                    search_results.append(result_info)
-
-                result = {
-                    "total_count": total_count,
-                    "query": query,
-                    "results": search_results,
-                }
-
-                s.close()
-
-                if not search_results:
-                    yield self.create_text_message(f"No code found for query: {query}")
-                else:
-                    yield self.create_text_message(
-                        self.session.model.summary.invoke(
-                            text=json.dumps(result, ensure_ascii=False),
-                            instruction=(
-                                "Summarize the GitHub code search results "
-                                "in a structured format"
-                            ),
-                        )
-                    )
-            else:
-                response_data = response.json()
+            response_data = response.json()
+            if response.status != HTTPStatus.OK:
                 message = response_data.get("message", "Unknown error")
-                msg = f"Request failed: {response.status_code} {message}"
+                msg = f"Request failed: {response.status} {message}"
                 raise InvokeError(msg)
+
+            total_count = response_data.get("total_count", 0)
+            items = response_data.get("items", [])
+            search_results = []
+            for item in items:
+                repository = item.get("repository", {})
+                owner = repository.get("owner", {})
+                result_info = {
+                    "name": item.get("name", ""),
+                    "path": item.get("path", ""),
+                    "sha": item.get("sha", "")[:7],
+                    "url": item.get("html_url", ""),
+                    "git_url": item.get("git_url", ""),
+                    "download_url": item.get("download_url", ""),
+                    "score": item.get("score", 0),
+                    "repository": {
+                        "id": repository.get("id", 0),
+                        "name": repository.get("name", ""),
+                        "full_name": repository.get("full_name", ""),
+                        "url": repository.get("html_url", ""),
+                        "description": repository.get("description", ""),
+                        "language": repository.get("language", ""),
+                        "stars": repository.get("stargazers_count", 0),
+                        "forks": repository.get("forks_count", 0),
+                        "is_private": repository.get("private", False),
+                        "owner": {
+                            "login": owner.get("login", ""),
+                            "type": owner.get("type", ""),
+                        },
+                    },
+                    "text_matches": [
+                        {
+                            "fragment": match.get("fragment", ""),
+                            "matches": [
+                                {
+                                    "text": matched_text.get("text", ""),
+                                    "indices": matched_text.get("indices", []),
+                                }
+                                for matched_text in match.get("matches", [])
+                            ],
+                        }
+                        for match in item.get("text_matches", [])
+                    ],
+                }
+                search_results.append(result_info)
+
+            result = {
+                "total_count": total_count,
+                "query": query,
+                "results": search_results,
+            }
+
+            if not search_results:
+                yield self.create_text_message(f"No code found for query: {query}")
+            else:
+                yield self.create_text_message(
+                    self.session.model.summary.invoke(
+                        text=json.dumps(result, ensure_ascii=False),
+                        instruction=(
+                            "Summarize the GitHub code search results "
+                            "in a structured format"
+                        ),
+                    )
+                )
         except InvokeError:
             raise
-        except Exception as e:
-            msg = f"GitHub API request failed: {e}"
-            raise InvokeError(msg) from e
+        except Exception as exc:
+            msg = f"GitHub API request failed: {exc}"
+            raise InvokeError(msg) from exc

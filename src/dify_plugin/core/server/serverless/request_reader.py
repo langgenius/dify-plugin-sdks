@@ -49,9 +49,30 @@ class ServerlessRequestReader(RequestReader):
         while True:
             yield self.request_queue.get()
 
+    def _generate_response(
+        self, queue: Queue[str | None]
+    ) -> Generator[str, None, None]:
+        refresh_time = time.monotonic()
+        while True:
+            try:
+                response = queue.get(timeout=1)
+            except Empty:
+                if (
+                    time.monotonic() - refresh_time
+                    > self.max_single_connection_lifetime
+                ):
+                    return
+                continue
+
+            if response is None:
+                return
+
+            refresh_time = time.monotonic()
+            yield response
+
     def handler(self) -> tuple[Generator[str, None, None], int] | tuple[str, int]:
+        queue = Queue[str | None]()
         try:
-            queue = Queue[str]()
             data = request.get_json()
             event = PluginInStreamEvent.value_of(data["event"])
             plugin_in = PluginInStream(
@@ -66,34 +87,11 @@ class ServerlessRequestReader(RequestReader):
                 reader=self,
                 writer=ServerlessResponseWriter(queue),
             )
-            # put request to queue
-            self.request_queue.put(plugin_in)
-
-            # wait for response
-            def generate() -> Generator[str, None, None]:
-                refresh_time = time.time()
-                while True:
-                    try:
-                        response = queue.get(timeout=1)
-                    except Empty:
-                        if (
-                            time.time() - refresh_time
-                            > self.max_single_connection_lifetime
-                        ):
-                            # reach max single connection lifetime
-                            break
-                        continue
-
-                    if response is None:
-                        break
-
-                    # refresh refresh_time
-                    refresh_time = time.time()
-                    yield response
-
-            return generate(), 200
         except Exception as e:
             return str(e), 500
+
+        self.request_queue.put(plugin_in)
+        return self._generate_response(queue), 200
 
     def health(self) -> tuple[str, int]:
         return "OK", 200

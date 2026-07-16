@@ -1,15 +1,13 @@
-import errno
 import logging
 import os
 import signal
 import socket as native_socket
 import time
 from collections.abc import Callable, Generator
+from contextlib import suppress
 from threading import Lock
 from typing import Any
 
-from gevent import sleep
-from gevent import socket as gevent_socket
 from gevent.select import select
 from pydantic import TypeAdapter
 
@@ -45,144 +43,168 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         self.reconnect_attempts = reconnect_attempts
         self.reconnect_timeout = reconnect_timeout
         self.alive = False
+        self._closed = True
         self.on_connected = on_connected
         self.opt_lock = Lock()
+        self._state_lock = Lock()
+        self._connect_lock = Lock()
 
         # handle SIGINT to exit the program smoothly due to the gevent limitation
         signal.signal(signal.SIGINT, lambda *_args, **_kwargs: os._exit(0))
 
     def launch(self) -> None:
         """Launch the connection"""
+        with self._state_lock:
+            self._closed = False
         self._launch()
+
+    def _launch(self) -> None:
+        with self._connect_lock:
+            with self._state_lock:
+                if self._closed or self.alive:
+                    return
+
+            for attempt in range(self.reconnect_attempts):
+                if self._closed:
+                    return
+
+                try:
+                    self._connect()
+                    break
+                except Exception:
+                    if self._closed:
+                        return
+                    if attempt + 1 == self.reconnect_attempts:
+                        raise
+
+                    time.sleep(self.reconnect_timeout)
 
     def close(self) -> None:
         """Close the connection"""
-        if self.alive:
-            self.sock.close()
+        with self._state_lock:
+            self._closed = True
             self.alive = False
+            sock = getattr(self, "sock", None)
 
-    def _write_to_sock(self, data: bytes) -> int:
-        """Write data to the socket"""
-        with self.opt_lock:
-            return self.sock.send(data)
+        if sock:
+            with suppress(OSError):
+                sock.close()
 
-    def _recv_from_sock(self, size: int) -> bytes:
-        """Receive data from the socket"""
-        return self.sock.recv(size)
+    def _disconnect(self, sock: native_socket.socket) -> None:
+        with self._state_lock:
+            if sock is self.sock:
+                self.alive = False
+
+        sock.close()
 
     def write(self, data: str) -> None:
-        if not self.alive:
-            msg = "connection is dead"
-            raise Exception(msg)
+        with self._state_lock:
+            if not self.alive:
+                msg = "connection is dead"
+                raise Exception(msg)
+            sock = self.sock
 
         try:
-            if native_socket.socket is gevent_socket.socket:
-                """
-                gevent socket is non-blocking, to avoid BlockingIOError
-                send data bytes by bytes
-                """
-                data_bytes = data.encode()
-                while data_bytes:
-                    try:
-                        sent = self._write_to_sock(data_bytes)
-                        data_bytes = data_bytes[sent:]
-                    except BlockingIOError as e:
-                        if e.errno != errno.EAGAIN:
-                            raise
-                        sleep(0)
-            else:
-                self.sock.sendall(data.encode())
+            with self.opt_lock:
+                sock.sendall(data.encode())
         except Exception:
             logger.exception("Failed to write data")
-            self._launch()
+            with suppress(OSError):
+                self._disconnect(sock)
+            raise
 
     def done(self) -> None:
         pass
 
-    def _launch(self) -> None:
-        """Connect to the target, try to reconnect if failed"""
-        attempts = 0
-        while attempts < self.reconnect_attempts:
-            try:
-                self._connect()
-                break
-            except Exception:
-                attempts += 1
-                if attempts >= self.reconnect_attempts:
-                    raise
-
-                time.sleep(self.reconnect_timeout)
-
     def _connect(self) -> None:
         """Connect to the target"""
+        handshake = InitializeMessage(
+            type=InitializeMessage.Type.HANDSHAKE,
+            data=InitializeMessage.Key(key=self.key).model_dump(),
+        ).model_dump_json()
+
+        sock = None
         try:
-            if native_socket.socket is gevent_socket.socket:
-                self.sock = gevent_socket.create_connection((self.host, self.port))
-            else:
-                self.sock = native_socket.create_connection((self.host, self.port))
-            self.alive = True
-            handshake_message = InitializeMessage(
-                type=InitializeMessage.Type.HANDSHAKE,
-                data=InitializeMessage.Key(key=self.key).model_dump(),
-            )
-            self.sock.sendall(handshake_message.model_dump_json().encode() + b"\n")
-            logger.info("\033[32mConnected to %s:%s\033[0m", self.host, self.port)
-            if self.on_connected:
-                self.on_connected()
-            logger.info("Sent key to %s:%s", self.host, self.port)
+            sock = native_socket.create_connection((self.host, self.port))
+            sock.sendall(handshake.encode() + b"\n")
         except OSError:
             logger.exception(
                 "\033[31mFailed to connect to %s:%s\033[0m",
                 self.host,
                 self.port,
             )
+            if sock:
+                with suppress(OSError):
+                    sock.close()
             raise
+
+        with self._state_lock:
+            connected = not self._closed
+            if connected:
+                old_sock = getattr(self, "sock", None)
+                self.sock = sock
+                self.alive = True
+
+        if not connected:
+            sock.close()
+            return
+        if old_sock and old_sock is not sock:
+            with suppress(OSError):
+                old_sock.close()
+
+        logger.info("\033[32mConnected to %s:%s\033[0m", self.host, self.port)
+        try:
+            if self.on_connected:
+                self.on_connected()
+        except Exception:
+            with suppress(OSError):
+                self._disconnect(sock)
+            raise
+        logger.info("Sent key to %s:%s", self.host, self.port)
+
+    def _receive_available(self, sock: native_socket.socket) -> bytes | None:
+        ready_to_read, _, _ = select([sock], [], [], 1)
+        if not ready_to_read:
+            return None
+        return sock.recv(1048576)
 
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
         """Read data from the target"""
         buffer = b""
-        while self.alive:
+        while not self._closed:
+            if not self.alive:
+                buffer = b""
+                time.sleep(self.reconnect_timeout)
+                if self._closed:
+                    return
+                with suppress(OSError):
+                    self._launch()
+                continue
+
             try:
-                ready_to_read, _, _ = select([self.sock], [], [], 1)
-                if not ready_to_read:
-                    continue
-                try:
-                    data = self._recv_from_sock(1048576)
-                except BlockingIOError as e:
-                    if native_socket.socket is gevent_socket.socket:
-                        if e.errno != errno.EAGAIN:
-                            raise
-                        sleep(0)
-                        continue
-                    else:
-                        raise
+                with self._state_lock:
+                    sock = self.sock
+                data = self._receive_available(sock)
                 if data == b"":
                     msg = "Connection is closed"
-                    raise Exception(msg)
+                    raise ConnectionError(msg)
             except Exception:
                 logger.exception(
                     "\033[31mFailed to read data from %s:%s\033[0m",
                     self.host,
                     self.port,
                 )
-                self.alive = False
-                time.sleep(self.reconnect_timeout)
-                self._launch()
+                with suppress(OSError):
+                    self._disconnect(sock)
                 continue
 
-            if not data:
+            if data is None:
                 continue
 
             buffer += data
 
             # process line by line and keep the last line if it is not complete
-            lines = buffer.split(b"\n")
-            if len(lines) == 0:
-                continue
-
-            buffer = lines[-1]
-
-            lines = lines[:-1]
+            *lines, buffer = buffer.split(b"\n")
             for line in lines:
                 try:
                     data = TypeAdapter(dict[str, Any]).validate_json(line)

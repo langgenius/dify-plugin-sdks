@@ -52,9 +52,8 @@ minversion = '9.0'
 testpaths = ['tests']
 
 [tool.ruff]
-fix = true
 preview = true
-required-version = '>=0.15'
+required-version = '>=0.15.21'
 
 [tool.ruff.lint]
 select = ['ALL']
@@ -73,6 +72,7 @@ ignore = [
     'TC',      # Runtime use of typing constructs is common now.
     'TID252',  # Too absolute.
     'PLR6301', # Violates the usual practice.
+    'PLW0717',
     'COM812',  # Conflicts with `ruff format`.
     'CPY',     # Covered by the standalone LICENSE file.
     'D',       # Too verbose.

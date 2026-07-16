@@ -9,7 +9,7 @@ This file provides guidance for agents working with code in this repository.
 **Testing:**
 
 ```bash
-just test                              # Run all tests
+just test                              # Run SDK and example tests
 uv run pytest tests/specific_test.py   # Run specific test
 ```
 
@@ -17,8 +17,8 @@ uv run pytest tests/specific_test.py   # Run specific test
 
 ```bash
 just check                             # Check lockfile, formatting, and linting
-just lint                              # Check linting only
-just format                            # Apply formatting fixes
+just lint                              # Format and apply lint fixes
+just fmt                               # Apply formatting fixes
 ```
 
 **Documentation Generation:**
@@ -115,5 +115,5 @@ Each example in `examples/` follows a consistent structure:
 
 1. Use existing examples as templates for new plugins
 2. Implement plugin interfaces in the appropriate category
-3. Run `just check` before submitting code changes
-4. Run `just test` when changes affect runtime behavior, SDK interfaces, or examples
+3. Run `just check` for every change
+4. Run `just test` for code, SDK interface, or example changes

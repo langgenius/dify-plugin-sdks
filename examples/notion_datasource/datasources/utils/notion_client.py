@@ -3,11 +3,10 @@ Notion API Client for Dify plugins
 This module provides a unified interface for interacting with the Notion API
 """
 
-import time
 from http import HTTPStatus
 from typing import Any
 
-import requests
+import urllib3_future
 
 from dify_plugin.entities.datasource import OnlineDocumentPage
 
@@ -41,7 +40,6 @@ class NotionClient:
         self.headers = {
             "Authorization": f"Bearer {integration_token}",
             "Notion-Version": self._API_VERSION,
-            "Content-Type": "application/json",
         }
 
     def _make_request(
@@ -50,76 +48,43 @@ class NotionClient:
         endpoint: str,
         params: dict[str, Any] | None = None,
         json_data: dict[str, Any] | None = None,
-        max_retries: int = 3,
     ) -> dict[str, Any]:
         """
-        Make an API request to Notion with retry logic for rate limits.
+        Make an API request to Notion.
 
         Args:
             method: HTTP method (get, post, patch, etc.)
             endpoint: API endpoint (relative to base URL)
             params: URL parameters for GET requests
             json_data: JSON data for POST/PATCH requests
-            max_retries: Maximum number of retries for rate limiting
 
         Returns:
             Response data as dictionary
 
         Raises:
-            Exception: If the operation fails.
-            HTTPError: If the HTTP request fails.
-            RequestException: If the HTTP request fails.
+            urllib3_future.exceptions.HTTPError: If the HTTP request fails.
         """
         url = f"{self._API_BASE_URL}{endpoint}"
-        retries = 0
-
-        while retries <= max_retries:
+        response = urllib3_future.request(
+            method,
+            url,
+            headers=self.headers,
+            fields=params if method.upper() == "GET" else None,
+            json=json_data,
+            timeout=__TIMEOUT_SECONDS__,
+        )
+        if response.status >= HTTPStatus.BAD_REQUEST:
+            msg = f"{response.status} {response.reason or 'HTTP error'} for url: {url}"
             try:
-                response = requests.request(
-                    method=method,
-                    url=url,
-                    headers=self.headers,
-                    params=params,
-                    json=json_data,
-                    timeout=__TIMEOUT_SECONDS__,
-                )
+                error_json = response.json()
+                error_message = error_json.get("message", msg)
+                error_code = error_json.get("code", "unknown_error")
+                msg = f"Notion API Error: {error_code} - {error_message}"
+            except ValueError:
+                pass
+            raise urllib3_future.exceptions.HTTPError(msg)
 
-                # Handle rate limiting
-                if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
-                    retry_after = int(response.headers.get("Retry-After", 1))
-                    time.sleep(retry_after)
-                    retries += 1
-                    continue
-
-                response.raise_for_status()
-                return response.json()
-
-            except requests.exceptions.HTTPError as e:
-                # Format error based on Notion's error response structure
-                if hasattr(e, "response") and e.response is not None:
-                    try:
-                        error_json = e.response.json()
-                        error_message = error_json.get("message", str(e))
-                        error_code = error_json.get("code", "unknown_error")
-                        msg = f"Notion API Error: {error_code} - {error_message}"
-                        raise requests.exceptions.HTTPError(
-                            msg,
-                            response=e.response,
-                        )
-                    except ValueError:
-                        # If not JSON response
-                        pass
-                raise
-
-            except requests.exceptions.RequestException:
-                if retries >= max_retries:
-                    raise
-                retries += 1
-                time.sleep(1)
-
-        # This should never happen, but just in case
-        msg = "Maximum retries exceeded"
-        raise Exception(msg)
+        return response.json()
 
     def search(
         self,
@@ -564,13 +529,13 @@ class NotionClient:
                 **({"start_cursor": next_cursor} if next_cursor else {}),
             }
             headers = {
-                "Content-Type": "application/json",
                 "Authorization": f"Bearer {access_token}",
                 "Notion-Version": self._API_VERSION,
             }
 
-            response = requests.post(
-                url=self._NOTION_PAGE_SEARCH,
+            response = urllib3_future.request(
+                "POST",
+                self._NOTION_PAGE_SEARCH,
                 json=data,
                 headers=headers,
                 timeout=__TIMEOUT_SECONDS__,
@@ -595,12 +560,12 @@ class NotionClient:
                 **({"start_cursor": next_cursor} if next_cursor else {}),
             }
             headers = {
-                "Content-Type": "application/json",
                 "Authorization": f"Bearer {access_token}",
                 "Notion-Version": self._API_VERSION,
             }
-            response = requests.post(
-                url=self._NOTION_PAGE_SEARCH,
+            response = urllib3_future.request(
+                "POST",
+                self._NOTION_PAGE_SEARCH,
                 json=data,
                 headers=headers,
                 timeout=__TIMEOUT_SECONDS__,
@@ -619,13 +584,14 @@ class NotionClient:
             "Authorization": f"Bearer {access_token}",
             "Notion-Version": self._API_VERSION,
         }
-        response = requests.get(
-            url=f"{self._NOTION_BLOCK_SEARCH}/{block_id}",
+        response = urllib3_future.request(
+            "GET",
+            f"{self._NOTION_BLOCK_SEARCH}/{block_id}",
             headers=headers,
             timeout=__TIMEOUT_SECONDS__,
         )
         response_json = response.json()
-        if response.status_code != HTTPStatus.OK:
+        if response.status != HTTPStatus.OK:
             message = response_json.get("message", "unknown error")
             msg = f"Error fetching block parent page ID: {message}"
             raise ValueError(msg)

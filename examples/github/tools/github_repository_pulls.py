@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from http import HTTPStatus
 from typing import Any
 
-import requests
+import urllib3_future
 
 from dify_plugin import Tool
 from dify_plugin.entities.provider_config import CredentialType
@@ -59,104 +59,92 @@ class GithubRepositoryPullsTool(Tool):
             return
 
         access_token = self.runtime.credentials.get("access_tokens")
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {access_token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
+        params = {
+            "state": state,
+            "per_page": per_page,
+            "sort": sort,
+            "direction": direction,
+        }
+
         try:
-            headers = {
-                "Content-Type": "application/vnd.github+json",
-                "Authorization": f"Bearer {access_token}",
-                "X-GitHub-Api-Version": "2022-11-28",
-            }
-            s = requests.session()
-            api_domain = "https://api.github.com"
-            url = f"{api_domain}/repos/{owner}/{repo}/pulls"
-
-            params = {
-                "state": state,
-                "per_page": per_page,
-                "sort": sort,
-                "direction": direction,
-            }
-
-            response = s.request(
-                method="GET",
+            response = urllib3_future.request(
+                "GET",
                 headers=headers,
                 url=url,
-                params=params,
+                fields=params,
+                timeout=10,
             )
-
-            if response.status_code == HTTPStatus.OK:
-                response_data = response.json()
-
-                pulls = []
-                for pull in response_data:
-                    pull_info = {
-                        "number": pull.get("number", 0),
-                        "title": pull.get("title", ""),
-                        "body": (pull.get("body", "") or "")[:BODY_PREVIEW_LENGTH]
-                        + "..."
-                        if len(pull.get("body", "") or "") > BODY_PREVIEW_LENGTH
-                        else (pull.get("body", "") or ""),
-                        "state": pull.get("state", ""),
-                        "url": pull.get("html_url", ""),
-                        "user": pull.get("user", {}).get("login", ""),
-                        "assignee": pull.get("assignee", {}).get("login", "")
-                        if pull.get("assignee")
-                        else "",
-                        "labels": [
-                            label.get("name", "") for label in pull.get("labels", [])
-                        ],
-                        "comments": pull.get("comments", 0),
-                        "review_comments": pull.get("review_comments", 0),
-                        "commits": pull.get("commits", 0),
-                        "additions": pull.get("additions", 0),
-                        "deletions": pull.get("deletions", 0),
-                        "changed_files": pull.get("changed_files", 0),
-                        "mergeable": pull.get("mergeable", None),
-                        "merged": pull.get("merged", False),
-                        "draft": pull.get("draft", False),
-                        "head": {
-                            "ref": pull.get("head", {}).get("ref", ""),
-                            "sha": pull.get("head", {}).get("sha", "")[:7],
-                        },
-                        "base": {
-                            "ref": pull.get("base", {}).get("ref", ""),
-                            "sha": pull.get("base", {}).get("sha", "")[:7],
-                        },
-                        "created_at": _format_github_timestamp(
-                            pull.get("created_at", "")
-                        )
-                        if pull.get("created_at")
-                        else "",
-                        "updated_at": _format_github_timestamp(
-                            pull.get("updated_at", "")
-                        )
-                        if pull.get("updated_at")
-                        else "",
-                    }
-                    pulls.append(pull_info)
-
-                s.close()
-
-                if not pulls:
-                    yield self.create_text_message(
-                        f"No {state} pull requests found in {owner}/{repo}"
-                    )
-                else:
-                    yield self.create_text_message(
-                        self.session.model.summary.invoke(
-                            text=json.dumps(pulls, ensure_ascii=False),
-                            instruction=(
-                                "Summarize the GitHub pull requests in a "
-                                "structured format"
-                            ),
-                        )
-                    )
-            else:
-                response_data = response.json()
+            response_data = response.json()
+            if response.status != HTTPStatus.OK:
                 message = response_data.get("message", "Unknown error")
-                msg = f"Request failed: {response.status_code} {message}"
+                msg = f"Request failed: {response.status} {message}"
                 raise InvokeError(msg)
+
+            pulls = []
+            for pull in response_data:
+                body = pull.get("body") or ""
+                pull_info = {
+                    "number": pull.get("number", 0),
+                    "title": pull.get("title", ""),
+                    "body": body[:BODY_PREVIEW_LENGTH] + "..."
+                    if len(body) > BODY_PREVIEW_LENGTH
+                    else body,
+                    "state": pull.get("state", ""),
+                    "url": pull.get("html_url", ""),
+                    "user": pull.get("user", {}).get("login", ""),
+                    "assignee": pull.get("assignee", {}).get("login", "")
+                    if pull.get("assignee")
+                    else "",
+                    "labels": [
+                        label.get("name", "") for label in pull.get("labels", [])
+                    ],
+                    "comments": pull.get("comments", 0),
+                    "review_comments": pull.get("review_comments", 0),
+                    "commits": pull.get("commits", 0),
+                    "additions": pull.get("additions", 0),
+                    "deletions": pull.get("deletions", 0),
+                    "changed_files": pull.get("changed_files", 0),
+                    "mergeable": pull.get("mergeable", None),
+                    "merged": pull.get("merged", False),
+                    "draft": pull.get("draft", False),
+                    "head": {
+                        "ref": pull.get("head", {}).get("ref", ""),
+                        "sha": pull.get("head", {}).get("sha", "")[:7],
+                    },
+                    "base": {
+                        "ref": pull.get("base", {}).get("ref", ""),
+                        "sha": pull.get("base", {}).get("sha", "")[:7],
+                    },
+                    "created_at": _format_github_timestamp(pull.get("created_at", ""))
+                    if pull.get("created_at")
+                    else "",
+                    "updated_at": _format_github_timestamp(pull.get("updated_at", ""))
+                    if pull.get("updated_at")
+                    else "",
+                }
+                pulls.append(pull_info)
+
+            if not pulls:
+                yield self.create_text_message(
+                    f"No {state} pull requests found in {owner}/{repo}"
+                )
+            else:
+                yield self.create_text_message(
+                    self.session.model.summary.invoke(
+                        text=json.dumps(pulls, ensure_ascii=False),
+                        instruction=(
+                            "Summarize the GitHub pull requests in a structured format"
+                        ),
+                    )
+                )
         except InvokeError:
             raise
-        except Exception as e:
-            msg = f"GitHub API request failed: {e}"
-            raise InvokeError(msg) from e
+        except Exception as exc:
+            msg = f"GitHub API request failed: {exc}"
+            raise InvokeError(msg) from exc

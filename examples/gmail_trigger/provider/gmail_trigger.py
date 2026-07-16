@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import base64
+import contextlib
+import hashlib
 import json
 import secrets
 import time
 import urllib.parse
+import uuid
 from collections.abc import Mapping
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any
 
-import requests
+import urllib3_future
 from werkzeug import Request, Response
 
 from dify_plugin.entities import I18nObject, ParameterOption
@@ -211,10 +214,10 @@ class GmailTrigger(Trigger):
         params: dict[str, Any] = {"startHistoryId": start_history_id}
 
         while True:
-            resp: requests.Response = requests.get(
-                url, headers=headers, params=params, timeout=10
+            resp = urllib3_future.request(
+                "GET", url, headers=headers, fields=params, timeout=10
             )
-            if resp.status_code != HTTPStatus.OK:
+            if resp.status != HTTPStatus.OK:
                 # History ID may be invalid/out of range; swallow this batch
                 # and move checkpoint forward by caller.
                 return [], [], [], [], []
@@ -265,19 +268,20 @@ class GmailTrigger(Trigger):
                 requests as google_requests,
             )
             from google.oauth2 import id_token  # noqa: PLC0415
-
-            req = google_requests.Request()
-            claims = id_token.verify_oauth2_token(token, req, audience=audience)
-            issuer = claims.get("iss")
-            if issuer not in GOOGLE_OIDC_ISSUERS:
-                msg = "Invalid OIDC token issuer"
-                raise TriggerValidationError(msg)
-            if expected_email and claims.get("email") != expected_email:
-                msg = "OIDC token service account email mismatch"
-                raise TriggerValidationError(msg)
         except ImportError as exc:
             msg = "google-auth is required for OIDC verification but not installed"
             raise TriggerValidationError(msg) from exc
+
+        invalid_issuer_msg = "Invalid OIDC token issuer"
+        email_mismatch_msg = "OIDC token service account email mismatch"
+        try:
+            claims = id_token.verify_oauth2_token(
+                token, google_requests.Request(), audience=audience
+            )
+            if claims.get("iss") not in GOOGLE_OIDC_ISSUERS:
+                raise TriggerValidationError(invalid_issuer_msg)
+            if expected_email and claims.get("email") != expected_email:
+                raise TriggerValidationError(email_mismatch_msg)
         except Exception as exc:  # pragma: no cover - verification failure
             msg = f"OIDC verification failed: {exc}"
             raise TriggerValidationError(msg) from exc
@@ -339,16 +343,18 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             raise TriggerProviderOAuthError(msg)
 
         # 1. Exchange authorization code for OAuth tokens
-        data: dict[str, str] = {
-            "client_id": system_credentials["client_id"],
-            "client_secret": system_credentials["client_secret"],
-            "code": code,
-            "redirect_uri": redirect_uri,
-            "grant_type": "authorization_code",
-        }
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        resp: requests.Response = requests.post(
-            self._OAUTH_ENDPOINT, data=data, headers=headers, timeout=10
+        resp = urllib3_future.request(
+            "POST",
+            self._OAUTH_ENDPOINT,
+            body=urllib.parse.urlencode({
+                "client_id": system_credentials["client_id"],
+                "client_secret": system_credentials["client_secret"],
+                "code": code,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code",
+            }),
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=10,
         )
         payload: dict[str, Any] = resp.json()
         access_token: str | None = payload.get("access_token")
@@ -359,9 +365,6 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         expires_in: int = int(payload.get("expires_in") or 0)
         refresh_token: str | None = payload.get("refresh_token")
         expires_at: int = int(time.time()) + expires_in if expires_in else -1
-
-        # 2. Parse and store GCP configuration from system_credentials
-        import json as _json  # noqa: PLC0415
 
         credentials: dict[str, str] = {"access_token": access_token}
         if refresh_token:
@@ -374,54 +377,58 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             raise TriggerProviderOAuthError(msg)
 
         try:
-            sa_info = _json.loads(gcp_sa)
-            gcp_project_id = sa_info.get("project_id")
-            if not gcp_project_id:
-                msg = "GCP Service Account JSON must contain 'project_id' field"
-                raise TriggerProviderOAuthError(msg)
-
-            # Store GCP configuration in credentials.
-            # Pub/Sub will be created in create_subscription.
-            credentials["gcp_project_id"] = gcp_project_id
-            credentials["gcp_service_account_json"] = gcp_sa
-            # Determine Gmail account email so that we can assign a stable
-            # Pub/Sub topic.
-            headers_profile = {"Authorization": f"Bearer {access_token}"}
-            prof_resp = requests.get(
-                f"{self._GMAIL_BASE}/users/me/profile",
-                headers=headers_profile,
-                timeout=10,
-            )
-            if prof_resp.status_code != HTTPStatus.OK:
-                try:
-                    prof_payload: dict[str, Any] = prof_resp.json()
-                except Exception:
-                    prof_payload = {"message": prof_resp.text}
-                msg = f"Failed to fetch Gmail profile: {prof_payload}"
-                raise TriggerProviderOAuthError(msg)
-
-            email_addr = (prof_resp.json() or {}).get("emailAddress") or ""
-            if not email_addr:
-                msg = "Gmail profile response missing 'emailAddress'"
-                raise TriggerProviderOAuthError(msg)
-            credentials["gmail_email"] = email_addr
-
-            import hashlib as _hashlib  # noqa: PLC0415
-
-            email_hash = _hashlib.sha256(email_addr.lower().encode()).hexdigest()[:16]
-            topic_id = f"dify-gmail-{email_hash}"
-            credentials["gcp_topic_id"] = topic_id
-
-            try:
-                topic_path = self._ensure_topic(
-                    project_id=gcp_project_id, sa_info=sa_info, topic_id=topic_id
-                )
-                credentials["gcp_topic_path"] = topic_path
-            except Exception as exc:
-                msg = f"Failed to provision Pub/Sub topic: {exc}"
-                raise TriggerProviderOAuthError(msg) from exc
-        except _json.JSONDecodeError as exc:
+            sa_info = json.loads(gcp_sa)
+        except json.JSONDecodeError as exc:
             msg = "Invalid GCP Service Account JSON format"
+            raise TriggerProviderOAuthError(msg) from exc
+        if not isinstance(sa_info, Mapping) or not (
+            gcp_project_id := sa_info.get("project_id")
+        ):
+            msg = "GCP Service Account JSON must contain 'project_id' field"
+            raise TriggerProviderOAuthError(msg)
+
+        # Store GCP configuration in credentials.
+        # Pub/Sub will be created in create_subscription.
+        credentials["gcp_project_id"] = gcp_project_id
+        credentials["gcp_service_account_json"] = gcp_sa
+        # Determine Gmail account email so that we can assign a stable
+        # Pub/Sub topic.
+        prof_resp = urllib3_future.request(
+            "GET",
+            f"{self._GMAIL_BASE}/users/me/profile",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+        if prof_resp.status != HTTPStatus.OK:
+            try:
+                prof_payload: dict[str, Any] = prof_resp.json()
+            except Exception:
+                prof_payload = {"message": prof_resp.data.decode(errors="replace")}
+            msg = f"Failed to fetch Gmail profile: {prof_payload}"
+            raise TriggerProviderOAuthError(msg)
+
+        try:
+            prof_payload = prof_resp.json() or {}
+        except json.JSONDecodeError as exc:
+            msg = "Invalid Gmail profile response format"
+            raise TriggerProviderOAuthError(msg) from exc
+        if not isinstance(prof_payload, Mapping) or not (
+            email_addr := prof_payload.get("emailAddress")
+        ):
+            msg = "Gmail profile response missing 'emailAddress'"
+            raise TriggerProviderOAuthError(msg)
+        credentials["gmail_email"] = email_addr
+
+        email_hash = hashlib.sha256(email_addr.lower().encode()).hexdigest()[:16]
+        topic_id = f"dify-gmail-{email_hash}"
+        credentials["gcp_topic_id"] = topic_id
+
+        try:
+            credentials["gcp_topic_path"] = self._ensure_topic(
+                project_id=gcp_project_id, sa_info=sa_info, topic_id=topic_id
+            )
+        except Exception as exc:
+            msg = f"Failed to provision Pub/Sub topic: {exc}"
             raise TriggerProviderOAuthError(msg) from exc
 
         return TriggerOAuthCredentials(credentials=credentials, expires_at=expires_at)
@@ -438,15 +445,17 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             msg = "Missing refresh_token for OAuth refresh"
             raise TriggerProviderOAuthError(msg)
 
-        data: dict[str, str] = {
-            "client_id": system_credentials["client_id"],
-            "client_secret": system_credentials["client_secret"],
-            "refresh_token": refresh_token,
-            "grant_type": "refresh_token",
-        }
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        resp: requests.Response = requests.post(
-            self._OAUTH_ENDPOINT, data=data, headers=headers, timeout=10
+        resp = urllib3_future.request(
+            "POST",
+            self._OAUTH_ENDPOINT,
+            body=urllib.parse.urlencode({
+                "client_id": system_credentials["client_id"],
+                "client_secret": system_credentials["client_secret"],
+                "refresh_token": refresh_token,
+                "grant_type": "refresh_token",
+            }),
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=10,
         )
         payload: dict[str, Any] = resp.json()
         access_token: str | None = payload.get("access_token")
@@ -485,11 +494,9 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> Subscription:
         # Always watch the authenticated user (me)
         del credential_type
-        import hashlib as _hashlib  # noqa: PLC0415
-        import uuid as _uuid  # noqa: PLC0415
 
         # 0) Basic inputs and validation
-        subscription_key = _uuid.uuid4().hex
+        subscription_key = uuid.uuid4().hex
         gcp_project_id = credentials.get("gcp_project_id")
         gcp_sa = credentials.get("gcp_service_account_json")
         access_token: str | None = credentials.get("access_token")
@@ -508,15 +515,17 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         # 1) Resolve Gmail email and build a stable topic per email
         email_addr: str = credentials.get("gmail_email") or ""
         if not email_addr:
-            headers_at = {"Authorization": f"Bearer {access_token}"}
-            prof = requests.get(
-                f"{self._GMAIL_BASE}/users/me/profile", headers=headers_at, timeout=10
+            prof = urllib3_future.request(
+                "GET",
+                f"{self._GMAIL_BASE}/users/me/profile",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=10,
             )
-            if prof.status_code != HTTPStatus.OK:
+            if prof.status != HTTPStatus.OK:
                 try:
                     err = prof.json()
                 except Exception:
-                    err = {"message": prof.text}
+                    err = {"message": prof.data.decode(errors="replace")}
                 msg = f"Failed to get Gmail profile: {err}"
                 raise SubscriptionError(
                     msg,
@@ -533,7 +542,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         topic_id = credentials.get("gcp_topic_id")
         if not topic_id:
-            email_hash = _hashlib.sha256(email_addr.lower().encode()).hexdigest()[:16]
+            email_hash = hashlib.sha256(email_addr.lower().encode()).hexdigest()[:16]
             topic_id = f"dify-gmail-{email_hash}"
 
         # 2) Ensure Pub/Sub Topic and per-subscription Push Subscription
@@ -541,7 +550,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         oidc_audience: str = parameters.get("oidc_audience") or endpoint
 
         # Derive a unique push subscription name for this subscription.
-        endpoint_hash = _hashlib.sha256(endpoint.encode()).hexdigest()[:16]
+        endpoint_hash = hashlib.sha256(endpoint.encode()).hexdigest()[:16]
         push_sub_name = f"dify-gmail-{endpoint_hash}-{subscription_key[:8]}"
         info = self._ensure_pubsub(
             project_id=gcp_project_id,
@@ -555,27 +564,25 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         topic_name = info["topic_path"]
 
         # 3) Issue users.watch pointing to the shared email topic (no labelIds here)
-        headers: dict[str, str] = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
-        }
-        body: dict[str, Any] = {"topicName": topic_name}
-        url = f"{self._GMAIL_BASE}/users/me/watch"
         try:
-            resp: requests.Response = requests.post(
-                url, headers=headers, json=body, timeout=10
+            resp = urllib3_future.request(
+                "POST",
+                f"{self._GMAIL_BASE}/users/me/watch",
+                headers={"Authorization": f"Bearer {access_token}"},
+                json={"topicName": topic_name},
+                timeout=10,
             )
-        except requests.RequestException as exc:
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Network error while calling users.watch: {exc}"
             raise SubscriptionError(
                 msg,
                 error_code="NETWORK_ERROR",
             ) from exc
-        if resp.status_code not in WATCH_SUCCESS_STATUSES:
+        if resp.status not in WATCH_SUCCESS_STATUSES:
             try:
                 err: dict[str, Any] = resp.json()
             except Exception:
-                err = {"message": resp.text}
+                err = {"message": resp.data.decode(errors="replace")}
             msg = f"Failed to create Gmail watch: {err}"
             raise SubscriptionError(
                 msg,
@@ -689,13 +696,11 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         require_oidc: bool,
         audience: str,
     ) -> dict[str, str]:
-        import json as _json  # noqa: PLC0415
-
         from google.api_core.exceptions import AlreadyExists, NotFound  # noqa: PLC0415
         from google.cloud import pubsub_v1  # noqa: PLC0415
         from google.oauth2 import service_account as _sa  # noqa: PLC0415
 
-        info = _json.loads(sa_json) if isinstance(sa_json, str) else sa_json
+        info = json.loads(sa_json) if isinstance(sa_json, str) else sa_json
         topic_path = self._ensure_topic(
             project_id=project_id, sa_info=info, topic_id=topic_id
         )
@@ -733,8 +738,6 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 if require_oidc and (cur_sa != sa_email or cur_aud != audience):
                     need_recreate = True
             if need_recreate:
-                import contextlib  # noqa: PLC0415
-
                 with contextlib.suppress(NotFound):
                     subscriber.delete_subscription(subscription=sub_path)
                 subscriber.create_subscription(
@@ -804,19 +807,16 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         Topic deletion is skipped by default for safety.
         """
         del topic_name
-        import json as _json  # noqa: PLC0415
-
         from google.api_core.exceptions import NotFound  # noqa: PLC0415
         from google.cloud import pubsub_v1  # noqa: PLC0415
         from google.oauth2 import service_account as _sa  # noqa: PLC0415
 
-        info = _json.loads(sa_json) if isinstance(sa_json, str) else sa_json
+        info = json.loads(sa_json) if isinstance(sa_json, str) else sa_json
         creds = _sa.Credentials.from_service_account_info(info)
 
         # Delete Push Subscription
         subscriber = pubsub_v1.SubscriberClient(credentials=creds)
         sub_path = subscriber.subscription_path(project_id, subscription_name)
-        import contextlib  # noqa: PLC0415
 
         with contextlib.suppress(NotFound):
             subscriber.delete_subscription(subscription=sub_path)
@@ -841,13 +841,11 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         if not topic_id:
             return ""
 
-        import json as _json  # noqa: PLC0415
-
         from google.api_core.exceptions import NotFound  # noqa: PLC0415
         from google.cloud import pubsub_v1  # noqa: PLC0415
         from google.oauth2 import service_account as _sa  # noqa: PLC0415
 
-        info = _json.loads(sa_json) if isinstance(sa_json, str) else sa_json
+        info = json.loads(sa_json) if isinstance(sa_json, str) else sa_json
         creds = _sa.Credentials.from_service_account_info(info)
 
         publisher = pubsub_v1.PublisherClient(credentials=creds)
@@ -861,17 +859,16 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             stopped = False
             if access_token:
                 try:
-                    headers = {
-                        "Authorization": f"Bearer {access_token}",
-                        "Content-Type": "application/json",
-                    }
-                    url = f"{self._GMAIL_BASE}/users/me/stop"
-                    requests.post(url, headers=headers, json={}, timeout=10)
+                    urllib3_future.request(
+                        "POST",
+                        f"{self._GMAIL_BASE}/users/me/stop",
+                        headers={"Authorization": f"Bearer {access_token}"},
+                        json={},
+                        timeout=10,
+                    )
                     stopped = True
                 except Exception:
                     stopped = False
-            import contextlib  # noqa: PLC0415
-
             with contextlib.suppress(NotFound):
                 publisher.delete_topic(topic=topic_path)
                 return "Watch stopped and topic deleted" if stopped else "Topic deleted"
@@ -901,21 +898,18 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
                 error_code="INVALID_PROPERTIES",
             )
 
-        headers: dict[str, str] = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
-        }
-        body: dict[str, Any] = {"topicName": topic_name}
-
-        url = f"{self._GMAIL_BASE}/users/me/watch"
-        resp: requests.Response = requests.post(
-            url, headers=headers, json=body, timeout=10
+        resp = urllib3_future.request(
+            "POST",
+            f"{self._GMAIL_BASE}/users/me/watch",
+            headers={"Authorization": f"Bearer {access_token}"},
+            json={"topicName": topic_name},
+            timeout=10,
         )
-        if resp.status_code not in WATCH_SUCCESS_STATUSES:
+        if resp.status not in WATCH_SUCCESS_STATUSES:
             try:
                 err: dict[str, Any] = resp.json()
             except Exception:
-                err = {"message": resp.text}
+                err = {"message": resp.data.decode(errors="replace")}
             msg = f"Failed to refresh Gmail watch: {err}"
             raise SubscriptionError(
                 msg,
@@ -955,15 +949,18 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             raise ValueError(msg)
 
         # List labels for the authenticated user
-        headers = {"Authorization": f"Bearer {access_token}"}
-        url = f"{self._GMAIL_BASE}/users/me/labels"
-        resp = requests.get(url, headers=headers, timeout=10)
-        if resp.status_code != HTTPStatus.OK:
+        resp = urllib3_future.request(
+            "GET",
+            f"{self._GMAIL_BASE}/users/me/labels",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+        if resp.status != HTTPStatus.OK:
             try:
                 err = resp.json()
                 msg = err.get("error", {}).get("message", str(err))
             except Exception:
-                msg = resp.text
+                msg = resp.data.decode(errors="replace")
             message = f"Failed to fetch Gmail labels: {msg}"
             raise ValueError(message)
 

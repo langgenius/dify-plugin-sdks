@@ -33,18 +33,13 @@ class CotAgentOutputParser:
                         action_name = value
 
                 if action_name is not None and action_input is not None:
-                    parsed_action: str | AgentScratchpadUnit.Action = (
-                        AgentScratchpadUnit.Action(
-                            action_name=action_name,
-                            action_input=action_input,
-                        )
+                    return AgentScratchpadUnit.Action(
+                        action_name=action_name,
+                        action_input=action_input,
                     )
-                else:
-                    parsed_action = json_str or ""
             except Exception:
                 return json_str or ""
-            else:
-                return parsed_action
+            return json_str or ""
 
         def extra_json_from_code_block(
             code_block: str,

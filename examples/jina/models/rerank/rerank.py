@@ -1,4 +1,6 @@
-import httpx
+from http import HTTPStatus
+
+import urllib3_future
 
 from dify_plugin import RerankModel
 from dify_plugin.config.config import DifyPluginEnv
@@ -57,6 +59,10 @@ class JinaRerankModel(RerankModel):
             The return value.
 
         Raises:
+            InvokeAuthorizationError: If credentials are rejected.
+            InvokeBadRequestError: If the request is invalid.
+            InvokeConnectionError: If the request cannot be sent.
+            InvokeRateLimitError: If the service rate limit is reached.
             InvokeServerUnavailableError: If model invocation fails.
         """
         del user
@@ -67,7 +73,8 @@ class JinaRerankModel(RerankModel):
         base_url = base_url.removesuffix("/")
 
         try:
-            response = httpx.post(
+            response = urllib3_future.request(
+                "POST",
                 base_url + "/rerank",
                 json={
                     "model": model,
@@ -78,25 +85,39 @@ class JinaRerankModel(RerankModel):
                 headers={"Authorization": f"Bearer {credentials.get('api_key')}"},
                 timeout=_plugin_config.HTTPX_TIMEOUT,
             )
-            response.raise_for_status()
-            results = response.json()
+        except urllib3_future.exceptions.HTTPError as e:
+            raise InvokeConnectionError(str(e)) from e
 
-            rerank_documents = []
-            for result in results["results"]:
-                rerank_document = RerankDocument(
-                    index=result["index"],
-                    text=result["document"]["text"],
-                    score=result["relevance_score"],
-                )
-                if (
-                    score_threshold is None
-                    or result["relevance_score"] >= score_threshold
-                ):
-                    rerank_documents.append(rerank_document)
+        if response.status != HTTPStatus.OK:
+            try:
+                body = response.json()
+            except ValueError:
+                body = {}
+            detail = (
+                body.get("detail")
+                if isinstance(body, dict)
+                else response.data.decode(errors="replace")
+            )
+            msg = str(detail or f"HTTP {response.status}")
+            if response.status in {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}:
+                raise InvokeAuthorizationError(msg)
+            if response.status == HTTPStatus.TOO_MANY_REQUESTS:
+                raise InvokeRateLimitError(msg)
+            if response.status >= HTTPStatus.INTERNAL_SERVER_ERROR:
+                raise InvokeServerUnavailableError(msg)
+            raise InvokeBadRequestError(msg)
 
-            return RerankResult(model=model, docs=rerank_documents)
-        except httpx.HTTPStatusError as e:
-            raise InvokeServerUnavailableError(str(e)) from e
+        rerank_documents = []
+        for result in response.json()["results"]:
+            rerank_document = RerankDocument(
+                index=result["index"],
+                text=result["document"]["text"],
+                score=result["relevance_score"],
+            )
+            if score_threshold is None or result["relevance_score"] >= score_threshold:
+                rerank_documents.append(rerank_document)
+
+        return RerankResult(model=model, docs=rerank_documents)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -138,11 +159,11 @@ class JinaRerankModel(RerankModel):
         Map model invoke error to unified error
         """
         return {
-            InvokeConnectionError: [httpx.ConnectError],
-            InvokeServerUnavailableError: [httpx.RemoteProtocolError],
-            InvokeRateLimitError: [],
-            InvokeAuthorizationError: [httpx.HTTPStatusError],
-            InvokeBadRequestError: [httpx.RequestError],
+            InvokeConnectionError: [InvokeConnectionError],
+            InvokeServerUnavailableError: [InvokeServerUnavailableError],
+            InvokeRateLimitError: [InvokeRateLimitError],
+            InvokeAuthorizationError: [InvokeAuthorizationError],
+            InvokeBadRequestError: [KeyError, ValueError, InvokeBadRequestError],
         }
 
     def get_customizable_model_schema(

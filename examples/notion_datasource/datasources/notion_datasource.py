@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from typing import Any
 
-import requests
+import urllib3_future
 from datasources.utils.notion_client import NotionClient
 from datasources.utils.notion_extractor import NotionExtractor
 
@@ -77,7 +77,9 @@ class NotionDataSource(OnlineDocumentDatasource):
             "Authorization": f"Bearer {access_token}",
             "Notion-Version": self._API_VERSION,
         }
-        response = requests.get(url=self._NOTION_BOT_USER, headers=headers, timeout=10)
+        response = urllib3_future.request(
+            "GET", self._NOTION_BOT_USER, headers=headers, timeout=10
+        )
         response_json = response.json()
         if "object" in response_json and response_json["object"] == "user":
             user_type = response_json["type"]

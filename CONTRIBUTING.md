@@ -73,40 +73,22 @@ uv run prek run -a
 
 Use these commands for normal development:
 
-- `just format`: run `uv run ruff format`
-- `just lint`: run `uv run ruff check`
-- `just check`: run `uv lock --check`, `ruff format --check --diff`, and
-  `ruff check`
-- `just test`: run `uv run pytest`
-- `just docs`: generate schema documentation into `.mkdocs/docs/schema.md`
+- `just fmt` (also `just format`): run `uv run ruff format`
+- `just lint`: run `just fmt`, then `uv run ruff check --fix`
+- `just check`: run `uv lock --check`, `ruff format --check --diff`, and `ruff check`
+- `just test`: run the SDK, OpenAI, Google Cloud Storage, and Jina example tests
 - `just build`: build source and wheel distributions
+- `just docs`: generate schema documentation into `.mkdocs/docs/schema.md`
 - `just clean`: remove local build, test, and lint artifacts
 
 Notes:
 
-- `just lint` is non-mutating in this repository.
-- `ruff` has `fix = true` in [`pyproject.toml`](pyproject.toml), but the
-  current `just lint` command does not pass `--fix`.
-- `just check` is the non-mutating validation entrypoint used by PR checks and
-  Git hooks.
-- `just test` does not run `just check`; run both before opening a pull request
-  when the change affects behavior or public interfaces.
-- Integration tests that need the Dify plugin CLI are skipped when the binary is
-  unavailable. CI installs it with
-  [`scripts/setup-dify-plugin-cli.sh`](scripts/setup-dify-plugin-cli.sh) before
-  running tests.
-- If you change dependencies, refresh and commit [`uv.lock`](uv.lock) before
-  opening a pull request.
+- `just check` is the non-mutating validation entrypoint used by PR checks and Git hooks.
+- Integration tests that need the Dify plugin CLI are skipped when the binary is unavailable.
+- CI installs the CLI with [`scripts/setup-dify-plugin-cli.sh`](scripts/setup-dify-plugin-cli.sh) before running tests.
+- If you change dependencies, refresh and commit [`uv.lock`](uv.lock) before opening a pull request.
 
-For most changes, a good local sequence is:
-
-```bash
-just check
-just test
-just build
-```
-
-Run `just docs` when SDK schema documentation may have changed.
+Run `just check` for every change, plus `just test` for behavior changes, `just build` for packaging changes, and `just docs` for schema changes.
 
 ### CI Checks
 
@@ -116,15 +98,13 @@ Pull requests targeting `main` currently run these checks:
 2. `just check` on Python 3.12, including `uv.lock` freshness validation
 3. `just test` on Python 3.12 and 3.13 through the reusable test workflow
 
-The test workflow installs the Dify plugin CLI, runs `just dev`, and then runs
-`just test`.
+The test workflow installs the Dify plugin CLI, runs `just dev`, and then runs `just test`.
 
-Pushes to `main` also run the MkDocs workflow. It runs `just docs` on Python
-3.12 and deploys `.mkdocs` to GitHub Pages.
+Pushes to `main` also run the MkDocs workflow.
+It runs `just docs` on Python 3.12 and deploys `.mkdocs` to GitHub Pages.
 
-Keep local workflow aligned with those checks. A green local `just check` plus
-`just test` is useful, but it is not a complete substitute for CI because CI
-also validates PR titles and a Python version matrix.
+Keep local workflow aligned with those checks.
+A green local `just check` plus `just test` is useful, but it is not a complete substitute for CI because CI also validates PR titles and a Python version matrix.
 
 ## Git Commits
 
@@ -199,8 +179,7 @@ Before you open a pull request:
 - self-assign the pull request
 - make sure the change stays focused and reviewable
 - run `just check` and `just test`
-- run `just build` when the change affects packaging, project metadata, or SDK
-  distribution behavior
+- also run `just build` when the change affects packaging, project metadata, or SDK distribution behavior
 
 When you open a pull request:
 

@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from http import HTTPStatus
 from typing import Any
 
-import requests
+import urllib3_future
 
 from dify_plugin import Tool
 from dify_plugin.entities.provider_config import CredentialType
@@ -59,122 +59,82 @@ class GithubRepositoryCommitsTool(Tool):
         access_token = self.runtime.credentials.get("access_tokens")
         try:
             headers = {
-                "Content-Type": "application/vnd.github+json",
+                "Accept": "application/vnd.github+json",
                 "Authorization": f"Bearer {access_token}",
                 "X-GitHub-Api-Version": "2022-11-28",
             }
-            s = requests.session()
-            api_domain = "https://api.github.com"
-            url = f"{api_domain}/repos/{owner}/{repo}/commits"
-
             params = {"per_page": per_page}
-
             if sha:
                 params["sha"] = sha
             if path:
                 params["path"] = path
 
-            response = s.request(
-                method="GET",
+            response = urllib3_future.request(
+                "GET",
                 headers=headers,
-                url=url,
-                params=params,
+                url=f"https://api.github.com/repos/{owner}/{repo}/commits",
+                fields=params,
+                timeout=10,
             )
+            response_data = response.json()
 
-            if response.status_code == HTTPStatus.OK:
-                response_data = response.json()
-
-                commits = []
-                for commit in response_data:
-                    commit_info = {
-                        "sha": commit.get("sha", "")[:7],
-                        "full_sha": commit.get("sha", ""),
-                        "message": commit.get("commit", {}).get("message", ""),
-                        "author": {
-                            "name": commit
-                            .get("commit", {})
-                            .get("author", {})
-                            .get("name", ""),
-                            "email": commit
-                            .get("commit", {})
-                            .get("author", {})
-                            .get("email", ""),
-                            "date": _format_github_timestamp(
-                                commit
-                                .get("commit", {})
-                                .get("author", {})
-                                .get("date", "")
-                            )
-                            if commit.get("commit", {}).get("author", {}).get("date")
-                            else "",
-                        },
-                        "committer": {
-                            "name": commit
-                            .get("commit", {})
-                            .get("committer", {})
-                            .get("name", ""),
-                            "email": commit
-                            .get("commit", {})
-                            .get("committer", {})
-                            .get("email", ""),
-                            "date": _format_github_timestamp(
-                                commit
-                                .get("commit", {})
-                                .get("committer", {})
-                                .get("date", "")
-                            )
-                            if commit.get("commit", {}).get("committer", {}).get("date")
-                            else "",
-                        },
-                        "url": commit.get("html_url", ""),
-                        "comment_count": commit.get("commit", {}).get(
-                            "comment_count", 0
-                        ),
-                        "verification": {
-                            "verified": commit
-                            .get("commit", {})
-                            .get("verification", {})
-                            .get("verified", False),
-                            "reason": commit
-                            .get("commit", {})
-                            .get("verification", {})
-                            .get("reason", ""),
-                        },
-                        "stats": {
-                            "additions": commit.get("stats", {}).get("additions", 0),
-                            "deletions": commit.get("stats", {}).get("deletions", 0),
-                            "total": commit.get("stats", {}).get("total", 0),
-                        }
-                        if commit.get("stats")
-                        else {},
-                        "files_changed": len(commit.get("files", []))
-                        if commit.get("files")
-                        else 0,
-                    }
-                    commits.append(commit_info)
-
-                s.close()
-
-                if not commits:
-                    yield self.create_text_message(
-                        f"No commits found in {owner}/{repo}"
-                    )
-                else:
-                    yield self.create_text_message(
-                        self.session.model.summary.invoke(
-                            text=json.dumps(commits, ensure_ascii=False),
-                            instruction=(
-                                "Summarize the GitHub commits in a structured format"
-                            ),
-                        )
-                    )
-            else:
-                response_data = response.json()
+            if response.status != HTTPStatus.OK:
                 message = response_data.get("message", "Unknown error")
-                msg = f"Request failed: {response.status_code} {message}"
+                msg = f"Request failed: {response.status} {message}"
                 raise InvokeError(msg)
+
+            commits = []
+            for commit in response_data:
+                commit_data = commit.get("commit", {})
+                author = commit_data.get("author", {})
+                committer = commit_data.get("committer", {})
+                verification = commit_data.get("verification", {})
+                stats = commit.get("stats") or {}
+                commits.append({
+                    "sha": commit.get("sha", "")[:7],
+                    "full_sha": commit.get("sha", ""),
+                    "message": commit_data.get("message", ""),
+                    "author": {
+                        "name": author.get("name", ""),
+                        "email": author.get("email", ""),
+                        "date": _format_github_timestamp(author["date"])
+                        if author.get("date")
+                        else "",
+                    },
+                    "committer": {
+                        "name": committer.get("name", ""),
+                        "email": committer.get("email", ""),
+                        "date": _format_github_timestamp(committer["date"])
+                        if committer.get("date")
+                        else "",
+                    },
+                    "url": commit.get("html_url", ""),
+                    "comment_count": commit_data.get("comment_count", 0),
+                    "verification": {
+                        "verified": verification.get("verified", False),
+                        "reason": verification.get("reason", ""),
+                    },
+                    "stats": {
+                        "additions": stats.get("additions", 0),
+                        "deletions": stats.get("deletions", 0),
+                        "total": stats.get("total", 0),
+                    }
+                    if stats
+                    else {},
+                    "files_changed": len(commit.get("files") or []),
+                })
+
+            if not commits:
+                yield self.create_text_message(f"No commits found in {owner}/{repo}")
+                return
+            yield self.create_text_message(
+                self.session.model.summary.invoke(
+                    text=json.dumps(commits, ensure_ascii=False),
+                    instruction="Summarize the GitHub commits in a structured format",
+                )
+            )
         except InvokeError:
             raise
-        except Exception as e:
-            msg = f"GitHub API request failed: {e}"
-            raise InvokeError(msg) from e
+        except Exception as exc:
+            msg = f"GitHub API request failed: {exc}"
+            raise InvokeError(msg) from exc

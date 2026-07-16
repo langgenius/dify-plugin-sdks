@@ -10,6 +10,5 @@ dependencies = [
     "httpx>=0.28.1,<1",
     "numpy~=1.26.4",
     "openai~=2.3.0",
-    "pydub~=0.25.1",
     "tiktoken~=0.8.0",
 ]

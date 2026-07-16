@@ -19,7 +19,7 @@ class RequestReader(ABC):
     def __init__(self) -> None:
         # Convert class variables to instance variables to avoid global lock contention
         self.lock = threading.Lock()
-        self.readers = []
+        self.readers: list[FilterReader] = []
 
     @abstractmethod
     def _read_stream(self) -> Generator["PluginInStream", None, None]:
@@ -36,62 +36,38 @@ class RequestReader(ABC):
                     self._process_line(line)
             except Exception:
                 logger.exception("Error in event loop")
-                time.sleep(0.01)  # Prevent high CPU usage
+            time.sleep(0.01)  # Prevent high CPU usage if the stream ends or fails
 
     def _process_line(self, data: "PluginInStream") -> None:
-        try:
-            session_id = data.session_id
-            readers_to_process = []
+        with self.lock:
+            readers_to_process = self.readers.copy()
 
-            # Acquire lock to safely access readers list
-            self.lock.acquire()
+        # Execute filter operations outside of lock
+        matched_readers = []
+        for reader in readers_to_process:
             try:
-                # Safely copy the reader list under lock protection
-                readers_to_process = self.readers.copy()
-            finally:
-                self.lock.release()
+                if reader.filter(data):
+                    matched_readers.append(reader)
+            except Exception:
+                logger.exception("Error in filter")
 
-            # Execute filter operations outside of lock
-            matched_readers = []
-            for reader in readers_to_process:
-                try:
-                    result = reader.filter(data)
-                    if result:
-                        matched_readers.append(reader)
-                except Exception:
-                    logger.exception("Error in filter")
-
-            # Process readers in batches to avoid blocking
-            for reader in matched_readers:
-                try:
-                    reader.write(data)
-                except Exception:
-                    logger.exception("Error writing to reader")
-
-        except Exception as e:
-            data.writer.error(
-                session_id=session_id,
-                data={
-                    "error": f"Failed to process request ({type(e).__name__}): {e!s}"
-                },
-            )
+        # Process readers in batches to avoid blocking
+        for reader in matched_readers:
+            try:
+                reader.write(data)
+            except Exception:
+                logger.exception("Error writing to reader")
 
     def read(self, filter: Callable[["PluginInStream"], bool]) -> FilterReader:  # noqa: A002
         def close(reader: FilterReader) -> None:
-            self.lock.acquire()
-            try:
+            with self.lock:
                 if reader in self.readers:
                     self.readers.remove(reader)
-            finally:
-                self.lock.release()
 
         reader = FilterReader(filter, close_callback=lambda: close(reader))
 
-        self.lock.acquire()
-        try:
+        with self.lock:
             self.readers.append(reader)
-        finally:
-            self.lock.release()
 
         return reader
 
@@ -99,14 +75,9 @@ class RequestReader(ABC):
         """
         close stdin processing
         """
-        readers_to_close = []
-
-        self.lock.acquire()
-        try:
+        with self.lock:
             readers_to_close = self.readers.copy()
             self.readers.clear()
-        finally:
-            self.lock.release()
 
         # Close readers outside the lock
         for reader in readers_to_close:

@@ -2,8 +2,8 @@ import time
 from collections.abc import Generator, Mapping
 from typing import Any
 
+import urllib3_future
 from datasources.firecrawl_app import FirecrawlApp, get_array_params
-from requests import HTTPError
 
 from dify_plugin.entities.datasource import (
     WebsiteCrawlMessage,
@@ -13,25 +13,13 @@ from dify_plugin.entities.datasource import (
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.interfaces.datasource.website import WebsiteCrawlDatasource
 
-EMPTY_FILTER_VALUES = frozenset({None, ""})
+EMPTY_FILTER_VALUES = (None, "")
 
 
 class CrawlDatasource(WebsiteCrawlDatasource):
     def _get_website_crawl(
         self, datasource_parameters: Mapping[str, Any]
     ) -> Generator[WebsiteCrawlMessage, None, None]:
-        """
-        the api doc:
-        https://docs.firecrawl.dev/api-reference/endpoint/crawl
-
-        Yields:
-            Generated values.
-
-        Raises:
-            HTTPError: If the HTTP request fails.
-            ToolProviderCredentialValidationError: If credentials validation fails.
-            ValueError: If input values are invalid.
-        """
         source_url = datasource_parameters.get("url")
         if not source_url:
             msg = "Url is required"
@@ -47,9 +35,7 @@ class CrawlDatasource(WebsiteCrawlDatasource):
                 base_url=self.runtime.credentials.get("base_url")
                 or "https://api.firecrawl.dev",
             )
-
             crawl_sub_pages = datasource_parameters.get("crawl_subpages", True)
-
             scrape_options = {
                 "onlyMainContent": datasource_parameters.get("only_main_content", True)
             }
@@ -76,32 +62,31 @@ class CrawlDatasource(WebsiteCrawlDatasource):
 
             crawl_res = WebSiteInfo(web_info_list=[], status="", total=0, completed=0)
 
-            crawl_result = app.crawl_url(
-                url=datasource_parameters["url"], wait=False, **payload
-            )
+            crawl_result = app.crawl_url(url=source_url, wait=False, **payload)
             job_id = crawl_result["id"]
+
             crawl_res.status = "processing"
             yield self.create_crawl_message(crawl_res)
 
             while True:
                 status = app.check_crawl_status(job_id=job_id)
-                if status["status"] == "completed":
-                    self._process_completed_job(app, status, crawl_res)
-                    crawl_res.status = "completed"
-                    crawl_res.total = status["total"] or 0
-                    crawl_res.completed = status["completed"] or 0
-                    yield self.create_crawl_message(crawl_res)
-                    break
-                elif status["status"] == "failed":
-                    msg = f"Job {crawl_res.job_id} failed: {status['error']}"
-                    raise HTTPError(msg)
-                else:
-                    crawl_res.status = "processing"
-                    crawl_res.total = status["total"] or 0
-                    crawl_res.completed = status["completed"] or 0
-                    yield self.create_crawl_message(crawl_res)
-                    time.sleep(5)
+                status_value = status["status"]
 
+                if status_value == "failed":
+                    msg = f"Job {job_id} failed: {status['error']}"
+                    raise urllib3_future.exceptions.HTTPError(msg)
+
+                is_completed = status_value == "completed"
+                if is_completed:
+                    self._process_completed_job(app, status, crawl_res)
+
+                crawl_res.status = "completed" if is_completed else "processing"
+                crawl_res.total = status["total"] or 0
+                crawl_res.completed = status["completed"] or 0
+                yield self.create_crawl_message(crawl_res)
+                if is_completed:
+                    return
+                time.sleep(5)
         except Exception as e:
             msg = f"An error occurred: {e!s}"
             raise ValueError(msg) from e

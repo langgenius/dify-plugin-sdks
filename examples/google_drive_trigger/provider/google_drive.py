@@ -10,7 +10,7 @@ from collections.abc import Mapping, Sequence
 from http import HTTPStatus
 from typing import Any
 
-import requests
+import urllib3_future
 from werkzeug import Request, Response
 
 from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
@@ -178,15 +178,19 @@ class GoogleDriveTrigger(Trigger):
             }
 
             try:
-                response = requests.get(
-                    self._CHANGES_ENDPOINT, headers=headers, params=params, timeout=10
+                response = urllib3_future.request(
+                    "GET",
+                    self._CHANGES_ENDPOINT,
+                    headers=headers,
+                    fields=params,
+                    timeout=10,
                 )
-            except requests.RequestException as exc:
+            except urllib3_future.exceptions.HTTPError as exc:
                 msg = f"Failed to fetch Google Drive changes: {exc}"
                 raise ValueError(msg) from exc
 
-            payload = response.json() if response.content else {}
-            if response.status_code != HTTPStatus.OK:
+            payload = response.json() if response.data else {}
+            if response.status != HTTPStatus.OK:
                 msg = f"Google Drive changes API error: {payload}"
                 raise ValueError(msg)
 
@@ -309,13 +313,19 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
 
         try:
-            response = requests.post(self._OAUTH_ENDPOINT, data=data, timeout=10)
-        except requests.RequestException as exc:
+            response = urllib3_future.request(
+                "POST",
+                self._OAUTH_ENDPOINT,
+                body=urllib.parse.urlencode(data),
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=10,
+            )
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Failed to exchange authorization code: {exc}"
             raise TriggerProviderOAuthError(msg) from exc
 
-        payload = response.json() if response.content else {}
-        if response.status_code != HTTPStatus.OK:
+        payload = response.json() if response.data else {}
+        if response.status != HTTPStatus.OK:
             error_description = payload.get("error_description") or payload
             msg = f"Failed to obtain Google Drive OAuth tokens: {error_description}"
             raise TriggerProviderOAuthError(msg)
@@ -369,13 +379,19 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
 
         try:
-            response = requests.post(self._OAUTH_ENDPOINT, data=data, timeout=10)
-        except requests.RequestException as exc:
+            response = urllib3_future.request(
+                "POST",
+                self._OAUTH_ENDPOINT,
+                body=urllib.parse.urlencode(data),
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=10,
+            )
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Failed to refresh Google Drive OAuth token: {exc}"
             raise TriggerProviderOAuthError(msg) from exc
 
-        payload = response.json() if response.content else {}
-        if response.status_code != HTTPStatus.OK:
+        payload = response.json() if response.data else {}
+        if response.status != HTTPStatus.OK:
             error_description = payload.get("error_description") or payload
             msg = f"Unable to refresh Google Drive OAuth token: {error_description}"
             raise TriggerProviderOAuthError(msg)
@@ -452,11 +468,6 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
             # add a 1800 seconds buffer to the expiration time to avoid race conditions
         }
 
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
-        }
-
         params = {
             "pageToken": start_page_token,
             "spaces": ",".join(spaces),
@@ -464,22 +475,22 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
 
         try:
-            response = requests.post(
-                self._WATCH_URL,
-                headers=headers,
-                params=params,
+            response = urllib3_future.request(
+                "POST",
+                f"{self._WATCH_URL}?{urllib.parse.urlencode(params)}",
+                headers={"Authorization": f"Bearer {access_token}"},
                 json=watch_body,
                 timeout=10,
             )
-        except requests.RequestException as exc:
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Network error while creating Google Drive watch: {exc}"
             raise SubscriptionError(
                 msg,
                 error_code="NETWORK_ERROR",
             ) from exc
 
-        payload = response.json() if response.content else {}
-        if response.status_code != HTTPStatus.OK:
+        payload = response.json() if response.data else {}
+        if response.status != HTTPStatus.OK:
             msg = (
                 f"Failed to create Google Drive watch: {payload.get('error', payload)}"
             )
@@ -541,29 +552,27 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
                 error_code="MISSING_CHANNEL",
             )
 
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
-        }
-        body = {"id": channel_id, "resourceId": resource_id}
-
         try:
-            response = requests.post(
-                self._STOP_URL, headers=headers, json=body, timeout=10
+            response = urllib3_future.request(
+                "POST",
+                self._STOP_URL,
+                headers={"Authorization": f"Bearer {access_token}"},
+                json={"id": channel_id, "resourceId": resource_id},
+                timeout=10,
             )
-        except requests.RequestException as exc:
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Network error while stopping Google Drive watch: {exc}"
             raise UnsubscribeError(
                 msg,
                 error_code="NETWORK_ERROR",
             ) from exc
 
-        if response.status_code in CHANNEL_STOP_SUCCESS_STATUSES:
+        if response.status in CHANNEL_STOP_SUCCESS_STATUSES:
             return UnsubscribeResult(
                 success=True, message="Google Drive watch channel stopped successfully"
             )
 
-        payload = response.json() if response.content else {}
+        payload = response.json() if response.data else {}
         msg = f"Failed to stop Google Drive watch: {payload.get('error', payload)}"
         raise UnsubscribeError(
             msg,
@@ -593,15 +602,19 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         headers = {"Authorization": f"Bearer {access_token}"}
         params = {"fields": "user"}
         try:
-            response = requests.get(
-                self._ABOUT_URL, headers=headers, params=params, timeout=10
+            response = urllib3_future.request(
+                "GET",
+                self._ABOUT_URL,
+                headers=headers,
+                fields=params,
+                timeout=10,
             )
-        except requests.RequestException as exc:
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Failed to fetch Google Drive profile: {exc}"
             raise TriggerProviderOAuthError(msg) from exc
 
-        payload = response.json() if response.content else {}
-        if response.status_code != HTTPStatus.OK:
+        payload = response.json() if response.data else {}
+        if response.status != HTTPStatus.OK:
             msg = (
                 f"Unable to fetch Google Drive profile: {payload.get('error', payload)}"
             )
@@ -612,18 +625,22 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         headers = {"Authorization": f"Bearer {access_token}"}
         params = {"spaces": ",".join(spaces)}
         try:
-            response = requests.get(
-                self._START_PAGE_ENDPOINT, headers=headers, params=params, timeout=10
+            response = urllib3_future.request(
+                "GET",
+                self._START_PAGE_ENDPOINT,
+                headers=headers,
+                fields=params,
+                timeout=10,
             )
-        except requests.RequestException as exc:
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Network error while fetching startPageToken: {exc}"
             raise SubscriptionError(
                 msg,
                 error_code="NETWORK_ERROR",
             ) from exc
 
-        payload = response.json() if response.content else {}
-        if response.status_code != HTTPStatus.OK:
+        payload = response.json() if response.data else {}
+        if response.status != HTTPStatus.OK:
             msg = f"Failed to fetch startPageToken: {payload.get('error', payload)}"
             raise SubscriptionError(
                 msg,

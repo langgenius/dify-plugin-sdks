@@ -11,7 +11,7 @@ from collections.abc import Callable, Mapping
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any
 
-import requests
+import urllib3_future
 from werkzeug import Request, Response
 
 from dify_plugin.entities import I18nObject, ParameterOption
@@ -56,7 +56,7 @@ def _isoformat_now() -> str:
     )
 
 
-def _parse_google_error(resp: requests.Response) -> str:
+def _parse_google_error(resp: urllib3_future.HTTPResponse) -> str:
     with contextlib.suppress(Exception):
         data = resp.json()
         error = data.get("error")
@@ -68,7 +68,7 @@ def _parse_google_error(resp: requests.Response) -> str:
             message = data.get("message")
             if message:
                 return str(message)
-    return resp.text or f"HTTP {resp.status_code}"
+    return resp.data.decode(errors="replace") if resp.data else f"HTTP {resp.status}"
 
 
 def _to_bool(value: object, default: bool) -> bool:
@@ -104,14 +104,16 @@ def _retrieve_sync_token(
 
     while True:
         try:
-            resp = requests.get(url, headers=headers, params=params, timeout=10)
-        except requests.RequestException as exc:
+            resp = urllib3_future.request(
+                "GET", url, headers=headers, fields=params, timeout=10
+            )
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Network error while obtaining sync token: {exc}"
             raise error_factory(
                 msg,
             ) from exc
 
-        if resp.status_code != HTTPStatus.OK:
+        if resp.status != HTTPStatus.OK:
             msg = f"Failed to obtain calendar sync token: {_parse_google_error(resp)}"
             raise error_factory(
                 msg,
@@ -368,16 +370,18 @@ class GoogleCalendarTrigger(Trigger):
 
         while True:
             try:
-                resp = requests.get(url, headers=headers, params=params, timeout=10)
-            except requests.RequestException as exc:
+                resp = urllib3_future.request(
+                    "GET", url, headers=headers, fields=params, timeout=10
+                )
+            except urllib3_future.exceptions.HTTPError as exc:
                 msg = f"Network error while fetching calendar delta: {exc}"
                 raise TriggerDispatchError(
                     msg,
                 ) from exc
 
-            if resp.status_code == HTTPStatus.GONE:
+            if resp.status == HTTPStatus.GONE:
                 raise SyncTokenExpiredError
-            if resp.status_code != HTTPStatus.OK:
+            if resp.status != HTTPStatus.OK:
                 msg = f"Failed to fetch calendar delta: {_parse_google_error(resp)}"
                 raise TriggerDispatchError(
                     msg,
@@ -471,19 +475,20 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         try:
-            resp = requests.post(
+            resp = urllib3_future.request(
+                "POST",
                 self._OAUTH_ENDPOINT,
-                data=data,
+                body=urllib.parse.urlencode(data),
                 headers=headers,
                 timeout=10,
             )
-        except requests.RequestException as exc:
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Network error during OAuth token exchange: {exc}"
             raise TriggerProviderOAuthError(
                 msg,
             ) from exc
 
-        if resp.status_code != HTTPStatus.OK:
+        if resp.status != HTTPStatus.OK:
             msg = f"OAuth token exchange failed: {_parse_google_error(resp)}"
             raise TriggerProviderOAuthError(
                 msg,
@@ -506,20 +511,17 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
             credentials["refresh_token"] = refresh_token
 
         # Best-effort fetch of account email for display/help
-        try:
-            headers_info = {"Authorization": f"Bearer {access_token}"}
-            info_resp = requests.get(
+        with contextlib.suppress(urllib3_future.exceptions.HTTPError, ValueError):
+            info_resp = urllib3_future.request(
+                "GET",
                 "https://www.googleapis.com/oauth2/v2/userinfo",
-                headers=headers_info,
+                headers={"Authorization": f"Bearer {access_token}"},
                 timeout=10,
             )
-            if info_resp.status_code == HTTPStatus.OK:
-                info_payload = info_resp.json() or {}
-                email = info_payload.get("email")
+            if info_resp.status == HTTPStatus.OK:
+                email = (info_resp.json() or {}).get("email")
                 if isinstance(email, str) and email:
                     credentials["account_email"] = email
-        except requests.RequestException:
-            pass
 
         return TriggerOAuthCredentials(credentials=credentials, expires_at=expires_at)
 
@@ -551,19 +553,20 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         try:
-            resp = requests.post(
+            resp = urllib3_future.request(
+                "POST",
                 self._OAUTH_ENDPOINT,
-                data=data,
+                body=urllib.parse.urlencode(data),
                 headers=headers,
                 timeout=10,
             )
-        except requests.RequestException as exc:
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Network error during OAuth refresh: {exc}"
             raise TriggerProviderOAuthError(
                 msg,
             ) from exc
 
-        if resp.status_code != HTTPStatus.OK:
+        if resp.status != HTTPStatus.OK:
             msg = f"OAuth refresh failed: {_parse_google_error(resp)}"
             raise TriggerProviderOAuthError(
                 msg,
@@ -619,22 +622,21 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
             "address": endpoint,
             "token": channel_token,
         }
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
-        }
+        headers = {"Authorization": f"Bearer {access_token}"}
         encoded_calendar_id = _encode_calendar_id(calendar_id)
         url = f"{self._CAL_BASE}/calendars/{encoded_calendar_id}/events/watch"
         try:
-            resp = requests.post(url, headers=headers, json=body, timeout=10)
-        except requests.RequestException as exc:
+            resp = urllib3_future.request(
+                "POST", url, headers=headers, json=body, timeout=10
+            )
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Network error while creating calendar watch: {exc}"
             raise SubscriptionError(
                 msg,
                 error_code="NETWORK_ERROR",
             ) from exc
 
-        if resp.status_code not in WATCH_SUCCESS_STATUSES:
+        if resp.status not in WATCH_SUCCESS_STATUSES:
             msg = f"Failed to create calendar watch: {_parse_google_error(resp)}"
             raise SubscriptionError(
                 msg,
@@ -721,22 +723,21 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
             "address": subscription.endpoint,
             "token": channel_token,
         }
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
-        }
+        headers = {"Authorization": f"Bearer {access_token}"}
         encoded_calendar_id = _encode_calendar_id(calendar_id)
         url = f"{self._CAL_BASE}/calendars/{encoded_calendar_id}/events/watch"
         try:
-            resp = requests.post(url, headers=headers, json=body, timeout=10)
-        except requests.RequestException as exc:
+            resp = urllib3_future.request(
+                "POST", url, headers=headers, json=body, timeout=10
+            )
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Network error while refreshing calendar watch: {exc}"
             raise SubscriptionError(
                 msg,
                 error_code="NETWORK_ERROR",
             ) from exc
 
-        if resp.status_code not in WATCH_SUCCESS_STATUSES:
+        if resp.status not in WATCH_SUCCESS_STATUSES:
             msg = f"Failed to refresh calendar watch: {_parse_google_error(resp)}"
             raise SubscriptionError(
                 msg,
@@ -818,22 +819,20 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         if not channel_id or not resource_id:
             return False
 
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
-        }
+        headers = {"Authorization": f"Bearer {access_token}"}
         body = {"id": channel_id, "resourceId": resource_id}
         try:
-            resp = requests.post(
+            resp = urllib3_future.request(
+                "POST",
                 f"{self._CAL_BASE}/channels/stop",
                 headers=headers,
                 json=body,
                 timeout=10,
             )
-        except requests.RequestException:
+        except urllib3_future.exceptions.HTTPError:
             return False
 
-        return resp.status_code in CHANNEL_STOP_SUCCESS_STATUSES
+        return resp.status in CHANNEL_STOP_SUCCESS_STATUSES
 
     def _bootstrap_sync_token(self, access_token: str, calendar_id: str) -> str:
         return _retrieve_sync_token(
@@ -864,14 +863,16 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         options: list[ParameterOption] = []
         while True:
             try:
-                resp = requests.get(url, headers=headers, params=params, timeout=10)
-            except requests.RequestException as exc:
+                resp = urllib3_future.request(
+                    "GET", url, headers=headers, fields=params, timeout=10
+                )
+            except urllib3_future.exceptions.HTTPError as exc:
                 msg = f"Network error while listing calendars: {exc}"
                 raise ValueError(
                     msg,
                 ) from exc
 
-            if resp.status_code != HTTPStatus.OK:
+            if resp.status != HTTPStatus.OK:
                 msg = f"Failed to list calendars: {_parse_google_error(resp)}"
                 raise ValueError(
                     msg,

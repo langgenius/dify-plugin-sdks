@@ -160,31 +160,29 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         Raises:
             CredentialsValidateFailedError: If credentials validation fails.
         """
+        headers = {"Content-Type": "application/json"}
+        if api_key := credentials.get("api_key"):
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        payload = {
+            "input": ["ping"],
+            "model": credentials.get("endpoint_model_name", model),
+        }
         try:
-            headers = {"Content-Type": "application/json"}
-
-            api_key = credentials.get("api_key")
-
-            if api_key:
-                headers["Authorization"] = f"Bearer {api_key}"
-
             endpoint_url = self._join_endpoint_url(
                 credentials.get("endpoint_url", ""),
                 "embeddings",
             )
-
-            payload = {
-                "input": ["ping"],
-                "model": credentials.get("endpoint_model_name", model),
-            }
-
             response = requests.post(
                 url=endpoint_url,
                 headers=headers,
                 data=json.dumps(payload),
                 timeout=(10, 300),
             )
+        except Exception as ex:
+            raise CredentialsValidateFailedError(str(ex)) from ex
 
+        try:
             if response.status_code != HTTPStatus.OK:
                 msg = (
                     "Credentials validation failed with status code "
@@ -197,14 +195,14 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             except json.JSONDecodeError as e:
                 msg = "Credentials validation failed: JSON decode error"
                 raise CredentialsValidateFailedError(msg) from e
+            except Exception as ex:
+                raise CredentialsValidateFailedError(str(ex)) from ex
 
-            if "model" not in json_result:
+            if not isinstance(json_result, dict) or "model" not in json_result:
                 msg = "Credentials validation failed: invalid response"
                 raise CredentialsValidateFailedError(msg)
-        except CredentialsValidateFailedError:
-            raise
-        except Exception as ex:
-            raise CredentialsValidateFailedError(str(ex)) from ex
+        finally:
+            response.close()
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict

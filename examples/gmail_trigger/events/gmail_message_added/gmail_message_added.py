@@ -11,7 +11,7 @@ from http import HTTPStatus
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote, urlparse
 
-import requests
+import urllib3_future
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Variables
@@ -91,12 +91,14 @@ class GmailMessageAddedEvent(Event):
             if not mid:
                 continue
             mid_str = str(mid)
-            murl = f"{self._GMAIL_BASE}/users/me/messages/{mid_str}"
-            mparams: dict[str, str] = {"format": "full"}
-            mresp: requests.Response = requests.get(
-                murl, headers=headers, params=mparams, timeout=10
+            mresp = urllib3_future.request(
+                "GET",
+                f"{self._GMAIL_BASE}/users/me/messages/{mid_str}",
+                headers=headers,
+                fields={"format": "full"},
+                timeout=10,
             )
-            if mresp.status_code != HTTPStatus.OK:
+            if mresp.status != HTTPStatus.OK:
                 continue
             m = mresp.json() or {}
             headers_list = (m.get("payload") or {}).get("headers") or []
@@ -354,15 +356,17 @@ class GmailMessageAddedEvent(Event):
         if not attachment_id:
             return None, None
 
-        url = (
-            f"{self._GMAIL_BASE}/users/me/messages/{message_id}"
-            f"/attachments/{attachment_id}"
-        )
         try:
-            response = requests.get(url, headers=headers, timeout=10)
-        except requests.RequestException:
+            response = urllib3_future.request(
+                "GET",
+                f"{self._GMAIL_BASE}/users/me/messages/{message_id}"
+                f"/attachments/{attachment_id}",
+                headers=headers,
+                timeout=10,
+            )
+        except urllib3_future.exceptions.HTTPError:
             return None, None
-        if response.status_code != HTTPStatus.OK:
+        if response.status != HTTPStatus.OK:
             return None, None
 
         data = response.json() or {}

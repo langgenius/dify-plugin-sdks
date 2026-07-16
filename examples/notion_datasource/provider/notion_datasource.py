@@ -1,9 +1,9 @@
-import urllib
 from collections.abc import Mapping
 from http import HTTPStatus
 from typing import Any
+from urllib.parse import urlencode
 
-import requests
+import urllib3_future
 from werkzeug import Request
 
 from dify_plugin.entities.datasource import DatasourceOAuthCredentials
@@ -33,7 +33,7 @@ class NotionDatasourceProvider(DatasourceProvider):
             "redirect_uri": redirect_uri,
             "owner": "user",
         }
-        return f"{self._AUTH_URL}?{urllib.parse.urlencode(params)}"
+        return f"{self._AUTH_URL}?{urlencode(params)}"
 
     def _oauth_get_credentials(
         self,
@@ -52,12 +52,20 @@ class NotionDatasourceProvider(DatasourceProvider):
             "grant_type": "authorization_code",
             "redirect_uri": redirect_uri,
         }
-        headers = {"Accept": "application/json"}
-        auth = (system_credentials["client_id"], system_credentials["client_secret"])
-        response = requests.post(
+        headers = urllib3_future.make_headers(
+            basic_auth=(
+                f"{system_credentials['client_id']}:"
+                f"{system_credentials['client_secret']}"
+            )
+        )
+        headers.update({
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
+        })
+        response = urllib3_future.request(
+            "POST",
             self._OAUTH_ENDPOINT,
-            data=data,
-            auth=auth,
+            body=urlencode(data),
             headers=headers,
             timeout=__TIMEOUT_SECONDS__,
         )
@@ -95,53 +103,32 @@ class NotionDatasourceProvider(DatasourceProvider):
         OAuth flow.
         """
 
-    def _validate_credentials(self, credentials: Mapping[str, Any]) -> bool | None:
+    def _validate_credentials(self, credentials: Mapping[str, Any]) -> None:
+        integration_secret = credentials.get("integration_secret")
+        if not integration_secret:
+            msg = "Notion Integration Token is required."
+            raise ToolProviderCredentialValidationError(msg)
+
         try:
-            # Check if integration_token is provided
-            if "integration_secret" not in credentials or not credentials.get(
-                "integration_secret",
-            ):
-                msg = "Notion Integration Token is required."
-                raise ToolProviderCredentialValidationError(
-                    msg,
-                )
-
-            # Try to authenticate with Notion API by making a test request
-            integration_secret = credentials.get("integration_secret")
-
-            try:
-                # Initialize the Notion client and attempt to fetch the current user
-                headers = {
+            response = urllib3_future.request(
+                "GET",
+                "https://api.notion.com/v1/users/me",
+                headers={
                     "Authorization": f"Bearer {integration_secret}",
                     "Notion-Version": self.API_VERSION,
-                    "Content-Type": "application/json",
-                }
-                # Make a request to the users endpoint to validate the token
-                response = requests.get(
-                    "https://api.notion.com/v1/users/me",
-                    headers=headers,
-                    timeout=__TIMEOUT_SECONDS__,
-                )
-                if response.status_code == HTTPStatus.UNAUTHORIZED:
-                    msg = "Invalid Notion Integration Token."
-                    raise ToolProviderCredentialValidationError(
-                        msg,
-                    )
-                if response.status_code != HTTPStatus.OK:
-                    msg = (
-                        f"Failed to connect to Notion API: "
-                        f"{response.status_code} {response.text}"
-                    )
-                    raise ToolProviderCredentialValidationError(
-                        msg,
-                    )
-            except requests.RequestException as e:
-                msg = f"Network error when connecting to Notion API: {e!s}"
-                raise ToolProviderCredentialValidationError(
-                    msg,
-                ) from e
-            else:
-                return True
+                },
+                timeout=__TIMEOUT_SECONDS__,
+            )
+        except urllib3_future.exceptions.HTTPError as e:
+            msg = f"Network error when connecting to Notion API: {e!s}"
+            raise ToolProviderCredentialValidationError(msg) from e
 
-        except Exception as e:
-            raise ToolProviderCredentialValidationError(str(e)) from e
+        if response.status == HTTPStatus.UNAUTHORIZED:
+            msg = "Invalid Notion Integration Token."
+            raise ToolProviderCredentialValidationError(msg)
+        if response.status != HTTPStatus.OK:
+            msg = (
+                f"Failed to connect to Notion API: "
+                f"{response.status} {response.data.decode(errors='replace')}"
+            )
+            raise ToolProviderCredentialValidationError(msg)

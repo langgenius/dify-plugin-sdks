@@ -1,9 +1,8 @@
 import time
 from http import HTTPStatus
-from json import JSONDecodeError, dumps
 
+import urllib3_future
 from models.text_embedding.jina_tokenizer import JinaTokenizer
-from requests import post
 
 from dify_plugin import TextEmbeddingModel
 from dify_plugin.entities import I18nObject
@@ -73,52 +72,48 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         base_url = base_url.removesuffix("/")
 
         url = base_url + "/embeddings"
-        headers = {
-            "Authorization": "Bearer " + api_key,
-            "Content-Type": "application/json",
-        }
-
-        def transform_jina_input_text(model: str, text: str) -> str | dict[str, str]:
-            if model == "jina-clip-v1":
-                return {"text": text}
-            return text
+        headers = {"Authorization": f"Bearer {api_key}"}
 
         data = {
             "model": model,
-            "input": [transform_jina_input_text(model, text) for text in texts],
+            "input": (
+                [{"text": text} for text in texts] if model == "jina-clip-v1" else texts
+            ),
         }
 
         try:
-            response = post(url, headers=headers, data=dumps(data), timeout=10)
+            response = urllib3_future.request(
+                "POST", url, headers=headers, json=data, timeout=10
+            )
         except Exception as e:
             raise InvokeConnectionError(str(e)) from e
 
-        if response.status_code != HTTPStatus.OK:
+        if response.status != HTTPStatus.OK:
             try:
-                resp = response.json()
-                msg = resp["detail"]
-                if response.status_code == HTTPStatus.UNAUTHORIZED:
-                    raise InvokeAuthorizationError(msg)
-                if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
-                    raise InvokeRateLimitError(msg)
-                if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
-                    raise InvokeServerUnavailableError(msg)
-                raise InvokeBadRequestError(msg)
-            except JSONDecodeError as e:
+                msg = response.json()["detail"]
+            except ValueError as e:
                 msg = (
                     f"Failed to convert response to json: {e} with text: "
-                    f"{response.text}"
+                    f"{response.data.decode(errors='replace')}"
                 )
                 raise InvokeServerUnavailableError(
                     msg,
                 ) from e
+            if response.status == HTTPStatus.UNAUTHORIZED:
+                raise InvokeAuthorizationError(msg)
+            if response.status == HTTPStatus.TOO_MANY_REQUESTS:
+                raise InvokeRateLimitError(msg)
+            if response.status == HTTPStatus.INTERNAL_SERVER_ERROR:
+                raise InvokeServerUnavailableError(msg)
+            raise InvokeBadRequestError(msg)
 
         try:
             resp = response.json()
             embeddings = resp["data"]
             usage = resp["usage"]
         except Exception as e:
-            msg = f"Failed to convert response to json: {e} with text: {response.text}"
+            text = response.data.decode(errors="replace")
+            msg = f"Failed to convert response to json: {e} with text: {text}"
             raise InvokeServerUnavailableError(
                 msg,
             ) from e

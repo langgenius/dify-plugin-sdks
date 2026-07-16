@@ -77,8 +77,10 @@ class AIModel(ABC):
         # NOTE: started_at is not a class variable, it bound to specific instance
         # FIXES for the issue: https://github.com/dify-ai/dify-plugin-sdk/issues/190
         self.started_at = time.perf_counter()
-        yield
-        self.started_at = 0
+        try:
+            yield
+        finally:
+            self.started_at = 0
 
     @abstractmethod
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
@@ -250,79 +252,38 @@ class AIModel(ABC):
     def _get_customizable_model_schema(
         self, model: str, credentials: Mapping
     ) -> AIModelEntity | None:
-        """
-        Get customizable model schema and fill in the template
-        """
+        """Get customizable model schema."""
         schema = self.get_customizable_model_schema(model, credentials)
-
         if not schema:
             return None
 
-        # fill in the template
-        new_parameter_rules = []
-        for parameter_rule in schema.parameter_rules:
-            if parameter_rule.use_template:
-                try:
-                    default_parameter_name = DefaultParameterName.value_of(
-                        parameter_rule.use_template
-                    )
-                    default_parameter_rule = (
-                        self._get_default_parameter_rule_variable_map(
-                            default_parameter_name
-                        )
-                    )
-                    if not parameter_rule.max and "max" in default_parameter_rule:
-                        parameter_rule.max = default_parameter_rule["max"]
-                    if not parameter_rule.min and "min" in default_parameter_rule:
-                        parameter_rule.min = default_parameter_rule["min"]
-                    if (
-                        not parameter_rule.default
-                        and "default" in default_parameter_rule
-                    ):
-                        parameter_rule.default = default_parameter_rule["default"]
-                    if (
-                        not parameter_rule.precision
-                        and "precision" in default_parameter_rule
-                    ):
-                        parameter_rule.precision = default_parameter_rule["precision"]
-                    if (
-                        not parameter_rule.required
-                        and "required" in default_parameter_rule
-                    ):
-                        parameter_rule.required = default_parameter_rule["required"]
-                    if not parameter_rule.help and "help" in default_parameter_rule:
-                        parameter_rule.help = I18nObject(
-                            en_us=default_parameter_rule["help"]["en_US"],
-                        )
-                    if (
-                        parameter_rule.help
-                        and not parameter_rule.help.en_us
-                        and (
-                            "help" in default_parameter_rule
-                            and "en_US" in default_parameter_rule["help"]
-                        )
-                    ):
-                        parameter_rule.help.en_us = default_parameter_rule["help"][
-                            "en_US"
-                        ]
-                    if (
-                        parameter_rule.help
-                        and not parameter_rule.help.zh_hans
-                        and (
-                            "help" in default_parameter_rule
-                            and "zh_Hans" in default_parameter_rule["help"]
-                        )
-                    ):
-                        parameter_rule.help.zh_hans = default_parameter_rule[
-                            "help"
-                        ].get("zh_Hans", default_parameter_rule["help"]["en_US"])
-                except ValueError:
-                    pass
+        # Preserve the legacy override hook without reapplying the built-in template.
+        if (
+            type(self)._get_default_parameter_rule_variable_map  # noqa: SLF001
+            is AIModel._get_default_parameter_rule_variable_map
+        ):
+            return schema
 
-            new_parameter_rules.append(parameter_rule)
-
-        schema.parameter_rules = new_parameter_rules
-
+        for rule in schema.parameter_rules:
+            if not rule.use_template:
+                continue
+            try:
+                template = self._get_default_parameter_rule_variable_map(
+                    DefaultParameterName.value_of(rule.use_template)
+                )
+                for field in ("max", "min", "default", "precision"):
+                    if getattr(rule, field) is None and field in template:
+                        setattr(rule, field, template[field])
+                help_template = template.get("help", {})
+                if not rule.help and "help" in template:
+                    rule.help = I18nObject(en_us=help_template["en_US"])
+                elif rule.help:
+                    if not rule.help.en_us and "en_US" in help_template:
+                        rule.help.en_us = help_template["en_US"]
+                    if not rule.help.zh_hans and "zh_Hans" in help_template:
+                        rule.help.zh_hans = help_template["zh_Hans"]
+            except ValueError:
+                pass
         return schema
 
     def get_customizable_model_schema(
@@ -345,24 +306,11 @@ class AIModel(ABC):
     def _get_default_parameter_rule_variable_map(
         self, name: DefaultParameterName
     ) -> dict:
-        """
-        Get default parameter rule for given name
-
-        :param name: parameter name
-        :return: parameter rule
-
-        Returns:
-            The return value.
-
-        Raises:
-            Exception: If the operation fails.
-        """
+        """Get the default rule for an overridable parameter template."""
         default_parameter_rule = PARAMETER_RULE_TEMPLATE.get(name)
-
         if not default_parameter_rule:
             msg = f"Invalid model parameter rule name {name}"
             raise Exception(msg)
-
         return default_parameter_rule
 
     def _get_num_tokens_by_gpt2(self, text: str) -> int:

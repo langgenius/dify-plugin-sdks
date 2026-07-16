@@ -3,7 +3,7 @@ from collections.abc import Generator
 from http import HTTPStatus
 from typing import Any
 
-import requests
+import urllib3_future
 
 from dify_plugin import Tool
 from dify_plugin.entities.provider_config import CredentialType
@@ -48,62 +48,51 @@ class GithubRepositoryContributorsTool(Tool):
         access_token = self.runtime.credentials.get("access_tokens")
         try:
             headers = {
-                "Content-Type": "application/vnd.github+json",
+                "Accept": "application/vnd.github+json",
                 "Authorization": f"Bearer {access_token}",
                 "X-GitHub-Api-Version": "2022-11-28",
             }
-            s = requests.session()
-            api_domain = "https://api.github.com"
-            url = f"{api_domain}/repos/{owner}/{repo}/contributors"
-
-            params = {"per_page": per_page}
-
-            response = s.request(
-                method="GET",
+            response = urllib3_future.request(
+                "GET",
                 headers=headers,
-                url=url,
-                params=params,
+                url=f"https://api.github.com/repos/{owner}/{repo}/contributors",
+                fields={"per_page": per_page},
+                timeout=10,
             )
+            response_data = response.json()
 
-            if response.status_code == HTTPStatus.OK:
-                response_data = response.json()
-
-                contributors = []
-                for contributor in response_data:
-                    contributor_info = {
-                        "login": contributor.get("login", ""),
-                        "id": contributor.get("id", 0),
-                        "avatar_url": contributor.get("avatar_url", ""),
-                        "url": contributor.get("html_url", ""),
-                        "contributions": contributor.get("contributions", 0),
-                        "type": contributor.get("type", ""),
-                        "site_admin": contributor.get("site_admin", False),
-                    }
-                    contributors.append(contributor_info)
-
-                s.close()
-
-                if not contributors:
-                    yield self.create_text_message(
-                        f"No contributors found in {owner}/{repo}"
-                    )
-                else:
-                    yield self.create_text_message(
-                        self.session.model.summary.invoke(
-                            text=json.dumps(contributors, ensure_ascii=False),
-                            instruction=(
-                                "Summarize the GitHub contributors in a "
-                                "structured format"
-                            ),
-                        )
-                    )
-            else:
-                response_data = response.json()
+            if response.status != HTTPStatus.OK:
                 message = response_data.get("message", "Unknown error")
-                msg = f"Request failed: {response.status_code} {message}"
+                msg = f"Request failed: {response.status} {message}"
                 raise InvokeError(msg)
+
+            contributors = [
+                {
+                    "login": contributor.get("login", ""),
+                    "id": contributor.get("id", 0),
+                    "avatar_url": contributor.get("avatar_url", ""),
+                    "url": contributor.get("html_url", ""),
+                    "contributions": contributor.get("contributions", 0),
+                    "type": contributor.get("type", ""),
+                    "site_admin": contributor.get("site_admin", False),
+                }
+                for contributor in response_data
+            ]
+            if not contributors:
+                yield self.create_text_message(
+                    f"No contributors found in {owner}/{repo}"
+                )
+                return
+            yield self.create_text_message(
+                self.session.model.summary.invoke(
+                    text=json.dumps(contributors, ensure_ascii=False),
+                    instruction=(
+                        "Summarize the GitHub contributors in a structured format"
+                    ),
+                )
+            )
         except InvokeError:
             raise
-        except Exception as e:
-            msg = f"GitHub API request failed: {e}"
-            raise InvokeError(msg) from e
+        except Exception as exc:
+            msg = f"GitHub API request failed: {exc}"
+            raise InvokeError(msg) from exc

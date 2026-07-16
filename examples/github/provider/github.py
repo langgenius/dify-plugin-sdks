@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from http import HTTPStatus
 from typing import Any
 
-import requests
+import urllib3_future
 from werkzeug import Request
 
 from dify_plugin import ToolProvider
@@ -54,9 +54,15 @@ class GithubProvider(ToolProvider):
             "code": code,
             "redirect_uri": redirect_uri,
         }
-        headers = {"Accept": "application/json"}
-        response = requests.post(
-            self._OAUTH_ENDPOINT, data=data, headers=headers, timeout=10
+        response = urllib3_future.request(
+            "POST",
+            self._OAUTH_ENDPOINT,
+            body=urllib.parse.urlencode(data),
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            timeout=10,
         )
         response_json = response.json()
         access_tokens = response_json.get("access_token")
@@ -83,20 +89,22 @@ class GithubProvider(ToolProvider):
         return ToolOAuthCredentials(credentials=credentials, expires_at=-1)
 
     def _validate_credentials(self, credentials: dict) -> None:
+        access_token = credentials.get("access_tokens")
+        if not access_token:
+            msg = "GitHub API Access Token is required."
+            raise ToolProviderCredentialValidationError(msg)
+
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Accept": "application/vnd.github+json",
+        }
         try:
-            if "access_tokens" not in credentials or not credentials.get(
-                "access_tokens"
-            ):
-                msg = "GitHub API Access Token is required."
-                raise ToolProviderCredentialValidationError(msg)
-            headers = {
-                "Authorization": f"Bearer {credentials['access_tokens']}",
-                "Accept": "application/vnd.github+json",
-            }
-            response = requests.get(self._API_USER_URL, headers=headers, timeout=10)
-            if response.status_code != HTTPStatus.OK:
-                raise ToolProviderCredentialValidationError(
-                    response.json().get("message")
-                )
-        except Exception as e:
-            raise ToolProviderCredentialValidationError(str(e)) from e
+            response = urllib3_future.request(
+                "GET", self._API_USER_URL, headers=headers, timeout=10
+            )
+            if response.status == HTTPStatus.OK:
+                return
+            message = response.json().get("message")
+        except Exception as exc:
+            raise ToolProviderCredentialValidationError(str(exc)) from exc
+        raise ToolProviderCredentialValidationError(message)

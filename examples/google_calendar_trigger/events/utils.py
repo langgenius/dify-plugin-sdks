@@ -5,7 +5,7 @@ from collections.abc import Mapping, Sequence
 from http import HTTPStatus
 from typing import Any
 
-import requests
+import urllib3_future
 
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
@@ -17,10 +17,7 @@ def collect_events(payload: Mapping[str, Any], key: str) -> list[dict[str, Any]]
     raw_items = payload.get(key)
     if not isinstance(raw_items, Sequence):
         return []
-    events: list[dict[str, Any]] = [
-        dict(item) for item in raw_items if isinstance(item, Mapping)
-    ]
-    return events
+    return [dict(item) for item in raw_items if isinstance(item, Mapping)]
 
 
 def resolve_calendar_id(
@@ -62,6 +59,7 @@ def enrich_events(
     access_token = get_access_token(runtime)
     headers = {"Authorization": f"Bearer {access_token}"}
     encoded_calendar = urllib.parse.quote(calendar_id, safe="@._-")
+    params = {"showDeleted": "true"} if include_deleted else None
 
     enriched: list[dict[str, Any]] = []
     for event in events:
@@ -69,25 +67,23 @@ def enrich_events(
         if not event_id:
             continue
         encoded_event = urllib.parse.quote(event_id, safe="@._-")
-        params = {"showDeleted": "true"} if include_deleted else None
         try:
-            resp = requests.get(
+            resp = urllib3_future.request(
+                "GET",
                 f"{_CAL_BASE}/calendars/{encoded_calendar}/events/{encoded_event}",
                 headers=headers,
-                params=params,
+                fields=params,
                 timeout=10,
             )
-        except requests.RequestException:
+        except urllib3_future.exceptions.HTTPError:
             enriched.append(event)
             continue
 
-        if resp.status_code == HTTPStatus.OK:
+        if resp.status == HTTPStatus.OK:
             try:
                 enriched.append(resp.json() or {})
             except Exception:
                 enriched.append(event)
-        elif resp.status_code == HTTPStatus.NOT_FOUND and include_deleted:
-            enriched.append(event)
         else:
             enriched.append(event)
 

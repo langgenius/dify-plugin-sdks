@@ -10,18 +10,18 @@ from dify_plugin.interfaces.datasource import DatasourceProvider
 
 class GoogleCloudStorageDatasourceProvider(DatasourceProvider):
     def _validate_credentials(self, credentials: Mapping[str, Any]) -> None:
-        try:
-            if not credentials or not credentials.get("credentials"):
-                msg = "Google Cloud Storage credentials are required."
-                raise ToolProviderCredentialValidationError(msg)
-            if not isinstance(credentials.get("credentials"), str):
-                msg = "Google Cloud Storage credentials must be a string json."
-                raise ToolProviderCredentialValidationError(msg)
+        credentials_json = credentials.get("credentials")
+        if not credentials_json:
+            msg = "Google Cloud Storage credentials are required."
+            raise ToolProviderCredentialValidationError(msg)
+        if not isinstance(credentials_json, str):
+            msg = "Google Cloud Storage credentials must be a string json."
+            raise ToolProviderCredentialValidationError(msg)
 
-            service_account_obj = json.loads(credentials.get("credentials"))
-            google_client = storage.Client.from_service_account_info(
-                service_account_obj
+        try:
+            client = storage.Client.from_service_account_info(
+                json.loads(credentials_json)
             )
-            google_client.list_buckets()
+            next(client.list_buckets(max_results=1), None)
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e)) from e

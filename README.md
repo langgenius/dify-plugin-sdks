@@ -16,10 +16,13 @@ uv tool install rust-just
 Common development commands:
 
 ```bash
-just dev      # Sync default dev dependencies
-just check    # Check lockfile, formatting, and linting
-just test     # Run all tests
-just build    # Build source and wheel distributions
+just dev       # Sync default dev dependencies
+just fmt       # Apply formatting fixes
+just lint      # Format and apply lint fixes
+just check     # Check lockfile, formatting, and linting
+just test      # Run SDK and example tests
+just build     # Build source and wheel distributions
+just docs      # Generate schema documentation
 ```
 
 ## LLM Polling Support

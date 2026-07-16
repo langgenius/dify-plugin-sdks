@@ -1,7 +1,8 @@
 from collections.abc import Generator
+from http import HTTPStatus
 from typing import Any
 
-import requests
+import urllib3_future
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -36,8 +37,10 @@ class GoogleSearchTool(Tool):
             "hl": "en",
         }
 
-        response = requests.get(url=SERP_API_URL, params=params, timeout=5)
-        response.raise_for_status()
+        response = urllib3_future.request("GET", SERP_API_URL, fields=params, timeout=5)
+        if response.status >= HTTPStatus.BAD_REQUEST:
+            msg = f"SerpApi returned HTTP {response.status}"
+            raise urllib3_future.exceptions.HTTPError(msg)
         valuable_res = self._parse_response(response.json())
 
         yield self.create_json_message(valuable_res)

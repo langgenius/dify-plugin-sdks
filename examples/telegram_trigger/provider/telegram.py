@@ -4,7 +4,7 @@ import secrets
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
-import requests
+import urllib3_future
 from werkzeug import Request, Response
 
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
@@ -99,10 +99,8 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         url = f"{self._API_BASE}/bot{token}/getMe"
         try:
-            response = requests.get(url, timeout=10)
-        except (
-            requests.RequestException
-        ) as exc:  # pragma: no cover - network error path
+            response = urllib3_future.request("GET", url, timeout=10)
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Network error: {exc}"
             raise TriggerProviderCredentialValidationError(msg) from exc
 
@@ -251,10 +249,8 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> dict[str, Any]:
         url = f"{self._API_BASE}/bot{token}/{method}"
         try:
-            response = requests.post(url, json=payload, timeout=10)
-        except (
-            requests.RequestException
-        ) as exc:  # pragma: no cover - network error path
+            response = urllib3_future.request("POST", url, json=payload, timeout=10)
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Network error while calling Telegram {method}: {exc}"
             raise SubscriptionError(
                 msg,
@@ -265,10 +261,8 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
     def _telegram_get(self, token: str, method: str) -> dict[str, Any]:
         url = f"{self._API_BASE}/bot{token}/{method}"
         try:
-            response = requests.get(url, timeout=10)
-        except (
-            requests.RequestException
-        ) as exc:  # pragma: no cover - network error path
+            response = urllib3_future.request("GET", url, timeout=10)
+        except urllib3_future.exceptions.HTTPError as exc:
             msg = f"Network error while calling Telegram {method}: {exc}"
             raise SubscriptionError(
                 msg,
@@ -277,7 +271,7 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
         return self._parse_subscription_response(response, method)
 
     def _parse_subscription_response(
-        self, response: requests.Response, method: str
+        self, response: urllib3_future.HTTPResponse, method: str
     ) -> dict[str, Any]:
         try:
             data = response.json()
@@ -312,7 +306,7 @@ class TelegramSubscriptionConstructor(TriggerSubscriptionConstructor):
     def _safe_get_bot_profile(self, token: str) -> Mapping[str, Any]:
         url = f"{self._API_BASE}/bot{token}/getMe"
         try:
-            response = requests.get(url, timeout=10)
+            response = urllib3_future.request("GET", url, timeout=10)
             data = response.json()
             if data.get("ok"):
                 return data.get("result") or {}

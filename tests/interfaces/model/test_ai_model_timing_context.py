@@ -65,6 +65,15 @@ def test_ai_model_timing_context_multiple_sequential_uses() -> None:
     assert model.started_at == 0
 
 
+def test_ai_model_timing_context_resets_after_error() -> None:
+    model = MockAIModel(model_schemas=[])
+
+    with pytest.raises(RuntimeError), model.timing_context():
+        raise RuntimeError
+
+    assert model.started_at == 0
+
+
 def test_ai_model_timing_context_check_latency() -> None:
     concurrency = 10
 
