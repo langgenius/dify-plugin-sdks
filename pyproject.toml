@@ -58,7 +58,7 @@ required-version = '>=0.15.21'
 [tool.ruff.lint]
 select = ['ALL']
 ignore = [
-    'PLR0915', # Too broad for orchestration-heavy SDK/example functions.
+    'PLR0915', # Too broad for orchestration-heavy SDK functions.
     'ERA001',  # False positives are common.
     'PLR0912',
     'PLR0914',

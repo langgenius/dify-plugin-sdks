@@ -9,7 +9,7 @@ This file provides guidance for agents working with code in this repository.
 **Testing:**
 
 ```bash
-just test                              # Run SDK and example tests
+just test                              # Run SDK tests
 uv run pytest tests/specific_test.py   # Run specific test
 ```
 
@@ -39,9 +39,8 @@ just clean                             # Remove local build/test artifacts
 
 ### Repository Structure
 
-- **Root Level:** Python SDK package, project metadata, tests, and examples
+- **Root Level:** Python SDK package, project metadata, and tests
 - **`src/dify_plugin/`:** Main Python SDK implementation
-- **`examples/`:** Complete plugin examples (GitHub, OpenAI, Jina, etc.)
 
 ### Core SDK Architecture
 
@@ -94,17 +93,6 @@ The Dify Plugin SDK follows a modular architecture with clear separation of conc
 - **Tools:** Individual operations within a provider
 - **Credentials:** OAuth and API key management with validation
 
-## Plugin Examples Structure
-
-Each example in `examples/` follows a consistent structure:
-
-- **`manifest.yaml`:** Plugin metadata
-- **`main.py`:** Plugin entry point
-- **`provider/`:** Provider configuration and implementation
-- **`tools/`:** Individual tool implementations
-- **`models/`:** Model configurations (for model providers)
-- **`requirements.txt`:** Python dependencies
-
 ## Version Management
 
 - **SDK Version:** Currently 0.8.1 (semantic versioning)
@@ -113,7 +101,6 @@ Each example in `examples/` follows a consistent structure:
 
 ## Development Workflow
 
-1. Use existing examples as templates for new plugins
-2. Implement plugin interfaces in the appropriate category
-3. Run `just check` for every change
-4. Run `just test` for code, SDK interface, or example changes
+1. Implement plugin interfaces in the appropriate category
+2. Run `just check` for every change
+3. Run `just test` for code or SDK interface changes

@@ -76,7 +76,7 @@ Use these commands for normal development:
 - `just fmt` (also `just format`): run `uv run ruff format`
 - `just lint`: run `just fmt`, then `uv run ruff check --fix`
 - `just check`: run `uv lock --check`, `ruff format --check --diff`, and `ruff check`
-- `just test`: run the SDK, OpenAI, Google Cloud Storage, and Jina example tests
+- `just test`: run the SDK tests
 - `just build`: build source and wheel distributions
 - `just docs`: generate schema documentation into `.mkdocs/docs/schema.md`
 - `just clean`: remove local build, test, and lint artifacts
@@ -195,7 +195,7 @@ When you open a pull request:
   require them
 - update contributor-facing or user-facing documentation when needed
 - describe compatibility impact for changes that affect SDK APIs, plugin
-  manifests, generated schema documentation, examples, or runtime behavior
+  manifests, generated schema documentation, or runtime behavior
 
 ## Maintainer Notes
 

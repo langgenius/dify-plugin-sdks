@@ -17,9 +17,6 @@ check:
 
 test:
     uv run pytest
-    uv run --project examples/openai --locked --with-editable . --with pytest pytest examples/openai/tests
-    uv run --project examples/google_cloud_storage --locked --with-editable . --with pytest pytest examples/google_cloud_storage/tests
-    uv run --project examples/jina --locked --with-editable . --with pytest pytest examples/jina/tests
 
 build:
     uv build --no-create-gitignore --no-sources
