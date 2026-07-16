@@ -93,6 +93,34 @@ if TYPE_CHECKING:
     from dify_plugin.interfaces.tool import Tool
 
 
+def _detect_audio_suffix(header: bytes) -> str:
+    """Guess a temp-file suffix from the leading magic bytes of an audio blob.
+
+    The speech-to-text model-invoke payload carries only the raw audio bytes,
+    with no original filename or extension. OpenAI/Azure Whisper endpoints
+    determine the audio format from the multipart filename extension, so a
+    wrong extension makes them reject otherwise-supported formats. We sniff the
+    container from the header to label the temp file correctly.
+
+    Returns:
+        The matching suffix (including the leading dot). MP3 content and any
+        unrecognized header fall through to ``.mp3``, preserving the previous
+        hardcoded behavior for those cases.
+    """
+    suffix = ".mp3"
+    if header[:4] == b"RIFF" and header[8:12] == b"WAVE":
+        suffix = ".wav"
+    elif header[:4] == b"fLaC":
+        suffix = ".flac"
+    elif header[:4] == b"OggS":  # covers oga / ogg-opus
+        suffix = ".ogg"
+    elif header[4:8] == b"ftyp":  # covers m4a / mp4 (AAC)
+        suffix = ".m4a"
+    elif header[:4] == b"\x1a\x45\xdf\xa3":  # EBML (webm / matroska)
+        suffix = ".webm"
+    return suffix
+
+
 class PluginExecutor:  # noqa: PLR0904
     def __init__(self, config: DifyPluginEnv, registration: PluginRegistration) -> None:
         self.config = config
@@ -541,8 +569,10 @@ class PluginExecutor:  # noqa: PLR0904
             data.model_type,
         )
 
-        with tempfile.NamedTemporaryFile(suffix=".mp3", mode="wb", delete=True) as temp:
-            temp.write(binascii.unhexlify(data.file))
+        audio_bytes = binascii.unhexlify(data.file)
+        suffix = _detect_audio_suffix(audio_bytes[:16])
+        with tempfile.NamedTemporaryFile(suffix=suffix, mode="wb", delete=True) as temp:
+            temp.write(audio_bytes)
             temp.flush()
 
             with pathlib.Path(temp.name).open("rb") as f:
