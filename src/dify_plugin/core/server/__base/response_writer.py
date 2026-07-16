@@ -39,8 +39,8 @@ class ResponseWriter(ABC):
             StreamOutputMessage(
                 event=event, session_id=session_id, data=data
             ).model_dump_json()
-            + "\n\n"
         )
+        self.write("\n\n")
 
     def error(
         self, session_id: str | None = None, data: dict | BaseModel | None = None

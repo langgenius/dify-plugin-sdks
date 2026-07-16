@@ -3,7 +3,7 @@ import socket
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from typing import final
 
 import gevent.socket
@@ -79,7 +79,11 @@ class AIModel(ABC):
         self.started_at = time.perf_counter()
         try:
             yield
-        finally:
+        except BaseException:
+            with suppress(Exception):
+                self.started_at = 0
+            raise
+        else:
             self.started_at = 0
 
     @abstractmethod
@@ -252,31 +256,77 @@ class AIModel(ABC):
     def _get_customizable_model_schema(
         self, model: str, credentials: Mapping
     ) -> AIModelEntity | None:
-        """Get customizable model schema."""
+        """
+        Get customizable model schema and fill in the template
+        """
         schema = self.get_customizable_model_schema(model, credentials)
+
         if not schema:
             return None
 
-        for rule in schema.parameter_rules:
-            if not rule.use_template:
-                continue
-            try:
-                template = self._get_default_parameter_rule_variable_map(
-                    DefaultParameterName.value_of(rule.use_template)
-                )
-            except ValueError:
-                continue
-            for field in ("max", "min", "default", "precision"):
-                if getattr(rule, field) is None and field in template:
-                    setattr(rule, field, template[field])
-            help_template = template.get("help", {})
-            if not rule.help and "help" in template:
-                rule.help = I18nObject(en_us=help_template["en_US"])
-            elif rule.help:
-                if not rule.help.en_us and "en_US" in help_template:
-                    rule.help.en_us = help_template["en_US"]
-                if not rule.help.zh_hans and "zh_Hans" in help_template:
-                    rule.help.zh_hans = help_template["zh_Hans"]
+        # fill in the template
+        new_parameter_rules = []
+        for parameter_rule in schema.parameter_rules:
+            if parameter_rule.use_template:
+                with suppress(ValueError):
+                    default_parameter_name = DefaultParameterName.value_of(
+                        parameter_rule.use_template
+                    )
+                    default_parameter_rule = (
+                        self._get_default_parameter_rule_variable_map(
+                            default_parameter_name
+                        )
+                    )
+                    if not parameter_rule.max and "max" in default_parameter_rule:
+                        parameter_rule.max = default_parameter_rule["max"]
+                    if not parameter_rule.min and "min" in default_parameter_rule:
+                        parameter_rule.min = default_parameter_rule["min"]
+                    if (
+                        not parameter_rule.default
+                        and "default" in default_parameter_rule
+                    ):
+                        parameter_rule.default = default_parameter_rule["default"]
+                    if (
+                        not parameter_rule.precision
+                        and "precision" in default_parameter_rule
+                    ):
+                        parameter_rule.precision = default_parameter_rule["precision"]
+                    if (
+                        not parameter_rule.required
+                        and "required" in default_parameter_rule
+                    ):
+                        parameter_rule.required = default_parameter_rule["required"]
+                    if not parameter_rule.help and "help" in default_parameter_rule:
+                        parameter_rule.help = I18nObject(
+                            en_us=default_parameter_rule["help"]["en_US"],
+                        )
+                    if (
+                        parameter_rule.help
+                        and not parameter_rule.help.en_us
+                        and (
+                            "help" in default_parameter_rule
+                            and "en_US" in default_parameter_rule["help"]
+                        )
+                    ):
+                        parameter_rule.help.en_us = default_parameter_rule["help"][
+                            "en_US"
+                        ]
+                    if (
+                        parameter_rule.help
+                        and not parameter_rule.help.zh_hans
+                        and (
+                            "help" in default_parameter_rule
+                            and "zh_Hans" in default_parameter_rule["help"]
+                        )
+                    ):
+                        parameter_rule.help.zh_hans = default_parameter_rule[
+                            "help"
+                        ].get("zh_Hans", default_parameter_rule["help"]["en_US"])
+
+            new_parameter_rules.append(parameter_rule)
+
+        schema.parameter_rules = new_parameter_rules
+
         return schema
 
     def get_customizable_model_schema(
@@ -299,11 +349,24 @@ class AIModel(ABC):
     def _get_default_parameter_rule_variable_map(
         self, name: DefaultParameterName
     ) -> dict:
-        """Get the default rule for an overridable parameter template."""
+        """
+        Get default parameter rule for given name
+
+        :param name: parameter name
+        :return: parameter rule
+
+        Returns:
+            The return value.
+
+        Raises:
+            Exception: If the operation fails.
+        """
         default_parameter_rule = PARAMETER_RULE_TEMPLATE.get(name)
+
         if not default_parameter_rule:
             msg = f"Invalid model parameter rule name {name}"
             raise Exception(msg)
+
         return default_parameter_rule
 
     def _get_num_tokens_by_gpt2(self, text: str) -> int:

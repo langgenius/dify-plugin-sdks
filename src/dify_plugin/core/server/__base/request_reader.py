@@ -36,22 +36,33 @@ class RequestReader(ABC):
                     self._process_line(line)
             except Exception:
                 logger.exception("Error in event loop")
-            time.sleep(0.01)  # Prevent high CPU usage if the stream ends or fails
+                time.sleep(0.01)  # Prevent high CPU usage after failures
 
     def _process_line(self, data: "PluginInStream") -> None:
-        with self.lock:
+        session_id = data.session_id
+        self.lock.acquire()
+        try:
             readers_to_process = self.readers.copy()
+        except Exception as e:
+            data.writer.error(
+                session_id=session_id,
+                data={
+                    "error": f"Failed to process request ({type(e).__name__}): {e!s}"
+                },
+            )
+            return
+        finally:
+            self.lock.release()
 
-        # Execute filter operations outside of lock
         matched_readers = []
         for reader in readers_to_process:
             try:
-                if reader.filter(data):
+                result = reader.filter(data)
+                if result:
                     matched_readers.append(reader)
             except Exception:
                 logger.exception("Error in filter")
 
-        # Process readers in batches to avoid blocking
         for reader in matched_readers:
             try:
                 reader.write(data)
@@ -60,14 +71,20 @@ class RequestReader(ABC):
 
     def read(self, filter: Callable[["PluginInStream"], bool]) -> FilterReader:  # noqa: A002
         def close(reader: FilterReader) -> None:
-            with self.lock:
+            self.lock.acquire()
+            try:
                 if reader in self.readers:
                     self.readers.remove(reader)
+            finally:
+                self.lock.release()
 
         reader = FilterReader(filter, close_callback=lambda: close(reader))
 
-        with self.lock:
+        self.lock.acquire()
+        try:
             self.readers.append(reader)
+        finally:
+            self.lock.release()
 
         return reader
 
@@ -75,9 +92,12 @@ class RequestReader(ABC):
         """
         close stdin processing
         """
-        with self.lock:
+        self.lock.acquire()
+        try:
             readers_to_close = self.readers.copy()
             self.readers.clear()
+        finally:
+            self.lock.release()
 
         # Close readers outside the lock
         for reader in readers_to_close:

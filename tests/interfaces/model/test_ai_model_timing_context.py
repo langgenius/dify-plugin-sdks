@@ -35,6 +35,16 @@ class MockAIModel(AIModel):
             return time.perf_counter() - self.started_at
 
 
+class CleanupFailingAIModel(MockAIModel):
+    reject_cleanup = False
+
+    def __setattr__(self, name: str, value: object) -> None:
+        if name == "started_at" and value == 0 and self.reject_cleanup:
+            msg = "cleanup failed"
+            raise ValueError(msg)
+        super().__setattr__(name, value)
+
+
 def test_ai_model_timing_context_with_race_condition() -> None:
     model = MockAIModel(model_schemas=[])
 
@@ -75,6 +85,17 @@ def test_ai_model_timing_context_resets_after_error() -> None:
         fail()
 
     assert model.started_at == 0
+
+
+def test_ai_model_timing_cleanup_does_not_mask_body_error() -> None:
+    body_error = RuntimeError()
+    model = CleanupFailingAIModel(model_schemas=[])
+    model.reject_cleanup = True
+
+    with pytest.raises(RuntimeError) as exc_info, model.timing_context():
+        raise body_error
+
+    assert exc_info.value is body_error
 
 
 def test_ai_model_timing_context_check_latency() -> None:

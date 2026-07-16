@@ -1,5 +1,6 @@
 # ruff: noqa: RUF001
 
+from contextlib import suppress
 from decimal import Decimal
 from enum import Enum
 from typing import Any
@@ -342,14 +343,22 @@ class ParameterRule(BaseModel):
         if isinstance(data, dict):
             # check if there is a template
             if "use_template" in data:
-                try:
-                    default_parameter_rule = PARAMETER_RULE_TEMPLATE[
-                        DefaultParameterName.value_of(data["use_template"])
-                    ]
-                except ValueError:
-                    pass
-                else:
-                    data = default_parameter_rule | data
+                with suppress(ValueError):
+                    default_parameter_name = DefaultParameterName.value_of(
+                        data["use_template"]
+                    )
+                    default_parameter_rule = PARAMETER_RULE_TEMPLATE.get(
+                        default_parameter_name
+                    )
+                    if not default_parameter_rule:
+                        message = (
+                            "Invalid model parameter rule name "
+                            f"{default_parameter_name}"
+                        )
+                        raise Exception(message)
+                    copy_default_parameter_rule = default_parameter_rule.copy()
+                    copy_default_parameter_rule.update(data)
+                    data = copy_default_parameter_rule
 
             if not data.get("label"):
                 data["label"] = I18nObject(en_us=data["name"])

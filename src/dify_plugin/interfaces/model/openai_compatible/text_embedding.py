@@ -27,6 +27,24 @@ from dify_plugin.interfaces.model.openai_compatible.common import _CommonOaiApiC
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 
 
+def _validate_credentials_response(response: requests.Response) -> None:
+    if response.status_code != HTTPStatus.OK:
+        msg = f"Credentials validation failed with status code {response.status_code}"
+        raise CredentialsValidateFailedError(msg)
+
+    try:
+        json_result = response.json()
+    except json.JSONDecodeError as e:
+        msg = "Credentials validation failed: JSON decode error"
+        raise CredentialsValidateFailedError(msg) from e
+    except CredentialsValidateFailedError:
+        raise
+
+    if "model" not in json_result:
+        msg = "Credentials validation failed: invalid response"
+        raise CredentialsValidateFailedError(msg)
+
+
 class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
     """
     Model class for an OpenAI API-compatible text embedding model.
@@ -150,6 +168,30 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         del credentials
         return [self._get_num_tokens_by_gpt2(text) for text in texts]
 
+    def _request_credentials_validation(
+        self,
+        model: str,
+        credentials: dict,
+    ) -> requests.Response:
+        headers = {"Content-Type": "application/json"}
+        if api_key := credentials.get("api_key"):
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        endpoint_url = self._join_endpoint_url(
+            credentials.get("endpoint_url", ""),
+            "embeddings",
+        )
+        payload = {
+            "input": ["ping"],
+            "model": credentials.get("endpoint_model_name", model),
+        }
+        return requests.post(
+            url=endpoint_url,
+            headers=headers,
+            data=json.dumps(payload),
+            timeout=(10, 300),
+        )
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials
@@ -161,47 +203,22 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         Raises:
             CredentialsValidateFailedError: If credentials validation fails.
         """
-        headers = {"Content-Type": "application/json"}
-        if api_key := credentials.get("api_key"):
-            headers["Authorization"] = f"Bearer {api_key}"
-
-        payload = {
-            "input": ["ping"],
-            "model": credentials.get("endpoint_model_name", model),
-        }
         try:
-            endpoint_url = self._join_endpoint_url(
-                credentials.get("endpoint_url", ""),
-                "embeddings",
+            response = self._request_credentials_validation(
+                model,
+                credentials,
             )
-            response = requests.post(
-                url=endpoint_url,
-                headers=headers,
-                data=json.dumps(payload),
-                timeout=(10, 300),
-            )
+        except CredentialsValidateFailedError:
+            raise
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex)) from ex
 
         try:
-            if response.status_code != HTTPStatus.OK:
-                msg = (
-                    "Credentials validation failed with status code "
-                    f"{response.status_code}"
-                )
-                raise CredentialsValidateFailedError(msg)
-
-            try:
-                json_result = response.json()
-            except json.JSONDecodeError as e:
-                msg = "Credentials validation failed: JSON decode error"
-                raise CredentialsValidateFailedError(msg) from e
-            except Exception as ex:
-                raise CredentialsValidateFailedError(str(ex)) from ex
-
-            if not isinstance(json_result, dict) or "model" not in json_result:
-                msg = "Credentials validation failed: invalid response"
-                raise CredentialsValidateFailedError(msg)
+            _validate_credentials_response(response)
+        except CredentialsValidateFailedError:
+            raise
+        except Exception as ex:
+            raise CredentialsValidateFailedError(str(ex)) from ex
         finally:
             with suppress(Exception):
                 response.close()

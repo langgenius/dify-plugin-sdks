@@ -92,21 +92,19 @@ class OAICompatRerankModel(RerankModel):
         results = response.json()
         rerank_documents = []
         scores = [result["relevance_score"] for result in results["results"]]
-
-        # Min-Max Normalization: Normalize scores to 0 ~ 1.0 range
-        min_score, max_score = min(scores), max(scores)
+        min_score = min(scores)
+        max_score = max(scores)
         score_range = max_score - min_score if max_score != min_score else 1.0
 
         for result in results["results"]:
             index = result["index"]
-
-            # Retrieve document text (fallback if llama.cpp rerank doesn't return it)
             text = docs[index]
             document = result.get("document", {})
-            if isinstance(document, dict):
-                text = document.get("text", text)
-            elif isinstance(document, str) and document:
-                text = document
+            if document:
+                if isinstance(document, dict):
+                    text = document.get("text", docs[index])
+                elif isinstance(document, str):
+                    text = document
 
             normalized_score = (result["relevance_score"] - min_score) / score_range
             rerank_document = RerankDocument(

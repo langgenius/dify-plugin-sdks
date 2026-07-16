@@ -68,12 +68,12 @@ def _source_to_script_path(source: str) -> str:
     return str(Path.cwd() / source)
 
 
-def _load_configuration[T](file_path: str, configuration_type: type[T]) -> T:
-    try:
-        return configuration_type(**load_yaml_file(file_path))
-    except Exception as e:
-        msg = f"Error loading plugin configuration: {e!s}"
-        raise ValueError(msg) from e
+def _load_configuration[T](
+    file_path: str,
+    configuration_type: type[T],
+) -> tuple[T, dict[str, Any]]:
+    data = load_yaml_file(file_path)
+    return configuration_type(**data), data
 
 
 class PluginRegistration:
@@ -161,31 +161,44 @@ class PluginRegistration:
         """
         load basic plugin configuration from manifest.yaml
         """
-        self.configuration = _load_configuration("manifest.yaml", PluginConfiguration)
-        self.tools_configuration.extend(
-            _load_configuration(provider, ToolProviderConfiguration)
-            for provider in self.configuration.plugins.tools
-        )
-        self.models_configuration.extend(
-            _load_configuration(provider, ModelProviderConfiguration)
-            for provider in self.configuration.plugins.models
-        )
-        self.endpoints_configuration.extend(
-            _load_configuration(provider, EndpointProviderConfiguration)
-            for provider in self.configuration.plugins.endpoints
-        )
-        self.agent_strategies_configuration.extend(
-            _load_configuration(provider, AgentStrategyProviderConfiguration)
-            for provider in self.configuration.plugins.agent_strategies
-        )
-        self.datasource_configuration.extend(
-            _load_configuration(provider, DatasourceProviderManifest)
-            for provider in self.configuration.plugins.datasources
-        )
-        self.triggers_configuration.extend(
-            _load_configuration(provider, TriggerProviderConfiguration)
-            for provider in self.configuration.plugins.triggers
-        )
+        try:
+            self.configuration, _manifest_data = _load_configuration(
+                "manifest.yaml",
+                PluginConfiguration,
+            )
+            for providers, configuration_type, destination in (
+                ("tools", ToolProviderConfiguration, "tools_configuration"),
+                ("models", ModelProviderConfiguration, "models_configuration"),
+                (
+                    "endpoints",
+                    EndpointProviderConfiguration,
+                    "endpoints_configuration",
+                ),
+                (
+                    "agent_strategies",
+                    AgentStrategyProviderConfiguration,
+                    "agent_strategies_configuration",
+                ),
+                (
+                    "datasources",
+                    DatasourceProviderManifest,
+                    "datasource_configuration",
+                ),
+                (
+                    "triggers",
+                    TriggerProviderConfiguration,
+                    "triggers_configuration",
+                ),
+            ):
+                for provider in getattr(self.configuration.plugins, providers):
+                    configuration, _provider_data = _load_configuration(
+                        provider,
+                        configuration_type,
+                    )
+                    getattr(self, destination).append(configuration)
+        except Exception as e:
+            msg = f"Error loading plugin configuration: {e!s}"
+            raise ValueError(msg) from e
 
     def _resolve_tool_providers(self) -> None:
         """

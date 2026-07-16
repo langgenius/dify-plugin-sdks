@@ -11,6 +11,23 @@ logger.setLevel(logging.INFO)
 logger.addHandler(plugin_logger_handler)
 
 
+def _read_yaml_file(file_path: str) -> dict[str, Any]:
+    if not file_path:
+        msg = f"Failed to load YAML file {file_path}: file not found"
+        raise FileNotFoundError(msg)
+
+    if not pathlib.Path(file_path).exists():
+        msg = f"Failed to load YAML file {file_path}: file not found"
+        raise FileNotFoundError(msg)
+
+    with pathlib.Path(file_path).open(encoding="utf-8") as file:
+        try:
+            return yaml.safe_load(file)
+        except Exception as e:
+            msg = f"Failed to load YAML file {file_path}: {e}"
+            raise yaml.YAMLError(msg) from e
+
+
 def load_yaml_file(file_path: str, ignore_error: bool = False) -> dict[str, Any]:
     """Safe loading a YAML file to a dict
     :param file_path: the path of the YAML file
@@ -25,20 +42,16 @@ def load_yaml_file(file_path: str, ignore_error: bool = False) -> dict[str, Any]
     Raises:
         YAMLError: If the YAML file cannot be loaded.
     """
-    if not file_path:
-        logger.debug("Failed to load YAML file %s: file not found", file_path)
-        return {}
-
     try:
-        with pathlib.Path(file_path).open(encoding="utf-8") as file:
-            try:
-                return yaml.safe_load(file)
-            except Exception as e:
-                msg = f"Failed to load YAML file {file_path}: {e}"
-                raise yaml.YAMLError(msg) from e
+        return _read_yaml_file(file_path)
     except FileNotFoundError as e:
         logger.debug("Failed to load YAML file %s: %s", file_path, e)
         return {}
+    except yaml.YAMLError:
+        if ignore_error:
+            logger.exception("Failed to load YAML file %s", file_path)
+            return {}
+        raise
     except Exception:
         if ignore_error:
             logger.exception("Failed to load YAML file %s", file_path)
