@@ -20,7 +20,7 @@ class LogMetadata(StrEnum):
     description="The type of the parameter",
 )
 class CommonParameterType(Enum):
-    SECRET_INPUT = "secret-input"  # noqa: S105
+    SECRET_INPUT = "secret-input"  # ruff:ignore[hardcoded-password-string]
     TEXT_INPUT = "text-input"
     SELECT = "select"
     STRING = "string"

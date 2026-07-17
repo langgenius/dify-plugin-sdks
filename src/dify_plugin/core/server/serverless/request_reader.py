@@ -20,7 +20,7 @@ from dify_plugin.core.server.serverless.response_writer import ServerlessRespons
 class ServerlessRequestReader(RequestReader):
     def __init__(
         self,
-        host: str = "0.0.0.0",  # noqa: S104
+        host: str = "0.0.0.0",  # ruff:ignore[hardcoded-bind-all-interfaces]
         port: int = 8080,
         worker_class: str = "gevent",
         workers: int = 5,
@@ -51,7 +51,7 @@ class ServerlessRequestReader(RequestReader):
 
     def handler(self) -> tuple[Generator[str, None, None], int] | tuple[str, int]:
         try:
-            queue = Queue[str]()
+            queue: Queue[str | None] = Queue()
             data = request.get_json()
             event = PluginInStreamEvent.value_of(data["event"])
             plugin_in = PluginInStream(
@@ -66,34 +66,27 @@ class ServerlessRequestReader(RequestReader):
                 reader=self,
                 writer=ServerlessResponseWriter(queue),
             )
-            # put request to queue
             self.request_queue.put(plugin_in)
-
-            # wait for response
-            def generate() -> Generator[str, None, None]:
-                refresh_time = time.time()
-                while True:
-                    try:
-                        response = queue.get(timeout=1)
-                    except Empty:
-                        if (
-                            time.time() - refresh_time
-                            > self.max_single_connection_lifetime
-                        ):
-                            # reach max single connection lifetime
-                            break
-                        continue
-
-                    if response is None:
-                        break
-
-                    # refresh refresh_time
-                    refresh_time = time.time()
-                    yield response
-
-            return generate(), 200
         except Exception as e:
             return str(e), 500
+
+        def generate() -> Generator[str, None, None]:
+            refresh_time = time.time()
+            while True:
+                try:
+                    response = queue.get(timeout=1)
+                except Empty:
+                    if time.time() - refresh_time > self.max_single_connection_lifetime:
+                        return
+                    continue
+
+                if response is None:
+                    return
+
+                refresh_time = time.time()
+                yield response
+
+        return generate(), 200
 
     def health(self) -> tuple[str, int]:
         return "OK", 200

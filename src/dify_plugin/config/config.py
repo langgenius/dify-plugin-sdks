@@ -45,7 +45,7 @@ class DifyPluginEnv(BaseSettings):
     )
 
     SERVERLESS_HOST: str = Field(
-        default="0.0.0.0",  # noqa: S104
+        default="0.0.0.0",  # ruff:ignore[hardcoded-bind-all-interfaces]
         description="Serverless host",
     )
     SERVERLESS_PORT: int = Field(default=8080, description="Serverless port")
