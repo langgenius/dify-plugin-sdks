@@ -1,7 +1,6 @@
 import pathlib
 
 import pytest
-from yarl import URL
 
 from dify_plugin.config.integration_config import IntegrationConfig, find_dify_cli_path
 from dify_plugin.core.entities.plugin.request import (
@@ -19,10 +18,8 @@ from dify_plugin.integration.run import PluginRunner
 
 import requests
 
-_MARKETPLACE_API_URL = "https://marketplace.dify.ai"
-_OPENAI_PLUGIN_IDENTIFIER = (
-    "langgenius/openai:1.0.0@"
-    "c645d52efece517b10435f28da529156a86050dfa28fc4fde8089c038eee7f5a"
+_OPENAI_PLUGIN_URL = (
+    "https://marketplace.dify.ai/api/v1/plugins/langgenius/openai/1.0.0/download"
 )
 
 pytestmark = pytest.mark.skipif(
@@ -32,12 +29,7 @@ pytestmark = pytest.mark.skipif(
 
 
 def test_invoke_llm(openai_mock_server: str) -> None:
-    url = str(
-        (URL(_MARKETPLACE_API_URL) / "api/v1/plugins/download").with_query(
-            unique_identifier=_OPENAI_PLUGIN_IDENTIFIER
-        )
-    )
-    response = requests.get(url, timeout=10)
+    response = requests.get(_OPENAI_PLUGIN_URL, timeout=10)
     response.raise_for_status()
 
     # save the response to a file
