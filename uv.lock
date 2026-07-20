@@ -233,9 +233,9 @@ name = "dify-plugin"
 version = "0.10.0"
 source = { editable = "." }
 dependencies = [
-    { name = "dpkt" },
     { name = "flask" },
     { name = "gevent" },
+    { name = "h11" },
     { name = "httpx" },
     { name = "packaging" },
     { name = "pydantic" },
@@ -261,9 +261,9 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dpkt", specifier = ">=1.9.8" },
     { name = "flask", specifier = ">=3.1.3" },
     { name = "gevent", specifier = ">=26.4.0" },
+    { name = "h11", specifier = ">=0.16.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "packaging", specifier = ">=26.2" },
     { name = "pydantic", specifier = ">=2.13.4" },
@@ -285,15 +285,6 @@ dev = [
     { name = "pytest-xprocess" },
     { name = "ruff" },
     { name = "ty" },
-]
-
-[[package]]
-name = "dpkt"
-version = "1.9.8"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c9/7d/52f17a794db52a66e46ebb0c7549bf2f035ed61d5a920ba4aaa127dd038e/dpkt-1.9.8.tar.gz", hash = "sha256:43f8686e455da5052835fd1eda2689d51de3670aac9799b1b00cfd203927ee45", size = 180073, upload-time = "2022-08-18T05:54:13.582Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/79/479e2194c9096b92aecdf33634ae948d2be306c6011673e98ee1917f32c2/dpkt-1.9.8-py3-none-any.whl", hash = "sha256:4da4d111d7bf67575b571f5c678c71bddd2d8a01a3d57d489faf0a92c748fbfd", size = 194973, upload-time = "2022-08-18T05:54:10.793Z" },
 ]
 
 [[package]]
