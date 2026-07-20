@@ -95,7 +95,7 @@ The Dify Plugin SDK follows a modular architecture with clear separation of conc
 
 ## Version Management
 
-- **SDK Version:** Currently 0.9.1 (semantic versioning)
+- **SDK Version:** Defined by `[project].version` in `pyproject.toml` (semantic versioning)
 - **Manifest Version:** Plugin compatibility version (currently 0.0.2)
 - **Minimum Dify Version:** Required Dify version for plugin features
 

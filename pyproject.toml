@@ -1,6 +1,6 @@
 [project]
 name = 'dify-plugin'
-version = "0.9.1"
+version = "0.10.0"
 description = 'Dify Plugin SDK'
 authors = [{ name = 'langgenius', email = 'hello@dify.ai' }]
 dependencies = [
@@ -9,7 +9,7 @@ dependencies = [
     'dpkt>=1.9.8',
     'gevent>=26.4.0',
     'httpx>=0.28.1',
-    'pydantic_settings>=2.14.1',
+    'pydantic_settings>=2.14.2',
     'pydantic>=2.13.4',
     'pyyaml>=6.0.3',
     'requests>=2.33.1',
