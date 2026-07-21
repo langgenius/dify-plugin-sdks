@@ -730,7 +730,7 @@ class LargeLanguageModel(AIModel):
             The return value.
         """
         content = delta.get("content") or ""
-        reasoning_content = delta.get("reasoning_content")
+        reasoning_content = delta.get("reasoning_content") or delta.get("reasoning")
         output = content
         if reasoning_content:
             if not is_reasoning:
