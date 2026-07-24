@@ -133,6 +133,28 @@ class TestWrapThinking(unittest.TestCase):
 
         assert full_output == "<think>\nThinking.\n</think>Hello world."
 
+    def test_empty_reasoning_chunks_keep_block_open(self) -> None:
+        chunks = [
+            {"reasoning_content": "A", "content": ""},
+            {"reasoning_content": "", "content": ""},
+            {"reasoning": "B", "content": ""},
+            {"reasoning": "", "content": ""},
+            {"reasoning_content": "", "reasoning": "", "content": ""},
+            {"reasoning_content": "C", "content": ""},
+            {"content": "Answer"},
+        ]
+
+        is_reasoning = False
+        full_output = ""
+        for chunk in chunks:
+            output, is_reasoning = self.llm._wrap_thinking_by_reasoning_content(
+                chunk, is_reasoning
+            )
+            full_output += output
+
+        assert full_output == "<think>\nABC\n</think>Answer"
+        assert is_reasoning is False
+
     def test_reasoning_key_fallback(self) -> None:
         """Use reasoning when reasoning_content is absent."""
         chunks = [
