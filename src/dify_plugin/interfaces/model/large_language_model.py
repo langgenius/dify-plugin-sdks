@@ -719,8 +719,7 @@ class LargeLanguageModel(AIModel):
         delta: dict,
         is_reasoning: bool,
     ) -> tuple[str, bool]:
-        """If the reasoning response is from delta.get("reasoning_content"), we wrap
-        it with HTML think tag.
+        """Wrap streamed reasoning content with HTML think tags.
 
         :param delta: delta dictionary from LLM streaming response
         :param is_reasoning: is reasoning
