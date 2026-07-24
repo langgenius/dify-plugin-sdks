@@ -737,12 +737,10 @@ class LargeLanguageModel(AIModel):
                 is_reasoning = True
             else:
                 output = reasoning_content
-        elif is_reasoning and (
-            content
-            or delta.get("tool_calls")
-            or delta.get("function_call")
-            or all(delta.get(key) is None for key in ("reasoning_content", "reasoning"))
-        ):
+            if content or delta.get("tool_calls") or delta.get("function_call"):
+                is_reasoning = False
+                output += "\n</think>" + content
+        elif is_reasoning:
             is_reasoning = False
             output = "\n</think>" + content
 

@@ -717,16 +717,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     )
                 # stream ended
                 except ValidationError:
-                    yield self._create_final_llm_result_chunk(
-                        index=chunk_index + 1,
-                        message=AssistantPromptMessage(content=""),
-                        finish_reason="Non-JSON encountered.",
-                        usage=usage,
-                        model=model,
-                        credentials=credentials,
-                        prompt_messages=prompt_messages,
-                        full_content=full_assistant_content,
-                    )
+                    finish_reason = "Non-JSON encountered."
                     break
                 # handle the error here. for issue #11629
                 if chunk_json.get("error") and chunk_json.get("choices") is None:
@@ -743,12 +734,27 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
                 if "delta" in choice:
                     delta = choice["delta"]
-                    delta_content, is_reasoning_started = (
-                        self._wrap_thinking_by_reasoning_content(
-                            delta,
-                            is_reasoning_started,
-                        )
+                    reasoning_parts = (
+                        delta.get("reasoning_content"),
+                        delta.get("reasoning"),
                     )
+                    if (
+                        is_reasoning_started
+                        and "" in reasoning_parts
+                        and not any(reasoning_parts)
+                        and not any(
+                            delta.get(key)
+                            for key in ("content", "tool_calls", "function_call")
+                        )
+                    ):
+                        delta_content = ""
+                    else:
+                        delta_content, is_reasoning_started = (
+                            self._wrap_thinking_by_reasoning_content(
+                                delta,
+                                is_reasoning_started,
+                            )
+                        )
 
                     assistant_message_tool_calls = None
 
@@ -808,6 +814,18 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     ),
                 )
 
+            chunk_index += 1
+
+        if is_reasoning_started:
+            closing_content = "\n</think>"
+            full_assistant_content += closing_content
+            yield LLMResultChunk(
+                model=model,
+                delta=LLMResultChunkDelta(
+                    index=chunk_index,
+                    message=AssistantPromptMessage(content=closing_content),
+                ),
+            )
             chunk_index += 1
 
         if tools_calls:

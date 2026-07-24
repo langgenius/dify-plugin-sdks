@@ -1,3 +1,4 @@
+import json
 from collections import UserDict
 from collections.abc import Mapping
 from http import HTTPStatus
@@ -5,6 +6,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
+from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.openai_compatible.llm import (
     OAICompatLargeLanguageModel,
@@ -38,6 +40,12 @@ class StatefulTruth:
     def __bool__(self) -> bool:
         self.calls += 1
         return self.calls == 1
+
+
+def _stream_choice(delta: dict, finish_reason: str | None = None) -> str:
+    return "data: " + json.dumps({
+        "choices": [{"delta": delta, "finish_reason": finish_reason}]
+    })
 
 
 @pytest.mark.parametrize(
@@ -323,3 +331,119 @@ def test_validate_credentials_truth_tests_stream_mode_once() -> None:
     assert stream_result.calls == 1
     assert post.call_args.kwargs["stream"] is True
     response.json.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("lines", "expected_content", "expected_finish_reason", "expected_usage"),
+    [
+        (
+            [
+                _stream_choice({"reasoning_content": "A"}),
+                _stream_choice({"reasoning_content": ""}, "stop"),
+                (
+                    'data: {"choices":[],"usage":'
+                    '{"prompt_tokens":1,"completion_tokens":1}}'
+                ),
+                "data: [DONE]",
+            ],
+            "<think>\nA\n</think>",
+            "stop",
+            {"prompt_tokens": 1, "completion_tokens": 1},
+        ),
+        (
+            [
+                _stream_choice({"reasoning_content": "A"}, "stop"),
+                _stream_choice({"reasoning_content": ""}, "stop"),
+                _stream_choice({"reasoning": "B"}, "stop"),
+                _stream_choice({"reasoning": ""}, "stop"),
+                _stream_choice(
+                    {"reasoning_content": "", "reasoning": ""},
+                    "stop",
+                ),
+                _stream_choice({"reasoning_content": "C"}, "stop"),
+                _stream_choice(
+                    {"reasoning_content": "", "content": "Answer"},
+                    "stop",
+                ),
+                "data: [DONE]",
+            ],
+            "<think>\nABC\n</think>Answer",
+            "stop",
+            None,
+        ),
+        (
+            [
+                _stream_choice({"reasoning_content": "A"}),
+                "data: not-json",
+            ],
+            "<think>\nA\n</think>",
+            "Non-JSON encountered.",
+            None,
+        ),
+        (
+            [
+                _stream_choice({"reasoning_content": "A"}),
+                _stream_choice({"reasoning_content": None}),
+                _stream_choice({"reasoning_content": "B"}),
+                _stream_choice({}),
+                _stream_choice({"reasoning_content": "C"}),
+                _stream_choice({
+                    "reasoning_content": "",
+                    "tool_calls": [{"id": "call"}],
+                }),
+                _stream_choice({"reasoning_content": "D"}),
+                _stream_choice({
+                    "reasoning_content": "",
+                    "function_call": {"name": "call"},
+                }),
+                _stream_choice({"reasoning_content": "E"}),
+                "data: [DONE]",
+            ],
+            (
+                "<think>\nA\n</think><think>\nB\n</think>"
+                "<think>\nC\n</think><think>\nD\n</think>"
+                "<think>\nE\n</think>"
+            ),
+            None,
+            None,
+        ),
+    ],
+)
+def test_stream_reasoning_is_closed_at_end(
+    lines: list[str],
+    expected_content: str,
+    expected_finish_reason: str | None,
+    expected_usage: dict | None,
+) -> None:
+    response = MagicMock()
+    response.iter_lines.return_value = lines
+    llm = OAICompatLargeLanguageModel([])
+    final_chunk = object()
+
+    with patch.object(
+        llm,
+        "_create_final_llm_result_chunk",
+        return_value=final_chunk,
+    ) as create_final:
+        results = list(
+            llm._handle_generate_stream_response(
+                model="model",
+                credentials={},
+                response=response,
+                prompt_messages=[],
+            )
+        )
+
+    stream_chunks = [result for result in results if isinstance(result, LLMResultChunk)]
+    assert "".join(chunk.delta.message.content for chunk in stream_chunks) == (
+        expected_content
+    )
+    assert [chunk.delta.index for chunk in stream_chunks] == sorted(
+        chunk.delta.index for chunk in stream_chunks
+    )
+    assert results[-1] is final_chunk
+    create_final.assert_called_once()
+    assert create_final.call_args.kwargs["full_content"] == expected_content
+    assert create_final.call_args.kwargs["finish_reason"] == expected_finish_reason
+    assert create_final.call_args.kwargs["usage"] == expected_usage
+    assert create_final.call_args.kwargs["index"] > stream_chunks[-1].delta.index
