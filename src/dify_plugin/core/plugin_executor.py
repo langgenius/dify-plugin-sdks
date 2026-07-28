@@ -1,5 +1,4 @@
 import binascii
-import pathlib
 import tempfile
 from collections.abc import Generator, Iterable, Mapping
 from typing import TYPE_CHECKING, Any
@@ -91,6 +90,70 @@ if TYPE_CHECKING:
     from dify_plugin.interfaces.datasource import DatasourceProvider
     from dify_plugin.interfaces.endpoint import Endpoint
     from dify_plugin.interfaces.tool import Tool
+
+_EBML_MAX_ID_WIDTH = 4
+_EBML_MAX_SIZE_WIDTH = 8
+
+
+def _read_ebml_size(data: bytes, offset: int) -> tuple[int, int] | None:
+    if offset >= len(data):
+        return None
+    width = 9 - data[offset].bit_length()
+    if width > _EBML_MAX_SIZE_WIDTH or offset + width > len(data):
+        return None
+    value = int.from_bytes(data[offset : offset + width]) & ((1 << (7 * width)) - 1)
+    if value == (1 << (7 * width)) - 1:
+        return None
+    return value, offset + width
+
+
+def _is_webm_header(header: bytes) -> bool:
+    if not header.startswith(b"\x1a\x45\xdf\xa3"):
+        return False
+    root = _read_ebml_size(header, 4)
+    if root is None:
+        return False
+    root_size, offset = root
+    root_end = offset + root_size
+    while offset < root_end:
+        if offset >= len(header):
+            break
+        id_width = 9 - header[offset].bit_length()
+        if id_width > _EBML_MAX_ID_WIDTH or offset + id_width > min(
+            root_end, len(header)
+        ):
+            break
+        element_id = header[offset : offset + id_width]
+        element = _read_ebml_size(header, offset + id_width)
+        if element is None:
+            break
+        element_size, value_start = element
+        value_end = value_start + element_size
+        if value_end > root_end or value_end > len(header):
+            break
+        if element_id == b"\x42\x82":
+            return header[value_start:value_end].partition(b"\0")[0] == b"webm"
+        offset = value_end
+    return False
+
+
+def _detect_audio_suffix(header: bytes) -> str:
+    """Select an upload suffix from recognizable audio container headers."""
+    suffix = ".mp3"
+    if header[:4] == b"RIFF" and header[8:12] == b"WAVE":
+        suffix = ".wav"
+    elif header.startswith(b"fLaC"):
+        suffix = ".flac"
+    elif header.startswith(b"OggS"):
+        suffix = ".ogg"
+    elif header[4:8] == b"ftyp":
+        if header[8:12] == b"M4A ":
+            suffix = ".m4a"
+        elif header[8:12] in {b"isom", b"iso2", b"mp41", b"mp42"}:
+            suffix = ".mp4"
+    elif _is_webm_header(header):
+        suffix = ".webm"
+    return suffix
 
 
 class PluginExecutor:  # ruff:ignore[too-many-public-methods]
@@ -541,27 +604,26 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
             data.model_type,
         )
 
-        with tempfile.NamedTemporaryFile(suffix=".mp3", mode="wb", delete=True) as temp:
-            temp.write(binascii.unhexlify(data.file))
+        audio = binascii.unhexlify(data.file)
+        suffix = _detect_audio_suffix(audio[:8192])
+        with tempfile.NamedTemporaryFile(suffix=suffix, mode="w+b") as temp:
+            temp.write(audio)
+            del audio
             temp.flush()
-
-            with pathlib.Path(temp.name).open("rb") as f:
-                if isinstance(model_instance, Speech2TextModel):
-                    with use_current_session(session):
-                        result = model_instance.invoke(
-                            data.model,
-                            data.credentials,
-                            f,
-                            data.user_id,
-                        )
-                    return {"result": result}
-                msg = (
-                    f"Model `{data.model_type}` not found for provider "
-                    f"`{data.provider}`"
-                )
-                raise ValueError(
-                    msg,
-                )
+            temp.seek(0)
+            if isinstance(model_instance, Speech2TextModel):
+                with use_current_session(session):
+                    result = model_instance.invoke(
+                        data.model,
+                        data.credentials,
+                        temp.file,
+                        data.user_id,
+                    )
+                return {"result": result}
+            msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
+            raise ValueError(
+                msg,
+            )
 
     def get_ai_model_schemas(
         self,
