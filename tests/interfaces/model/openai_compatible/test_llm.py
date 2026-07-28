@@ -7,6 +7,11 @@ from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
 
 from dify_plugin.entities.model.llm import LLMResultChunk
+from dify_plugin.entities.model.message import (
+    TextPromptMessageContent,
+    UserPromptMessage,
+    VideoPromptMessageContent,
+)
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.openai_compatible.llm import (
     OAICompatLargeLanguageModel,
@@ -87,6 +92,47 @@ def test_validate_credentials_passes_extra_headers(
     assert post.call_args.kwargs.get("stream", False) is stream
     assert post.call_args.kwargs["json"]["max_tokens"] == max_tokens
     response.close.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("video_kwargs", "expected_url"),
+    [
+        (
+            {"url": "https://example.com/video.mp4"},
+            "https://example.com/video.mp4",
+        ),
+        ({"base64_data": "AAAA"}, "data:video/mp4;base64,AAAA"),
+    ],
+)
+def test_convert_prompt_message_to_dict_serializes_video(
+    video_kwargs: dict[str, str],
+    expected_url: str,
+) -> None:
+    video = VideoPromptMessageContent(
+        format="mp4",
+        mime_type="video/mp4",
+        **video_kwargs,
+    )
+
+    result = OAICompatLargeLanguageModel([])._convert_prompt_message_to_dict(
+        UserPromptMessage(
+            content=[
+                TextPromptMessageContent(data="Describe the video"),
+                video,
+            ]
+        )
+    )
+
+    assert result == {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "Describe the video"},
+            {
+                "type": "video_url",
+                "video_url": {"url": expected_url},
+            },
+        ],
+    }
 
 
 @pytest.mark.parametrize("extra_headers", [False, "", [], [("X-Api-Key", "value")]])
