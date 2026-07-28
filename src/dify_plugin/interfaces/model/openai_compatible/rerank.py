@@ -66,10 +66,9 @@ class OAICompatRerankModel(RerankModel):
             raise CredentialsValidateFailedError(msg)
 
         url = server_url
-        headers = {
-            "Authorization": f"Bearer {credentials.get('api_key')}",
-            "Content-Type": "application/json",
-        }
+        headers = {"Content-Type": "application/json"}
+        if api_key := credentials.get("api_key"):
+            headers["Authorization"] = f"Bearer {api_key}"
 
         # Open question: truncate docs before llama.cpp-compatible requests?
 
