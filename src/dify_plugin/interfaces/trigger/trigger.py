@@ -505,6 +505,8 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
         4. Always return UnsubscribeResult with detailed status
         5. Never raise exceptions for operational failures. Use
            UnsubscribeResult.success=False.
+        6. Return `UnsubscribeResult(success=True, ...)` when the external service
+           unambiguously reports that the subscription is already absent.
 
         Args:
             subscription: The Subscription object with endpoint and properties fields
