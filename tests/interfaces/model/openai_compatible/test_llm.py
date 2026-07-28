@@ -135,6 +135,53 @@ def test_convert_prompt_message_to_dict_serializes_video(
     }
 
 
+def test_generate_encodes_request_json_as_utf8() -> None:
+    content = "你好😀\ud800"
+    credentials = {
+        "endpoint_url": "https://example.com/v1",
+        "extra_headers": {"Content-Type": "application/custom+json"},
+        "mode": "chat",
+    }
+    response = MagicMock(status_code=HTTPStatus.OK, encoding=None)
+    llm = OAICompatLargeLanguageModel([])
+
+    with patch(
+        "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
+        return_value=response,
+    ) as post:
+        llm._generate(
+            "model",
+            credentials,
+            [UserPromptMessage(content=content)],
+            {},
+        )
+
+    request = post.call_args.kwargs
+    assert "json" not in request
+    assert "你好😀".encode() in request["data"]
+    assert b"\\ud800" in request["data"]
+    assert json.loads(request["data"])["messages"][0]["content"] == content
+    assert request["headers"]["Content-Type"] == "application/custom+json"
+
+    with (
+        patch(
+            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
+        ) as invalid_post,
+        pytest.raises(
+            ValueError,
+            match="Out of range float values are not JSON compliant",
+        ),
+    ):
+        llm._generate(
+            "model",
+            credentials,
+            [UserPromptMessage(content="test")],
+            {"temperature": float("nan")},
+        )
+
+    invalid_post.assert_not_called()
+
+
 @pytest.mark.parametrize("extra_headers", [False, "", [], [("X-Api-Key", "value")]])
 def test_validate_credentials_rejects_non_mapping_extra_headers(
     extra_headers: object,

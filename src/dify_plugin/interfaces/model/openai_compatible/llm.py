@@ -604,7 +604,10 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         response = requests.post(
             endpoint_url,
             headers=headers,
-            json=data,
+            data=json.dumps(data, ensure_ascii=False, allow_nan=False).encode(
+                "utf-8",
+                "backslashreplace",
+            ),
             timeout=(10, _plugin_config.MAX_REQUEST_TIMEOUT),
             stream=stream,
         )
