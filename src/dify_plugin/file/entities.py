@@ -10,8 +10,4 @@ class FileType(StrEnum):
 
     @staticmethod
     def value_of(value: str) -> "FileType":
-        for member in FileType:
-            if member.value == value:
-                return member
-        msg = f"No such file type: {value}"
-        raise ValueError(msg)
+        return FileType(value)

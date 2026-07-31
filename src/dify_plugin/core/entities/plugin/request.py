@@ -1,8 +1,8 @@
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 
 from dify_plugin.entities.datasource import (
     GetOnlineDocumentPageContentRequest,
@@ -11,13 +11,9 @@ from dify_plugin.entities.datasource import (
 )
 from dify_plugin.entities.model import EmbeddingInputType, ModelType
 from dify_plugin.entities.model.message import (
-    AssistantPromptMessage,
     PromptMessage,
-    PromptMessageRole,
     PromptMessageTool,
-    SystemPromptMessage,
-    ToolPromptMessage,
-    UserPromptMessage,
+    ensure_prompt_message,
 )
 from dify_plugin.entities.model.text_embedding import MultiModalContent
 from dify_plugin.entities.provider_config import CredentialType
@@ -58,6 +54,8 @@ class ModelActions(StrEnum):
     ValidateProviderCredentials = "validate_provider_credentials"
     ValidateModelCredentials = "validate_model_credentials"
     InvokeLLM = "invoke_llm"
+    StartPolling = "start_polling"
+    CheckPolling = "check_polling"
     GetLLMNumTokens = "get_llm_num_tokens"
     InvokeTextEmbedding = "invoke_text_embedding"
     InvokeMultimodalEmbedding = "invoke_multimodal_embedding"
@@ -105,6 +103,7 @@ PluginAccessAction = (
     | ToolActions
     | ModelActions
     | EndpointActions
+    | OAuthActions
     | DynamicParameterActions
     | DatasourceActions
 )
@@ -169,22 +168,7 @@ class PromptMessageMixin(BaseModel):
             msg = "prompt_messages must be a list"
             raise TypeError(msg)
 
-        for i in range(len(v)):
-            if isinstance(v[i], PromptMessage):
-                continue
-
-            if v[i]["role"] == PromptMessageRole.USER.value:
-                v[i] = UserPromptMessage(**v[i])
-            elif v[i]["role"] == PromptMessageRole.ASSISTANT.value:
-                v[i] = AssistantPromptMessage(**v[i])
-            elif v[i]["role"] == PromptMessageRole.SYSTEM.value:
-                v[i] = SystemPromptMessage(**v[i])
-            elif v[i]["role"] == PromptMessageRole.TOOL.value:
-                v[i] = ToolPromptMessage(**v[i])
-            else:
-                v[i] = PromptMessage(**v[i])
-
-        return v
+        return [ensure_prompt_message(item) for item in v]
 
 
 class ModelInvokeLLMRequest(PluginAccessModelRequest, PromptMessageMixin):
@@ -193,9 +177,21 @@ class ModelInvokeLLMRequest(PluginAccessModelRequest, PromptMessageMixin):
     model_parameters: dict[str, Any]
     stop: list[str] | None
     tools: list[PromptMessageTool] | None
+    json_schema: dict[str, JsonValue] | None = None
     stream: bool = True
 
     model_config = ConfigDict(protected_namespaces=())
+
+
+class ModelStartPollingRequest(ModelInvokeLLMRequest):
+    action: ModelActions = ModelActions.StartPolling
+    stream: Literal[False] = False
+
+
+class ModelCheckPollingRequest(PluginAccessModelRequest):
+    action: ModelActions = ModelActions.CheckPolling
+
+    plugin_state: dict[str, JsonValue] = Field(min_length=1)
 
 
 class ModelGetLLMNumTokens(PluginAccessModelRequest, PromptMessageMixin):
@@ -208,6 +204,7 @@ class ModelInvokeTextEmbeddingRequest(PluginAccessModelRequest):
     action: ModelActions = ModelActions.InvokeTextEmbedding
 
     texts: list[str]
+    input_type: EmbeddingInputType
 
 
 class ModelInvokeMultimodalEmbeddingRequest(PluginAccessModelRequest):

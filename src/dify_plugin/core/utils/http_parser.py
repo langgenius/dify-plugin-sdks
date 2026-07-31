@@ -1,167 +1,126 @@
 from io import BytesIO
+from urllib.parse import quote_from_bytes, unquote_to_bytes, urlsplit
 
+import h11
 from werkzeug import Request, Response
-from werkzeug.datastructures import Headers
-
-MIN_REQUEST_LINE_PARTS = 2
-MIN_STATUS_LINE_PARTS = 2
-CONTENT_HEADER_NAMES = frozenset({"CONTENT-TYPE", "CONTENT-LENGTH"})
-
-
-def serialize_request(request: Request) -> bytes:
-    method = request.method
-    path = request.full_path.rstrip("?")
-    raw = f"{method} {path} HTTP/1.1\r\n".encode()
-
-    for name, value in request.headers.items():
-        raw += f"{name}: {value}\r\n".encode()
-
-    raw += b"\r\n"
-
-    body = request.get_data(as_text=False)
-    if body:
-        raw += body
-
-    return raw
 
 
 def deserialize_request(raw_data: bytes) -> Request:
-    header_end = raw_data.find(b"\r\n\r\n")
-    if header_end == -1:
-        header_end = raw_data.find(b"\n\n")
-        if header_end == -1:
-            header_data = raw_data
-            body = b""
-        else:
-            header_data = raw_data[:header_end]
-            body = raw_data[header_end + 2 :]
-    else:
-        header_data = raw_data[:header_end]
-        body = raw_data[header_end + 4 :]
-
-    lines = header_data.split(b"\r\n")
-    if len(lines) == 1 and b"\n" in lines[0]:
-        lines = header_data.split(b"\n")
-
-    if not lines or not lines[0]:
+    if not raw_data:
         msg = "Empty HTTP request"
         raise ValueError(msg)
 
-    request_line = lines[0].decode("utf-8", errors="ignore")
-    parts = request_line.split(" ", 2)
-    if len(parts) < MIN_REQUEST_LINE_PARTS:
-        msg = f"Invalid request line: {request_line}"
+    header_data, separator, body = raw_data.partition(b"\r\n\r\n")
+    line_separator = b"\r\n"
+    if not separator:
+        header_data, separator, body = raw_data.partition(b"\n\n")
+        line_separator = b"\n"
+    if not separator:
+        line_separator = b"\r\n" if b"\r\n" in raw_data else b"\n"
+
+    lines = header_data.split(line_separator)
+    method, space, remainder = lines[0].partition(b" ")
+    target, version_space, protocol = remainder.rpartition(b" ")
+    if not space or not version_space:
+        msg = "Invalid HTTP request line"
         raise ValueError(msg)
 
-    method = parts[0]
-    full_path = parts[1]
-    protocol = parts[2] if len(parts) > MIN_REQUEST_LINE_PARTS else "HTTP/1.1"
+    if protocol not in {b"HTTP/1.0", b"HTTP/1.1"}:
+        msg = "Invalid HTTP protocol"
+        raise ValueError(msg)
+    full_path = target.decode()
+    if not full_path.isprintable():
+        msg = "Invalid HTTP request target"
+        raise ValueError(msg)
 
-    if "?" in full_path:
-        path, query_string = full_path.split("?", 1)
-    else:
-        path = full_path
-        query_string = ""
+    normalized_target = quote_from_bytes(
+        target,
+        safe="/%:?#[]@!$&'()*+,;=",
+    ).encode()
+    request_line = b" ".join((method, normalized_target, protocol))
+    request_head = b"\r\n".join((request_line, *lines[1:], b"", b""))
+    connection = h11.Connection(h11.SERVER)
+    try:
+        connection.receive_data(request_head)
+        request_event = connection.next_event()
+    except h11.ProtocolError as exc:
+        raise ValueError(str(exc)) from exc
+    if not isinstance(request_event, h11.Request):
+        msg = "Invalid HTTP request"
+        raise TypeError(msg)
+    if any(b"_" in name for name, _ in request_event.headers):
+        msg = "Invalid HTTP header"
+        raise ValueError(msg)
 
-    headers = Headers()
-    for line in lines[1:]:
-        if not line:
-            continue
-        line_str = line.decode("utf-8", errors="ignore")
-        if ":" not in line_str:
-            continue
-        name, value = line_str.split(":", 1)
-        headers.add(name, value.strip())
+    raw_path, _, query_string = full_path.partition("?")
 
-    host = headers.get("Host", "localhost")
-    if ":" in host:
-        server_name, server_port = host.rsplit(":", 1)
-    else:
-        server_name = host
-        server_port = "80"
+    header_values = dict(request_event.headers)
+    host = header_values.get(b"host", b"localhost").decode()
+    parsed_host = urlsplit(f"//{host}")
+    server_name = parsed_host.hostname or host
+    server_port = str(80 if parsed_host.port is None else parsed_host.port)
 
     environ = {
-        "REQUEST_METHOD": method,
-        "PATH_INFO": path,
+        "REQUEST_METHOD": request_event.method.decode("ascii"),
+        "PATH_INFO": unquote_to_bytes(raw_path).decode("latin-1"),
         "QUERY_STRING": query_string,
         "SERVER_NAME": server_name,
         "SERVER_PORT": server_port,
-        "SERVER_PROTOCOL": protocol,
+        "SERVER_PROTOCOL": f"HTTP/{request_event.http_version.decode('ascii')}",
         "wsgi.input": BytesIO(body),
+        "wsgi.input_terminated": True,
         "wsgi.url_scheme": "http",
     }
 
-    if "Content-Type" in headers:
-        environ["CONTENT_TYPE"] = headers.get("Content-Type")
+    content_length = header_values.get(b"content-length")
+    transfer_encoding = header_values.get(b"transfer-encoding")
+    if content_length is not None and transfer_encoding is not None:
+        msg = "Ambiguous HTTP body framing"
+        raise ValueError(msg)
+    if content_length is not None and int(content_length) != len(body):
+        msg = "HTTP body does not match Content-Length"
+        raise ValueError(msg)
 
-    if "Content-Length" in headers:
-        environ["CONTENT_LENGTH"] = headers.get("Content-Length")
-    elif body:
-        environ["CONTENT_LENGTH"] = str(len(body))
-
-    for name, value in headers.items():
-        if name.upper() in CONTENT_HEADER_NAMES:
+    for name, value in request_event.headers:
+        if name == b"transfer-encoding":
             continue
-        env_name = f"HTTP_{name.upper().replace('-', '_')}"
-        environ[env_name] = value
+        env_name = name.decode("ascii").upper().replace("-", "_")
+        key = (
+            env_name
+            if name in {b"content-type", b"content-length"}
+            else f"HTTP_{env_name}"
+        )
+        if key in environ and name in {b"content-type", b"content-length"}:
+            msg = f"Duplicate HTTP header: {name.decode('ascii')}"
+            raise ValueError(msg)
+        environ[key] = value.decode()
+
+    if content_length is None and body:
+        environ["CONTENT_LENGTH"] = str(len(body))
 
     return Request(environ)
 
 
 def serialize_response(response: Response) -> bytes:
-    raw = f"HTTP/1.1 {response.status}\r\n".encode()
-
-    for name, value in response.headers.items():
-        raw += f"{name}: {value}\r\n".encode()
-
-    raw += b"\r\n"
-
-    body = response.get_data(as_text=False)
-    if body:
-        raw += body
-
-    return raw
-
-
-def deserialize_response(raw_data: bytes) -> Response:
-    header_end = raw_data.find(b"\r\n\r\n")
-    if header_end == -1:
-        header_end = raw_data.find(b"\n\n")
-        if header_end == -1:
-            header_data = raw_data
-            body = b""
-        else:
-            header_data = raw_data[:header_end]
-            body = raw_data[header_end + 2 :]
-    else:
-        header_data = raw_data[:header_end]
-        body = raw_data[header_end + 4 :]
-
-    lines = header_data.split(b"\r\n")
-    if len(lines) == 1 and b"\n" in lines[0]:
-        lines = header_data.split(b"\n")
-
-    if not lines or not lines[0]:
-        msg = "Empty HTTP response"
-        raise ValueError(msg)
-
-    status_line = lines[0].decode("utf-8", errors="ignore")
-    parts = status_line.split(" ", 2)
-    if len(parts) < MIN_STATUS_LINE_PARTS:
-        msg = f"Invalid status line: {status_line}"
-        raise ValueError(msg)
-
-    status_code = int(parts[1])
-
-    response = Response(response=body, status=status_code)
-
-    for line in lines[1:]:
-        if not line:
-            continue
-        line_str = line.decode("utf-8", errors="ignore")
-        if ":" not in line_str:
-            continue
-        name, value = line_str.split(":", 1)
-        response.headers[name] = value.strip()
-
-    return response
+    body = response.get_data()
+    try:
+        response_event = h11.Response(
+            status_code=response.status_code,
+            headers=[
+                (name.encode("ascii"), value.encode())
+                for name, value in response.headers
+                if name.lower() not in {"content-length", "transfer-encoding"}
+            ]
+            + [(b"Content-Length", str(len(body)).encode())],
+        )
+        connection = h11.Connection(h11.SERVER)
+        return b"".join(
+            chunk or b""
+            for chunk in (
+                connection.send(response_event),
+                connection.send(h11.Data(data=body)),
+                connection.send(h11.EndOfMessage()),
+            )
+        )
+    except h11.ProtocolError as exc:
+        raise ValueError(str(exc)) from exc

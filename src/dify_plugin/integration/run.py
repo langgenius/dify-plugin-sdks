@@ -4,7 +4,7 @@ import pathlib
 import select
 import shutil
 import signal
-import subprocess  # noqa: S404
+import subprocess  # ruff:ignore[suspicious-subprocess-import]
 import tempfile
 import threading
 import time
@@ -95,7 +95,7 @@ class PluginRunner:
                 logger.info("Plugin built in %s", self.plugin_package_path)
                 self.resources_need_to_be_cleaned.append(temp_dir)
 
-        self.process = subprocess.Popen(  # noqa: S603
+        self.process = subprocess.Popen(  # ruff:ignore[subprocess-without-shell-equals-true]
             [
                 self.config.dify_cli_path,
                 "plugin",
@@ -134,7 +134,7 @@ class PluginRunner:
 
     def _build_plugin(self, package_path: str, output_path: str) -> None:
         # build plugin
-        output = subprocess.check_output(  # noqa: S603
+        output = subprocess.check_output(  # ruff:ignore[subprocess-without-shell-equals-true]
             [
                 self.config.dify_cli_path,
                 "plugin",

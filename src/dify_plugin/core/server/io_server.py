@@ -58,7 +58,7 @@ class IOServer(ABC):
         start listen to stdin and dispatch task to executor
         """
 
-        def filter(data: PluginInStream) -> bool:  # noqa: A001
+        def filter(data: PluginInStream) -> bool:  # ruff:ignore[builtin-variable-shadowing]
             return data.event == PluginInStreamEvent.Request
 
         for data in self.request_reader.read(filter).read():
@@ -132,7 +132,9 @@ class IOServer(ABC):
         """
         send heartbeat to stdout
         """
-        assert self.default_writer
+        if self.default_writer is None:
+            msg = "Default writer is required for heartbeat"
+            raise RuntimeError(msg)
 
         while True:
             # timer

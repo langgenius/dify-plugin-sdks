@@ -14,7 +14,7 @@ class FilterReader:
 
     def __init__(
         self,
-        filter: Callable[[PluginInStream], bool],  # noqa: A002
+        filter: Callable[[PluginInStream], bool],  # ruff:ignore[builtin-argument-shadowing]
         close_callback: Callable | None = None,
     ) -> None:
         self.filter = filter

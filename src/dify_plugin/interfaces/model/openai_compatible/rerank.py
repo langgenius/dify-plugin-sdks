@@ -66,12 +66,11 @@ class OAICompatRerankModel(RerankModel):
             raise CredentialsValidateFailedError(msg)
 
         url = server_url
-        headers = {
-            "Authorization": f"Bearer {credentials.get('api_key')}",
-            "Content-Type": "application/json",
-        }
+        headers = {"Content-Type": "application/json"}
+        if api_key := credentials.get("api_key"):
+            headers["Authorization"] = f"Bearer {api_key}"
 
-        # TODO: Do we need truncate docs to avoid llama.cpp return error?
+        # Open question: truncate docs before llama.cpp-compatible requests?
 
         data = {
             "model": credentials.get("endpoint_model_name", model),
@@ -86,52 +85,37 @@ class OAICompatRerankModel(RerankModel):
                 str(URL(url) / "rerank"), headers=headers, data=dumps(data), timeout=60
             )
             response.raise_for_status()
-            results = response.json()
-
-            rerank_documents = []
-            scores = [result["relevance_score"] for result in results["results"]]
-
-            # Min-Max Normalization: Normalize scores to 0 ~ 1.0 range
-            min_score = min(scores)
-            max_score = max(scores)
-            score_range = (
-                max_score - min_score if max_score != min_score else 1.0
-            )  # Avoid division by zero
-
-            for result in results["results"]:
-                index = result["index"]
-
-                # Retrieve document text (fallback if llama.cpp rerank
-                # doesn't return it)
-                text = docs[index]
-                document = result.get("document", {})
-                if document:
-                    if isinstance(document, dict):
-                        text = document.get("text", docs[index])
-                    elif isinstance(document, str):
-                        text = document
-
-                # Normalize the score
-                normalized_score = (result["relevance_score"] - min_score) / score_range
-
-                # Create RerankDocument object with normalized score
-                rerank_document = RerankDocument(
-                    index=index,
-                    text=text,
-                    score=normalized_score,
-                )
-
-                # Apply threshold (if defined)
-                if score_threshold is None or normalized_score >= score_threshold:
-                    rerank_documents.append(rerank_document)
-
-            # Sort rerank_documents by normalized score in descending order
-            rerank_documents.sort(key=lambda doc: doc.score, reverse=True)
-
-            return RerankResult(model=model, docs=rerank_documents)
-
         except HTTPError as e:
             raise InvokeServerUnavailableError(str(e)) from e
+
+        results = response.json()
+        rerank_documents = []
+        scores = [result["relevance_score"] for result in results["results"]]
+        min_score = min(scores)
+        max_score = max(scores)
+        score_range = max_score - min_score if max_score != min_score else 1.0
+
+        for result in results["results"]:
+            index = result["index"]
+            text = docs[index]
+            document = result.get("document", {})
+            if document:
+                if isinstance(document, dict):
+                    text = document.get("text", docs[index])
+                elif isinstance(document, str):
+                    text = document
+
+            normalized_score = (result["relevance_score"] - min_score) / score_range
+            rerank_document = RerankDocument(
+                index=index,
+                text=text,
+                score=normalized_score,
+            )
+            if score_threshold is None or normalized_score >= score_threshold:
+                rerank_documents.append(rerank_document)
+
+        rerank_documents.sort(key=lambda doc: doc.score, reverse=True)
+        return RerankResult(model=model, docs=rerank_documents)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """

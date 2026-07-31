@@ -1,9 +1,45 @@
 import json
+from collections.abc import Callable, Generator
+from unittest.mock import Mock
 
 import pytest
 
-from dify_plugin.core.entities.plugin.io import PluginInStreamEvent
+from dify_plugin.core.entities.plugin.io import PluginInStream, PluginInStreamEvent
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
+
+
+class FiniteStdioRequestReader(StdioRequestReader):
+    def __init__(self) -> None:
+        super().__init__()
+        self.stream_calls = 0
+
+    def _read_stream(self) -> Generator[PluginInStream, None, None]:
+        self.stream_calls += 1
+        if self.stream_calls > 1:
+            raise SystemExit
+        yield from ()
+
+
+class LegacyLock:
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    def acquire(self) -> None:
+        self.calls.append("acquire")
+
+    def release(self) -> None:
+        self.calls.append("release")
+
+
+class ClosingGuard:
+    def __init__(self, close: Callable[[], None]) -> None:
+        self.close = close
+
+    def __bool__(self) -> bool:
+        return True
+
+    def __del__(self) -> None:
+        self.close()
 
 
 def test_stdio(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -86,3 +122,49 @@ def test_stdio_with_empty_line(monkeypatch: pytest.MonkeyPatch) -> None:
             break
 
     assert iters == 300
+
+
+def test_event_loop_does_not_throttle_finite_streams(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleep = Mock()
+    monkeypatch.setattr(
+        "dify_plugin.core.server.__base.request_reader.time.sleep",
+        sleep,
+    )
+
+    with pytest.raises(SystemExit):
+        FiniteStdioRequestReader().event_loop()
+
+    sleep.assert_not_called()
+
+
+def test_request_reader_preserves_acquire_release_lock_protocol() -> None:
+    reader = StdioRequestReader()
+    lock = LegacyLock()
+    reader.lock = lock
+
+    filtered_reader = reader.read(lambda _data: True)
+    filtered_reader.close()
+    reader.close()
+
+    assert lock.calls == [
+        "acquire",
+        "release",
+        "acquire",
+        "release",
+        "acquire",
+        "release",
+    ]
+
+
+def test_request_reader_keeps_filter_result_alive_through_write() -> None:
+    reader = StdioRequestReader()
+    filtered_reader = reader.read(
+        lambda _data: ClosingGuard(filtered_reader.close),
+    )
+    data = Mock()
+
+    reader._process_line(data)
+
+    assert list(filtered_reader.read()) == [data]

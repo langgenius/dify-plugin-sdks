@@ -13,11 +13,7 @@ class PluginInStreamEvent(Enum):
 
     @classmethod
     def value_of(cls, v: str) -> "PluginInStreamEvent":
-        for e in cls:
-            if e.value == v:
-                return e
-        msg = f"Invalid value for PluginInStream.Event: {v}"
-        raise ValueError(msg)
+        return cls(v)
 
 
 @dataclass(frozen=True, slots=True)

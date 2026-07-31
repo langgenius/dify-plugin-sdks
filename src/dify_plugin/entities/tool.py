@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import (
     BaseModel,
     Field,
+    JsonValue,
     field_validator,
     model_validator,
 )
@@ -116,7 +117,14 @@ class ToolParameter(BaseModel):
     )
     llm_description: str | None = None
     required: bool | None = False
-    default: int | float | str | None = None
+    multiple: bool = Field(
+        default=False,
+        description=(
+            "Whether the parameter accepts multiple selections. Only valid for "
+            "select and dynamic-select types"
+        ),
+    )
+    default: JsonValue = None
     min: float | int | None = None
     max: float | int | None = None
     precision: int | None = None
@@ -124,6 +132,24 @@ class ToolParameter(BaseModel):
     # MCP object and array type parameters use this field to store the schema
     input_schema: Mapping[str, Any] | None = None
     show_on: list[FormShowOnObject] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_multiple(self) -> "ToolParameter":
+        supports_multiple = self.type in {
+            ToolParameter.ToolParameterType.SELECT,
+            ToolParameter.ToolParameterType.DYNAMIC_SELECT,
+        }
+        if self.multiple and not supports_multiple:
+            msg = "multiple is only valid for select and dynamic-select parameters"
+            raise ValueError(msg)
+        if (
+            supports_multiple
+            and self.default is not None
+            and (isinstance(self.default, list) != self.multiple)
+        ):
+            msg = "default must be a list exactly when multiple is true"
+            raise ValueError(msg)
+        return self
 
 
 @docs(
@@ -306,15 +332,8 @@ class ToolProviderType(Enum):
 
         Returns:
             The return value.
-
-        Raises:
-            ValueError: If input values are invalid.
         """
-        for mode in cls:
-            if mode.value == value:
-                return mode
-        msg = f"invalid mode value {value}"
-        raise ValueError(msg)
+        return cls(value)
 
 
 class ToolSelector(BaseModel):
@@ -361,7 +380,7 @@ class ToolSelector(BaseModel):
         for name, parameter in self.tool_parameters.items():
             tool.parameters[name] = {
                 "type": parameter.type.value,
-                "description": parameter.description,
+                "description": parameter.description or "",
             }
 
             if parameter.required:

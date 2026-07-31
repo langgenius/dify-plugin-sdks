@@ -186,7 +186,9 @@ class ToolLike[T: InvokeMessage](ABC):
         """
         mark log as finished
         """
-        assert isinstance(log.message, InvokeMessage.LogMessage)
+        if not isinstance(log.message, InvokeMessage.LogMessage):
+            msg = "Log message payload is required"
+            raise TypeError(msg)
         return self.response_type(
             type=InvokeMessage.MessageType.LOG,
             message=InvokeMessage.LogMessage(
@@ -423,7 +425,7 @@ class Tool(ToolLike[ToolInvokeMessage]):
             runtime=ToolRuntime(
                 credentials=credentials, user_id=user_id, session_id=None
             ),
-            session=Session.empty_session(),  # TODO: could not fetch session here
+            session=Session.empty_session(),  # Session is unavailable here.
         )
 
     ############################################################

@@ -1,12 +1,15 @@
+import inspect
 import logging
 import re
 import time
 from abc import abstractmethod
 from collections.abc import Generator, Mapping
+from typing import Literal
 
-from pydantic import ConfigDict
+from pydantic import ConfigDict, JsonValue
 
 from dify_plugin.entities.model import (
+    ModelFeature,
     ModelPropertyKey,
     ModelType,
     ParameterRule,
@@ -15,6 +18,7 @@ from dify_plugin.entities.model import (
 )
 from dify_plugin.entities.model.llm import (
     LLMMode,
+    LLMPollingResult,
     LLMResult,
     LLMResultChunk,
     LLMResultChunkDelta,
@@ -72,6 +76,44 @@ class LargeLanguageModel(AIModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        raise NotImplementedError
+
+    def _start_polling(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
+        stream: Literal[False] = False,
+        user: str | None = None,
+        *,
+        json_schema: dict[str, JsonValue] | None = None,
+    ) -> LLMPollingResult:
+        """Start a polling-based large language model invocation."""
+        del (
+            model,
+            credentials,
+            prompt_messages,
+            model_parameters,
+            tools,
+            stop,
+            stream,
+            user,
+            json_schema,
+        )
+        raise NotImplementedError
+
+    def _check_polling(
+        self,
+        model: str,
+        credentials: dict,
+        plugin_state: dict[str, JsonValue],
+        user: str | None = None,
+    ) -> LLMPollingResult:
+        """Check a polling-based large language model invocation."""
+        del model, credentials, plugin_state, user
         raise NotImplementedError
 
     @abstractmethod
@@ -135,6 +177,30 @@ class LargeLanguageModel(AIModel):
             )
 
         return mode
+
+    def supports_polling(self, model: str, credentials: Mapping | None = None) -> bool:
+        model_schema = self.get_model_schema(model, credentials)
+        has_feature = bool(
+            model_schema
+            and model_schema.features
+            and ModelFeature.POLLING in model_schema.features
+        )
+        base_start_polling = inspect.getattr_static(
+            LargeLanguageModel,
+            "_start_polling",
+        )
+        base_check_polling = inspect.getattr_static(
+            LargeLanguageModel,
+            "_check_polling",
+        )
+        start_polling = inspect.getattr_static(type(self), "_start_polling")
+        check_polling = inspect.getattr_static(type(self), "_check_polling")
+        has_methods = (
+            start_polling is not base_start_polling
+            and check_polling is not base_check_polling
+        )
+
+        return has_feature and has_methods
 
     def _calc_response_usage(
         self,
@@ -653,8 +719,7 @@ class LargeLanguageModel(AIModel):
         delta: dict,
         is_reasoning: bool,
     ) -> tuple[str, bool]:
-        """If the reasoning response is from delta.get("reasoning_content"), we wrap
-        it with HTML think tag.
+        """Wrap streamed reasoning content with HTML think tags.
 
         :param delta: delta dictionary from LLM streaming response
         :param is_reasoning: is reasoning
@@ -664,7 +729,7 @@ class LargeLanguageModel(AIModel):
             The return value.
         """
         content = delta.get("content") or ""
-        reasoning_content = delta.get("reasoning_content")
+        reasoning_content = delta.get("reasoning_content") or delta.get("reasoning")
         output = content
         if reasoning_content:
             if not is_reasoning:
@@ -672,18 +737,83 @@ class LargeLanguageModel(AIModel):
                 is_reasoning = True
             else:
                 output = reasoning_content
+            if content or delta.get("tool_calls") or delta.get("function_call"):
+                is_reasoning = False
+                output += "\n</think>" + content
         elif is_reasoning:
             is_reasoning = False
-            if not reasoning_content:
-                output = "\n</think>"
-            if content:
-                output += content
+            output = "\n</think>" + content
 
         return output, is_reasoning
 
     ############################################################
     #                 For executor use only                    #
     ############################################################
+
+    def start_polling(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict | None = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
+        stream: Literal[False] = False,
+        user: str | None = None,
+        json_schema: dict[str, JsonValue] | None = None,
+    ) -> LLMPollingResult:
+        """Start a polling-based large language model invocation."""
+        if not self.supports_polling(model, credentials):
+            msg = f"Model `{model}` does not support polling."
+            raise NotImplementedError(msg)
+
+        if model_parameters is None:
+            model_parameters = {}
+
+        model_parameters = self._validate_and_filter_model_parameters(
+            model,
+            model_parameters,
+            credentials,
+        )
+
+        with self.timing_context():
+            try:
+                return self._start_polling(
+                    model=model,
+                    credentials=credentials,
+                    prompt_messages=prompt_messages,
+                    model_parameters=model_parameters,
+                    tools=tools,
+                    stop=stop,
+                    stream=stream,
+                    user=user,
+                    json_schema=json_schema,
+                )
+            except Exception as e:
+                raise self._transform_invoke_error(e) from e
+
+    def check_polling(
+        self,
+        model: str,
+        credentials: dict,
+        plugin_state: dict[str, JsonValue],
+        user: str | None = None,
+    ) -> LLMPollingResult:
+        """Check a polling-based large language model invocation."""
+        if not self.supports_polling(model, credentials):
+            msg = f"Model `{model}` does not support polling."
+            raise NotImplementedError(msg)
+
+        with self.timing_context():
+            try:
+                return self._check_polling(
+                    model=model,
+                    credentials=credentials,
+                    plugin_state=plugin_state,
+                    user=user,
+                )
+            except Exception as e:
+                raise self._transform_invoke_error(e) from e
 
     def invoke(
         self,

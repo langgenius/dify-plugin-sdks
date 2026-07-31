@@ -131,9 +131,8 @@ class InvokeMessage(BaseModel):
         RETRIEVER_RESOURCES = "retriever_resources"
 
     type: MessageType
-    # TODO: pydantic will validate and construct the message one by one,
-    # until it encounters a correct type
-    # we need to optimize the construction process
+    # Pydantic validates and constructs candidate messages one by one
+    # until a type matches; optimizing this would reduce construction overhead.
     message: (
         TextMessage
         | JsonMessage

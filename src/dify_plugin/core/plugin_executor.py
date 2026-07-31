@@ -1,5 +1,4 @@
 import binascii
-import pathlib
 import tempfile
 from collections.abc import Generator, Iterable, Mapping
 from typing import TYPE_CHECKING, Any
@@ -17,6 +16,7 @@ from dify_plugin.core.entities.plugin.request import (
     DatasourceValidateCredentialsRequest,
     DynamicParameterFetchParameterOptionsRequest,
     EndpointInvokeRequest,
+    ModelCheckPollingRequest,
     ModelGetAIModelSchemas,
     ModelGetLLMNumTokens,
     ModelGetTextEmbeddingNumTokens,
@@ -29,6 +29,7 @@ from dify_plugin.core.entities.plugin.request import (
     ModelInvokeSpeech2TextRequest,
     ModelInvokeTextEmbeddingRequest,
     ModelInvokeTTSRequest,
+    ModelStartPollingRequest,
     ModelValidateModelCredentialsRequest,
     ModelValidateProviderCredentialsRequest,
     OAuthGetAuthorizationUrlRequest,
@@ -51,6 +52,7 @@ from dify_plugin.core.entities.plugin.request import (
 )
 from dify_plugin.core.plugin_registration import PluginRegistration
 from dify_plugin.core.runtime import Session
+from dify_plugin.core.session_context import use_current_session
 from dify_plugin.core.utils.http_parser import deserialize_request, serialize_response
 from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.agent import AgentRuntime
@@ -89,8 +91,72 @@ if TYPE_CHECKING:
     from dify_plugin.interfaces.endpoint import Endpoint
     from dify_plugin.interfaces.tool import Tool
 
+_EBML_MAX_ID_WIDTH = 4
+_EBML_MAX_SIZE_WIDTH = 8
 
-class PluginExecutor:  # noqa: PLR0904
+
+def _read_ebml_size(data: bytes, offset: int) -> tuple[int, int] | None:
+    if offset >= len(data):
+        return None
+    width = 9 - data[offset].bit_length()
+    if width > _EBML_MAX_SIZE_WIDTH or offset + width > len(data):
+        return None
+    value = int.from_bytes(data[offset : offset + width]) & ((1 << (7 * width)) - 1)
+    if value == (1 << (7 * width)) - 1:
+        return None
+    return value, offset + width
+
+
+def _is_webm_header(header: bytes) -> bool:
+    if not header.startswith(b"\x1a\x45\xdf\xa3"):
+        return False
+    root = _read_ebml_size(header, 4)
+    if root is None:
+        return False
+    root_size, offset = root
+    root_end = offset + root_size
+    while offset < root_end:
+        if offset >= len(header):
+            break
+        id_width = 9 - header[offset].bit_length()
+        if id_width > _EBML_MAX_ID_WIDTH or offset + id_width > min(
+            root_end, len(header)
+        ):
+            break
+        element_id = header[offset : offset + id_width]
+        element = _read_ebml_size(header, offset + id_width)
+        if element is None:
+            break
+        element_size, value_start = element
+        value_end = value_start + element_size
+        if value_end > root_end or value_end > len(header):
+            break
+        if element_id == b"\x42\x82":
+            return header[value_start:value_end].partition(b"\0")[0] == b"webm"
+        offset = value_end
+    return False
+
+
+def _detect_audio_suffix(header: bytes) -> str:
+    """Select an upload suffix from recognizable audio container headers."""
+    suffix = ".mp3"
+    if header[:4] == b"RIFF" and header[8:12] == b"WAVE":
+        suffix = ".wav"
+    elif header.startswith(b"fLaC"):
+        suffix = ".flac"
+    elif header.startswith(b"OggS"):
+        suffix = ".ogg"
+    elif header[4:8] == b"ftyp":
+        if header[8:12] == b"M4A ":
+            suffix = ".m4a"
+        elif header[8:12] in {b"isom", b"iso2", b"mp41", b"mp42"}:
+            suffix = ".mp4"
+    elif _is_webm_header(header):
+        suffix = ".webm"
+    return suffix
+
+
+class PluginExecutor:  # ruff:ignore[too-many-public-methods]
     def __init__(self, config: DifyPluginEnv, registration: PluginRegistration) -> None:
         self.config = config
         self.registration = registration
@@ -240,25 +306,98 @@ class PluginExecutor:  # noqa: PLR0904
         return {"result": True, "credentials": data.credentials}
 
     def invoke_llm(self, session: Session, data: ModelInvokeLLMRequest) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if isinstance(model_instance, LargeLanguageModel):
-            return model_instance.invoke(
-                data.model,
-                data.credentials,
-                data.prompt_messages,
-                data.model_parameters,
-                data.tools,
-                data.stop,
-                data.stream,
-                data.user_id,
-            )
+            with use_current_session(session):
+                result = model_instance.invoke(
+                    data.model,
+                    data.credentials,
+                    data.prompt_messages,
+                    data.model_parameters,
+                    data.tools,
+                    data.stop,
+                    data.stream,
+                    data.user_id,
+                )
+            if not isinstance(result, Generator):
+                return result
+
+            def generator() -> Generator[object, None, None]:
+                with use_current_session(session):
+                    yield from result
+
+            return generator()
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
             msg,
+        )
+
+    def start_llm_polling(
+        self,
+        session: Session,
+        data: ModelStartPollingRequest,
+    ) -> object:
+        del session
+        model_instance = self.registration.get_model_instance(
+            data.provider,
+            data.model_type,
+        )
+        if not isinstance(model_instance, LargeLanguageModel):
+            msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
+            raise TypeError(
+                msg,
+            )
+
+        if not model_instance.supports_polling(data.model, data.credentials):
+            msg = (
+                f"Model `{data.model}` for provider `{data.provider}` "
+                "does not support polling"
+            )
+            raise ValueError(msg)
+
+        return model_instance.start_polling(
+            model=data.model,
+            credentials=data.credentials,
+            prompt_messages=data.prompt_messages,
+            model_parameters=data.model_parameters,
+            tools=data.tools,
+            stop=data.stop,
+            stream=data.stream,
+            user=data.user_id,
+            json_schema=data.json_schema,
+        )
+
+    def check_llm_polling(
+        self,
+        session: Session,
+        data: ModelCheckPollingRequest,
+    ) -> object:
+        del session
+        model_instance = self.registration.get_model_instance(
+            data.provider,
+            data.model_type,
+        )
+        if not isinstance(model_instance, LargeLanguageModel):
+            msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
+            raise TypeError(
+                msg,
+            )
+
+        if not model_instance.supports_polling(data.model, data.credentials):
+            msg = (
+                f"Model `{data.model}` for provider `{data.provider}` "
+                "does not support polling"
+            )
+            raise ValueError(msg)
+
+        return model_instance.check_polling(
+            model=data.model,
+            credentials=data.credentials,
+            plugin_state=data.plugin_state,
+            user=data.user_id,
         )
 
     def get_llm_num_tokens(
@@ -291,18 +430,19 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeTextEmbeddingRequest,
     ) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if isinstance(model_instance, TextEmbeddingModel):
-            return model_instance.invoke(
-                data.model,
-                data.credentials,
-                data.texts,
-                data.user_id,
-            )
+            with use_current_session(session):
+                return model_instance.invoke(
+                    data.model,
+                    data.credentials,
+                    data.texts,
+                    user=data.user_id,
+                    input_type=data.input_type,
+                )
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
             msg,
@@ -313,19 +453,19 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeMultimodalEmbeddingRequest,
     ) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if isinstance(model_instance, TextEmbeddingModel):
-            return model_instance.invoke_multimodal(
-                data.model,
-                data.credentials,
-                data.documents,
-                user=data.user_id,
-                input_type=data.input_type,
-            )
+            with use_current_session(session):
+                return model_instance.invoke_multimodal(
+                    data.model,
+                    data.credentials,
+                    data.documents,
+                    user=data.user_id,
+                    input_type=data.input_type,
+                )
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
             msg,
@@ -355,21 +495,21 @@ class PluginExecutor:  # noqa: PLR0904
         )
 
     def invoke_rerank(self, session: Session, data: ModelInvokeRerankRequest) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if isinstance(model_instance, RerankModel):
-            return model_instance.invoke(
-                data.model,
-                data.credentials,
-                data.query,
-                data.docs,
-                data.score_threshold,
-                data.top_n,
-                data.user_id,
-            )
+            with use_current_session(session):
+                return model_instance.invoke(
+                    data.model,
+                    data.credentials,
+                    data.query,
+                    data.docs,
+                    data.score_threshold,
+                    data.top_n,
+                    data.user_id,
+                )
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
             msg,
@@ -380,21 +520,21 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeMultimodalRerankRequest,
     ) -> object:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if isinstance(model_instance, RerankModel):
-            return model_instance.invoke_multimodal(
-                data.model,
-                data.credentials,
-                data.query,
-                data.docs,
-                score_threshold=data.score_threshold,
-                top_n=data.top_n,
-                user=data.user_id,
-            )
+            with use_current_session(session):
+                return model_instance.invoke_multimodal(
+                    data.model,
+                    data.credentials,
+                    data.query,
+                    data.docs,
+                    score_threshold=data.score_threshold,
+                    top_n=data.top_n,
+                    user=data.user_id,
+                )
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
             msg,
@@ -405,26 +545,26 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeTTSRequest,
     ) -> Generator[dict[str, str], None, None]:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
         if isinstance(model_instance, TTSModel):
-            b = model_instance.invoke(
-                data.model,
-                data.tenant_id,
-                data.credentials,
-                data.content_text,
-                data.voice,
-                data.user_id,
-            )
-            if isinstance(b, bytes | bytearray | memoryview):
-                yield {"result": binascii.hexlify(b).decode()}
-                return
+            with use_current_session(session):
+                b = model_instance.invoke(
+                    data.model,
+                    data.tenant_id,
+                    data.credentials,
+                    data.content_text,
+                    data.voice,
+                    data.user_id,
+                )
+                if isinstance(b, bytes | bytearray | memoryview):
+                    yield {"result": binascii.hexlify(b).decode()}
+                    return
 
-            for chunk in b:
-                yield {"result": binascii.hexlify(chunk).decode()}
+                for chunk in b:
+                    yield {"result": binascii.hexlify(chunk).decode()}
         else:
             msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
             raise TypeError(
@@ -459,33 +599,31 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeSpeech2TextRequest,
     ) -> dict[str, str]:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
 
-        with tempfile.NamedTemporaryFile(suffix=".mp3", mode="wb", delete=True) as temp:
-            temp.write(binascii.unhexlify(data.file))
+        audio = binascii.unhexlify(data.file)
+        suffix = _detect_audio_suffix(audio[:8192])
+        with tempfile.NamedTemporaryFile(suffix=suffix, mode="w+b") as temp:
+            temp.write(audio)
+            del audio
             temp.flush()
-
-            with pathlib.Path(temp.name).open("rb") as f:
-                if isinstance(model_instance, Speech2TextModel):
-                    return {
-                        "result": model_instance.invoke(
-                            data.model,
-                            data.credentials,
-                            f,
-                            data.user_id,
-                        ),
-                    }
-                msg = (
-                    f"Model `{data.model_type}` not found for provider "
-                    f"`{data.provider}`"
-                )
-                raise ValueError(
-                    msg,
-                )
+            temp.seek(0)
+            if isinstance(model_instance, Speech2TextModel):
+                with use_current_session(session):
+                    result = model_instance.invoke(
+                        data.model,
+                        data.credentials,
+                        temp.file,
+                        data.user_id,
+                    )
+                return {"result": result}
+            msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
+            raise ValueError(
+                msg,
+            )
 
     def get_ai_model_schemas(
         self,
@@ -514,21 +652,20 @@ class PluginExecutor:  # noqa: PLR0904
         session: Session,
         data: ModelInvokeModerationRequest,
     ) -> dict[str, bool]:
-        del session
         model_instance = self.registration.get_model_instance(
             data.provider,
             data.model_type,
         )
 
         if isinstance(model_instance, ModerationModel):
-            return {
-                "result": model_instance.invoke(
+            with use_current_session(session):
+                result = model_instance.invoke(
                     data.model,
                     data.credentials,
                     data.text,
                     data.user_id,
-                ),
-            }
+                )
+            return {"result": result}
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
         raise ValueError(
             msg,
@@ -917,7 +1054,9 @@ class PluginExecutor:  # noqa: PLR0904
         action_instance: DynamicSelectProtocol | None = (
             self._get_dynamic_parameter_action(session=session, data=data)
         )
-        assert action_instance, f"Provider `{data.provider}` not found"
+        if action_instance is None:
+            msg = f"Provider `{data.provider}` not found"
+            raise ValueError(msg)
         return {
             "options": action_instance.fetch_parameter_options(
                 parameter=data.parameter,

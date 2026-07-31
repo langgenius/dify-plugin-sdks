@@ -1,5 +1,0 @@
-path: "/neko"
-method: "GET"
-extra:
-  python:
-    source: "endpoints/neko.py"

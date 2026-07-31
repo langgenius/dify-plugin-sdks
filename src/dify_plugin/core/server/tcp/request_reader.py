@@ -70,28 +70,27 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         """Receive data from the socket"""
         return self.sock.recv(size)
 
+    def _write_data(self, data: str) -> None:
+        if native_socket.socket is gevent_socket.socket:
+            data_bytes = data.encode()
+            while data_bytes:
+                try:
+                    sent = self._write_to_sock(data_bytes)
+                    data_bytes = data_bytes[sent:]
+                except BlockingIOError as error:
+                    if error.errno != errno.EAGAIN:
+                        raise
+                    sleep(0)
+        else:
+            self.sock.sendall(data.encode())
+
     def write(self, data: str) -> None:
         if not self.alive:
             msg = "connection is dead"
             raise Exception(msg)
 
         try:
-            if native_socket.socket is gevent_socket.socket:
-                """
-                gevent socket is non-blocking, to avoid BlockingIOError
-                send data bytes by bytes
-                """
-                data_bytes = data.encode()
-                while data_bytes:
-                    try:
-                        sent = self._write_to_sock(data_bytes)
-                        data_bytes = data_bytes[sent:]
-                    except BlockingIOError as e:
-                        if e.errno != errno.EAGAIN:
-                            raise
-                        sleep(0)
-            else:
-                self.sock.sendall(data.encode())
+            self._write_data(data)
         except Exception:
             logger.exception("Failed to write data")
             self._launch()
@@ -116,20 +115,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
     def _connect(self) -> None:
         """Connect to the target"""
         try:
-            if native_socket.socket is gevent_socket.socket:
-                self.sock = gevent_socket.create_connection((self.host, self.port))
-            else:
-                self.sock = native_socket.create_connection((self.host, self.port))
-            self.alive = True
-            handshake_message = InitializeMessage(
-                type=InitializeMessage.Type.HANDSHAKE,
-                data=InitializeMessage.Key(key=self.key).model_dump(),
-            )
-            self.sock.sendall(handshake_message.model_dump_json().encode() + b"\n")
-            logger.info("\033[32mConnected to %s:%s\033[0m", self.host, self.port)
-            if self.on_connected:
-                self.on_connected()
-            logger.info("Sent key to %s:%s", self.host, self.port)
+            self._connect_once()
         except OSError:
             logger.exception(
                 "\033[31mFailed to connect to %s:%s\033[0m",
@@ -138,27 +124,46 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             )
             raise
 
+    def _connect_once(self) -> None:
+        if native_socket.socket is gevent_socket.socket:
+            self.sock = gevent_socket.create_connection((self.host, self.port))
+        else:
+            self.sock = native_socket.create_connection((self.host, self.port))
+        self.alive = True
+        handshake_message = InitializeMessage(
+            type=InitializeMessage.Type.HANDSHAKE,
+            data=InitializeMessage.Key(key=self.key).model_dump(),
+        )
+        self.sock.sendall(handshake_message.model_dump_json().encode() + b"\n")
+        logger.info("\033[32mConnected to %s:%s\033[0m", self.host, self.port)
+        if self.on_connected:
+            self.on_connected()
+        logger.info("Sent key to %s:%s", self.host, self.port)
+
+    def _read_data(self) -> bytes | None:
+        ready_to_read, _, _ = select([self.sock], [], [], 1)
+        if not ready_to_read:
+            return None
+        try:
+            data = self._recv_from_sock(1048576)
+        except BlockingIOError as error:
+            if native_socket.socket is not gevent_socket.socket:
+                raise
+            if error.errno != errno.EAGAIN:
+                raise
+            sleep(0)
+            return None
+        if data == b"":
+            msg = "Connection is closed"
+            raise Exception(msg)
+        return data
+
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
         """Read data from the target"""
         buffer = b""
         while self.alive:
             try:
-                ready_to_read, _, _ = select([self.sock], [], [], 1)
-                if not ready_to_read:
-                    continue
-                try:
-                    data = self._recv_from_sock(1048576)
-                except BlockingIOError as e:
-                    if native_socket.socket is gevent_socket.socket:
-                        if e.errno != errno.EAGAIN:
-                            raise
-                        sleep(0)
-                        continue
-                    else:
-                        raise
-                if data == b"":
-                    msg = "Connection is closed"
-                    raise Exception(msg)
+                data = self._read_data()
             except Exception:
                 logger.exception(
                     "\033[31mFailed to read data from %s:%s\033[0m",

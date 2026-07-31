@@ -1,7 +1,6 @@
 import pathlib
 from http import HTTPStatus
 from typing import IO
-from urllib.parse import urljoin
 
 import requests
 
@@ -44,10 +43,10 @@ class OAICompatSpeech2TextModel(_CommonOaiApiCompat, Speech2TextModel):
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        endpoint_url = credentials.get("endpoint_url", "https://api.openai.com/v1/")
-        if not endpoint_url.endswith("/"):
-            endpoint_url += "/"
-        endpoint_url = urljoin(endpoint_url, "audio/transcriptions")
+        endpoint_url = self._join_endpoint_url(
+            credentials.get("endpoint_url", "https://api.openai.com/v1/"),
+            "audio/transcriptions",
+        )
 
         payload = {"model": credentials.get("endpoint_model_name", model)}
         files = [("file", file)]

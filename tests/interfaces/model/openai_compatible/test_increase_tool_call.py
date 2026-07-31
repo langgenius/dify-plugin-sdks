@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 from dify_plugin.entities.model.message import AssistantPromptMessage
 from dify_plugin.interfaces.model.openai_compatible.llm import (
-    _increase_tool_call,  # noqa: PLC2701
+    _increase_tool_call,  # ruff:ignore[import-private-name]
 )
 
 ToolCall = AssistantPromptMessage.ToolCall

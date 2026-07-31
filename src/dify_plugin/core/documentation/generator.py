@@ -2,7 +2,8 @@ import importlib
 import pathlib
 from collections import defaultdict
 from enum import Enum
-from typing import TextIO, Union
+from types import UnionType
+from typing import TextIO, Union, get_args, get_origin
 
 from pydantic import BaseModel
 
@@ -261,12 +262,8 @@ class SchemaDocumentationGenerator:
         if isinstance(field_type, type):
             if issubclass(field_type, (BaseModel, Enum)):
                 referenced.add(field_type)
-        # Handle generic types (List, Dict, Union, etc)
-        elif (
-            hasattr(field_type, "__origin__") and field_type.__origin__ == Union
-        ) or hasattr(field_type, "__args__"):
-            # Handle Union types
-            for arg in field_type.__args__:
+        else:
+            for arg in get_args(field_type):
                 referenced.update(self._extract_referenced_types(arg))
 
         return referenced
@@ -346,22 +343,13 @@ class SchemaDocumentationGenerator:
         container_types: tuple[type, ...] = (list, set),
     ) -> bool:
         """Check if a field type is a container type (list, set, etc)."""
-        try:
-            return (
-                hasattr(field_type, "__origin__")
-                and isinstance(getattr(field_type, "__origin__", None), type)
-                and getattr(field_type, "__origin__", None) in container_types
-            )
-        except Exception:
-            return False
+        origin = get_origin(field_type)
+        return isinstance(origin, type) and origin in container_types
 
     def _get_container_name(self, field_type: object) -> str:
         """Get the name of a container type."""
-        try:
-            origin = getattr(field_type, "__origin__", None)
-            return origin.__name__ if origin else str(field_type)
-        except Exception:
-            return str(field_type)
+        origin = get_origin(field_type)
+        return origin.__name__ if isinstance(origin, type) else str(field_type)
 
     def _write_schema_doc(self, f: TextIO, type_: type) -> None:
         """Write documentation for a single schema."""
@@ -455,30 +443,34 @@ class SchemaDocumentationGenerator:
             The return value.
         """
         if field_type is None:
-            return "Any"
-
-        if isinstance(field_type, type):
+            type_name = "Any"
+        elif isinstance(field_type, type):
             if issubclass(field_type, (BaseModel, Enum)):
                 # Use schema name if available
                 schema = self._type_to_schema.get(field_type)
                 name = schema.name if schema else field_type.__name__
-                return f"[{name}](#{name.lower()})"
-            return field_type.__name__
+                type_name = f"[{name}](#{name.lower()})"
+            else:
+                type_name = field_type.__name__
+        elif (origin := get_origin(field_type)) is not None:
+            type_args = get_args(field_type)
+            match origin:
+                case _ if origin in COLLECTION_ORIGINS:
+                    inner_type = self._format_type_name(type_args[0])
+                    type_name = f"{origin.__name__}[{inner_type}]"
+                case _ if origin is dict:
+                    key_type = self._format_type_name(type_args[0])
+                    value_type = self._format_type_name(type_args[1])
+                    type_name = f"dict[{key_type}, {value_type}]"
+                case _ if origin is tuple:
+                    types = [self._format_type_name(arg) for arg in type_args]
+                    type_name = f"tuple[{', '.join(types)}]"
+                case _ if origin in {Union, UnionType}:
+                    types = [self._format_type_name(arg) for arg in type_args]
+                    type_name = f"Union[{', '.join(types)}]"
+                case _:
+                    type_name = str(field_type)
+        else:
+            type_name = str(field_type)
 
-        if hasattr(field_type, "__origin__") and hasattr(field_type, "__args__"):
-            origin = field_type.__origin__
-            if origin in COLLECTION_ORIGINS:
-                inner_type = self._format_type_name(field_type.__args__[0])
-                return f"{origin.__name__}[{inner_type}]"
-            if origin is dict:
-                key_type = self._format_type_name(field_type.__args__[0])
-                value_type = self._format_type_name(field_type.__args__[1])
-                return f"dict[{key_type}, {value_type}]"
-            if origin is tuple:
-                types = [self._format_type_name(arg) for arg in field_type.__args__]
-                return f"tuple[{', '.join(types)}]"
-            if origin is Union:
-                types = [self._format_type_name(arg) for arg in field_type.__args__]
-                return f"Union[{', '.join(types)}]"
-
-        return str(field_type)
+        return type_name

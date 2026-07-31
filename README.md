@@ -16,11 +16,31 @@ uv tool install rust-just
 Common development commands:
 
 ```bash
-just dev      # Sync default dev dependencies
-just check    # Check lockfile, formatting, and linting
-just test     # Run all tests
-just build    # Build source and wheel distributions
+just dev       # Sync default dev dependencies
+just fmt       # Apply formatting fixes
+just lint      # Format and apply lint fixes
+just check     # Check lockfile, formatting, and linting
+just test      # Run SDK tests
+just build     # Build source and wheel distributions
+just docs      # Generate schema documentation
 ```
+
+## Production Plugin Examples
+
+See [`langgenius/dify-official-plugins`](https://github.com/langgenius/dify-official-plugins) for production plugin implementations that are published and used by Dify.
+
+## LLM Polling Support
+
+SDK 0.9.0 adds support for polling-based LLM invocation. A model can now
+declare the `polling` feature and implement polling methods, allowing plugins
+to submit long-running provider jobs and return later checks through a short
+request/response flow.
+
+Polling results use three states:
+
+- `running` returns plugin-owned state for the next check.
+- `succeeded` returns the final LLM result.
+- `failed` returns a terminal error.
 
 ## Version Management
 
@@ -72,4 +92,5 @@ For the manifest specification, we've introduced two versioning fields:
 | 1.9.0                | 0.5.0         | Support Datasource functionality for plugins       |
 | 1.10.0               | 0.6.0         | Support Trigger functionality for plugins          |
 | 1.11.0               | 0.7.0         | Support Multimodal Reranking / Embeddings          |
-| 1.14.0               | 0.8.0         | Dependency and project structure cleanup           |
+| 1.14.0               | 0.8.1         | Dependency and project structure cleanup           |
+| 1.14.2               | 0.9.0         | Support polling-based LLM plugin invocations       |

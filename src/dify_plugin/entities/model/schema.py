@@ -1,5 +1,6 @@
-# ruff: noqa: RUF001
+# ruff:file-ignore[ambiguous-unicode-character-string]
 
+from contextlib import suppress
 from decimal import Decimal
 from enum import Enum
 from typing import Any
@@ -37,15 +38,8 @@ class DefaultParameterName(Enum):
 
         Returns:
             The return value.
-
-        Raises:
-            ValueError: If input values are invalid.
         """
-        for name in cls:
-            if name.value == value:
-                return name
-        msg = f"invalid parameter name {value}"
-        raise ValueError(msg)
+        return cls(value)
 
 
 PARAMETER_RULE_TEMPLATE: dict[DefaultParameterName, dict] = {
@@ -232,6 +226,7 @@ class ModelFeature(Enum):
     VIDEO = "video"
     AUDIO = "audio"
     STRUCTURED_OUTPUT = "structured-output"
+    POLLING = "polling"
 
 
 @docs(
@@ -348,7 +343,7 @@ class ParameterRule(BaseModel):
         if isinstance(data, dict):
             # check if there is a template
             if "use_template" in data:
-                try:
+                with suppress(ValueError):
                     default_parameter_name = DefaultParameterName.value_of(
                         data["use_template"]
                     )
@@ -364,8 +359,6 @@ class ParameterRule(BaseModel):
                     copy_default_parameter_rule = default_parameter_rule.copy()
                     copy_default_parameter_rule.update(data)
                     data = copy_default_parameter_rule
-                except ValueError:
-                    pass
 
             if not data.get("label"):
                 data["label"] = I18nObject(en_us=data["name"])

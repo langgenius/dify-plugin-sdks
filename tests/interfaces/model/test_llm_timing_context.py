@@ -126,6 +126,22 @@ def test_llm_timing_context() -> None:
         assert result.delta.usage.latency < 1.5
 
 
+def test_llm_timing_context_resets_when_stream_closes() -> None:
+    model = MockLLM(model_schemas=[])
+    stream = model.invoke(
+        model="test",
+        credentials={},
+        prompt_messages=[],
+        model_parameters={},
+    )
+
+    next(stream)
+    assert model.started_at > 0
+    stream.close()
+
+    assert model.started_at == 0
+
+
 def test_multithreaded_llm_timing_context() -> None:
     """Check if timing context is correct in multi-threaded environment
 

@@ -30,7 +30,7 @@ class Router:
     def register_route(
         self,
         f: Callable[..., object],
-        filter: Callable[[dict], bool],  # noqa: A002
+        filter: Callable[[dict], bool],  # ruff:ignore[builtin-argument-shadowing]
         instance: object | None = None,
     ) -> None:
         sig = inspect.signature(f)

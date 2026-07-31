@@ -1,14 +1,14 @@
-# ruff: noqa: RUF001
+# ruff:file-ignore[ambiguous-unicode-character-string]
 
 import codecs
 import json
 import logging
 import uuid
 from collections.abc import Generator, Mapping
+from contextlib import suppress
 from decimal import Decimal
 from http import HTTPStatus
 from typing import Any, cast
-from urllib.parse import urljoin
 
 import requests
 from pydantic import TypeAdapter, ValidationError
@@ -43,6 +43,7 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
+    VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
@@ -118,6 +119,46 @@ def _increase_tool_call(
             tool_call.function.arguments += new_tool_call.function.arguments
 
 
+def _validate_credentials_response(
+    response: requests.Response,
+    stream: bool,
+    completion_type: LLMMode,
+) -> None:
+    if response.status_code != HTTPStatus.OK:
+        msg = (
+            "Credentials validation failed with status code "
+            f"{response.status_code} and response body {response.text}"
+        )
+        raise CredentialsValidateFailedError(msg)
+
+    if stream:
+        return
+
+    try:
+        json_result = response.json()
+    except json.JSONDecodeError:
+        msg = (
+            "Credentials validation failed: JSON decode error, "
+            f"response body {response.text}"
+        )
+        raise CredentialsValidateFailedError(msg) from None
+    except CredentialsValidateFailedError:
+        raise
+
+    expected_object = (
+        "chat.completion" if completion_type is LLMMode.CHAT else "text_completion"
+    )
+    if json_result.get("object", "") == EMPTY_STRING:
+        json_result["object"] = expected_object
+
+    if "object" not in json_result or json_result["object"] != expected_object:
+        msg = (
+            "Credentials validation failed: invalid response object, "
+            f"must be '{expected_object}', response body {response.text}"
+        )
+        raise CredentialsValidateFailedError(msg)
+
+
 class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
     """Model class for OpenAI large language model."""
 
@@ -180,6 +221,63 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         del model
         return self._num_tokens_from_messages(prompt_messages, tools, credentials)
 
+    def _request_credentials_validation(
+        self,
+        model: str,
+        credentials: dict,
+    ) -> tuple[requests.Response, bool, LLMMode]:
+        headers = {"Content-Type": "application/json"}
+        extra_headers = credentials.get("extra_headers")
+        if extra_headers is not None:
+            headers = {**headers, **extra_headers}
+
+        if api_key := credentials.get("api_key"):
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        endpoint_url = credentials["endpoint_url"]
+        validate_credentials_max_tokens = (
+            credentials.get("validate_credentials_max_tokens", 5) or 5
+        )
+        data: dict[str, Any] = {
+            "model": credentials.get("endpoint_model_name", model),
+            "max_tokens": validate_credentials_max_tokens,
+        }
+        completion_type = LLMMode.value_of(credentials["mode"])
+
+        if completion_type is LLMMode.CHAT:
+            data["messages"] = [{"role": "user", "content": "ping"}]
+            endpoint_url = self._join_endpoint_url(endpoint_url, "chat/completions")
+        elif completion_type is LLMMode.COMPLETION:
+            data["prompt"] = "ping"
+            endpoint_url = self._join_endpoint_url(endpoint_url, "completions")
+        else:
+            msg = "Unsupported completion type for model configuration."
+            raise ValueError(msg)
+
+        stream_mode_auth = credentials.get("stream_mode_auth", "not_use")
+        if stream_mode_auth == "use":
+            stream_validate_max_tokens = (
+                credentials.get("validate_credentials_max_tokens") or 10
+            )
+            data["max_tokens"] = stream_validate_max_tokens
+            data["stream"] = True
+            response = requests.post(
+                endpoint_url,
+                headers=headers,
+                json=data,
+                timeout=(10, 300),
+                stream=True,
+            )
+            return response, True, completion_type
+
+        response = requests.post(
+            endpoint_url,
+            headers=headers,
+            json=data,
+            timeout=(10, 300),
+        )
+        return response, False, completion_type
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """Validate model credentials using requests to ensure compatibility with
         all providers following OpenAI's API standard.
@@ -190,132 +288,20 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         Raises:
             CredentialsValidateFailedError: If credentials validation fails.
-            ValueError: If input values are invalid.
         """
-        response: requests.Response | None = None
         try:
-            headers = {"Content-Type": "application/json"}
-
-            api_key = credentials.get("api_key")
-            if api_key:
-                headers["Authorization"] = f"Bearer {api_key}"
-
-            endpoint_url = credentials["endpoint_url"]
-            if not endpoint_url.endswith("/"):
-                endpoint_url += "/"
-
-            # prepare the payload for a simple ping to the model
-            validate_credentials_max_tokens = (
-                credentials.get("validate_credentials_max_tokens", 5) or 5
+            response, stream, completion_type = self._request_credentials_validation(
+                model,
+                credentials,
             )
-            data = {
-                "model": credentials.get("endpoint_model_name", model),
-                "max_tokens": validate_credentials_max_tokens,
-            }
+        except CredentialsValidateFailedError:
+            raise
+        except Exception as ex:
+            msg = f"An error occurred during credentials validation: {ex!s}"
+            raise CredentialsValidateFailedError(msg) from ex
 
-            completion_type = LLMMode.value_of(credentials["mode"])
-
-            if completion_type is LLMMode.CHAT:
-                data["messages"] = [
-                    {"role": "user", "content": "ping"},
-                ]
-                endpoint_url = urljoin(endpoint_url, "chat/completions")
-            elif completion_type is LLMMode.COMPLETION:
-                data["prompt"] = "ping"
-                endpoint_url = urljoin(endpoint_url, "completions")
-            else:
-                msg = "Unsupported completion type for model configuration."
-                raise ValueError(msg)
-
-            # ADD stream validate_credentials
-            stream_mode_auth = credentials.get("stream_mode_auth", "not_use")
-            if stream_mode_auth == "use":
-                stream_validate_max_tokens = (
-                    credentials.get("validate_credentials_max_tokens") or 10
-                )
-                data["stream"] = True
-                # default 10 (introduced in PR #93) to ensure streaming
-                # endpoints emit a token chunk;
-                # allow overriding via credentials when explicitly provided.
-                data["max_tokens"] = stream_validate_max_tokens
-                response = requests.post(
-                    endpoint_url,
-                    headers=headers,
-                    json=data,
-                    timeout=(10, 300),
-                    stream=True,
-                )
-                if response.status_code != HTTPStatus.OK:
-                    msg = (
-                        "Credentials validation failed with status code "
-                        f"{response.status_code} and response body {response.text}"
-                    )
-                    raise CredentialsValidateFailedError(
-                        msg,
-                    )
-                return
-
-            # send a post request to validate the credentials
-            response = requests.post(
-                endpoint_url,
-                headers=headers,
-                json=data,
-                timeout=(10, 300),
-            )
-
-            if response.status_code != HTTPStatus.OK:
-                msg = (
-                    "Credentials validation failed with status code "
-                    f"{response.status_code} and response body {response.text}"
-                )
-                raise CredentialsValidateFailedError(
-                    msg,
-                )
-
-            try:
-                json_result = response.json()
-            except json.JSONDecodeError:
-                msg = (
-                    "Credentials validation failed: JSON decode error, "
-                    f"response body {response.text}"
-                )
-                raise CredentialsValidateFailedError(
-                    msg,
-                ) from None
-
-            if (
-                completion_type is LLMMode.CHAT
-                and json_result.get("object", "") == EMPTY_STRING
-            ):
-                json_result["object"] = "chat.completion"
-            elif (
-                completion_type is LLMMode.COMPLETION
-                and json_result.get("object", "") == EMPTY_STRING
-            ):
-                json_result["object"] = "text_completion"
-
-            if completion_type is LLMMode.CHAT and (
-                "object" not in json_result
-                or json_result["object"] != "chat.completion"
-            ):
-                msg = (
-                    f"Credentials validation failed: invalid response object, "
-                    f"must be 'chat.completion', response body {response.text}"
-                )
-                raise CredentialsValidateFailedError(
-                    msg,
-                )
-            if completion_type is LLMMode.COMPLETION and (
-                "object" not in json_result
-                or json_result["object"] != "text_completion"
-            ):
-                msg = (
-                    f"Credentials validation failed: invalid response object, "
-                    f"must be 'text_completion', response body {response.text}"
-                )
-                raise CredentialsValidateFailedError(
-                    msg,
-                )
+        try:
+            _validate_credentials_response(response, stream, completion_type)
         except CredentialsValidateFailedError:
             raise
         except Exception as ex:
@@ -324,13 +310,12 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     "An error occurred during credentials validation: "
                     f"{ex!s}, response body {response.text}"
                 )
-                raise CredentialsValidateFailedError(
-                    msg,
-                ) from ex
+                raise CredentialsValidateFailedError(msg) from ex
             msg = f"An error occurred during credentials validation: {ex!s}"
-            raise CredentialsValidateFailedError(
-                msg,
-            ) from ex
+            raise CredentialsValidateFailedError(msg) from ex
+        finally:
+            with suppress(Exception):
+                response.close()
 
     def get_customizable_model_schema(
         self,
@@ -537,8 +522,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             headers["Authorization"] = f"Bearer {api_key}"
 
         endpoint_url = credentials["endpoint_url"]
-        if not endpoint_url.endswith("/"):
-            endpoint_url += "/"
 
         response_format = model_parameters.get("response_format")
         if response_format:
@@ -578,13 +561,13 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         completion_type = LLMMode.value_of(credentials["mode"])
 
         if completion_type is LLMMode.CHAT:
-            endpoint_url = urljoin(endpoint_url, "chat/completions")
+            endpoint_url = self._join_endpoint_url(endpoint_url, "chat/completions")
             data["messages"] = [
                 self._convert_prompt_message_to_dict(m, credentials)
                 for m in prompt_messages
             ]
         elif completion_type is LLMMode.COMPLETION:
-            endpoint_url = urljoin(endpoint_url, "completions")
+            endpoint_url = self._join_endpoint_url(endpoint_url, "completions")
             data["prompt"] = prompt_messages[0].content
         else:
             msg = "Unsupported completion type for model configuration."
@@ -598,7 +581,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 data["functions"] = [
                     {
                         "name": tool.name,
-                        "description": tool.description,
+                        "description": tool.description or "",
                         "parameters": tool.parameters,
                     }
                     for tool in tools
@@ -621,7 +604,10 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         response = requests.post(
             endpoint_url,
             headers=headers,
-            json=data,
+            data=json.dumps(data, ensure_ascii=False, allow_nan=False).encode(
+                "utf-8",
+                "backslashreplace",
+            ),
             timeout=(10, _plugin_config.MAX_REQUEST_TIMEOUT),
             stream=stream,
         )
@@ -735,16 +721,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     )
                 # stream ended
                 except ValidationError:
-                    yield self._create_final_llm_result_chunk(
-                        index=chunk_index + 1,
-                        message=AssistantPromptMessage(content=""),
-                        finish_reason="Non-JSON encountered.",
-                        usage=usage,
-                        model=model,
-                        credentials=credentials,
-                        prompt_messages=prompt_messages,
-                        full_content=full_assistant_content,
-                    )
+                    finish_reason = "Non-JSON encountered."
                     break
                 # handle the error here. for issue #11629
                 if chunk_json.get("error") and chunk_json.get("choices") is None:
@@ -761,12 +738,27 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
                 if "delta" in choice:
                     delta = choice["delta"]
-                    delta_content, is_reasoning_started = (
-                        self._wrap_thinking_by_reasoning_content(
-                            delta,
-                            is_reasoning_started,
-                        )
+                    reasoning_parts = (
+                        delta.get("reasoning_content"),
+                        delta.get("reasoning"),
                     )
+                    if (
+                        is_reasoning_started
+                        and "" in reasoning_parts
+                        and not any(reasoning_parts)
+                        and not any(
+                            delta.get(key)
+                            for key in ("content", "tool_calls", "function_call")
+                        )
+                    ):
+                        delta_content = ""
+                    else:
+                        delta_content, is_reasoning_started = (
+                            self._wrap_thinking_by_reasoning_content(
+                                delta,
+                                is_reasoning_started,
+                            )
+                        )
 
                     assistant_message_tool_calls = None
 
@@ -826,6 +818,18 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     ),
                 )
 
+            chunk_index += 1
+
+        if is_reasoning_started:
+            closing_content = "\n</think>"
+            full_assistant_content += closing_content
+            yield LLMResultChunk(
+                model=model,
+                delta=LLMResultChunkDelta(
+                    index=chunk_index,
+                    message=AssistantPromptMessage(content=closing_content),
+                ),
+            )
             chunk_index += 1
 
         if tools_calls:
@@ -897,15 +901,21 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             completion_tokens = usage["completion_tokens"]
         else:
             # calculate num tokens
-            assert prompt_messages[0].content is not None
+            if prompt_messages[0].content is None:
+                msg = "Prompt message content is required"
+                raise ValueError(msg)
+            prompt_content = cast("str", prompt_messages[0].content)
             prompt_tokens = self._num_tokens_from_string(
                 model,
-                prompt_messages[0].content,
+                prompt_content,
             )
-            assert assistant_message.content is not None
+            if assistant_message.content is None:
+                msg = "Assistant message content is required"
+                raise ValueError(msg)
+            assistant_content = cast("str", assistant_message.content)
             completion_tokens = self._num_tokens_from_string(
                 model,
-                assistant_message.content,
+                assistant_content,
             )
 
         # transform usage
@@ -958,6 +968,15 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                             },
                         }
                         sub_messages.append(sub_message_dict)
+                    elif message_content.type == PromptMessageContentType.VIDEO:
+                        message_content = cast(
+                            "VideoPromptMessageContent",
+                            message_content,
+                        )
+                        sub_messages.append({
+                            "type": "video_url",
+                            "video_url": {"url": message_content.data},
+                        })
 
                 message_dict = {"role": "user", "content": sub_messages}
         elif isinstance(message, AssistantPromptMessage):
@@ -1076,9 +1095,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         return self._get_num_tokens_by_gpt2(str(message_value))
 
     def _text_from_message_value(self, value: object) -> object:
-        # TODO: The current token calculation method for the image type is not
-        # implemented. It needs to download the image and calculate resolution,
-        # which increases request delay.
+        # Image token calculation remains approximate because exact sizing
+        # requires downloading images and measuring resolution.
         if not isinstance(value, list):
             return value
 
@@ -1127,7 +1145,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 num_tokens += self._get_num_tokens_by_gpt2(tool.name)
             num_tokens += self._get_num_tokens_by_gpt2("description")
             if hasattr(tool, "description"):
-                num_tokens += self._get_num_tokens_by_gpt2(tool.description)
+                num_tokens += self._get_num_tokens_by_gpt2(tool.description or "")
             if hasattr(tool, "parameters"):
                 parameters = tool.parameters
                 num_tokens += self._get_num_tokens_by_gpt2("parameters")

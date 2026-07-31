@@ -3,7 +3,7 @@ import socket
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Mapping
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from typing import final
 
 import gevent.socket
@@ -77,8 +77,14 @@ class AIModel(ABC):
         # NOTE: started_at is not a class variable, it bound to specific instance
         # FIXES for the issue: https://github.com/dify-ai/dify-plugin-sdk/issues/190
         self.started_at = time.perf_counter()
-        yield
-        self.started_at = 0
+        try:
+            yield
+        except BaseException:
+            with suppress(Exception):
+                self.started_at = 0
+            raise
+        else:
+            self.started_at = 0
 
     @abstractmethod
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
@@ -262,7 +268,7 @@ class AIModel(ABC):
         new_parameter_rules = []
         for parameter_rule in schema.parameter_rules:
             if parameter_rule.use_template:
-                try:
+                with suppress(ValueError):
                     default_parameter_name = DefaultParameterName.value_of(
                         parameter_rule.use_template
                     )
@@ -316,8 +322,6 @@ class AIModel(ABC):
                         parameter_rule.help.zh_hans = default_parameter_rule[
                             "help"
                         ].get("zh_Hans", default_parameter_rule["help"]["en_US"])
-                except ValueError:
-                    pass
 
             new_parameter_rules.append(parameter_rule)
 
@@ -390,7 +394,7 @@ class AIModel(ABC):
             return len(text)
 
         # check if gevent is patched to main thread
-        import tiktoken  # noqa: PLC0415
+        import tiktoken  # ruff:ignore[import-outside-top-level]
 
         if socket.socket is gevent.socket.socket:
             # using gevent real thread to avoid blocking main thread

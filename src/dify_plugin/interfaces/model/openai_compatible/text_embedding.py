@@ -1,8 +1,8 @@
 import json
 import time
+from contextlib import suppress
 from decimal import Decimal
 from http import HTTPStatus
-from urllib.parse import urljoin
 
 import requests
 
@@ -25,6 +25,24 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.openai_compatible.common import _CommonOaiApiCompat
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
+
+
+def _validate_credentials_response(response: requests.Response) -> None:
+    if response.status_code != HTTPStatus.OK:
+        msg = f"Credentials validation failed with status code {response.status_code}"
+        raise CredentialsValidateFailedError(msg)
+
+    try:
+        json_result = response.json()
+    except json.JSONDecodeError as e:
+        msg = "Credentials validation failed: JSON decode error"
+        raise CredentialsValidateFailedError(msg) from e
+    except CredentialsValidateFailedError:
+        raise
+
+    if "model" not in json_result:
+        msg = "Credentials validation failed: invalid response"
+        raise CredentialsValidateFailedError(msg)
 
 
 class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
@@ -62,11 +80,10 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        endpoint_url = credentials.get("endpoint_url", "")
-        if not endpoint_url.endswith("/"):
-            endpoint_url += "/"
-
-        endpoint_url = urljoin(endpoint_url, "embeddings")
+        endpoint_url = self._join_endpoint_url(
+            credentials.get("endpoint_url", ""),
+            "embeddings",
+        )
 
         extra_model_kwargs = {}
         if user:
@@ -84,7 +101,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
 
         for i, text in enumerate(texts):
             # Here token count is only an approximation based on the GPT2 tokenizer
-            # TODO: Optimize for better token estimation and chunking
+            # Better token estimation would make chunking more precise.
             num_tokens = self._get_num_tokens_by_gpt2(text)
 
             if num_tokens >= context_size:
@@ -151,6 +168,30 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         del credentials
         return [self._get_num_tokens_by_gpt2(text) for text in texts]
 
+    def _request_credentials_validation(
+        self,
+        model: str,
+        credentials: dict,
+    ) -> requests.Response:
+        headers = {"Content-Type": "application/json"}
+        if api_key := credentials.get("api_key"):
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        endpoint_url = self._join_endpoint_url(
+            credentials.get("endpoint_url", ""),
+            "embeddings",
+        )
+        payload = {
+            "input": ["ping"],
+            "model": credentials.get("endpoint_model_name", model),
+        }
+        return requests.post(
+            url=endpoint_url,
+            headers=headers,
+            data=json.dumps(payload),
+            timeout=(10, 300),
+        )
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials
@@ -163,51 +204,24 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             CredentialsValidateFailedError: If credentials validation fails.
         """
         try:
-            headers = {"Content-Type": "application/json"}
-
-            api_key = credentials.get("api_key")
-
-            if api_key:
-                headers["Authorization"] = f"Bearer {api_key}"
-
-            endpoint_url = credentials.get("endpoint_url", "")
-            if not endpoint_url.endswith("/"):
-                endpoint_url += "/"
-
-            endpoint_url = urljoin(endpoint_url, "embeddings")
-
-            payload = {
-                "input": ["ping"],
-                "model": credentials.get("endpoint_model_name", model),
-            }
-
-            response = requests.post(
-                url=endpoint_url,
-                headers=headers,
-                data=json.dumps(payload),
-                timeout=(10, 300),
+            response = self._request_credentials_validation(
+                model,
+                credentials,
             )
-
-            if response.status_code != HTTPStatus.OK:
-                msg = (
-                    "Credentials validation failed with status code "
-                    f"{response.status_code}"
-                )
-                raise CredentialsValidateFailedError(msg)
-
-            try:
-                json_result = response.json()
-            except json.JSONDecodeError as e:
-                msg = "Credentials validation failed: JSON decode error"
-                raise CredentialsValidateFailedError(msg) from e
-
-            if "model" not in json_result:
-                msg = "Credentials validation failed: invalid response"
-                raise CredentialsValidateFailedError(msg)
         except CredentialsValidateFailedError:
             raise
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex)) from ex
+
+        try:
+            _validate_credentials_response(response)
+        except CredentialsValidateFailedError:
+            raise
+        except Exception as ex:
+            raise CredentialsValidateFailedError(str(ex)) from ex
+        finally:
+            with suppress(Exception):
+                response.close()
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict

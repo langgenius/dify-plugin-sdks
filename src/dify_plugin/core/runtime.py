@@ -28,26 +28,28 @@ FULL_DUPLEX_INSTALL_METHODS = frozenset({InstallMethod.Local, InstallMethod.Remo
 
 class ModelInvocations:
     def __init__(self, session: "Session") -> None:
-        from dify_plugin.invocations.model.llm import (  # noqa: PLC0415
+        # ruff:disable[import-outside-top-level]
+        from dify_plugin.invocations.model.llm import (
             LLMInvocation,
             SummaryInvocation,
         )
-        from dify_plugin.invocations.model.llm_structured_output import (  # noqa: PLC0415
+        from dify_plugin.invocations.model.llm_structured_output import (
             LLMStructuredOutputInvocation,
         )
-        from dify_plugin.invocations.model.moderation import (  # noqa: PLC0415
+        from dify_plugin.invocations.model.moderation import (
             ModerationInvocation,
         )
-        from dify_plugin.invocations.model.rerank import (  # noqa: PLC0415
+        from dify_plugin.invocations.model.rerank import (
             RerankInvocation,
         )
-        from dify_plugin.invocations.model.speech2text import (  # noqa: PLC0415
+        from dify_plugin.invocations.model.speech2text import (
             Speech2TextInvocation,
         )
-        from dify_plugin.invocations.model.text_embedding import (  # noqa: PLC0415
+        from dify_plugin.invocations.model.text_embedding import (
             TextEmbeddingInvocation,
         )
-        from dify_plugin.invocations.model.tts import TTSInvocation  # noqa: PLC0415
+        from dify_plugin.invocations.model.tts import TTSInvocation
+        # ruff:enable[import-outside-top-level]
 
         self.llm = LLMInvocation(session)
         self.llm_structured_output = LLMStructuredOutputInvocation(session)
@@ -61,14 +63,16 @@ class ModelInvocations:
 
 class AppInvocations:
     def __init__(self, session: "Session") -> None:
-        from dify_plugin.invocations.app import FetchAppInvocation  # noqa: PLC0415
-        from dify_plugin.invocations.app.chat import ChatAppInvocation  # noqa: PLC0415
-        from dify_plugin.invocations.app.completion import (  # noqa: PLC0415
+        # ruff:disable[import-outside-top-level]
+        from dify_plugin.invocations.app import FetchAppInvocation
+        from dify_plugin.invocations.app.chat import ChatAppInvocation
+        from dify_plugin.invocations.app.completion import (
             CompletionAppInvocation,
         )
-        from dify_plugin.invocations.app.workflow import (  # noqa: PLC0415
+        from dify_plugin.invocations.app.workflow import (
             WorkflowAppInvocation,
         )
+        # ruff:enable[import-outside-top-level]
 
         self.chat = ChatAppInvocation(session)
         self.completion = CompletionAppInvocation(session)
@@ -81,12 +85,14 @@ class AppInvocations:
 
 class WorkflowNodeInvocations:
     def __init__(self, session: "Session") -> None:
-        from dify_plugin.invocations.workflow_node.parameter_extractor import (  # noqa: PLC0415
+        # ruff:disable[import-outside-top-level]
+        from dify_plugin.invocations.workflow_node.parameter_extractor import (
             ParameterExtractorNodeInvocation,
         )
-        from dify_plugin.invocations.workflow_node.question_classifier import (  # noqa: PLC0415
+        from dify_plugin.invocations.workflow_node.question_classifier import (
             QuestionClassifierNodeInvocation,
         )
+        # ruff:enable[import-outside-top-level]
 
         self.question_classifier = QuestionClassifierNodeInvocation(session)
         self.parameter_extractor = ParameterExtractorNodeInvocation(session)
@@ -185,9 +191,11 @@ class Session:
         self._register_invocations()
 
     def _register_invocations(self) -> None:
-        from dify_plugin.invocations.file import File  # noqa: PLC0415
-        from dify_plugin.invocations.storage import StorageInvocation  # noqa: PLC0415
-        from dify_plugin.invocations.tool import ToolInvocation  # noqa: PLC0415
+        # ruff:disable[import-outside-top-level]
+        from dify_plugin.invocations.file import File
+        from dify_plugin.invocations.storage import StorageInvocation
+        from dify_plugin.invocations.tool import ToolInvocation
+        # ruff:enable[import-outside-top-level]
 
         self.model = ModelInvocations(self)
         self.tool = ToolInvocation(self)
@@ -253,7 +261,7 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
 
     def _backwards_invoke(
         self,
-        type: InvokeType,  # noqa: A002
+        type: InvokeType,  # ruff:ignore[builtin-argument-shadowing]
         data_type: type[T],
         data: dict,
     ) -> Generator[T, None, None]:
@@ -320,7 +328,7 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
     def _http_backwards_invoke(
         self,
         backwards_request_id: str,
-        type: InvokeType,  # noqa: A002
+        type: InvokeType,  # ruff:ignore[builtin-argument-shadowing]
         data_type: type[T],
         data: dict,
     ) -> Generator[T, None, None]:
@@ -384,7 +392,7 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
     def _full_duplex_backwards_invoke(
         self,
         backwards_request_id: str,
-        type: InvokeType,  # noqa: A002
+        type: InvokeType,  # ruff:ignore[builtin-argument-shadowing]
         data_type: type[T],
         data: dict,
     ) -> Generator[T, None, None]:
@@ -403,7 +411,7 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
             ),
         )
 
-        def filter(data: PluginInStream) -> bool:  # noqa: A001
+        def filter(data: PluginInStream) -> bool:  # ruff:ignore[builtin-variable-shadowing]
             return (
                 data.event == PluginInStreamEvent.BackwardInvocationResponse
                 and data.data.get("backwards_request_id") == backwards_request_id
