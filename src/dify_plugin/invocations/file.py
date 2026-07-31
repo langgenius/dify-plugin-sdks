@@ -43,8 +43,8 @@ class UploadFileResponse(BaseModel):
 
     def to_app_parameter(self) -> dict:
         return {
-            "upload_file_id": self.id,
-            "transfer_method": "local_file",
+            "tool_file_id": self.id,
+            "transfer_method": "tool_file",
             "type": self.Type.from_mime_type(self.mime_type).value,
         }
 
