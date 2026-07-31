@@ -48,7 +48,10 @@ class ToolIdentity(BaseModel):
     description="The option of the tool parameter",
 )
 class ToolParameterOption(ParameterOption):
-    pass
+    show_on: list[FormShowOnObject] = Field(
+        default_factory=list,
+        description="The conditions that control whether the option is shown",
+    )
 
 
 @docs(
@@ -131,7 +134,10 @@ class ToolParameter(BaseModel):
     options: list[ToolParameterOption] | None = None
     # MCP object and array type parameters use this field to store the schema
     input_schema: Mapping[str, Any] | None = None
-    show_on: list[FormShowOnObject] = Field(default_factory=list)
+    show_on: list[FormShowOnObject] = Field(
+        default_factory=list,
+        description="The conditions that control whether the parameter is shown",
+    )
 
     @model_validator(mode="after")
     def validate_multiple(self) -> "ToolParameter":
