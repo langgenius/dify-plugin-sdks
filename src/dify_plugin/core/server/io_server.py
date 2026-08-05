@@ -2,6 +2,7 @@ import contextlib
 import logging
 import os
 import time
+import traceback
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
@@ -103,7 +104,7 @@ class IOServer(ABC):
                 context,
             )
         except Exception as e:
-            args = {}
+            args = {"traceback": traceback.format_exc()}
             if isinstance(e, InvokeError):
                 args["description"] = e.description
 
