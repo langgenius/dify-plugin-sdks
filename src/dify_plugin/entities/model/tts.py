@@ -20,3 +20,4 @@ class TTSResult(BaseModel):
     """
 
     result: str
+    mime_type: str | None = None

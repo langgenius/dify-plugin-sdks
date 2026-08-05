@@ -551,6 +551,10 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
         )
         if isinstance(model_instance, TTSModel):
             with use_current_session(session):
+                mime_type = model_instance.get_tts_model_mime_type(
+                    data.model,
+                    data.credentials,
+                )
                 b = model_instance.invoke(
                     data.model,
                     data.tenant_id,
@@ -559,12 +563,12 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
                     data.voice,
                     data.user_id,
                 )
-                if isinstance(b, bytes | bytearray | memoryview):
-                    yield {"result": binascii.hexlify(b).decode()}
-                    return
-
-                for chunk in b:
-                    yield {"result": binascii.hexlify(chunk).decode()}
+                chunks = (b,) if isinstance(b, bytes | bytearray | memoryview) else b
+                for chunk in chunks:
+                    result = {"result": binascii.hexlify(chunk).decode()}
+                    if mime_type is not None:
+                        result["mime_type"] = mime_type
+                    yield result
         else:
             msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"
             raise TypeError(

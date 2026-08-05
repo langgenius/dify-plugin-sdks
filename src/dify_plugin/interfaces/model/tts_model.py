@@ -11,7 +11,14 @@ from dify_plugin.entities.model import ModelPropertyKey, ModelType
 from dify_plugin.interfaces.model.ai_model import AIModel
 
 logger = logging.getLogger(__name__)
-EMPTY_STRING = ""
+
+_MIME_TYPE_BY_AUDIO_TYPE = {
+    "mp3": "audio/mpeg",
+    "wav": "audio/wav",
+    "ogg": "audio/ogg",
+    "aac": "audio/aac",
+    "mp4": "audio/mp4",
+}
 
 
 class TTSModel(AIModel):
@@ -162,24 +169,22 @@ class TTSModel(AIModel):
         max_length: int = 2000,
         pattern: str = r"[。.!?]",
     ) -> list[str]:
-        match = re.compile(pattern)
-        tx = match.finditer(org_text)
+        if max_length <= 0:
+            msg = "max_length must be greater than 0"
+            raise ValueError(msg)
+
+        sentence_end = re.compile(pattern)
         start = 0
-        result = []
-        one_sentence = ""
-        for i in tx:
-            end = i.regs[0][1]
-            tmp = org_text[start:end]
-            if len(one_sentence + tmp) > max_length:
-                result.append(one_sentence)
-                one_sentence = ""
-            one_sentence += tmp
-            start = end
-        last_sens = org_text[start:]
-        if last_sens:
-            one_sentence += last_sens
-        if one_sentence != EMPTY_STRING:
-            result.append(one_sentence)
+        result: list[str] = []
+        while start < len(org_text):
+            window_end = min(start + max_length, len(org_text))
+            split_at = window_end
+            if window_end < len(org_text):
+                for match in sentence_end.finditer(org_text, start, window_end):
+                    if match.end() > start:
+                        split_at = match.end()
+            result.append(org_text[start:split_at])
+            start = split_at
         return result
 
     # Streaming behavior can be improved independently of filename generation.
@@ -195,6 +200,16 @@ class TTSModel(AIModel):
     ############################################################
     #                 For executor use only                    #
     ############################################################
+
+    def get_tts_model_mime_type(
+        self,
+        model: str,
+        credentials: dict,
+    ) -> str | None:
+        """Get the standard MIME type declared by the model schema."""
+        return _MIME_TYPE_BY_AUDIO_TYPE.get(
+            self._get_model_audio_type(model, credentials)
+        )
 
     def invoke(
         self,
