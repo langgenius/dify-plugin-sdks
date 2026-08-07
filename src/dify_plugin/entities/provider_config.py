@@ -39,7 +39,7 @@ class CommonParameterType(Enum):
     ARRAY = "array"
     DYNAMIC_SELECT = "dynamic-select"
     DATE = "date"
-    DATE_PICKER = "date-picker"
+    DATE_RANGE = "date-range"
 
 
 @docs(

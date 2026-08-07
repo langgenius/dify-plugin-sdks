@@ -99,7 +99,7 @@ def test_tool_selector_converts_date_parameters_to_prompt_schema() -> None:
             },
             "range": {
                 "name": "range",
-                "type": "date-picker",
+                "type": "date-range",
                 "required": False,
                 "description": "Event date range",
             },

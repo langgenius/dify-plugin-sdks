@@ -93,12 +93,12 @@ class ToolParameter(BaseModel):
         ARRAY = CommonParameterType.ARRAY.value
         DYNAMIC_SELECT = CommonParameterType.DYNAMIC_SELECT.value
         DATE = CommonParameterType.DATE.value
-        DATE_PICKER = CommonParameterType.DATE_PICKER.value
+        DATE_RANGE = CommonParameterType.DATE_RANGE.value
 
         def to_prompt_schema(self, description: str) -> dict[str, Any]:
             if self in {self.SELECT, self.SECRET_INPUT, self.DATE}:
                 return {"type": self.STRING.value, "description": description}
-            if self == self.DATE_PICKER:
+            if self == self.DATE_RANGE:
                 return {
                     "type": self.OBJECT.value,
                     "description": description,
