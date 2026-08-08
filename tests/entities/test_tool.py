@@ -84,6 +84,25 @@ def test_tool_parameter_preserves_show_on_conditions() -> None:
     assert defaulted.options[0].show_on == []
 
 
+def test_tool_parameter_preserves_reset_on_change() -> None:
+    base = {
+        "name": "region",
+        "label": {"en_US": "Region"},
+        "human_description": {"en_US": "Region to use"},
+        "type": "dynamic-select",
+        "form": "form",
+    }
+    parameter = ToolParameter.model_validate(base | {"reset_on_change": ["country"]})
+
+    assert parameter.reset_on_change == ["country"]
+    assert parameter.model_dump(mode="json")["reset_on_change"] == ["country"]
+    assert ToolParameter.model_validate(parameter.model_dump()) == parameter
+
+    defaulted = ToolParameter.model_validate(base)
+    assert defaulted.reset_on_change == []
+    assert defaulted.model_dump(mode="json")["reset_on_change"] == []
+
+
 def test_tool_selector_converts_date_parameters_to_prompt_schema() -> None:
     selector = ToolSelector.model_validate({
         "provider_id": "calendar",
