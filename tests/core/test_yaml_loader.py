@@ -1,9 +1,7 @@
 from pathlib import Path
 
 import pytest
-import yaml
 
-from dify_plugin.core.utils import yaml_loader as yaml_loader_module
 from dify_plugin.core.utils.yaml_loader import load_yaml_file
 
 
@@ -30,15 +28,21 @@ class UnstringableMissingPath:
         raise self.error
 
 
-class MissingYamlError(FileNotFoundError, yaml.YAMLError):
-    pass
-
-
-def test_cyclic_symlink_keeps_missing_file_behavior(tmp_path: Path) -> None:
+def test_cyclic_symlink_raises_by_default(tmp_path: Path) -> None:
     file_path = tmp_path / "loop.yaml"
     file_path.symlink_to(file_path)
 
-    assert load_yaml_file(str(file_path)) == {}
+    with pytest.raises(FileNotFoundError):
+        load_yaml_file(str(file_path))
+
+
+def test_missing_file_respects_ignore_error(tmp_path: Path) -> None:
+    file_path = tmp_path / "missing.yaml"
+
+    with pytest.raises(FileNotFoundError):
+        load_yaml_file(str(file_path))
+
+    assert load_yaml_file(str(file_path), ignore_error=True) == {}
 
 
 def test_ignore_error_covers_path_probe_errors(tmp_path: Path) -> None:
@@ -66,16 +70,3 @@ def test_missing_path_preserves_string_conversion_error(tmp_path: Path) -> None:
         load_yaml_file(file_path)
 
     assert exc_info.value is error
-
-
-def test_missing_file_errors_take_precedence_over_yaml_errors(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    error = MissingYamlError()
-    monkeypatch.setattr(
-        yaml_loader_module,
-        "_read_yaml_file",
-        lambda _file_path: (_ for _ in ()).throw(error),
-    )
-
-    assert load_yaml_file("missing.yaml") == {}

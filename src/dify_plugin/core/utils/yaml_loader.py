@@ -33,20 +33,23 @@ def load_yaml_file(file_path: str, ignore_error: bool = False) -> dict[str, Any]
     :param file_path: the path of the YAML file
     :param ignore_error:
         if True, return an empty dict when loading fails
-        if False, raise loading errors; missing files still return an empty dict
+        if False, raise loading errors
     :return: a dict of the YAML content
 
     Returns:
         The return value.
 
     Raises:
+        FileNotFoundError: If the YAML file cannot be found.
         YAMLError: If the YAML file cannot be loaded.
     """
     try:
         return _read_yaml_file(file_path)
     except FileNotFoundError as e:
-        logger.debug("Failed to load YAML file %s: %s", file_path, e)
-        return {}
+        if ignore_error:
+            logger.debug("Failed to load YAML file %s: %s", file_path, e)
+            return {}
+        raise
     except yaml.YAMLError:
         if ignore_error:
             logger.exception("Failed to load YAML file %s", file_path)
