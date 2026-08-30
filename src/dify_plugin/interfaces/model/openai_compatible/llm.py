@@ -738,18 +738,31 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
                 if "delta" in choice:
                     delta = choice["delta"]
+                    # ``reasoning_parts`` captures every way a delta can carry reasoning:
+                    # the OpenAI-style ``reasoning_content`` key, the alternate ``reasoning``
+                    # key, or the case where neither key is present at all (some runtimes
+                    # such as the MTPLX Qwen3 server omit both keys on heartbeat deltas
+                    # mid-reasoning instead of emitting explicit empty strings).
                     reasoning_parts = (
                         delta.get("reasoning_content"),
                         delta.get("reasoning"),
                     )
+                    # Heartbeat detection: while we are inside an open ``<think>`` block,
+                    # a delta with no visible content/tool/function data and no new
+                    # reasoning tokens must NOT close the block. Treat both ``None``
+                    # (key absent) and ``""`` (key present but empty) as "no new
+                    # reasoning" so the wrapper stays out of the way.
+                    has_visible_payload = any(
+                        delta.get(key)
+                        for key in ("content", "tool_calls", "function_call")
+                    )
+                    no_new_reasoning = all(
+                        part in (None, "") for part in reasoning_parts
+                    )
                     if (
                         is_reasoning_started
-                        and "" in reasoning_parts
-                        and not any(reasoning_parts)
-                        and not any(
-                            delta.get(key)
-                            for key in ("content", "tool_calls", "function_call")
-                        )
+                        and no_new_reasoning
+                        and not has_visible_payload
                     ):
                         delta_content = ""
                     else:

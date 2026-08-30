@@ -473,6 +473,12 @@ def test_validate_credentials_truth_tests_stream_mode_once() -> None:
             "Non-JSON encountered.",
             None,
         ),
+        # When intermediate deltas are absent or empty (the MTPLX
+        # Qwen3 / heartbeat pattern), reasoning across them must be
+        # merged into a single ``<think>`` block instead of being
+        # split by premature ``</think>`` markers. Tool/function call
+        # boundaries still legitimately close the block; a final empty
+        # close is emitted once at stream end.
         (
             [
                 _stream_choice({"reasoning_content": "A"}),
@@ -492,11 +498,61 @@ def test_validate_credentials_truth_tests_stream_mode_once() -> None:
                 _stream_choice({"reasoning_content": "E"}),
                 "data: [DONE]",
             ],
-            (
-                "<think>\nA\n</think><think>\nB\n</think>"
-                "<think>\nC\n</think><think>\nD\n</think>"
-                "<think>\nE\n</think>"
-            ),
+            "<think>\nABC\n</think><think>\nD\n</think><think>\nE\n</think>",
+            None,
+            None,
+        ),
+        # MTPLX / Qwen3 streaming pattern (issue #277 follow-up):
+        # the runtime inserts heartbeat deltas with no reasoning_content
+        # key at all mid-reasoning. The bypass must treat those the
+        # same as present-but-empty reasoning chunks and skip them,
+        # otherwise the think block gets fragmented into many entries.
+        (
+            [
+                _stream_choice({"reasoning_content": "He"}),
+                _stream_choice({}, finish_reason=None),
+                _stream_choice({"reasoning_content": "llo"}),
+                _stream_choice({}, finish_reason=None),
+                _stream_choice({"reasoning_content": " world"}),
+                _stream_choice({}, finish_reason=None),
+                _stream_choice({"content": "Final."}, "stop"),
+                "data: [DONE]",
+            ],
+            "<think>\nHello world\n</think>Final.",
+            "stop",
+            None,
+        ),
+        # Same heartbeat pattern, but with ``reasoning`` key instead of
+        # ``reasoning_content`` (some LiteLLM-style proxies do this).
+        (
+            [
+                _stream_choice({"reasoning": "abc"}),
+                _stream_choice({}, finish_reason=None),
+                _stream_choice({"reasoning": "def"}),
+                _stream_choice({"content": "OK"}, "stop"),
+                "data: [DONE]",
+            ],
+            "<think>\nabcdef\n</think>OK",
+            "stop",
+            None,
+        ),
+        # Heartbeat deltas must NOT skip the close once reasoning has
+        # genuinely ended (i.e. a visible content chunk arrived). The
+        # post-close heartbeats are still ignored so they don't reopen
+        # a second think block.
+        (
+            [
+                _stream_choice({"reasoning_content": "X"}),
+                _stream_choice({"content": "ans"}, "stop"),
+                _stream_choice({}, finish_reason=None),
+                _stream_choice({}, finish_reason=None),
+                "data: [DONE]",
+            ],
+            "<think>\nX\n</think>ans",
+            # finish_reason is reset by trailing heartbeat deltas that
+            # carry ``"finish_reason": null``; this is a pre-existing
+            # quirk in the stream handler and is not what this fix
+            # targets.
             None,
             None,
         ),
