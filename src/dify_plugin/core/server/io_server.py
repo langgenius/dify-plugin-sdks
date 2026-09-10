@@ -8,6 +8,12 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 
 from dify_plugin.config.config import DifyPluginEnv
+from dify_plugin.core.cancellation import (
+    CancellationRegistry,
+    RequestCancelledError,
+    _Entry,
+    run_cancellable,
+)
 from dify_plugin.core.entities.plugin.io import PluginInStream, PluginInStreamEvent
 from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.__base.response_writer import ResponseWriter
@@ -32,10 +38,12 @@ class IOServer(ABC):
         self.default_writer = default_writer
         self.executer = ThreadPoolExecutor(max_workers=self.config.MAX_WORKER)
         self.request_reader = request_reader
+        self.cancellations = CancellationRegistry()
 
     def close(self, *args: object) -> None:
         del args
         self.request_reader.close()
+        self.cancellations.clear()
 
     @abstractmethod
     def _execute_request(
@@ -60,24 +68,40 @@ class IOServer(ABC):
         """
 
         def filter(data: PluginInStream) -> bool:  # ruff:ignore[builtin-variable-shadowing]
-            return data.event == PluginInStreamEvent.Request
+            return data.event in {
+                PluginInStreamEvent.Request,
+                PluginInStreamEvent.Cancel,
+            }
 
+        # Requests and cancels share one reader so they stay in wire order: a cancel can
+        # never overtake the request it names into the registry.
         for data in self.request_reader.read(filter).read():
-            self.executer.submit(
-                self._execute_request_in_thread,
-                data.session_id,
-                data.data,
-                data.reader,
-                data.writer,
-                data.conversation_id,
-                data.message_id,
-                data.app_id,
-                data.endpoint_id,
-                data.context,
-            )
+            if data.event == PluginInStreamEvent.Cancel:
+                self.cancellations.cancel(data.session_id)
+                continue
+
+            entry = self.cancellations.register(data.session_id)
+            try:
+                self.executer.submit(
+                    self._execute_request_in_thread,
+                    entry,
+                    data.session_id,
+                    data.data,
+                    data.reader,
+                    data.writer,
+                    data.conversation_id,
+                    data.message_id,
+                    data.app_id,
+                    data.endpoint_id,
+                    data.context,
+                )
+            except BaseException:
+                self.cancellations.discard(entry)
+                raise
 
     def _execute_request_in_thread(
         self,
+        entry: "_Entry | None",
         session_id: str,
         data: dict,
         reader: RequestReader,
@@ -93,7 +117,9 @@ class IOServer(ABC):
         """
         # wait for the task to finish
         try:
-            self._execute_request(
+            run_cancellable(
+                entry,
+                self._execute_request,
                 session_id,
                 data,
                 reader,
@@ -113,6 +139,8 @@ class IOServer(ABC):
             self._write_request_error(session_id, reader, writer, e)
             raise
         finally:
+            # Settle before the closing frames so a late cancel cannot reach them.
+            self.cancellations.discard(entry)
             writer.session_message(
                 session_id=session_id, data=writer.stream_end_object()
             )
@@ -132,7 +160,10 @@ class IOServer(ABC):
         if isinstance(e, InvokeError):
             args["description"] = e.description
 
-        if isinstance(reader, (TCPReaderWriter, ServerlessRequestReader)):
+        if isinstance(e, RequestCancelledError):
+            # An expected control event, not a failure worth a traceback.
+            logger.debug("Request %s was cancelled by the caller", session_id)
+        elif isinstance(reader, (TCPReaderWriter, ServerlessRequestReader)):
             logger.error(
                 "Unexpected error occurred when executing request",
                 exc_info=e,

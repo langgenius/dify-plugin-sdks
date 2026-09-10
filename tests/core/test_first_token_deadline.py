@@ -89,7 +89,7 @@ def test_the_budget_is_ignored_when_a_blocking_read_cannot_be_interrupted(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Fail open: no enforcement is correct, killing a healthy request is not."""
-    monkeypatch.setattr(first_token_deadline, "_interruptible", lambda: False)
+    monkeypatch.setattr(first_token_deadline, "interruptible", lambda: False)
 
     assert list(guard_first_token(slow_before_first_yield(0), BUDGET)) == [
         "first",

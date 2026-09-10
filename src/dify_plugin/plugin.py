@@ -568,6 +568,18 @@ class Plugin(IOServer, Router):
             context=context,
             max_invocation_timeout=self.config.MAX_INVOCATION_TIMEOUT,
         )
+        try:
+            self._dispatch_and_stream(session, data, session_id, writer)
+        finally:
+            session.close()
+
+    def _dispatch_and_stream(
+        self,
+        session: Session,
+        data: dict,
+        session_id: str,
+        writer: ResponseWriter,
+    ) -> None:
         response = self.dispatch(session, data)
         if response:
             if isinstance(response, Generator):

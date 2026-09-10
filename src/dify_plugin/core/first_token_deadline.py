@@ -15,19 +15,14 @@ budget is ignored and the caller's own timeout stays the backstop.
 """
 
 import logging
-import socket
 from collections.abc import Generator
 
 import gevent
-import gevent.socket
 
+from dify_plugin.core.gevent_runtime import interruptible
 from dify_plugin.errors.model import FirstTokenTimeoutError
 
 logger = logging.getLogger(__name__)
-
-
-def _interruptible() -> bool:
-    return socket.socket is gevent.socket.socket
 
 
 def guard_first_token[T](
@@ -39,7 +34,7 @@ def guard_first_token[T](
         yield from stream
         return
 
-    if not _interruptible():
+    if not interruptible():
         logger.warning(
             "Ignoring a %ss first-token timeout: a blocking read cannot be "
             "interrupted outside a gevent runtime.",

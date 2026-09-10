@@ -50,22 +50,36 @@ class ServerlessRequestReader(RequestReader):
             yield self.request_queue.get()
 
     def handler(self) -> tuple[Generator[str, None, None], int] | tuple[str, int]:
+        queue: Queue[str | None] = Queue()
         try:
-            queue: Queue[str | None] = Queue()
             data = request.get_json()
-            event = PluginInStreamEvent.value_of(data["event"])
-            plugin_in = PluginInStream(
-                event=event,
-                session_id=data["session_id"],
-                conversation_id=data.get("conversation_id"),
-                message_id=data.get("message_id"),
-                app_id=data.get("app_id"),
-                endpoint_id=data.get("endpoint_id"),
-                data=data["data"],
-                context=data.get("context"),
-                reader=self,
-                writer=ServerlessResponseWriter(queue),
+            event = PluginInStreamEvent.parse(data["event"])
+            plugin_in = (
+                PluginInStream(
+                    event=event,
+                    session_id=data["session_id"],
+                    conversation_id=data.get("conversation_id"),
+                    message_id=data.get("message_id"),
+                    app_id=data.get("app_id"),
+                    endpoint_id=data.get("endpoint_id"),
+                    data=data.get("data") or {},
+                    context=data.get("context"),
+                    reader=self,
+                    writer=ServerlessResponseWriter(queue),
+                )
+                if event is PluginInStreamEvent.Request
+                else None
             )
+        except Exception as e:
+            return str(e), 500
+
+        if plugin_in is None:
+            # This transport carries requests only; anything else -- an unknown event,
+            # or a cancel from a newer daemon -- is acknowledged and dropped rather
+            # than parked on a streaming connection until it times out.
+            return "", 204
+
+        try:
             self.request_queue.put(plugin_in)
         except Exception as e:
             return str(e), 500

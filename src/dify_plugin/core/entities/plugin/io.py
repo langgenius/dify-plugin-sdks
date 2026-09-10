@@ -10,10 +10,26 @@ if TYPE_CHECKING:
 class PluginInStreamEvent(Enum):
     Request = "request"
     BackwardInvocationResponse = "backwards_response"
+    Cancel = "cancel"
 
     @classmethod
     def value_of(cls, v: str) -> "PluginInStreamEvent":
         return cls(v)
+
+    @classmethod
+    def parse(cls, v: str) -> "PluginInStreamEvent | None":
+        """Return None for an event this version does not know, rather than raising.
+
+        A newer caller must not be able to break an older plugin, and the only
+        alternative here is a session-less error frame for a line we simply ignore.
+
+        Returns:
+            The event, or None if it is unrecognised.
+        """
+        try:
+            return cls(v)
+        except ValueError:
+            return None
 
 
 @dataclass(frozen=True, slots=True)

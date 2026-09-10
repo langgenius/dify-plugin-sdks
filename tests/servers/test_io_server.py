@@ -2,14 +2,16 @@ import json
 from collections.abc import Generator
 
 import gevent
+import gevent.event
 import pytest
 
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.entities.message import SessionMessage
-from dify_plugin.core.entities.plugin.io import PluginInStream
+from dify_plugin.core.entities.plugin.io import PluginInStream, PluginInStreamEvent
 from dify_plugin.core.server.io_server import IOServer
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
+from dify_plugin.core.server.tcp.request_reader import TCPReaderWriter
 from dify_plugin.errors.model import InvokeError
 
 
@@ -69,6 +71,7 @@ def test_execute_request_error_includes_traceback() -> None:
     server = FailingIOServer(DifyPluginEnv(), reader, writer)
 
     server._execute_request_in_thread(
+        None,
         "session-1",
         {},
         reader,
@@ -142,7 +145,9 @@ class StubServer(IOServer):
 
 def run_once(server: StubServer) -> RecordingWriter:
     writer = RecordingWriter()
-    server._execute_request_in_thread(SESSION_ID, {}, server.request_reader, writer)
+    server._execute_request_in_thread(
+        None, SESSION_ID, {}, server.request_reader, writer
+    )
     return writer
 
 
@@ -191,7 +196,9 @@ def test_a_base_exception_is_reported_then_closed_then_reraised(
     server = StubServer(error)
 
     with pytest.raises(type(error)):
-        server._execute_request_in_thread(SESSION_ID, {}, server.request_reader, writer)
+        server._execute_request_in_thread(
+            None, SESSION_ID, {}, server.request_reader, writer
+        )
 
     assert writer.session_frame_types() == ["error", "end"]
     assert writer.session_frames()[0]["data"]["error_type"] == error_type
@@ -204,7 +211,12 @@ def test_a_killed_worker_greenlet_still_closes_the_session() -> None:
     server = StubServer(block=True)
 
     worker = gevent.spawn(
-        server._execute_request_in_thread, SESSION_ID, {}, server.request_reader, writer
+        server._execute_request_in_thread,
+        None,
+        SESSION_ID,
+        {},
+        server.request_reader,
+        writer,
     )
     gevent.sleep(0)
     worker.kill()
@@ -212,3 +224,75 @@ def test_a_killed_worker_greenlet_still_closes_the_session() -> None:
     assert writer.session_frame_types() == ["error", "end"]
     assert writer.session_frames()[0]["data"]["error_type"] == "GreenletExit"
     assert writer.done_calls == 1
+
+
+class BlockingBodyServer(StubServer):
+    def __init__(self) -> None:
+        super().__init__()
+        self.started = gevent.event.Event()
+        self.cleaned = False
+
+    def _execute_request(self, *args: object, **kwargs: object) -> None:
+        del args, kwargs
+        try:
+            self.started.set()
+            gevent.sleep(30)
+        finally:
+            self.cleaned = True
+
+
+def test_a_cancelled_request_is_reported_and_closed_exactly_once() -> None:
+    server = BlockingBodyServer()
+    writer = RecordingWriter()
+    entry = server.cancellations.register(SESSION_ID)
+
+    worker = gevent.spawn(
+        server._execute_request_in_thread,
+        entry,
+        SESSION_ID,
+        {},
+        server.request_reader,
+        writer,
+    )
+    assert server.started.wait(timeout=2)
+    assert server.cancellations.cancel(SESSION_ID) is True
+    worker.join(timeout=2)
+
+    assert writer.session_frame_types() == ["error", "end"]
+    assert writer.session_frames()[0]["data"]["error_type"] == "RequestCancelledError"
+    assert writer.done_calls == 1
+    assert server.cleaned
+
+
+def test_a_finished_request_leaves_nothing_to_cancel() -> None:
+    server = StubServer()
+    writer = RecordingWriter()
+    entry = server.cancellations.register(SESSION_ID)
+
+    server._execute_request_in_thread(
+        entry, SESSION_ID, {}, server.request_reader, writer
+    )
+
+    assert server.cancellations.cancel(SESSION_ID) is False
+    assert writer.session_frame_types() == ["end"]
+
+
+def parse_frame(payload: dict) -> object:
+    reader = StdioRequestReader.__new__(TCPReaderWriter)
+    return TCPReaderWriter._parse_line(reader, json.dumps(payload))
+
+
+def test_an_event_this_version_does_not_know_is_skipped() -> None:
+    """A newer daemon must not be able to break an older plugin."""
+    assert PluginInStreamEvent.parse("something-new") is None
+    assert (
+        parse_frame({"session_id": "s", "event": "something-new", "data": {}}) is None
+    )
+
+
+def test_a_cancel_frame_parses_without_a_data_member() -> None:
+    frame = parse_frame({"session_id": "s", "event": "cancel"})
+
+    assert frame is not None
+    assert frame.event is PluginInStreamEvent.Cancel
+    assert frame.data == {}
