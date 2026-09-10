@@ -105,29 +105,49 @@ class IOServer(ABC):
                 context,
             )
         except Exception as e:
-            args = {"traceback": traceback.format_exc()}
-            if isinstance(e, InvokeError):
-                args["description"] = e.description
-
-            if isinstance(reader, (TCPReaderWriter, ServerlessRequestReader)):
-                logger.exception(
-                    "Unexpected error occurred when executing request",
-                    exc_info=e,
-                )
-
+            self._write_request_error(session_id, reader, writer, e)
+        except BaseException as e:
+            # A greenlet kill and a gevent.Timeout are not Exceptions. Without this
+            # arm they escape into a Future nobody reads, so the caller sees neither an
+            # error nor an end frame and waits out its whole execution timeout instead.
+            self._write_request_error(session_id, reader, writer, e)
+            raise
+        finally:
             writer.session_message(
-                session_id=session_id,
-                data=writer.stream_error_object(
-                    data={
-                        "error_type": type(e).__name__,
-                        "message": str(e),
-                        "args": args,
-                    }
-                ),
+                session_id=session_id, data=writer.stream_end_object()
+            )
+            writer.done()
+
+    def _write_request_error(
+        self,
+        session_id: str,
+        reader: RequestReader,
+        writer: ResponseWriter,
+        e: BaseException,
+    ) -> None:
+        """
+        report a failed request to the caller as one error frame
+        """
+        args: dict[str, str] = {"traceback": traceback.format_exc()}
+        if isinstance(e, InvokeError):
+            args["description"] = e.description
+
+        if isinstance(reader, (TCPReaderWriter, ServerlessRequestReader)):
+            logger.error(
+                "Unexpected error occurred when executing request",
+                exc_info=e,
             )
 
-        writer.session_message(session_id=session_id, data=writer.stream_end_object())
-        writer.done()
+        writer.session_message(
+            session_id=session_id,
+            data=writer.stream_error_object(
+                data={
+                    "error_type": type(e).__name__,
+                    "message": str(e),
+                    "args": args,
+                }
+            ),
+        )
 
     def _heartbeat(self) -> None:
         """
