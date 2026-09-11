@@ -34,7 +34,6 @@ from dify_plugin.entities.model.llm import (
 )
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
-    ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContent,
     PromptMessageContentType,
@@ -43,7 +42,6 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
-    VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
@@ -942,43 +940,10 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         """Convert PromptMessage to dict for OpenAI API format"""
         message_dict = {}
         if isinstance(message, UserPromptMessage):
-            message = cast("UserPromptMessage", message)
-            if isinstance(message.content, str):
-                message_dict = {"role": "user", "content": message.content}
-            else:
-                sub_messages = []
-                for message_content in message.content or []:
-                    if message_content.type == PromptMessageContentType.TEXT:
-                        message_content = cast("PromptMessageContent", message_content)
-                        sub_message_dict = {
-                            "type": "text",
-                            "text": message_content.data,
-                        }
-                        sub_messages.append(sub_message_dict)
-                    elif message_content.type == PromptMessageContentType.IMAGE:
-                        message_content = cast(
-                            "ImagePromptMessageContent",
-                            message_content,
-                        )
-                        sub_message_dict = {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": message_content.data,
-                                "detail": message_content.detail.value,
-                            },
-                        }
-                        sub_messages.append(sub_message_dict)
-                    elif message_content.type == PromptMessageContentType.VIDEO:
-                        message_content = cast(
-                            "VideoPromptMessageContent",
-                            message_content,
-                        )
-                        sub_messages.append({
-                            "type": "video_url",
-                            "video_url": {"url": message_content.data},
-                        })
-
-                message_dict = {"role": "user", "content": sub_messages}
+            message_dict = {
+                "role": "user",
+                "content": message.content if message.content is not None else [],
+            }
         elif isinstance(message, AssistantPromptMessage):
             message = cast("AssistantPromptMessage", message)
             message_dict = {"role": "assistant", "content": message.content}
@@ -1018,6 +983,33 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         else:
             msg = f"Got unknown type {message}"
             raise TypeError(msg)
+
+        if isinstance(message_dict.get("content"), list):
+            sub_messages = []
+            for message_content in message.content or []:
+                if message_content.type == PromptMessageContentType.TEXT:
+                    sub_messages.append({
+                        "type": "text",
+                        "text": message_content.data,
+                    })
+                elif message_content.type == PromptMessageContentType.IMAGE:
+                    sub_messages.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": message_content.data,
+                            "detail": message_content.detail.value,
+                        },
+                    })
+                elif message_content.type == PromptMessageContentType.VIDEO:
+                    sub_messages.append({
+                        "type": "video_url",
+                        "video_url": {"url": message_content.data},
+                    })
+                elif not isinstance(message, UserPromptMessage):
+                    # Preserve unsupported parts for provider overrides; unhandled
+                    # parts must still fail JSON encoding instead of disappearing.
+                    sub_messages.append(message_content)
+            message_dict["content"] = sub_messages
 
         if message.name and message_dict.get("role", "") != "tool":
             message_dict["name"] = message.name
