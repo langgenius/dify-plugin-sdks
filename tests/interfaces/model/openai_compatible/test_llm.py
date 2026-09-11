@@ -8,7 +8,11 @@ import pytest
 
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.entities.model.message import (
+    AssistantPromptMessage,
+    ImagePromptMessageContent,
+    SystemPromptMessage,
     TextPromptMessageContent,
+    ToolPromptMessage,
     UserPromptMessage,
     VideoPromptMessageContent,
 )
@@ -133,6 +137,135 @@ def test_convert_prompt_message_to_dict_serializes_video(
             },
         ],
     }
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("function_calling_type", ["tool_call", "function_call"])
+@pytest.mark.parametrize(
+    ("image_kwargs", "expected_url"),
+    [
+        ({"url": "https://example.com/image.png"}, "https://example.com/image.png"),
+        ({"base64_data": "AAAA"}, "data:image/png;base64,AAAA"),
+    ],
+)
+def test_generate_serializes_images_in_all_message_roles(
+    image_kwargs: dict[str, str],
+    expected_url: str,
+    function_calling_type: str,
+    stream: bool,
+) -> None:
+    content = [
+        ImagePromptMessageContent(
+            format="png", mime_type="image/png", detail="high", **image_kwargs
+        ),
+        TextPromptMessageContent(data="Describe this image."),
+    ]
+    tool_call = AssistantPromptMessage.ToolCall(
+        id="call-1",
+        type="function",
+        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="describe", arguments="{}"
+        ),
+    )
+    messages = [
+        UserPromptMessage(content=content, name="user-name"),
+        SystemPromptMessage(content=content, name="system-name"),
+        AssistantPromptMessage(
+            content=content, name="assistant-name", tool_calls=[tool_call]
+        ),
+        ToolPromptMessage(content=content, tool_call_id="call-1"),
+    ]
+    llm = OAICompatLargeLanguageModel([])
+    response = MagicMock(status_code=HTTPStatus.OK)
+    with (
+        patch(
+            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
+            return_value=response,
+        ) as post,
+        patch.object(llm, "_handle_generate_response"),
+        patch.object(llm, "_handle_generate_stream_response"),
+    ):
+        llm._generate(
+            "model",
+            {
+                "endpoint_url": "https://example.com/v1",
+                "mode": "chat",
+                "function_calling_type": function_calling_type,
+            },
+            messages,
+            {},
+            stream=stream,
+        )
+
+    expected_content = [
+        {
+            "type": "image_url",
+            "image_url": {"url": expected_url, "detail": "high"},
+        },
+        {"type": "text", "text": "Describe this image."},
+    ]
+    assistant_metadata = (
+        {"tool_calls": [tool_call.model_dump()]}
+        if function_calling_type == "tool_call"
+        else {"function_call": {"name": "describe", "arguments": "{}"}}
+    )
+    tool_metadata = (
+        {"role": "tool", "tool_call_id": "call-1"}
+        if function_calling_type == "tool_call"
+        else {"role": "function", "name": "call-1"}
+    )
+    request = post.call_args.kwargs
+    assert request["stream"] is stream
+    assert json.loads(request["data"]) == {
+        "model": "model",
+        "stream": stream,
+        "messages": [
+            {"role": "user", "content": expected_content, "name": "user-name"},
+            {"role": "system", "content": expected_content, "name": "system-name"},
+            {
+                "role": "assistant",
+                "content": expected_content,
+                "name": "assistant-name",
+                **assistant_metadata,
+            },
+            {"content": expected_content, **tool_metadata},
+        ],
+    }
+    assert messages[0].content == content
+
+
+def test_convert_prompt_messages_preserves_text_and_empty_content() -> None:
+    llm = OAICompatLargeLanguageModel([])
+    tool_call = {
+        "id": "call-1",
+        "type": "function",
+        "function": {"name": "describe", "arguments": "{}"},
+    }
+    messages = [
+        UserPromptMessage(content="plain text"),
+        UserPromptMessage(content=None),
+        UserPromptMessage(content=[]),
+        SystemPromptMessage(content="instruction"),
+        SystemPromptMessage(content=None),
+        AssistantPromptMessage(content=None),
+        AssistantPromptMessage(content=[]),
+        AssistantPromptMessage.model_validate({"tool_calls": [tool_call]}),
+        ToolPromptMessage(content="result", tool_call_id="call-1", name="ignored"),
+    ]
+    assert [
+        llm._convert_prompt_message_to_dict(m, {"function_calling_type": "tool_call"})
+        for m in messages
+    ] == [
+        {"role": "user", "content": "plain text"},
+        {"role": "user", "content": []},
+        {"role": "user", "content": []},
+        {"role": "system", "content": "instruction"},
+        {"role": "system", "content": None},
+        {"role": "assistant", "content": None},
+        {"role": "assistant", "content": []},
+        {"role": "assistant", "content": None, "tool_calls": [tool_call]},
+        {"role": "tool", "content": "result", "tool_call_id": "call-1"},
+    ]
 
 
 def test_generate_encodes_request_json_as_utf8() -> None:
