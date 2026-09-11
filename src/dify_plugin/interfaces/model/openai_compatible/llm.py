@@ -1005,6 +1005,10 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                         "type": "video_url",
                         "video_url": {"url": message_content.data},
                     })
+                elif not isinstance(message, UserPromptMessage):
+                    # Preserve unsupported parts for provider overrides; unhandled
+                    # parts must still fail JSON encoding instead of disappearing.
+                    sub_messages.append(message_content)
             message_dict["content"] = sub_messages
 
         if message.name and message_dict.get("role", "") != "tool":
