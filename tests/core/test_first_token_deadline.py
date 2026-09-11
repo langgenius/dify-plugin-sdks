@@ -12,6 +12,8 @@ from dify_plugin.core.entities.plugin.request import ModelInvokeLLMRequest
 from dify_plugin.core.first_token_deadline import guard_first_token
 from dify_plugin.core.plugin_executor import PluginExecutor
 from dify_plugin.core.runtime import Session
+from dify_plugin.entities.model.llm import LLMResultChunk, LLMResultChunkDelta
+from dify_plugin.entities.model.message import AssistantPromptMessage
 from dify_plugin.errors.model import FirstTokenTimeoutError, InvokeError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
@@ -46,6 +48,76 @@ def test_the_budget_does_not_bound_the_gap_between_later_chunks() -> None:
     chunks = list(guard_first_token(slow_between_yields(BUDGET * 3), BUDGET))
 
     assert chunks == ["first", "second"]
+
+
+def chunk(content: str) -> LLMResultChunk:
+    return LLMResultChunk(
+        model="m",
+        delta=LLMResultChunkDelta(
+            index=0, message=AssistantPromptMessage(content=content)
+        ),
+    )
+
+
+def test_an_empty_envelope_is_forwarded_but_does_not_release_the_budget() -> None:
+    """A role delta or keep-alive is not the first token the user is waiting for."""
+
+    def opens_empty_then_stalls() -> Generator[LLMResultChunk, None, None]:
+        yield chunk("")
+        gevent.sleep(10)
+        yield chunk("hi")
+
+    seen: list[LLMResultChunk] = []
+    started = time.monotonic()
+
+    with pytest.raises(FirstTokenTimeoutError):
+        seen.extend(guard_first_token(opens_empty_then_stalls(), BUDGET))
+
+    assert [item.delta.message.content for item in seen] == [""]
+    assert time.monotonic() - started < TOLERANCE
+
+
+def test_a_run_of_empty_envelopes_cannot_extend_the_budget() -> None:
+    """The budget is one deadline for the whole wait, not one per pull -- otherwise a
+    provider that keeps the stream warm never trips it."""
+    beats = 20
+
+    def heartbeats() -> Generator[LLMResultChunk, None, None]:
+        for _ in range(beats):
+            gevent.sleep(BUDGET * 0.4)
+            yield chunk("")
+        yield chunk("hi")
+
+    seen: list[LLMResultChunk] = []
+    started = time.monotonic()
+
+    with pytest.raises(FirstTokenTimeoutError):
+        seen.extend(guard_first_token(heartbeats(), BUDGET))
+
+    assert 0 < len(seen) < beats
+    assert time.monotonic() - started < TOLERANCE
+
+
+def test_real_content_releases_the_budget() -> None:
+    def content_then_a_long_gap() -> Generator[LLMResultChunk, None, None]:
+        yield chunk("hi")
+        gevent.sleep(BUDGET * 3)
+        yield chunk(" there")
+
+    chunks = list(guard_first_token(content_then_a_long_gap(), BUDGET))
+
+    assert [item.delta.message.content for item in chunks] == ["hi", " there"]
+
+
+def test_a_stream_of_empty_envelopes_that_ends_is_not_a_timeout() -> None:
+    """Nothing was generated, but nothing stalled either -- that is the provider's
+    answer, not a deadline the SDK should overwrite with its own error."""
+
+    def only_empty() -> Generator[LLMResultChunk, None, None]:
+        yield chunk("")
+        yield chunk("")
+
+    assert len(list(guard_first_token(only_empty(), BUDGET))) == 2
 
 
 def test_a_prompt_stream_is_passed_through_untouched() -> None:

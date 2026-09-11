@@ -15,7 +15,9 @@ from pydantic import (
 from dify_plugin.entities.model import BaseModelConfig, ModelType, ModelUsage, PriceInfo
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    MultiModalPromptMessageContent,
     PromptMessage,
+    TextPromptMessageContent,
 )
 
 
@@ -94,6 +96,35 @@ class LLMResultChunk(BaseModel):
     prompt_messages: list[PromptMessage] = Field(default_factory=list)
     system_fingerprint: str | None = None
     delta: LLMResultChunkDelta
+
+    def carries_first_token(self) -> bool:
+        """Whether this chunk is the first token, rather than an empty envelope.
+
+        Providers commonly open a stream with a role delta or a keep-alive chunk that
+        carries no generated content; counting one of those as the first token would
+        report a latency the user never observed. Mirrors the daemon's
+        ``LLMResultChunk.CarriesFirstToken``, which gates the same stream one hop up.
+
+        Returns:
+            True if the chunk carries generated content or a tool call.
+        """
+        if self.delta.message.tool_calls:
+            return True
+
+        content = self.delta.message.content
+        if isinstance(content, str):
+            return bool(content)
+        if content is None:
+            return False
+
+        for part in content:
+            if isinstance(part, TextPromptMessageContent) and part.data:
+                return True
+            if isinstance(part, MultiModalPromptMessageContent) and (
+                part.base64_data or part.url
+            ):
+                return True
+        return False
 
     @field_validator("prompt_messages", mode="before")
     @classmethod
