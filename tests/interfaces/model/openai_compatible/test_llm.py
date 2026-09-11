@@ -2,9 +2,12 @@ import json
 from collections import UserDict
 from collections.abc import Mapping
 from http import HTTPStatus
+from types import SimpleNamespace
 from unittest.mock import MagicMock, PropertyMock, patch
 
+import gevent.socket
 import pytest
+from gevent.threadpool import ThreadPool
 
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.entities.model.message import (
@@ -20,6 +23,7 @@ from dify_plugin.entities.model.message import (
     VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
+from dify_plugin.interfaces.model import ai_model
 from dify_plugin.interfaces.model.openai_compatible.llm import (
     OAICompatLargeLanguageModel,
 )
@@ -408,6 +412,34 @@ def test_num_tokens_counts_non_user_text_without_counting_media(
         expected.append("call-1")
     assert [call.args[0] for call in tokenize.call_args_list] == expected
     assert count == 6 + sum(map(len, expected))
+
+
+@pytest.mark.parametrize("use_threadpool", [False, True])
+def test_num_tokens_treats_special_token_spelling_as_text(
+    use_threadpool: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        ai_model,
+        "socket",
+        SimpleNamespace(socket=gevent.socket.socket if use_threadpool else None),
+    )
+    pool = ThreadPool(1)
+    monkeypatch.setattr(ai_model, "threadpool", pool, raising=False)
+    content = [TextPromptMessageContent(data="Explain the <|endoftext|> token.")]
+    messages = [
+        SystemPromptMessage(content=content),
+        AssistantPromptMessage(content=content),
+        ToolPromptMessage(content=content, tool_call_id="call-1"),
+    ]
+    try:
+        count = OAICompatLargeLanguageModel([]).get_num_tokens(
+            "model", {"function_calling_type": "tool_call"}, messages
+        )
+    finally:
+        pool.kill()
+
+    # GPT2 counts the literal spelling as ordinary text, not a control token.
+    assert count == 55
 
 
 def test_generate_encodes_request_json_as_utf8() -> None:
