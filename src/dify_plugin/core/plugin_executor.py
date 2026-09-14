@@ -50,6 +50,7 @@ from dify_plugin.core.entities.plugin.request import (
     TriggerUnsubscribeResponse,
     TriggerValidateProviderCredentialsRequest,
 )
+from dify_plugin.core.first_token_deadline import guard_first_token
 from dify_plugin.core.plugin_registration import PluginRegistration
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.session_context import use_current_session
@@ -327,7 +328,7 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
 
             def generator() -> Generator[object, None, None]:
                 with use_current_session(session):
-                    yield from result
+                    yield from guard_first_token(result, data.first_token_budget)
 
             return generator()
         msg = f"Model `{data.model_type}` not found for provider `{data.provider}`"

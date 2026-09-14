@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 
+from dify_plugin.core.cancellation import uninterruptible
 from dify_plugin.core.entities.message import SessionMessage
 from dify_plugin.core.server.__base.writer_entities import Event, StreamOutputMessage
 
@@ -35,12 +36,12 @@ class ResponseWriter(ABC):
         if isinstance(data, BaseModel):
             data = data.model_dump()
 
-        self.write(
-            StreamOutputMessage(
-                event=event, session_id=session_id, data=data
-            ).model_dump_json()
-        )
-        self.write("\n\n")
+        payload = StreamOutputMessage(
+            event=event, session_id=session_id, data=data
+        ).model_dump_json()
+        with uninterruptible():
+            self.write(payload)
+            self.write("\n\n")
 
     def error(
         self, session_id: str | None = None, data: dict | BaseModel | None = None

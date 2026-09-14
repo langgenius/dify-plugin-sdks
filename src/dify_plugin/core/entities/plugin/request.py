@@ -179,8 +179,22 @@ class ModelInvokeLLMRequest(PluginAccessModelRequest, PromptMessageMixin):
     tools: list[PromptMessageTool] | None
     json_schema: dict[str, JsonValue] | None = None
     stream: bool = True
+    # Seconds. Bounds only the wait for the first chunk; see core.first_token_deadline.
+    first_token_timeout: float | None = None
 
     model_config = ConfigDict(protected_namespaces=())
+
+    @property
+    def first_token_budget(self) -> float | None:
+        """The first-token budget, or None where the notion does not apply.
+
+        Without ``stream`` there is a single result and it arrives once generation
+        has finished, so enforcing the budget there would quietly turn it into a
+        total-time budget.
+        """
+        if not self.stream:
+            return None
+        return self.first_token_timeout
 
 
 class ModelStartPollingRequest(ModelInvokeLLMRequest):

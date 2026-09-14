@@ -60,14 +60,17 @@ class StdioRequestReader(RequestReader):
 
                 try:
                     data = TypeAdapter(dict[str, Any]).validate_json(line)
+                    event = PluginInStreamEvent.parse(data["event"])
+                    if event is None:
+                        continue
                     yield PluginInStream(
                         session_id=data["session_id"],
                         conversation_id=data.get("conversation_id"),
                         message_id=data.get("message_id"),
                         app_id=data.get("app_id"),
                         endpoint_id=data.get("endpoint_id"),
-                        event=PluginInStreamEvent.value_of(data["event"]),
-                        data=data["data"],
+                        event=event,
+                        data=data.get("data") or {},
                         context=data.get("context"),
                         reader=self,
                         writer=StdioResponseWriter(),

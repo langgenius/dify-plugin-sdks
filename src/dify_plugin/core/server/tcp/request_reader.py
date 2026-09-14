@@ -158,6 +158,25 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             raise Exception(msg)
         return data
 
+    def _parse_line(self, line: str) -> PluginInStream | None:
+        """Build one frame, or None for an event this version does not know."""
+        data = TypeAdapter(dict[str, Any]).validate_json(line)
+        event = PluginInStreamEvent.parse(data["event"])
+        if event is None:
+            return None
+        return PluginInStream(
+            session_id=data["session_id"],
+            conversation_id=data.get("conversation_id"),
+            message_id=data.get("message_id"),
+            app_id=data.get("app_id"),
+            endpoint_id=data.get("endpoint_id"),
+            event=event,
+            data=data.get("data") or {},
+            context=data.get("context"),
+            reader=self,
+            writer=self,
+        )
+
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
         """Read data from the target"""
         buffer = b""
@@ -190,28 +209,21 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             lines = lines[:-1]
             for line in lines:
                 try:
-                    data = TypeAdapter(dict[str, Any]).validate_json(line)
-                    chunk = PluginInStream(
-                        session_id=data["session_id"],
-                        conversation_id=data.get("conversation_id"),
-                        message_id=data.get("message_id"),
-                        app_id=data.get("app_id"),
-                        endpoint_id=data.get("endpoint_id"),
-                        event=PluginInStreamEvent.value_of(data["event"]),
-                        data=data["data"],
-                        context=data.get("context"),
-                        reader=self,
-                        writer=self,
-                    )
-                    yield chunk
-                    logger.info(
-                        "Received event: \n%s\n session_id: \n%s\n data: \n%s",
-                        chunk.event,
-                        chunk.session_id,
-                        chunk.data,
-                    )
+                    chunk = self._parse_line(line)
                 except Exception:
                     logger.exception(
                         "\x1b[31mAn error occurred while parsing the data: %s\x1b[0m",
                         line,
                     )
+                    continue
+
+                if chunk is None:
+                    continue
+
+                yield chunk
+                logger.info(
+                    "Received event: \n%s\n session_id: \n%s\n data: \n%s",
+                    chunk.event,
+                    chunk.session_id,
+                    chunk.data,
+                )

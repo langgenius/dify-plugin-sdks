@@ -41,5 +41,11 @@ class InvokeBadRequestError(InvokeError):
     description = "Bad Request Error"
 
 
+class FirstTokenTimeoutError(InvokeError):
+    """Raised when the first token of a streamed response misses its deadline."""
+
+    description = "First Token Timeout Error"
+
+
 class CredentialsValidateFailedError(Exception):
     """Credentials validate failed error"""
