@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from typing import Any, Literal, TypedDict
+from typing import Any, TypedDict
 
 from pydantic import BaseModel, Field
 
@@ -108,7 +108,7 @@ class GetOnlineDocumentPageContentRequest(BaseModel):
 class OnlineDriveChecksum(TypedDict):
     """Optional full-file checksum supplied by an online-drive provider."""
 
-    algorithm: Literal["md5", "sha256"]
+    algorithm: str
     value: str
 
 

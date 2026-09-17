@@ -43,6 +43,22 @@ def test_online_drive_file_serializes_optional_remote_metadata() -> None:
     assert response.model_dump()["result"][0]["files"][0]["remote_metadata"] == metadata
 
 
+def test_online_drive_file_accepts_provider_specific_checksum_algorithm() -> None:
+    metadata = {
+        "checksum": {"algorithm": "sha1", "value": "b" * 40},
+    }
+
+    file = OnlineDriveFile(
+        id="file-1",
+        name="report.pdf",
+        size=42,
+        type="file",
+        remote_metadata=metadata,
+    )
+
+    assert file.remote_metadata == metadata
+
+
 def test_datasource_blob_message_keeps_online_drive_remote_metadata() -> None:
     metadata = {"etag": "etag-1"}
     message = DatasourceMessage(
