@@ -14,6 +14,7 @@ from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
     PromptMessageTool,
+    TextPromptMessageContent,
 )
 
 
@@ -84,17 +85,32 @@ class LLMInvocation(BackwardsInvocation[LLMResultChunk]):
             usage=LLMUsage.empty_usage(),
         )
 
-        result.message.content = cast("str", result.message.content)
-
         for llm_result in self._backwards_invoke(
             InvokeType.LLM,
             LLMResultChunk,
             data,
         ):
-            if isinstance(llm_result.delta.message.content, str):
-                result.message.content += llm_result.delta.message.content
+            content = llm_result.delta.message.content
+            if isinstance(content, str):
+                if isinstance(result.message.content, list):
+                    if content:
+                        result.message.content.append(
+                            TextPromptMessageContent(data=content)
+                        )
+                else:
+                    result.message.content = (result.message.content or "") + content
+            elif isinstance(content, list) and content:
+                if not isinstance(result.message.content, list):
+                    result.message.content = (
+                        [TextPromptMessageContent(data=result.message.content)]
+                        if result.message.content
+                        else []
+                    )
+                result.message.content.extend(content)
             if len(llm_result.delta.message.tool_calls) > 0:
                 result.message.tool_calls = llm_result.delta.message.tool_calls
+            if llm_result.delta.message.opaque_body is not None:
+                result.message.opaque_body = llm_result.delta.message.opaque_body
             if llm_result.delta.usage:
                 result.usage.prompt_tokens += llm_result.delta.usage.prompt_tokens
                 result.usage.completion_tokens += (

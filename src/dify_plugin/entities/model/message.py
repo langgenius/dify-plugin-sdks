@@ -241,7 +241,7 @@ class AssistantPromptMessage(PromptMessage):
         Returns:
             The return value.
         """
-        return not (not super().is_empty() and not self.tool_calls)
+        return super().is_empty() and not self.tool_calls and self.opaque_body is None
 
 
 class SystemPromptMessage(PromptMessage):
