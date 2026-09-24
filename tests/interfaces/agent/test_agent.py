@@ -1,17 +1,21 @@
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
 
+import pytest
+
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.agent import AgentInvokeMessage, AgentRuntime
+from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
 from dify_plugin.entities.model.message import PromptMessage, PromptMessageRole
 from dify_plugin.entities.tool import (
     ToolDescription,
     ToolParameter,
     ToolParameterOption,
 )
+from dify_plugin.errors.model import InvokeBadRequestError
 from dify_plugin.interfaces.agent import (
     AgentModelConfig,
     AgentStrategy,
@@ -71,6 +75,93 @@ def test_constructor_of_agent_strategy() -> None:
 
     agent_strategy = _make_agent_strategy()
     assert agent_strategy is not None
+
+
+@pytest.mark.parametrize(
+    ("parameter_rule", "parameters", "output_budget"),
+    [
+        (
+            {"name": "max_tokens", "type": "int", "default": 64000},
+            {"max_tokens": 64000, "thinking": True, "thinking_budget": 1024},
+            64000,
+        ),
+        (
+            {"name": "max_output_tokens", "use_template": "max_tokens"},
+            {"max_output_tokens": 64000, "max_tokens": 100000},
+            64000,
+        ),
+        (
+            {"name": "max_output_tokens", "use_template": "max_tokens"},
+            {"max_tokens": 64000},
+            64000,
+        ),
+        (
+            {
+                "name": "max_output_tokens",
+                "use_template": "max_tokens",
+                "default": 64000,
+            },
+            {},
+            64000,
+        ),
+        ({"name": "max_tokens", "use_template": "max_tokens"}, {}, 64),
+        ({"name": "max_tokens", "use_template": "max_tokens"}, {"max_tokens": 1}, 1),
+        ({"name": "max_tokens", "use_template": "max_tokens"}, {"max_tokens": 15}, 15),
+        (
+            {"name": "max_tokens", "use_template": "max_tokens", "default": 1},
+            {},
+            1,
+        ),
+        (
+            {"name": "max_tokens", "use_template": "max_tokens", "default": 15},
+            {},
+            15,
+        ),
+        ({"name": "temperature", "use_template": "temperature"}, {}, 16),
+    ],
+)
+def test_agent_preserves_output_budget(
+    monkeypatch: pytest.MonkeyPatch,
+    parameter_rule: dict,
+    parameters: dict,
+    output_budget: int,
+) -> None:
+    agent_strategy = _make_agent_strategy()
+    model_entity = AIModelEntity.model_validate({
+        "model": "test-model",
+        "model_type": "llm",
+        "model_properties": {"context_size": 200000},
+        "parameter_rules": [parameter_rule],
+    })
+    prompt_messages = [PromptMessage(role=PromptMessageRole.USER, content="query")]
+    original_parameters = parameters.copy()
+    for prompt_tokens in (200000 - output_budget + 1, 200000):
+        monkeypatch.setattr(
+            agent_strategy,
+            "_get_num_tokens_by_gpt2",
+            lambda _, tokens=prompt_tokens: tokens,
+        )
+        with pytest.raises(InvokeBadRequestError, match="context window exhausted"):
+            agent_strategy.recalc_llm_max_tokens(
+                model_entity, prompt_messages, parameters
+            )
+        assert parameters == original_parameters
+
+    for prompt_tokens in (200000 - output_budget, 0):
+        monkeypatch.setattr(
+            agent_strategy,
+            "_get_num_tokens_by_gpt2",
+            lambda _, tokens=prompt_tokens: tokens,
+        )
+        agent_strategy.recalc_llm_max_tokens(model_entity, prompt_messages, parameters)
+        assert parameters == original_parameters
+
+    model_entity.model_properties.pop(ModelPropertyKey.CONTEXT_SIZE)
+    assert (
+        agent_strategy.recalc_llm_max_tokens(model_entity, prompt_messages, parameters)
+        == -1
+    )
+    assert parameters == original_parameters
 
 
 def test_agent_strategy_converts_tool_parameters_once() -> None:

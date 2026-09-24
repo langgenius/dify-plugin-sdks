@@ -1,5 +1,7 @@
 import json
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
+from functools import partial
 
 import pytest
 from pydantic import JsonValue
@@ -7,7 +9,12 @@ from pydantic import JsonValue
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
-from dify_plugin.entities.model.llm import LLMModelConfig, LLMResult
+from dify_plugin.entities.model.llm import (
+    LLMModelConfig,
+    LLMResult,
+    LLMResultWithStructuredOutput,
+    LLMUsage,
+)
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     TextPromptMessageContent,
@@ -22,6 +29,7 @@ import httpx
 
 @pytest.mark.parametrize("stream", [True, False])
 @pytest.mark.parametrize("mixed_content", [True, False])
+@pytest.mark.parametrize("structured_output", [True, False])
 @pytest.mark.parametrize(
     "opaque_body",
     [
@@ -37,10 +45,30 @@ def test_llm_invocation_preserves_last_snapshot_and_resets_between_calls(
     monkeypatch: pytest.MonkeyPatch,
     stream: bool,
     mixed_content: bool,
+    structured_output: bool,
     opaque_body: JsonValue,
 ) -> None:
     requests = []
     content_part = TextPromptMessageContent(data="", opaque_body=opaque_body)
+    tool_call = AssistantPromptMessage.ToolCall(
+        id="call-1",
+        type="function",
+        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+            name="lookup", arguments="{}"
+        ),
+    )
+    usage = LLMUsage.empty_usage().model_copy(
+        update={
+            "prompt_tokens": 1,
+            "completion_tokens": 2,
+            "total_tokens": 3,
+            "prompt_price": Decimal("0.1"),
+            "completion_price": Decimal("0.2"),
+            "total_price": Decimal("0.3"),
+            "currency": "CNY",
+            "latency": 0.5,
+        }
+    )
 
     def respond(request: httpx.Request) -> httpx.Response:
         invocation = json.loads(request.content)["data"]["data"]
@@ -53,6 +81,7 @@ def test_llm_invocation_preserves_last_snapshot_and_resets_between_calls(
                     if mixed_content
                     else "",
                     "opaque_body": opaque_body,
+                    "tool_calls": [tool_call.model_dump(mode="json")],
                 },
                 {"content": "tail" if mixed_content else ""},
                 {"content": ""},
@@ -70,7 +99,14 @@ def test_llm_invocation_preserves_last_snapshot_and_resets_between_calls(
                     "message": "",
                     "data": {
                         "model": "test-model",
-                        "delta": {"index": index, "message": message},
+                        "delta": {
+                            "index": index,
+                            "message": message,
+                            "usage": usage.model_dump(mode="json")
+                            if index < 2
+                            else None,
+                        },
+                        "structured_output": {"answer": True} if index == 1 else None,
                     },
                 },
             }
@@ -93,13 +129,28 @@ def test_llm_invocation_preserves_last_snapshot_and_resets_between_calls(
             dify_plugin_daemon_url="http://daemon.test",
         )
         config = LLMModelConfig(provider="test", model="test-model", mode="chat")
-        first = session.model.llm.invoke(
+        invoke = (
+            partial(
+                session.model.llm_structured_output.invoke,
+                structured_output_schema={"type": "object"},
+            )
+            if structured_output
+            else session.model.llm.invoke
+        )
+        first = invoke(
             model_config=config,
             prompt_messages=[UserPromptMessage(content="hello")],
             stream=stream,
         )
         if isinstance(first, LLMResult):
             message = first.message
+            assert message.tool_calls == [tool_call]
+            assert first.usage == usage.model_copy(
+                update={"prompt_tokens": 2, "completion_tokens": 4, "total_tokens": 6}
+            )
+            if structured_output:
+                assert isinstance(first, LLMResultWithStructuredOutput)
+                assert first.structured_output == {"answer": True}
             assert message.content == (
                 [
                     TextPromptMessageContent(data="answer"),
@@ -130,7 +181,7 @@ def test_llm_invocation_preserves_last_snapshot_and_resets_between_calls(
 
         assert message.opaque_body == opaque_body
         assert type(message.opaque_body) is type(opaque_body)
-        second = session.model.llm.invoke(
+        second = invoke(
             model_config=config,
             prompt_messages=[message],
             stream=stream,
