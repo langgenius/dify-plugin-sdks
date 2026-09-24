@@ -35,6 +35,7 @@ def _llm_data() -> MagicMock:
     data.stop = None
     data.stream = True
     data.user_id = "user"
+    data.first_token_budget = None
     return data
 
 

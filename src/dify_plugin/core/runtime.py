@@ -1,5 +1,6 @@
+import logging
 import uuid
-from collections.abc import Generator, Mapping
+from collections.abc import Callable, Generator, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from typing import Any
@@ -15,6 +16,7 @@ from dify_plugin.core.entities.plugin.io import (
     PluginInStreamBase,
     PluginInStreamEvent,
 )
+from dify_plugin.core.server.__base.filter_reader import FilterReader
 from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.__base.response_writer import ResponseWriter
 from dify_plugin.core.server.tcp.request_reader import TCPReaderWriter
@@ -24,6 +26,8 @@ FULL_DUPLEX_INSTALL_METHODS = frozenset({InstallMethod.Local, InstallMethod.Remo
 #################################################
 # Session
 #################################################
+
+logger = logging.getLogger(__name__)
 
 
 class ModelInvocations:
@@ -159,6 +163,9 @@ class Session:
         self.reader: RequestReader = reader
         self.writer: ResponseWriter = writer
 
+        # side-channel readers opened during this request
+        self._readers: list[FilterReader] = []
+
         # conversation id
         self.conversation_id: str | None = conversation_id
 
@@ -203,6 +210,26 @@ class Session:
         self.workflow_node = WorkflowNodeInvocations(self)
         self.storage = StorageInvocation(self)
         self.file = File(self)
+
+    def open_reader(self, filter: Callable[[PluginInStream], bool]) -> FilterReader:  # ruff:ignore[builtin-argument-shadowing]
+        """Open a side-channel reader tied to this request's lifetime."""
+        reader = self.reader.read(filter)
+        self._readers.append(reader)
+        return reader
+
+    def close(self) -> None:
+        """Release what this request opened.
+
+        A reader is normally deregistered by the ``with`` block that opened it, but a
+        cancelled request can leave that block suspended forever, and the reader would
+        then keep matching frames for the life of the process.
+        """
+        readers, self._readers = self._readers, []
+        for reader in readers:
+            try:
+                reader.close()
+            except Exception:
+                logger.exception("Failed to close a side-channel reader")
 
     @classmethod
     def empty_session(cls) -> "Session":
@@ -417,7 +444,7 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
                 and data.data.get("backwards_request_id") == backwards_request_id
             )
 
-        with self.session.reader.read(filter) as reader:
+        with self.session.open_reader(filter) as reader:
             yield from self._line_converter_wrapper(
                 reader.read(timeout_for_round=1), data_type
             )
