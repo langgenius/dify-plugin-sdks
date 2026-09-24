@@ -21,6 +21,7 @@ from dify_plugin.entities.tool import (
     ToolParameter,
     ToolProviderType,
 )
+from dify_plugin.errors.model import InvokeBadRequestError
 from dify_plugin.interfaces.tool import ToolLike, ToolProvider
 
 logger = logging.getLogger(__name__)
@@ -201,40 +202,35 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         prompt_messages: list[PromptMessage],
         parameters: dict,
     ) -> int | None:
-        # recalc max_tokens if sum(prompt_token +  max_tokens) over model token limit
-
+        """Reject prompts that cannot fit the configured output token budget."""
         model_context_tokens = model_entity.model_properties.get(
             ModelPropertyKey.CONTEXT_SIZE,
         )
-
-        max_tokens = 0
-        for parameter_rule in model_entity.parameter_rules:
-            if parameter_rule.name == "max_tokens" or (
-                parameter_rule.use_template
-                and parameter_rule.use_template == "max_tokens"
-            ):
-                max_tokens = (
-                    parameters.get(parameter_rule.name)
-                    or parameters.get(parameter_rule.use_template or "")
-                ) or 0
-
         if model_context_tokens is None:
             return -1
 
-        if max_tokens is None:
-            max_tokens = 0
+        required_output_tokens = 0
+        for parameter_rule in model_entity.parameter_rules:
+            if (
+                parameter_rule.name == "max_tokens"
+                or parameter_rule.use_template == "max_tokens"
+            ):
+                required_output_tokens = max(
+                    required_output_tokens,
+                    parameters.get(parameter_rule.name)
+                    or parameters.get(parameter_rule.use_template or "")
+                    or parameter_rule.default
+                    or 0,
+                )
+        required_output_tokens = required_output_tokens or 16
 
         prompt_tokens = self._get_num_tokens_by_gpt2(prompt_messages)
-
-        if prompt_tokens + max_tokens > model_context_tokens:
-            max_tokens = max(model_context_tokens - prompt_tokens, 16)
-
-            for parameter_rule in model_entity.parameter_rules:
-                if parameter_rule.name == "max_tokens" or (
-                    parameter_rule.use_template
-                    and parameter_rule.use_template == "max_tokens"
-                ):
-                    parameters[parameter_rule.name] = max_tokens
+        if model_context_tokens - prompt_tokens < required_output_tokens:
+            message = (
+                "Agent context window exhausted: the prompt and output token budget "
+                "do not fit. Start a new conversation or reduce the tool output size."
+            )
+            raise InvokeBadRequestError(message)
         return None
 
     def _get_num_tokens_by_gpt2(self, prompt_messges: list[PromptMessage]) -> int:

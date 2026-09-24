@@ -14,6 +14,7 @@ from dify_plugin.entities.model.message import (
     PromptMessage,
     PromptMessageTool,
 )
+from dify_plugin.invocations.model.llm import merge_llm_result_chunk
 
 
 class LLMStructuredOutputInvocation(
@@ -99,29 +100,12 @@ class LLMStructuredOutputInvocation(
             structured_output=None,
         )
 
-        result.message.content = cast("str", result.message.content)
-
         for llm_result in self._backwards_invoke(
             InvokeType.LLMStructuredOutput,
             LLMResultChunkWithStructuredOutput,
             data,
         ):
-            if isinstance(llm_result.delta.message.content, str):
-                result.message.content += llm_result.delta.message.content
-            if len(llm_result.delta.message.tool_calls) > 0:
-                result.message.tool_calls = llm_result.delta.message.tool_calls
-            if llm_result.delta.usage:
-                result.usage.prompt_tokens += llm_result.delta.usage.prompt_tokens
-                result.usage.completion_tokens += (
-                    llm_result.delta.usage.completion_tokens
-                )
-                result.usage.total_tokens += llm_result.delta.usage.total_tokens
-
-                result.usage.completion_price = llm_result.delta.usage.completion_price
-                result.usage.prompt_price = llm_result.delta.usage.prompt_price
-                result.usage.total_price = llm_result.delta.usage.total_price
-                result.usage.currency = llm_result.delta.usage.currency
-                result.usage.latency = llm_result.delta.usage.latency
+            merge_llm_result_chunk(result, llm_result)
 
             # Handle structured output
             if llm_result.structured_output:
