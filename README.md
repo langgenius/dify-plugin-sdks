@@ -50,17 +50,28 @@ This SDK follows Semantic Versioning (a.b.c):
 - b: Minor version - Indicates new feature additions while maintaining backward compatibility
 - c: Patch version - Indicates backward-compatible bug fixes
 
+Before 1.0, a minor release may include breaking changes documented in its upgrade notes.
+
+### Upgrading to 0.11.0
+
+`load_yaml_file()` now raises `FileNotFoundError` for missing files by default.
+Plugins must include every YAML file referenced by their declarations; a missing endpoint-provider YAML file now fails registration instead of creating an empty configuration group.
+Code that intentionally loads optional YAML files can pass `ignore_error=True` to retain the empty-dictionary behavior.
+
+This release also adds optional remote metadata for online-drive files, recognizes `BINARY_LINK` tool messages, and fixes OpenAI-compatible chat content serialization across message roles.
+The gevent runtime removal tracked in [#340](https://github.com/langgenius/dify-plugin-sdks/issues/340) remains a separate follow-up.
+
 ### For SDK Users
 
-When depending on this SDK, it's recommended to specify version constraints that:
+For SDK versions below 1.0, use version constraints that:
 
-- Allow patch and minor updates for bug fixes and new features
-- Prevent major version updates to avoid breaking changes
+- Allow patch updates within the selected minor version.
+- Require reviewing the upgrade notes before adopting a new minor version.
 
 Example in your project's dependency management:
 
 ```python
-dify_plugin >= 0.8
+dify_plugin >= 0.11, < 0.12
 ```
 
 ## Manifest Version Reference
