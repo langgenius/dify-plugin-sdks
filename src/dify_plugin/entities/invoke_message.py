@@ -125,6 +125,7 @@ class InvokeMessage(BaseModel):
         LINK = "link"
         IMAGE = "image"
         IMAGE_LINK = "image_link"
+        BINARY_LINK = "binary_link"
         VARIABLE = "variable"
         BLOB_CHUNK = "blob_chunk"
         LOG = "log"

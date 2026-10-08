@@ -399,8 +399,8 @@ class AIModel(ABC):
         if socket.socket is gevent.socket.socket:
             # using gevent real thread to avoid blocking main thread
             result = threadpool.spawn(
-                lambda: len(tiktoken.encoding_for_model("gpt2").encode(text))
+                lambda: len(tiktoken.encoding_for_model("gpt2").encode_ordinary(text))
             )
             return result.get(block=True) or 0
 
-        return len(tiktoken.encoding_for_model("gpt2").encode(text))
+        return len(tiktoken.encoding_for_model("gpt2").encode_ordinary(text))

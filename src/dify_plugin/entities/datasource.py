@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, TypedDict
 
 from pydantic import BaseModel, Field
 
@@ -105,6 +105,27 @@ class GetOnlineDocumentPageContentRequest(BaseModel):
 #########################
 
 
+class OnlineDriveChecksum(TypedDict):
+    """Optional full-file checksum supplied by an online-drive provider."""
+
+    algorithm: str
+    value: str
+
+
+class OnlineDriveRemoteMetadata(TypedDict, total=False):
+    """Optional remote metadata used for online-drive change detection.
+
+    Providers may omit this metadata when the upstream service does not expose
+    a reliable change indicator. The host remains responsible for validating
+    the values before using them to skip a download.
+    """
+
+    version_id: str
+    etag: str
+    checksum: OnlineDriveChecksum
+    modified_time: str
+
+
 class OnlineDriveFile(BaseModel):
     """
     Online drive file
@@ -114,6 +135,13 @@ class OnlineDriveFile(BaseModel):
     name: str = Field(..., description="File name")
     size: int = Field(..., description="File size")
     type: str = Field(..., description="File type (folder/file)")
+    remote_metadata: OnlineDriveRemoteMetadata | None = Field(
+        default=None,
+        description=(
+            "Optional provider version_id, etag, checksum and modified_time "
+            "used for change detection"
+        ),
+    )
 
 
 class OnlineDriveFileBucket(BaseModel):
