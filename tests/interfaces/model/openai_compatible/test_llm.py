@@ -771,15 +771,6 @@ def test_validate_credentials_truth_tests_stream_mode_once() -> None:
             "stop",
             None,
         ),
-        (
-            [
-                _stream_choice({"reasoning_content": "A"}),
-                "data: not-json",
-            ],
-            "<think>\nA\n</think>",
-            "Non-JSON encountered.",
-            None,
-        ),
         # When intermediate deltas are absent or empty (the MTPLX
         # Qwen3 / heartbeat pattern), reasoning across them must be
         # merged into a single ``<think>`` block instead of being
@@ -856,11 +847,7 @@ def test_validate_credentials_truth_tests_stream_mode_once() -> None:
                 "data: [DONE]",
             ],
             "<think>\nX\n</think>ans",
-            # finish_reason is reset by trailing heartbeat deltas that
-            # carry ``"finish_reason": null``; this is a pre-existing
-            # quirk in the stream handler and is not what this fix
-            # targets.
-            None,
+            "stop",
             None,
         ),
     ],

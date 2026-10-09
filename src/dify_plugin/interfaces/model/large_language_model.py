@@ -32,6 +32,7 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     UserPromptMessage,
 )
+from dify_plugin.errors.model import InvokeError
 from dify_plugin.interfaces.model.ai_model import AIModel
 
 logger = logging.getLogger(__name__)
@@ -841,6 +842,9 @@ class LargeLanguageModel(AIModel):
 
         Yields:
             Generated values.
+
+        Raises:
+            InvokeError: If invoking the model or reading its response fails.
         """
         # validate and filter model parameters
         if model_parameters is None:
@@ -853,39 +857,30 @@ class LargeLanguageModel(AIModel):
         )
 
         with self.timing_context():
+            invoke = (
+                self._code_block_mode_wrapper
+                if "response_format" in model_parameters
+                and model_parameters["response_format"] in STRUCTURED_RESPONSE_FORMATS
+                else self._invoke
+            )
             try:
-                if (
-                    "response_format" in model_parameters
-                    and model_parameters["response_format"]
-                    in STRUCTURED_RESPONSE_FORMATS
-                ):
-                    result = self._code_block_mode_wrapper(
-                        model=model,
-                        credentials=credentials,
-                        prompt_messages=prompt_messages,
-                        model_parameters=model_parameters,
-                        tools=tools,
-                        stop=stop,
-                        stream=stream,
-                        user=user,
-                    )
+                result = invoke(
+                    model=model,
+                    credentials=credentials,
+                    prompt_messages=prompt_messages,
+                    model_parameters=model_parameters,
+                    tools=tools,
+                    stop=stop,
+                    stream=stream,
+                    user=user,
+                )
+                if isinstance(result, LLMResult):
+                    yield result.to_llm_result_chunk()
                 else:
-                    result = self._invoke(
-                        model,
-                        credentials,
-                        prompt_messages,
-                        model_parameters,
-                        tools,
-                        stop,
-                        stream,
-                        user,
-                    )
+                    # NOTE: `yield from` cannot been replaced by `return`
+                    # because of `timing_context`
+                    yield from result
+            except InvokeError:
+                raise
             except Exception as e:
                 raise self._transform_invoke_error(e) from e
-
-            if isinstance(result, LLMResult):
-                yield result.to_llm_result_chunk()
-            else:
-                # NOTE: `yield from` cannot been replaced by `return`
-                # because of `timing_context`
-                yield from result
