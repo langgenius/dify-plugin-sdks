@@ -803,11 +803,16 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                         index = tool_call.get("index")
                         if index is None:
                             continue
+                        previous_id = tool_call_ids.get(index)
                         tool_call_id = (
-                            tool_call.get("id")
-                            or tool_call_ids.get(index)
-                            or _gen_tool_call_id()
+                            tool_call.get("id") or previous_id or _gen_tool_call_id()
                         )
+                        existing_tool_call = next(
+                            (call for call in tools_calls if call.id == previous_id),
+                            None,
+                        )
+                        if existing_tool_call is not None:
+                            existing_tool_call.id = tool_call_id
                         tool_call_ids[index] = tool_call_id
                         tool_call["id"] = tool_call_id
                     tool_calls = self._extract_response_tool_calls(

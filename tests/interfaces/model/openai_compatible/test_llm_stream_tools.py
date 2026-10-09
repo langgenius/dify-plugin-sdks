@@ -104,6 +104,56 @@ def test_stream_keeps_parallel_tool_arguments_with_their_indices(
     }
 
 
+@pytest.mark.parametrize("id_only_chunk", [False, True])
+def test_stream_replaces_generated_tool_ids_when_provider_ids_arrive(
+    id_only_chunk: bool,
+) -> None:
+    ids = [
+        {"index": 1, "id": "call-berlin"},
+        {"index": 0, "id": "call-paris"},
+    ]
+    arguments = [
+        {"index": 1, "function": {"arguments": 'rlin"}'}},
+        {"index": 0, "function": {"arguments": 'ris"}'}},
+    ]
+    deltas = [
+        {
+            "tool_calls": [
+                {
+                    "index": 0,
+                    "function": {"name": "weather", "arguments": '{"city":"Pa'},
+                },
+                {
+                    "index": 1,
+                    "function": {"name": "weather", "arguments": '{"city":"Be'},
+                },
+            ]
+        }
+    ]
+    if id_only_chunk:
+        deltas.extend([{"tool_calls": ids}, {"tool_calls": arguments}])
+    else:
+        for tool_id, fragment in zip(ids, arguments, strict=True):
+            tool_id.update(fragment)
+        deltas.append({"tool_calls": ids})
+
+    chunks = _stream(
+        OAICompatLargeLanguageModel([]),
+        deltas,
+        usage={"prompt_tokens": 10, "completion_tokens": 20},
+    )
+
+    calls = chunks[-1].delta.message.tool_calls
+    assert len(calls) == 2
+    assert {
+        call.id: (call.function.name, json.loads(call.function.arguments))
+        for call in calls
+    } == {
+        "call-paris": ("weather", {"city": "Paris"}),
+        "call-berlin": ("weather", {"city": "Berlin"}),
+    }
+
+
 def test_stream_keeps_legacy_function_arguments_across_heartbeats() -> None:
     chunks = _stream(
         OAICompatLargeLanguageModel([]),
