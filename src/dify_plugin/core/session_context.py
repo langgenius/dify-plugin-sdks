@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING
@@ -29,7 +29,7 @@ def get_current_session() -> Session | None:
 
 
 @contextmanager
-def use_current_session(session: Session) -> Iterator[None]:
+def use_current_session(session: Session) -> Generator[None, None, None]:
     token = _current_session.set(session)
     try:
         yield
