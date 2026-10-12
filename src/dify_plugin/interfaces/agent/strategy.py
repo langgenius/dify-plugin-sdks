@@ -209,20 +209,27 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         if model_context_tokens is None:
             return -1
 
-        required_output_tokens = 0
+        required_output_tokens = None
         for parameter_rule in model_entity.parameter_rules:
             if (
                 parameter_rule.name == "max_tokens"
                 or parameter_rule.use_template == "max_tokens"
             ):
-                required_output_tokens = max(
-                    required_output_tokens,
-                    parameters.get(parameter_rule.name)
-                    or parameters.get(parameter_rule.use_template or "")
-                    or parameter_rule.default
-                    or 0,
-                )
-        required_output_tokens = required_output_tokens or 16
+                output_tokens = parameters.get(parameter_rule.name)
+                if output_tokens is None:
+                    if (
+                        parameter_rule.use_template
+                        and parameter_rule.use_template in parameters
+                    ):
+                        output_tokens = parameters[parameter_rule.use_template]
+                    elif parameter_rule.required:
+                        output_tokens = parameter_rule.default
+                if output_tokens is not None:
+                    required_output_tokens = max(
+                        required_output_tokens or 0, output_tokens
+                    )
+        if required_output_tokens is None:
+            required_output_tokens = 16
 
         prompt_tokens = self._get_num_tokens_by_gpt2(prompt_messages)
         if model_context_tokens - prompt_tokens < required_output_tokens:
@@ -250,11 +257,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         """
         import tiktoken  # ruff:ignore[import-outside-top-level]
 
-        text = " ".join([
-            prompt.content
-            for prompt in prompt_messges
-            if isinstance(prompt.content, str)
-        ])
+        text = " ".join(prompt.get_text_content() for prompt in prompt_messges)
         return len(tiktoken.encoding_for_model("gpt2").encode(text))
 
     def _init_prompt_tools(
