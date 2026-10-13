@@ -96,7 +96,7 @@ Pull requests targeting `main` currently run these checks:
 
 1. PR title validation with `amannn/action-semantic-pull-request`
 2. `just check` on Python 3.12, including `uv.lock` freshness validation
-3. `just coverage` on Python 3.12 and `just test` on Python 3.13 through the reusable test workflow
+3. `just coverage` on Python 3.12 and 3.13 through the reusable test workflow
 
 Pushes to `main` also run the MkDocs workflow.
 It runs `just docs` on Python 3.12 and deploys `.mkdocs` to GitHub Pages.

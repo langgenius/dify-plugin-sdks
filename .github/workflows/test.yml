@@ -14,11 +14,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - python-version: "3.12"
-            command: just coverage
-          - python-version: "3.13"
-            command: just test --junitxml=reports/junit.xml
+        python-version:
+          - "3.12"
+          - "3.13"
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -36,7 +34,7 @@ jobs:
       - name: Install dependencies and run tests
         run: |
           uv sync --locked
-          ${{ matrix.command }}
+          just coverage
 
       - name: Upload test reports
         if: always()
