@@ -1,0 +1,31 @@
+identity:
+  author: sdk_tests
+  name: echo
+  label:
+    en_US: Echo
+description:
+  human:
+    en_US: Return the supplied message.
+  llm: Return the supplied message.
+parameters:
+  - name: message
+    type: string
+    required: true
+    label:
+      en_US: Message
+    human_description:
+      en_US: Message to return.
+    llm_description: Message to return.
+    form: llm
+  - name: wait_for_peer
+    type: boolean
+    required: false
+    label:
+      en_US: Wait for another invocation
+    human_description:
+      en_US: Synchronize concurrent test invocations.
+    llm_description: Synchronize concurrent test invocations.
+    form: llm
+extra:
+  python:
+    source: tools/echo.py

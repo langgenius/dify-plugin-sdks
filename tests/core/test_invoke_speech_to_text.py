@@ -30,6 +30,59 @@ from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
         ),
         (b"\x1a\x45\xdf\xa3\x88\x42\x82\x40\x04webm", ".webm"),
         (b"\x1a\x45\xdf\xa3\x88\x42\x82\x85webm\0", ".webm"),
+        pytest.param(
+            bytes.fromhex("1a45dfa301000000000000074282847765626d"),
+            ".webm",
+            id="webm-eight-byte-header-size",
+        ),
+        pytest.param(
+            bytes.fromhex("1a45dfa389ec804282847765626d"),
+            ".webm",
+            id="webm-after-empty-void",
+        ),
+        pytest.param(bytes.fromhex("1a45dfa3"), ".mp3", id="ebml-missing-header-size"),
+        pytest.param(
+            bytes.fromhex("1a45dfa340"), ".mp3", id="ebml-truncated-header-size"
+        ),
+        pytest.param(
+            bytes.fromhex("1a45dfa300"), ".mp3", id="ebml-invalid-size-marker"
+        ),
+        pytest.param(
+            bytes.fromhex("1a45dfa3ff4282847765626d"),
+            ".mp3",
+            id="ebml-unknown-header-size",
+        ),
+        pytest.param(
+            bytes.fromhex("1a45dfa388"), ".mp3", id="ebml-truncated-header-data"
+        ),
+        pytest.param(bytes.fromhex("1a45dfa380"), ".mp3", id="ebml-empty-header"),
+        pytest.param(
+            bytes.fromhex("1a45dfa38100"), ".mp3", id="ebml-invalid-element-marker"
+        ),
+        pytest.param(
+            bytes.fromhex("1a45dfa38142"), ".mp3", id="ebml-truncated-element-id"
+        ),
+        pytest.param(
+            bytes.fromhex("1a45dfa3824282"), ".mp3", id="ebml-missing-element-size"
+        ),
+        pytest.param(
+            bytes.fromhex("1a45dfa3874282ff7765626d"),
+            ".mp3",
+            id="ebml-unknown-doctype-size",
+        ),
+        pytest.param(
+            bytes.fromhex("1a45dfa3864282847765626d"),
+            ".mp3",
+            id="ebml-doctype-exceeds-parent",
+        ),
+        pytest.param(
+            bytes.fromhex("1a45dfa38a4282877765626d"),
+            ".mp3",
+            id="ebml-doctype-exceeds-file",
+        ),
+        pytest.param(
+            bytes.fromhex("1a45dfa382ec80"), ".mp3", id="ebml-without-doctype"
+        ),
         (b"RIFF\x24\x08\x00\x00AVI payload", ".mp3"),
         (b"\x00\x00\x00\x18ftypavifpayload", ".mp3"),
         (b"\x1a\x45\xdf\xa3\x9f\x42\x82\x88matroskapayload", ".mp3"),
@@ -49,6 +102,8 @@ def test_invoke_speech_to_text_preserves_audio_format(
     audio: bytes,
     expected_suffix: str,
 ) -> None:
+    files: list[IO[bytes]] = []
+
     def invoke(
         model_name: str,
         credentials: dict[str, object],
@@ -60,6 +115,7 @@ def test_invoke_speech_to_text_preserves_audio_format(
         assert pathlib.Path(audio_file.name).suffix == expected_suffix
         assert audio_file.tell() == 0
         assert audio_file.read() == audio
+        files.append(audio_file)
         return "transcript"
 
     model = MagicMock(spec=Speech2TextModel)
@@ -79,3 +135,6 @@ def test_invoke_speech_to_text_preserves_audio_format(
     assert executor.invoke_speech_to_text(Session.empty_session(), request) == {
         "result": "transcript",
     }
+    assert len(files) == 1
+    assert files[0].closed
+    assert not pathlib.Path(files[0].name).exists()

@@ -1,17 +1,18 @@
 import socket
 import sys
 import threading
-import time
 from collections.abc import Generator
 from queue import Empty, Queue
 
 import gevent.socket
-from flask import Flask, request
+from flask import Flask, Response, request
 from gevent.pywsgi import WSGIServer
+from pydantic import TypeAdapter
+from werkzeug.serving import BaseWSGIServer, make_server
 
 from dify_plugin.core.entities.plugin.io import (
     PluginInStream,
-    PluginInStreamEvent,
+    PluginInStreamBase,
 )
 from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.serverless.response_writer import ServerlessResponseWriter
@@ -33,6 +34,8 @@ class ServerlessRequestReader(RequestReader):
         """
         super().__init__()
         self.app = Flask(__name__)
+        self.app.route("/invoke", methods=["POST"])(self.handler)
+        self.app.route("/health", methods=["GET"])(self.health)
         self.host = host
         self.port = port
         self.workers = workers
@@ -40,61 +43,86 @@ class ServerlessRequestReader(RequestReader):
         self.threads = threads
         self.worker_connections = worker_connections
         self.max_single_connection_lifetime = max_single_connection_lifetime
-        self.request_queue = Queue[PluginInStream]()
+        self.request_queue = Queue[PluginInStream | None]()
+        self._shutdown = threading.Event()
+        self._http_server: BaseWSGIServer | None = None
 
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
         """
         Read request from http server
         """
-        while True:
-            yield self.request_queue.get()
+        while (message := self.request_queue.get()) is not None:
+            yield message
 
-    def handler(self) -> tuple[Generator[str, None, None], int] | tuple[str, int]:
+    def close(self) -> None:
+        super().close()
+        self.request_queue.put(None)
+        self._shutdown.set()
+        with self.lock:
+            server, self._http_server = self._http_server, None
+        if server is not None:
+            server.shutdown()
+
+    def handler(self) -> tuple[Response, int] | tuple[str, int]:
         try:
             queue: Queue[str | None] = Queue()
-            data = request.get_json()
-            event = PluginInStreamEvent.value_of(data["event"])
+            data = TypeAdapter(PluginInStreamBase).validate_python(request.get_json())
+            writer = ServerlessResponseWriter(queue)
             plugin_in = PluginInStream(
-                event=event,
-                session_id=data["session_id"],
-                conversation_id=data.get("conversation_id"),
-                message_id=data.get("message_id"),
-                app_id=data.get("app_id"),
-                endpoint_id=data.get("endpoint_id"),
-                data=data["data"],
-                context=data.get("context"),
+                event=data.event,
+                session_id=data.session_id,
+                conversation_id=data.conversation_id,
+                message_id=data.message_id,
+                app_id=data.app_id,
+                endpoint_id=data.endpoint_id,
+                data=data.data,
+                context=data.context,
                 reader=self,
-                writer=ServerlessResponseWriter(queue),
+                writer=writer,
             )
             self.request_queue.put(plugin_in)
         except Exception as e:
             return str(e), 500
 
         def generate() -> Generator[str, None, None]:
-            refresh_time = time.time()
-            while True:
-                try:
-                    response = queue.get(timeout=1)
-                except Empty:
-                    if time.time() - refresh_time > self.max_single_connection_lifetime:
+            try:
+                while True:
+                    try:
+                        response = queue.get(
+                            timeout=self.max_single_connection_lifetime
+                        )
+                    except Empty:
+                        writer.close()
+                        yield writer.session_message_text(
+                            data.session_id,
+                            writer.stream_error_object({
+                                "error_type": "TimeoutError",
+                                "message": (
+                                    "Plugin request timed out waiting for a response"
+                                ),
+                                "args": {},
+                            }),
+                        )
+                        yield writer.session_message_text(
+                            data.session_id, writer.stream_end_object()
+                        )
                         return
-                    continue
 
-                if response is None:
-                    return
+                    if response is None:
+                        return
 
-                refresh_time = time.time()
-                yield response
+                    yield response
+            finally:
+                writer.close()
 
-        return generate(), 200
+        response = Response(generate())
+        response.call_on_close(writer.close)
+        return response, 200
 
     def health(self) -> tuple[str, int]:
         return "OK", 200
 
     def _run(self) -> None:
-        self.app.route("/invoke", methods=["POST"])(self.handler)
-        self.app.route("/health", methods=["GET"])(self.health)
-
         if socket.socket is gevent.socket.socket:
             server = WSGIServer((self.host, self.port), self.app)
             sys.stdout.write(
@@ -106,9 +134,22 @@ class ServerlessRequestReader(RequestReader):
             )
             sys.stdout.write("* Server Worker: gevent.wsgi.WSGIServer\n")
             sys.stdout.flush()
-            server.serve_forever()
+            try:
+                with self.lock:
+                    if self._closed:
+                        return
+                    server.start()
+                self._shutdown.wait()
+            finally:
+                server.stop()
         else:
-            self.app.run(host=self.host, port=self.port, threaded=True)
+            server = make_server(self.host, self.port, self.app, threaded=True)
+            with self.lock:
+                if self._closed:
+                    server.server_close()
+                    return
+                self._http_server = server
+            server.serve_forever()
 
     def launch(self) -> None:
         """

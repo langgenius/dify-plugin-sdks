@@ -5,7 +5,7 @@ import signal
 import socket as native_socket
 import time
 from collections.abc import Callable, Generator
-from threading import Lock
+from threading import RLock
 from typing import Any
 
 from gevent import sleep
@@ -46,7 +46,8 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         self.reconnect_timeout = reconnect_timeout
         self.alive = False
         self.on_connected = on_connected
-        self.opt_lock = Lock()
+        self.opt_lock = RLock()
+        self._connecting = False
 
         # handle SIGINT to exit the program smoothly due to the gevent limitation
         signal.signal(signal.SIGINT, lambda *_args, **_kwargs: os._exit(0))
@@ -57,60 +58,77 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
 
     def close(self) -> None:
         """Close the connection"""
+        super().close()
         if self.alive:
-            self.sock.close()
             self.alive = False
+            self.sock.close()
 
-    def _write_to_sock(self, data: bytes) -> int:
+    def _write_to_sock(self, sock: native_socket.socket, data: bytes) -> int:
         """Write data to the socket"""
-        with self.opt_lock:
-            return self.sock.send(data)
+        return sock.send(data)
 
-    def _recv_from_sock(self, size: int) -> bytes:
+    def _recv_from_sock(self, sock: native_socket.socket, size: int) -> bytes:
         """Receive data from the socket"""
-        return self.sock.recv(size)
+        return sock.recv(size)
 
-    def _write_data(self, data: str) -> None:
+    def _write_data(self, sock: native_socket.socket, data: str) -> None:
         if native_socket.socket is gevent_socket.socket:
             data_bytes = data.encode()
             while data_bytes:
                 try:
-                    sent = self._write_to_sock(data_bytes)
+                    sent = self._write_to_sock(sock, data_bytes)
+                    if sent == 0:
+                        msg = "Connection is closed"
+                        raise ConnectionError(msg)
                     data_bytes = data_bytes[sent:]
                 except BlockingIOError as error:
                     if error.errno != errno.EAGAIN:
                         raise
                     sleep(0)
         else:
-            self.sock.sendall(data.encode())
+            sock.sendall(data.encode())
 
     def write(self, data: str) -> None:
-        if not self.alive:
-            msg = "connection is dead"
-            raise Exception(msg)
+        with self.opt_lock:
+            if not self.alive:
+                msg = "connection is dead"
+                raise Exception(msg)
 
-        try:
-            self._write_data(data)
-        except Exception:
-            logger.exception("Failed to write data")
-            self._launch()
+            sock = self.sock
+            try:
+                self._write_data(sock, data)
+            except Exception:
+                logger.exception("Failed to write data")
+                sock.close()
+                self.alive = False
+                # Registration failures belong to the outer connection retry loop.
+                if not self._closed and not self._connecting:
+                    self._launch()
+                raise
 
     def done(self) -> None:
         pass
 
     def _launch(self) -> None:
         """Connect to the target, try to reconnect if failed"""
-        attempts = 0
-        while attempts < self.reconnect_attempts:
+        with self.opt_lock:
+            if self.alive or self._closed:
+                return
+            self._connecting = True
             try:
-                self._connect()
-                break
-            except Exception:
-                attempts += 1
-                if attempts >= self.reconnect_attempts:
-                    raise
+                attempts = 0
+                while attempts < self.reconnect_attempts and not self._closed:
+                    try:
+                        self._connect()
+                        break
+                    except Exception:
+                        attempts += 1
+                        if attempts >= self.reconnect_attempts:
+                            raise
 
-                time.sleep(self.reconnect_timeout)
+                        time.sleep(self.reconnect_timeout)
+            finally:
+                self._connecting = False
 
     def _connect(self) -> None:
         """Connect to the target"""
@@ -126,26 +144,35 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
 
     def _connect_once(self) -> None:
         if native_socket.socket is gevent_socket.socket:
-            self.sock = gevent_socket.create_connection((self.host, self.port))
+            sock = gevent_socket.create_connection((self.host, self.port))
         else:
-            self.sock = native_socket.create_connection((self.host, self.port))
+            sock = native_socket.create_connection((self.host, self.port))
+        if self._closed:
+            sock.close()
+            return
+        self.sock = sock
         self.alive = True
         handshake_message = InitializeMessage(
             type=InitializeMessage.Type.HANDSHAKE,
             data=InitializeMessage.Key(key=self.key).model_dump(),
         )
-        self.sock.sendall(handshake_message.model_dump_json().encode() + b"\n")
-        logger.info("\033[32mConnected to %s:%s\033[0m", self.host, self.port)
-        if self.on_connected:
-            self.on_connected()
+        try:
+            sock.sendall(handshake_message.model_dump_json().encode() + b"\n")
+            logger.info("\033[32mConnected to %s:%s\033[0m", self.host, self.port)
+            if self.on_connected:
+                self.on_connected()
+        except BaseException:
+            self.alive = False
+            sock.close()
+            raise
         logger.info("Sent key to %s:%s", self.host, self.port)
 
-    def _read_data(self) -> bytes | None:
-        ready_to_read, _, _ = select([self.sock], [], [], 1)
+    def _read_data(self, sock: native_socket.socket) -> bytes | None:
+        ready_to_read, _, _ = select([sock], [], [], 1)
         if not ready_to_read:
             return None
         try:
-            data = self._recv_from_sock(1048576)
+            data = self._recv_from_sock(sock, 1048576)
         except BlockingIOError as error:
             if native_socket.socket is not gevent_socket.socket:
                 raise
@@ -161,20 +188,39 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
         """Read data from the target"""
         buffer = b""
-        while self.alive:
+        source_socket = None
+        while not self._closed:
+            if not self.alive:
+                with self.opt_lock:
+                    if not self.alive:
+                        return
+
+            sock = self.sock
+            if sock is not source_socket:
+                buffer = b""
+                source_socket = sock
             try:
-                data = self._read_data()
+                data = self._read_data(sock)
             except Exception:
-                logger.exception(
-                    "\033[31mFailed to read data from %s:%s\033[0m",
-                    self.host,
-                    self.port,
-                )
-                self.alive = False
-                time.sleep(self.reconnect_timeout)
-                self._launch()
+                with self.opt_lock:
+                    if self._closed:
+                        return
+                    if sock is self.sock:
+                        logger.exception(
+                            "\033[31mFailed to read data from %s:%s\033[0m",
+                            self.host,
+                            self.port,
+                        )
+                        sock.close()
+                        self.alive = False
+                        time.sleep(self.reconnect_timeout)
+                        self._launch()
+                buffer = b""
                 continue
 
+            if sock is not self.sock:
+                buffer = b""
+                continue
             if not data:
                 continue
 
@@ -182,13 +228,12 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
 
             # process line by line and keep the last line if it is not complete
             lines = buffer.split(b"\n")
-            if len(lines) == 0:
-                continue
-
             buffer = lines[-1]
 
             lines = lines[:-1]
             for line in lines:
+                if not line.strip():
+                    continue
                 try:
                     data = TypeAdapter(dict[str, Any]).validate_json(line)
                     chunk = PluginInStream(

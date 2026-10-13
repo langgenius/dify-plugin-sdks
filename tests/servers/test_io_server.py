@@ -1,83 +1,297 @@
+import threading
+from collections.abc import Callable, Generator, Iterator
+from queue import Queue
+
+import gevent
+import pytest
+
 from dify_plugin.config.config import DifyPluginEnv
-from dify_plugin.core.entities.message import SessionMessage
-from dify_plugin.core.server.io_server import IOServer
-from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
-from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
+from dify_plugin.core.entities.plugin.io import PluginInStream, PluginInStreamEvent
+from dify_plugin.core.server.__base.filter_reader import FilterReader
+from dify_plugin.core.server.__base.request_reader import RequestReader
+from dify_plugin.core.server.__base.response_writer import ResponseWriter
+from dify_plugin.core.server.serverless.request_reader import ServerlessRequestReader
+from dify_plugin.errors.model import InvokeAuthorizationError
+from tests.servers.helpers import (
+    CallbackIOServer,
+    MemoryRequestReader,
+    RecordingResponseWriter,
+)
 
 
-class CapturingResponseWriter(StdioResponseWriter):
-    def __init__(self) -> None:
-        self.session_messages: list[tuple[str | None, dict]] = []
-        self.done_called = False
-
-    def write(self, _data: str) -> None:
-        msg = "write should not be called directly"
-        raise AssertionError(msg)
-
-    def done(self) -> None:
-        self.done_called = True
-
-    def session_message(
-        self,
-        session_id: str | None = None,
-        data: dict | SessionMessage | None = None,
-    ) -> None:
-        if isinstance(data, SessionMessage):
-            data = data.to_dict()
-        self.session_messages.append((session_id, data or {}))
+@pytest.fixture
+def server() -> Iterator[CallbackIOServer]:
+    reader = MemoryRequestReader()
+    server = CallbackIOServer(DifyPluginEnv(MAX_WORKER=2), reader, None)
+    try:
+        yield server
+    finally:
+        server.close()
+        server.executer.shutdown(wait=True)
 
 
-class FailingIOServer(IOServer):
-    def _execute_request(
-        self,
+@pytest.mark.parametrize("count", [0, 1, 3])
+def test_success_streams_results_and_ends_once(
+    server: CallbackIOServer, count: int
+) -> None:
+    writer = RecordingResponseWriter()
+
+    def execute(
         session_id: str,
-        data: dict,
-        reader: object,
-        writer: object,
-        conversation_id: str | None = None,
-        message_id: str | None = None,
-        app_id: str | None = None,
-        endpoint_id: str | None = None,
-        context: dict | None = None,
+        _data: dict,
+        _reader: RequestReader,
+        writer: ResponseWriter,
+        *_metadata: object,
     ) -> None:
-        _ = (
-            session_id,
-            data,
-            reader,
-            writer,
-            conversation_id,
-            message_id,
-            app_id,
-            endpoint_id,
-            context,
-        )
-        msg = "boom"
-        raise RuntimeError(msg)
+        for index in range(count):
+            writer.session_message(session_id, writer.stream_object({"index": index}))
+
+    server.handler = execute
+    server._execute_request_in_thread("session-1", {}, server.request_reader, writer)
+
+    assert writer.messages == [
+        *[
+            {
+                "event": "session",
+                "session_id": "session-1",
+                "data": {"type": "stream", "data": {"index": index}},
+            }
+            for index in range(count)
+        ],
+        {
+            "event": "session",
+            "session_id": "session-1",
+            "data": {"type": "end", "data": {}},
+        },
+    ]
+    assert writer.done_count == 1
 
 
-def test_execute_request_error_includes_traceback() -> None:
-    reader = StdioRequestReader()
-    writer = CapturingResponseWriter()
-    server = FailingIOServer(DifyPluginEnv(), reader, writer)
+def test_request_metadata_reaches_execution(server: CallbackIOServer) -> None:
+    writer = RecordingResponseWriter()
+    received: list[tuple] = []
 
+    def execute(*args: object) -> None:
+        received.append(args)
+
+    server.handler = execute
+    payload = {"action": "invoke_tool"}
+    context = {"credentials": {"tool_credentials": {"provider": "credential-1"}}}
     server._execute_request_in_thread(
         "session-1",
-        {},
-        reader,
+        payload,
+        server.request_reader,
         writer,
+        "conversation-1",
+        "message-1",
+        "app-1",
+        "endpoint-1",
+        context,
     )
 
-    assert writer.done_called
-    assert len(writer.session_messages) == 2
+    assert received == [
+        (
+            "session-1",
+            payload,
+            server.request_reader,
+            writer,
+            "conversation-1",
+            "message-1",
+            "app-1",
+            "endpoint-1",
+            context,
+        )
+    ]
 
-    session_id, error_message = writer.session_messages[0]
-    assert session_id == "session-1"
-    assert error_message["type"] == "error"
-    assert error_message["data"]["error_type"] == "RuntimeError"
-    assert error_message["data"]["message"] == "boom"
-    traceback = error_message["data"]["args"]["traceback"]
-    assert "Traceback (most recent call last)" in traceback
-    assert "RuntimeError: boom" in traceback
 
-    _, end_message = writer.session_messages[1]
-    assert end_message["type"] == "end"
+@pytest.mark.parametrize("after_chunk", [False, True])
+@pytest.mark.parametrize("serverless", [False, True])
+@pytest.mark.parametrize(
+    "error",
+    [RuntimeError("boom"), InvokeAuthorizationError("invalid credentials")],
+)
+def test_execution_error_preserves_type_message_traceback_and_description(
+    server: CallbackIOServer,
+    after_chunk: bool,
+    serverless: bool,
+    error: Exception,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    writer = RecordingResponseWriter()
+    reader = ServerlessRequestReader() if serverless else server.request_reader
+
+    def execute(
+        session_id: str,
+        _data: dict,
+        _reader: RequestReader,
+        writer: ResponseWriter,
+        *_metadata: object,
+    ) -> None:
+        if after_chunk:
+            writer.session_message(session_id, writer.stream_object({"text": "first"}))
+        raise error
+
+    server.handler = execute
+    try:
+        server._execute_request_in_thread("session-1", {}, reader, writer)
+    finally:
+        reader.close()
+
+    messages = writer.messages
+    assert [frame["event"] for frame in messages] == ["session"] * len(messages)
+    assert [frame["session_id"] for frame in messages] == ["session-1"] * len(messages)
+    assert [frame["data"]["type"] for frame in messages] == (
+        ["stream", "error", "end"] if after_chunk else ["error", "end"]
+    )
+    error_data = messages[-2]["data"]["data"]
+    assert error_data["error_type"] == type(error).__name__
+    assert error_data["message"] == str(error)
+    assert "Traceback (most recent call last)" in error_data["args"]["traceback"]
+    assert f"{type(error).__name__}: {error}" in error_data["args"]["traceback"]
+    if isinstance(error, InvokeAuthorizationError):
+        assert error_data["args"]["description"] == "invalid credentials"
+    assert messages[-1]["data"]["data"] == {}
+    assert writer.done_count == 1
+    if serverless:
+        assert any(
+            record.exc_info and record.exc_info[1] is error for record in caplog.records
+        )
+
+
+@pytest.mark.parametrize("execution_fails", [False, True])
+def test_writer_failure_still_finishes_request(
+    server: CallbackIOServer, execution_fails: bool
+) -> None:
+    class DisconnectedResponseWriter(RecordingResponseWriter):
+        def write(self, _data: str) -> None:
+            msg = "consumer disconnected"
+            raise BrokenPipeError(msg)
+
+    writer = DisconnectedResponseWriter()
+
+    def execute(*_args: object) -> None:
+        if execution_fails:
+            msg = "model failed"
+            raise RuntimeError(msg)
+
+    server.handler = execute
+    with pytest.raises(BrokenPipeError, match="consumer disconnected"):
+        server._execute_request_in_thread(
+            "session-1", {}, server.request_reader, writer
+        )
+
+    assert writer.done_count == 1
+
+
+def test_run_dispatches_only_requests_with_all_metadata_and_returns_at_eof(
+    server: CallbackIOServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    subscribed = threading.Event()
+    read = server.request_reader.read
+    read_stream = server.request_reader._read_stream
+    received: Queue[tuple] = Queue()
+
+    def subscribe(predicate: Callable[[PluginInStream], bool]) -> FilterReader:
+        reader = read(predicate)
+        subscribed.set()
+        return reader
+
+    def execute(*args: object) -> None:
+        received.put(args)
+
+    def stream() -> Generator[PluginInStream, None, None]:
+        assert subscribed.wait(timeout=2)
+        yield from read_stream()
+
+    monkeypatch.setattr(server.request_reader, "read", subscribe)
+    monkeypatch.setattr(server.request_reader, "_read_stream", stream)
+    server.handler = execute
+    listener = threading.Thread(target=server.run, daemon=True)
+    requests = [
+        PluginInStream(
+            session_id=session_id,
+            event=event,
+            data={"action": "invoke_tool"},
+            reader=server.request_reader,
+            writer=RecordingResponseWriter(),
+            conversation_id=f"conversation-{session_id}",
+            message_id=f"message-{session_id}",
+            app_id=f"app-{session_id}",
+            endpoint_id=f"endpoint-{session_id}",
+            context={"credentials": {}},
+        )
+        for session_id, event in (
+            ("one", PluginInStreamEvent.Request),
+            ("ignored", PluginInStreamEvent.BackwardInvocationResponse),
+            ("two", PluginInStreamEvent.Request),
+        )
+    ]
+    assert isinstance(server.request_reader, MemoryRequestReader)
+    server.request_reader.inputs.extend(requests)
+    try:
+        listener.start()
+        listener.join(timeout=2)
+        assert not listener.is_alive()
+    finally:
+        server.close()
+        listener.join(timeout=2)
+        server.executer.shutdown(wait=True)
+
+    assert not listener.is_alive()
+    actual = [received.get_nowait() for _ in range(received.qsize())]
+    assert sorted(actual) == [
+        (
+            request.session_id,
+            request.data,
+            request.reader,
+            request.writer,
+            request.conversation_id,
+            request.message_id,
+            request.app_id,
+            request.endpoint_id,
+            request.context,
+        )
+        for request in (requests[0], requests[2])
+    ]
+    assert [request.writer.done_count for request in requests] == [1, 0, 1]
+
+
+def test_heartbeat_requires_default_writer(server: CallbackIOServer) -> None:
+    with pytest.raises(RuntimeError, match="Default writer is required"):
+        server._heartbeat()
+
+
+def test_heartbeat_continues_after_transient_write_failure(
+    server: CallbackIOServer,
+) -> None:
+    published: Queue[None] = Queue()
+
+    class RecoveringWriter(RecordingResponseWriter):
+        def __init__(self) -> None:
+            super().__init__()
+            self.failed = False
+
+        def write(self, data: str) -> None:
+            if not self.failed:
+                self.failed = True
+                msg = "temporary write failure"
+                raise OSError(msg)
+            super().write(data)
+            published.put(None)
+
+    writer = RecoveringWriter()
+    server.default_writer = writer
+    server.config = DifyPluginEnv(MAX_WORKER=2, HEARTBEAT_INTERVAL=0.001)
+    heartbeat = gevent.spawn(server._heartbeat)
+    try:
+        published.get(timeout=2)
+        published.get(timeout=2)
+    finally:
+        heartbeat.kill(block=True, timeout=2)
+
+    assert len(writer.messages) >= 2
+    assert all(
+        frame == {"event": "heartbeat", "session_id": None, "data": {}}
+        for frame in writer.messages
+    )
+    assert heartbeat.dead

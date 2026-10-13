@@ -1,0 +1,8 @@
+model: echo
+model_type: llm
+features: [polling]
+model_properties:
+  mode: chat
+parameter_rules:
+  - name: temperature
+    use_template: temperature

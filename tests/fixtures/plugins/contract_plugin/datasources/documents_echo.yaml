@@ -1,0 +1,10 @@
+identity:
+  author: sdk_tests
+  name: echo
+  label:
+    en_US: Echo
+description:
+  en_US: Local documents datasource.
+extra:
+  python:
+    source: datasources/documents.py

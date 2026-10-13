@@ -1,7 +1,8 @@
 import base64
 import logging
-import uuid
 from collections.abc import Generator
+from contextlib import closing
+from mimetypes import guess_extension, guess_type
 from typing import Any
 
 from pydantic import RootModel
@@ -32,7 +33,8 @@ from dify_plugin.core.server.serverless.request_reader import ServerlessRequestR
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 from dify_plugin.core.server.tcp.request_reader import TCPReaderWriter
-from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.entities.datasource import DatasourceMessage
+from dify_plugin.entities.invoke_message import InvokeMessage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -181,16 +183,16 @@ class Plugin(IOServer, Router):
             )
 
         for file in self.registration.files:
-            # divide the file into chunks
-            chunks = [file.data[i : i + 8192] for i in range(0, len(file.data), 8192)]
-            for sequence, chunk in enumerate(chunks):
+            for offset in range(0, len(file.data), 8192):
                 tcp_stream.write(
                     InitializeMessage(
                         type=InitializeMessage.Type.ASSET_CHUNK,
                         data=InitializeMessage.AssetChunk(
                             filename=file.filename,
-                            data=base64.b64encode(chunk).decode(),
-                            end=sequence == len(chunks) - 1,
+                            data=base64.b64encode(
+                                file.data[offset : offset + 8192]
+                            ).decode(),
+                            end=offset + 8192 >= len(file.data),
                         ).model_dump(),
                     ).model_dump_json()
                     + "\n\n",
@@ -258,6 +260,14 @@ class Plugin(IOServer, Router):
             lambda data: (
                 data.get("type") == PluginInvokeType.Tool.value
                 and data.get("action") == ToolActions.ValidateCredentials.value
+            ),
+        )
+
+        self.register_route(
+            self.plugin_executer.get_tool_runtime_parameters,
+            lambda data: (
+                data.get("type") == PluginInvokeType.Tool.value
+                and data.get("action") == ToolActions.GetToolRuntimeParameters.value
             ),
         )
 
@@ -571,57 +581,46 @@ class Plugin(IOServer, Router):
         response = self.dispatch(session, data)
         if response:
             if isinstance(response, Generator):
-                for message in response:
-                    if isinstance(message, ToolInvokeMessage) and isinstance(
-                        message.message,
-                        ToolInvokeMessage.BlobMessage,
-                    ):
-                        # convert blob to file chunks
-                        id_ = uuid.uuid4().hex
-                        blob = message.message.blob
-                        message.message.blob = id_.encode("utf-8")
-                        # split the blob into chunks
-                        chunks = [blob[i : i + 8192] for i in range(0, len(blob), 8192)]
-                        for sequence, chunk in enumerate(chunks):
+                with closing(response):
+                    for message in response:
+                        if isinstance(message, DatasourceMessage) and isinstance(
+                            message.message, InvokeMessage.BlobMessage
+                        ):
+                            # Dify's datasource consumer accepts links, not blob chunks.
+                            meta = message.meta or {}
+                            filename = meta.get("file_name") or "file"
+                            mimetype = (
+                                meta.get("mime_type")
+                                or guess_type(filename)[0]
+                                or "application/octet-stream"
+                            )
+                            uploaded = session.file.upload(
+                                filename=filename,
+                                content=message.message.blob,
+                                mimetype=mimetype,
+                            )
+                            extension = guess_extension(uploaded.mime_type) or ".bin"
+                            file_message = DatasourceMessage(
+                                type=DatasourceMessage.MessageType.IMAGE_LINK
+                                if uploaded.mime_type.startswith("image/")
+                                else DatasourceMessage.MessageType.BINARY_LINK,
+                                message=DatasourceMessage.TextMessage(
+                                    text=f"/files/datasources/{uploaded.id}{extension}"
+                                ),
+                                meta=message.meta,
+                            )
+                            chunks = (file_message,)
+                        else:
+                            chunks = (
+                                message.to_chunks()
+                                if isinstance(message, InvokeMessage)
+                                else (message,)
+                            )
+                        for chunk in chunks:
                             writer.session_message(
                                 session_id=session_id,
-                                data=writer.stream_object(
-                                    data=ToolInvokeMessage(
-                                        type=ToolInvokeMessage.MessageType.BLOB_CHUNK,
-                                        message=ToolInvokeMessage.BlobChunkMessage(
-                                            id=id_,
-                                            sequence=sequence,
-                                            total_length=len(blob),
-                                            blob=chunk,
-                                            end=False,
-                                        ),
-                                        meta=message.meta,
-                                    ),
-                                ),
+                                data=writer.stream_object(data=chunk),
                             )
-
-                        # end the file stream
-                        writer.session_message(
-                            session_id=session_id,
-                            data=writer.stream_object(
-                                data=ToolInvokeMessage(
-                                    type=ToolInvokeMessage.MessageType.BLOB_CHUNK,
-                                    message=ToolInvokeMessage.BlobChunkMessage(
-                                        id=id_,
-                                        sequence=len(chunks),
-                                        total_length=len(blob),
-                                        blob=b"",
-                                        end=True,
-                                    ),
-                                    meta=message.meta,
-                                ),
-                            ),
-                        )
-                    else:
-                        writer.session_message(
-                            session_id=session_id,
-                            data=writer.stream_object(data=message),
-                        )
             else:
                 writer.session_message(
                     session_id=session_id,

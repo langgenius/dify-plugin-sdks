@@ -27,10 +27,10 @@ class StdioRequestReader(RequestReader):
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
         buffer = BytesIO()
 
-        while True:
+        while not self._closed:
             data = self._read_async()
             if not data:
-                continue
+                return
 
             # Write new data to buffer
             buffer.write(data)

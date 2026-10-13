@@ -1,7 +1,7 @@
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.entities.provider_config import ProviderConfig
@@ -33,6 +33,11 @@ class OAuthCredentials(BaseModel):
             "The timestamp of the credentials expiration, -1 means never expires"
         ),
     )
+
+    @field_validator("expires_at", mode="before")
+    @classmethod
+    def normalize_expiration(cls, value: object) -> object:
+        return -1 if value is None else value
 
 
 class ToolOAuthCredentials(BaseModel):

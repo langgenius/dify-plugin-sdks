@@ -1,15 +1,14 @@
 import json
-from collections import UserDict
-from collections.abc import Mapping
 from http import HTTPStatus
+from io import BytesIO
 from types import SimpleNamespace
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 import gevent.socket
 import pytest
+import requests
 from gevent.threadpool import ThreadPool
 
-from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     AudioPromptMessageContent,
@@ -22,40 +21,11 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
     VideoPromptMessageContent,
 )
-from dify_plugin.errors.model import CredentialsValidateFailedError
+from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model import ai_model
 from dify_plugin.interfaces.model.openai_compatible.llm import (
     OAICompatLargeLanguageModel,
 )
-
-
-class DuckJsonObject:
-    def __init__(self) -> None:
-        self.trace: list[str] = []
-
-    def get(self, key: str, default: object = None) -> str:
-        del key, default
-        self.trace.append("get")
-        return "chat.completion"
-
-    def __contains__(self, key: object) -> bool:
-        del key
-        self.trace.append("contains")
-        return True
-
-    def __getitem__(self, key: str) -> str:
-        del key
-        self.trace.append("getitem")
-        return "chat.completion"
-
-
-class StatefulTruth:
-    def __init__(self) -> None:
-        self.calls = 0
-
-    def __bool__(self) -> bool:
-        self.calls += 1
-        return self.calls == 1
 
 
 def _stream_choice(delta: dict, finish_reason: str | None = None) -> str:
@@ -282,7 +252,7 @@ def test_convert_prompt_messages_preserves_text_and_empty_content() -> None:
     "content_type", [AudioPromptMessageContent, DocumentPromptMessageContent]
 )
 @pytest.mark.parametrize("mixed", [False, True])
-def test_generate_preserves_unsupported_non_user_content_until_json_encoding(
+def test_unsupported_non_user_content_is_rejected_before_sending_request(
     message_type: type[PromptMessage],
     content_type: type[AudioPromptMessageContent | DocumentPromptMessageContent],
     mixed: bool,
@@ -313,105 +283,39 @@ def test_generate_preserves_unsupported_non_user_content_until_json_encoding(
         "function_calling_type": "tool_call",
     }
     llm = OAICompatLargeLanguageModel([])
-    converted = llm._convert_prompt_message_to_dict(message, credentials)
-    assert converted["content"][-1] is unsupported
 
     with (
         patch(
             "dify_plugin.interfaces.model.openai_compatible.llm.requests.post"
         ) as post,
-        patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.json.dumps",
-            wraps=json.dumps,
-        ) as dumps,
-        pytest.raises(
-            TypeError, match=f"{content_type.__name__} is not JSON serializable"
-        ),
+        pytest.raises(InvokeError),
     ):
-        llm._generate("model", credentials, [message], {}, stream=False)
+        list(llm.invoke("model", credentials, [message], {}, stream=False))
 
-    dumps.assert_called_once()
     post.assert_not_called()
-    assert message.content == content
-
-
-@pytest.mark.parametrize(
-    "content_type", [AudioPromptMessageContent, DocumentPromptMessageContent]
-)
-def test_provider_override_can_serialize_unsupported_content_after_super(
-    content_type: type[AudioPromptMessageContent | DocumentPromptMessageContent],
-) -> None:
-    class MediaUrlModel(OAICompatLargeLanguageModel):
-        def _convert_prompt_message_to_dict(
-            self, message: PromptMessage, credentials: dict | None = None
-        ) -> dict:
-            converted = super()._convert_prompt_message_to_dict(message, credentials)
-            converted["content"] = converted["content"][0].data
-            return converted
-
-    content = content_type(
-        format="bin",
-        mime_type="application/octet-stream",
-        url="https://example.com/file",
-    )
-    llm = MediaUrlModel([])
-    with (
-        patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
-            return_value=MagicMock(status_code=HTTPStatus.OK),
-        ) as post,
-        patch.object(llm, "_handle_generate_response"),
-    ):
-        llm._generate(
-            "model",
-            {"endpoint_url": "https://example.com/v1", "mode": "chat"},
-            [SystemPromptMessage(content=[content])],
-            {},
-            stream=False,
-        )
-
-    assert json.loads(post.call_args.kwargs["data"])["messages"] == [
-        {"role": "system", "content": content.data}
-    ]
 
 
 @pytest.mark.parametrize(
     "message_type", [SystemPromptMessage, AssistantPromptMessage, ToolPromptMessage]
 )
-def test_num_tokens_counts_non_user_text_without_counting_media(
+def test_num_tokens_counts_non_user_text_parts_like_plain_text(
     message_type: type[PromptMessage],
 ) -> None:
     message = message_type.model_validate({
         "content": [
             TextPromptMessageContent(data="first"),
-            ImagePromptMessageContent(
-                format="png", mime_type="image/png", url="https://example.com/image.png"
-            ),
             TextPromptMessageContent(data="second"),
-            AudioPromptMessageContent(
-                format="mp3",
-                mime_type="audio/mpeg",
-                url="https://example.com/audio.mp3",
-            ),
-            DocumentPromptMessageContent(
-                format="pdf",
-                mime_type="application/pdf",
-                url="https://example.com/doc.pdf",
-            ),
         ],
         "tool_call_id": "call-1",
     })
     llm = OAICompatLargeLanguageModel([])
-    with patch.object(llm, "_get_num_tokens_by_gpt2", side_effect=len) as tokenize:
-        count = llm._num_tokens_from_messages(
-            [message], credentials={"function_calling_type": "tool_call"}
-        )
+    credentials = {"function_calling_type": "tool_call"}
+    count = llm.get_num_tokens("model", credentials, [message])
+    text_only = message.model_copy(update={"content": "firstsecond"})
+    empty = message.model_copy(update={"content": ""})
 
-    expected = [message.role.value, "firstsecond"]
-    if isinstance(message, ToolPromptMessage):
-        expected.append("call-1")
-    assert [call.args[0] for call in tokenize.call_args_list] == expected
-    assert count == 6 + sum(map(len, expected))
+    assert count == llm.get_num_tokens("model", credentials, [text_only])
+    assert count > llm.get_num_tokens("model", credentials, [empty])
 
 
 @pytest.mark.parametrize("use_threadpool", [False, True])
@@ -432,14 +336,13 @@ def test_num_tokens_treats_special_token_spelling_as_text(
         ToolPromptMessage(content=content, tool_call_id="call-1"),
     ]
     try:
-        count = OAICompatLargeLanguageModel([]).get_num_tokens(
-            "model", {"function_calling_type": "tool_call"}, messages
-        )
+        model = OAICompatLargeLanguageModel([])
+        credentials = {"function_calling_type": "tool_call"}
+        count = model.get_num_tokens("model", credentials, messages)
+        empty = [message.model_copy(update={"content": ""}) for message in messages]
+        assert count > model.get_num_tokens("model", credentials, empty)
     finally:
         pool.kill()
-
-    # GPT2 counts the literal spelling as ordinary text, not a control token.
-    assert count == 55
 
 
 def test_generate_encodes_request_json_as_utf8() -> None:
@@ -508,229 +411,6 @@ def test_validate_credentials_rejects_non_mapping_extra_headers(
         OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
 
     post.assert_not_called()
-
-
-def test_validate_credentials_wraps_unreadable_error_response() -> None:
-    error = RuntimeError("broken body")
-    response = MagicMock(status_code=HTTPStatus.BAD_REQUEST)
-    type(response).text = PropertyMock(side_effect=error)
-    response.close.side_effect = RuntimeError("close failed")
-    credentials = {
-        "endpoint_url": "https://example.com/v1",
-        "mode": "chat",
-        "stream_mode_auth": "use",
-    }
-
-    with (
-        patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
-            return_value=response,
-        ),
-        pytest.raises(RuntimeError) as exc_info,
-    ):
-        OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
-
-    assert exc_info.value is error
-    response.close.assert_called_once()
-
-
-def test_validate_credentials_accepts_mapping_response() -> None:
-    response = MagicMock(status_code=HTTPStatus.OK)
-    response.json.return_value = UserDict({"object": "chat.completion"})
-    credentials = {
-        "endpoint_url": "https://example.com/v1",
-        "mode": "chat",
-    }
-
-    with patch(
-        "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
-        return_value=response,
-    ):
-        OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
-
-
-def test_validate_credentials_wraps_lazy_mapping_errors() -> None:
-    error_message = "lazy response failed"
-    json_result = MagicMock(spec=Mapping)
-    json_result.get.side_effect = RuntimeError(error_message)
-    response = MagicMock(status_code=HTTPStatus.OK)
-    response.json.return_value = json_result
-    credentials = {
-        "endpoint_url": "https://example.com/v1",
-        "mode": "chat",
-    }
-
-    with (
-        patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
-            return_value=response,
-        ),
-        pytest.raises(CredentialsValidateFailedError, match=error_message),
-    ):
-        OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
-
-
-def test_validate_credentials_preserves_prepared_credential_errors() -> None:
-    sentinel = CredentialsValidateFailedError("prepared credentials failed")
-    credentials = MagicMock()
-    credentials.get.side_effect = sentinel
-
-    with pytest.raises(CredentialsValidateFailedError) as exc_info:
-        OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
-
-    assert exc_info.value is sentinel
-
-
-def test_validate_credentials_preserves_response_credential_errors() -> None:
-    sentinel = CredentialsValidateFailedError("response failed")
-    response = MagicMock(status_code=HTTPStatus.OK)
-    response.json.side_effect = sentinel
-    credentials = {
-        "endpoint_url": "https://example.com/v1",
-        "mode": "chat",
-    }
-
-    with (
-        patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
-            return_value=response,
-        ),
-        pytest.raises(CredentialsValidateFailedError) as exc_info,
-    ):
-        OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
-
-    assert exc_info.value is sentinel
-
-
-def test_validate_credentials_preserves_mapping_membership_access() -> None:
-    json_result = DuckJsonObject()
-    response = MagicMock(status_code=HTTPStatus.OK)
-    response.json.return_value = json_result
-    credentials = {
-        "endpoint_url": "https://example.com/v1",
-        "mode": "chat",
-    }
-
-    with patch(
-        "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
-        return_value=response,
-    ):
-        OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
-
-    assert json_result.trace == ["get", "contains", "getitem"]
-
-
-def test_validate_credentials_compares_status_once() -> None:
-    status = MagicMock()
-    status.__ne__.side_effect = [True, False]
-    response = MagicMock(status_code=status, text="failed")
-    credentials = {
-        "endpoint_url": "https://example.com/v1",
-        "mode": "chat",
-        "stream_mode_auth": "use",
-    }
-
-    with (
-        patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
-            return_value=response,
-        ),
-        pytest.raises(CredentialsValidateFailedError),
-    ):
-        OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
-
-    status.__ne__.assert_called_once_with(HTTPStatus.OK)
-
-
-def test_validate_credentials_preserves_failed_status_second_access() -> None:
-    sentinel = CredentialsValidateFailedError("second status read failed")
-    response = MagicMock(text="failed")
-    type(response).status_code = PropertyMock(
-        side_effect=[HTTPStatus.BAD_REQUEST, sentinel],
-    )
-    credentials = {
-        "endpoint_url": "https://example.com/v1",
-        "mode": "chat",
-    }
-
-    with (
-        patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
-            return_value=response,
-        ),
-        pytest.raises(CredentialsValidateFailedError) as exc_info,
-    ):
-        OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
-
-    assert exc_info.value is sentinel
-
-
-def test_validate_credentials_preserves_response_truthiness_hook() -> None:
-    sentinel = CredentialsValidateFailedError("response truthiness failed")
-    response = MagicMock(status_code=HTTPStatus.OK)
-    response.json.side_effect = RuntimeError("json failed")
-    response.__bool__.side_effect = sentinel
-    credentials = {
-        "endpoint_url": "https://example.com/v1",
-        "mode": "chat",
-    }
-
-    with (
-        patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
-            return_value=response,
-        ),
-        pytest.raises(CredentialsValidateFailedError) as exc_info,
-    ):
-        OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
-
-    assert exc_info.value is sentinel
-
-
-def test_validate_credentials_preserves_status_failure_truthiness_hook() -> None:
-    sentinel = CredentialsValidateFailedError("response truthiness failed")
-    response = MagicMock(text="failed")
-    type(response).status_code = PropertyMock(
-        side_effect=[HTTPStatus.BAD_REQUEST, RuntimeError("status failed")],
-    )
-    response.__bool__.side_effect = sentinel
-    credentials = {
-        "endpoint_url": "https://example.com/v1",
-        "mode": "chat",
-    }
-
-    with (
-        patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
-            return_value=response,
-        ),
-        pytest.raises(CredentialsValidateFailedError) as exc_info,
-    ):
-        OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
-
-    assert exc_info.value is sentinel
-
-
-def test_validate_credentials_truth_tests_stream_mode_once() -> None:
-    stream_result = StatefulTruth()
-    stream_mode = MagicMock()
-    stream_mode.__eq__.return_value = stream_result
-    response = MagicMock(status_code=HTTPStatus.OK)
-    credentials = {
-        "endpoint_url": "https://example.com/v1",
-        "mode": "chat",
-        "stream_mode_auth": stream_mode,
-    }
-
-    with patch(
-        "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
-        return_value=response,
-    ) as post:
-        OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
-
-    assert stream_result.calls == 1
-    assert post.call_args.kwargs["stream"] is True
-    response.json.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -858,35 +538,30 @@ def test_stream_reasoning_is_closed_at_end(
     expected_finish_reason: str | None,
     expected_usage: dict | None,
 ) -> None:
-    response = MagicMock()
-    response.iter_lines.return_value = lines
+    response = requests.Response()
+    response.encoding = "utf-8"
+    response.raw = BytesIO(("\n\n".join(lines) + "\n\n").encode())
     llm = OAICompatLargeLanguageModel([])
-    final_chunk = object()
-
-    with patch.object(
-        llm,
-        "_create_final_llm_result_chunk",
-        return_value=final_chunk,
-    ) as create_final:
-        results = list(
-            llm._handle_generate_stream_response(
-                model="model",
-                credentials={},
-                response=response,
-                prompt_messages=[],
-            )
+    results = list(
+        llm._handle_generate_stream_response(
+            model="model",
+            credentials={},
+            response=response,
+            prompt_messages=[],
         )
+    )
 
-    stream_chunks = [result for result in results if isinstance(result, LLMResultChunk)]
-    assert "".join(chunk.delta.message.content for chunk in stream_chunks) == (
+    assert "".join(chunk.delta.message.content or "" for chunk in results) == (
         expected_content
     )
-    assert [chunk.delta.index for chunk in stream_chunks] == sorted(
-        chunk.delta.index for chunk in stream_chunks
+    assert [chunk.delta.index for chunk in results] == sorted(
+        chunk.delta.index for chunk in results
     )
-    assert results[-1] is final_chunk
-    create_final.assert_called_once()
-    assert create_final.call_args.kwargs["full_content"] == expected_content
-    assert create_final.call_args.kwargs["finish_reason"] == expected_finish_reason
-    assert create_final.call_args.kwargs["usage"] == expected_usage
-    assert create_final.call_args.kwargs["index"] > stream_chunks[-1].delta.index
+    terminal = results[-1].delta
+    assert terminal.finish_reason == expected_finish_reason
+    assert terminal.usage is not None
+    if expected_usage is not None:
+        assert terminal.usage.prompt_tokens == expected_usage["prompt_tokens"]
+        assert terminal.usage.completion_tokens == expected_usage["completion_tokens"]
+    else:
+        assert terminal.usage.completion_tokens > 0

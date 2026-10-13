@@ -8,6 +8,7 @@ from collections.abc import Generator
 from pydantic import ConfigDict
 
 from dify_plugin.entities.model import ModelPropertyKey, ModelType
+from dify_plugin.errors.model import InvokeError
 from dify_plugin.interfaces.model.ai_model import AIModel
 
 logger = logging.getLogger(__name__)
@@ -233,6 +234,9 @@ class TTSModel(AIModel):
 
         Returns:
             The return value.
+
+        Raises:
+            InvokeError: If invoking the model or reading its response fails.
         """
         with self.timing_context():
             try:
@@ -244,6 +248,8 @@ class TTSModel(AIModel):
                     content_text=content_text,
                     voice=voice,
                 )
+            except InvokeError:
+                raise
             except Exception as e:
                 raise self._transform_invoke_error(e) from e
 
@@ -254,6 +260,8 @@ class TTSModel(AIModel):
             with self.timing_context():
                 try:
                     yield from result
+                except InvokeError:
+                    raise
                 except Exception as e:
                     raise self._transform_invoke_error(e) from e
 

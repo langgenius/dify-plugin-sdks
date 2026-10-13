@@ -31,11 +31,23 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
 
-      - name: Setup dify-plugin-cli
-        run: ./scripts/setup-dify-plugin-cli.sh
-
       - name: Install dependencies
-        run: just dev
+        run: uv sync --locked
+
+      - name: Prepare tokenizer cache
+        run: uv run python -c 'import tiktoken; tiktoken.encoding_for_model("gpt2")'
 
       - name: Run tests
-        run: just test
+        if: matrix.python-version != '3.12'
+        run: just test --junitxml=reports/junit.xml
+
+      - name: Run tests with branch coverage
+        if: matrix.python-version == '3.12'
+        run: just coverage
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-reports-${{ matrix.python-version }}
+          path: reports/
