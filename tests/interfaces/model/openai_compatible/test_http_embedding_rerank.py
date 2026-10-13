@@ -133,22 +133,16 @@ def test_embedding_never_assigns_a_response_index_to_the_wrong_input(
         ),
     ])
 
-    try:
-        result = embedding.invoke(
-            "model", {"endpoint_url": server.url}, ["one", "two", "three"]
-        )
-    except InvokeError:
-        # Rejecting inconsistent indices is safe; silently associating them is not.
-        if not reordered:
-            raise
-        assert len(server.requests) == 1
-    else:
-        assert result.embeddings == [[1, 2], [3, 4], [5, 6]]
-        assert result.usage.total_tokens == 3
-        assert [json.loads(request.body)["input"] for request in server.requests] == [
-            ["one", "two"],
-            ["three"],
-        ]
+    result = embedding.invoke(
+        "model", {"endpoint_url": server.url}, ["one", "two", "three"]
+    )
+
+    assert result.embeddings == [[1, 2], [3, 4], [5, 6]]
+    assert result.usage.total_tokens == 3
+    assert [json.loads(request.body)["input"] for request in server.requests] == [
+        ["one", "two"],
+        ["three"],
+    ]
     assert embedding.started_at == 0
 
 
@@ -320,6 +314,44 @@ def test_rerank_equal_scores_remain_finite(http_server: HTTPServerFactory) -> No
 
 
 @pytest.mark.parametrize(
+    ("scores", "threshold", "expected"),
+    [
+        ([0.9], 0.5, [(0, 0.9)]),
+        ([0.8, 0.9], 0.5, [(1, 0.9), (0, 0.8)]),
+        ([0.8, 0.9], 0.9, [(1, 0.9)]),
+        ([0.9, 0.9], 0.5, [(0, 0.9), (1, 0.9)]),
+        ([0.0, 1.0], None, [(1, 1.0), (0, 0.0)]),
+    ],
+)
+def test_rerank_preserves_normalized_scores_and_thresholds(
+    http_server: HTTPServerFactory,
+    scores: list[float],
+    threshold: float | None,
+    expected: list[tuple[int, float]],
+) -> None:
+    server = http_server([
+        Response(
+            body=json.dumps({
+                "results": [
+                    {"index": index, "relevance_score": score}
+                    for index, score in enumerate(scores)
+                ]
+            }).encode()
+        )
+    ])
+
+    result = OAICompatRerankModel([]).invoke(
+        "model",
+        {"endpoint_url": server.url},
+        "query",
+        ["first", "second"][: len(scores)],
+        score_threshold=threshold,
+    )
+
+    assert [(doc.index, doc.score) for doc in result.docs] == expected
+
+
+@pytest.mark.parametrize(
     "response",
     [
         Response(status=503, body=b"unavailable"),
@@ -334,6 +366,43 @@ def test_rerank_errors_reach_the_public_interface(
     model = OAICompatRerankModel([])
     with pytest.raises(InvokeError):
         model.invoke("model", {"endpoint_url": server.url}, "query", ["document"])
+    assert model.started_at == 0
+
+
+@pytest.mark.parametrize(
+    "results_json",
+    [
+        '[{"index":-1,"relevance_score":0.9}]',
+        '[{"index":true,"relevance_score":0.9}]',
+        '[{"index":0,"relevance_score":true}]',
+        '[{"index":0,"relevance_score":"0.9"}]',
+        '[{"index":0,"relevance_score":1e400}]',
+        '[{"index":0,"relevance_score":-1e400}]',
+        '[{"index":0,"relevance_score":1e308},{"index":1,"relevance_score":-1e308}]',
+    ],
+    ids=[
+        "negative-index",
+        "boolean-index",
+        "boolean-score",
+        "string-score",
+        "positive-overflow",
+        "negative-overflow",
+        "normalization-overflow",
+    ],
+)
+def test_rerank_rejects_invalid_indices_and_scores(
+    http_server: HTTPServerFactory, results_json: str
+) -> None:
+    # JSON permits 1e400; decoding it must not turn a score into null on the wire.
+    body = f'{{"results":{results_json}}}'.encode()
+    server = http_server([Response(body=body)])
+    model = OAICompatRerankModel([])
+
+    with pytest.raises(InvokeError):
+        model.invoke(
+            "model", {"endpoint_url": server.url}, "query", ["first", "second"]
+        )
+    assert len(server.requests) == 1
     assert model.started_at == 0
 
 

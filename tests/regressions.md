@@ -18,6 +18,7 @@ The JUnit report identifies each parameter combination.
 | Agent token counting | Text blocks contribute to the estimate and literal special-token text is accepted. | [test_agent_behavior.py](interfaces/agent/test_agent_behavior.py) |
 | Embedding batches | Invalid counts, indices and vectors fail before later batches; reordered results retain their input association. | [test_http_embedding_rerank.py](interfaces/model/openai_compatible/test_http_embedding_rerank.py) |
 | Embedding credentials | Credential validation requires a response object containing the model. | `test_embedding_validates_credentials_over_http` in [test_http_embedding_rerank.py](interfaces/model/openai_compatible/test_http_embedding_rerank.py) |
+| Rerank results | Scores in `[0, 1]` preserve provider thresholds; invalid document indices and non-finite scores fail explicitly. | [test_http_embedding_rerank.py](interfaces/model/openai_compatible/test_http_embedding_rerank.py) |
 | SSE event parsing | LF, CRLF and CR delimiters, comments, event fields and fragmented UTF-8 preserve content. | `test_stream_parses_standard_sse_events` in [test_http_llm.py](interfaces/model/openai_compatible/test_http_llm.py) |
 | Tool schema token accounting | Integer, boolean and null enums work in fallback token estimation. | [test_model_configuration.py](interfaces/model/openai_compatible/test_model_configuration.py), [test_http_llm.py](interfaces/model/openai_compatible/test_http_llm.py) |
 | Invalid model configuration | Invalid modes report the supplied value in a configuration error. | `test_invalid_custom_model_mode_reports_a_configuration_error` in [test_model_configuration.py](interfaces/model/openai_compatible/test_model_configuration.py) |
@@ -26,11 +27,12 @@ The JUnit report identifies each parameter combination.
 | Repeated structured calls | Reusing prompts and stop lists sends the same effective request. | `test_structured_invocations_can_reuse_prompts_and_stop_sequences` in [test_llm_structured_output.py](interfaces/model/test_llm_structured_output.py) |
 | Structured XML | Code fences inside XML text, attributes, CDATA and comments survive; outer Markdown fences are removed. | `test_structured_xml_preserves_inner_content` in [test_llm_structured_output.py](interfaces/model/test_llm_structured_output.py) |
 | Serverless shutdown | Closing the reader wakes its waiting event loop and stops the launched HTTP service. | [test_serverless.py](servers/test_serverless.py) |
+| TCP write cancellation | Cancelling a partial frame closes its connection immediately; the read loop restores the connection before later frames. | [test_tcp.py](servers/test_tcp.py) |
 | Repeated HTTP headers | Repeated media types and cookies survive request decoding. | [test_http_parser.py](utils/test_http_parser.py) |
 | Datasource files | Blob content uploads through the existing file service and returns a link that current Dify consumers accept. | [test_plugin_routes.py](core/test_plugin_routes.py) |
 | Provider overrides | Existing four-argument response handlers continue to work with base fallback usage accounting. | [test_http_llm.py](interfaces/model/openai_compatible/test_http_llm.py) |
 
-The embedding index regression permits either correct association or explicit rejection before further batches; it does not require support for reordered output.
+Valid embedding results must retain their input association even when the provider returns them out of order.
 Manifest and parameter reuse tests check successful reuse, repaired-input retries and observable output, rather than requiring every caller-owned object to remain unchanged.
 The structured-call regression checks that repeated invocations send the same effective request.
 

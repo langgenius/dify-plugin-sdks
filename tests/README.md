@@ -47,6 +47,7 @@ The reviewed mutation was applied in a temporary copy: discarding rerank inputs 
 Equivalent changes to mapping access, YAML path construction and registration list updates exposed tests that constrained internal call order; those assertions have been removed.
 Stream tests accept independent copies of response chunks and compare them with snapshots taken before invocation, so shared mutable objects cannot hide corrupted usage or metadata.
 Temporary mutations confirm that the tests accept serialization under a lock and reject interleaved frames or altered usage counts.
+Further mutations confirm that dispatch tests detect missing credentials and session context, CLI tests detect incorrect routing and error fields, and valid reordered embedding results must succeed.
 Mutation testing does not require another permanent dependency for these focused experiments.
 The socket guard does not sandbox child processes; process fixtures run the local contract plugin and CLI emulator.
 
@@ -103,6 +104,8 @@ The review checks embedding output against Dify's positional cache association, 
 The embedding response test uses the valid JSON number `1e400` to detect overflow: SDK serialization changes the resulting infinity to `null`, which the daemon's numeric decoder accepts as zero.
 Agent boolean defaults follow the [strategy parameter mapping](https://github.com/langgenius/dify/blob/982c56b1fdd40fb8ce27259464d736744e7e1c83/web/app/components/workflow/nodes/_base/components/agent-strategy.tsx#L125) into a [form field that requires a boolean](https://github.com/langgenius/dify/blob/982c56b1fdd40fb8ce27259464d736744e7e1c83/web/app/components/header/account-setting/model-provider-page/model-modal/Form.tsx#L402); serializing them as zero or one loses the selected default.
 Webhook fixtures follow Dify's [decoded request serialization](https://github.com/langgenius/dify/blob/982c56b1fdd40fb8ce27259464d736744e7e1c83/api/core/plugin/utils/http_parser.py#L7), Twilio's [form handling](https://github.com/langgenius/dify-official-plugins/blob/e7db65b5cabcaca6c6abba3d437bf57bd73055d3/triggers/twilio_trigger/provider/twilio.py#L74), and Discord's [signature input](https://github.com/langgenius/dify-official-plugins/blob/e7db65b5cabcaca6c6abba3d437bf57bd73055d3/triggers/discord_trigger/provider/discord.py#L41).
+The subsequent review checks current consumers in Dify [`6b9bb4c7e8aac7f7930a2d25d3f3ae9fb3f2a217`](https://github.com/langgenius/dify/tree/6b9bb4c7e8aac7f7930a2d25d3f3ae9fb3f2a217) and official plugins [`24d1b811877408af1b5dfc2bf1cd2a3ec17d91df`](https://github.com/langgenius/dify-official-plugins/tree/24d1b811877408af1b5dfc2bf1cd2a3ec17d91df).
+Rerank assertions follow Jina's [unmodified relevance scores](https://github.com/langgenius/dify-official-plugins/blob/24d1b811877408af1b5dfc2bf1cd2a3ec17d91df/models/jina/models/rerank/rerank.py#L92) and Dify's [score threshold and document association](https://github.com/langgenius/dify/blob/6b9bb4c7e8aac7f7930a2d25d3f3ae9fb3f2a217/api/core/rag/rerank/rerank_model.py#L57).
 
 | Contract | Source |
 | --- | --- |
@@ -129,6 +132,9 @@ Providers that replace the base handlers retain their own parsing and accounting
 
 Serverless idle expiry emits an error followed by an end frame, and client disconnect cancels the request's provider task.
 Backwards-invocation idle time counts business responses, so blank heartbeat lines cannot keep a silent invocation alive forever.
+Cancelling a partial TCP write closes that socket before propagating cancellation; reconnection runs in the read loop so it cannot delay the cancelled caller.
+Rerank scores already in `[0, 1]` are preserved, while batches containing values outside that interval retain min/max normalization.
+The response does not distinguish raw logits that happen to fall inside `[0, 1]`; those values are preserved too.
 When TTS splits WAV output, the SDK validates and combines PCM frames into one WAV file before yielding it; this requires buffering that output.
 
 ## Fixtures and isolation

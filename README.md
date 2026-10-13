@@ -41,6 +41,9 @@ The runtime fixes preserve synchronous plugin entrypoints and existing four-argu
 Resource cleanup covers completed, failed and cancelled calls, including TCP reconnects and Serverless shutdown.
 Malformed embedding batches and incomplete model streams now raise errors instead of returning incomplete results.
 Agent token counting includes text blocks and treats literal tokenizer markers as text; its GPT-2 estimate retains the existing budget-adjustment policy.
+Rerank scores in `[0, 1]` retain their provider values for thresholding; batches containing scores outside that interval use min/max normalization.
+Raw logits wholly inside `[0, 1]` are treated as normalized values because the response carries no score-type indicator.
+Invalid rerank document indices and non-finite scores or score ranges raise errors.
 
 Datasource blobs use the existing Dify file-upload service and return file links accepted by current datasource consumers.
 Plugins need access to the signed upload endpoint; its file policy and the SDK's 10-second upload timeout apply.

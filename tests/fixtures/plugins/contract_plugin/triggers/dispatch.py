@@ -16,6 +16,7 @@ class ContractTrigger(Trigger):
             msg = "invalid webhook"
             raise TriggerValidationError(msg)
         return EventDispatch(
+            user_id=request.get_json().get("sender", ""),
             events=["echo"],
             response=Response("accepted", status=202),
             payload=request.get_json(),

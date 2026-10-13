@@ -22,7 +22,7 @@ def emit(
 
 def respond(request: dict[str, Any]) -> None:
     emit("plugin_response", request["invoke_id"], request["request"])
-    emit("plugin_invoke_end", request["invoke_id"])
+    emit("plugin_invoke_end", request["invoke_id"], {"info": "plugin invoke end"})
 
 
 def main() -> None:
@@ -40,16 +40,16 @@ def main() -> None:
     if scenario == "exit-before-ready":
         return
     if scenario == "error-before-ready":
-        emit("error", response={"message": "startup failed"})
+        emit("error", response={"error": "startup failed"})
         return
     if scenario == "ignore-termination":
         signal.signal(signal.SIGTERM, signal.SIG_IGN)
     if scenario == "never-ready":
         sys.stdin.read()
         return
-    emit("plugin_ready")
+    emit("plugin_ready", response={"info": "plugin loaded"})
     if scenario == "stderr":
-        emit("info", response={"message": "x" * 200_000}, output=sys.stderr)
+        emit("info", response={"info": "x" * 200_000}, output=sys.stderr)
 
     pending = []
     for line in sys.stdin:
@@ -57,13 +57,18 @@ def main() -> None:
         if scenario == "exit-on-invoke":
             return
         if scenario == "error-on-invoke":
-            emit("error", request["invoke_id"], {"message": "invocation failed"})
-            emit("plugin_invoke_end", request["invoke_id"])
+            # The CLI emits no end frame when invocation setup fails.
+            emit("error", request["invoke_id"], {"error": "invocation failed"})
+        elif scenario == "record-request":
+            emit("plugin_response", request["invoke_id"], request)
+            emit(
+                "plugin_invoke_end", request["invoke_id"], {"info": "plugin invoke end"}
+            )
         elif scenario == "invalid-response":
             emit("info", request["invoke_id"])
         elif scenario == "mixed":
             sys.stdout.write("\nnot json\n")
-            emit("info", response={"message": "fixture log"})
+            emit("info", response={"info": "fixture log"})
             emit("plugin_response", "unknown-invocation", {"value": "ignored"})
             respond(request)
         elif scenario == "no-response":
