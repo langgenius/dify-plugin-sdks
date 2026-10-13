@@ -447,6 +447,123 @@ def test_tcp_write_failure_reconnects_but_reports_unsent_payload(
         old_socket.close()
 
 
+@pytest.mark.parametrize("cancellation", ["kill", "timeout"])
+@pytest.mark.parametrize("daemon_available", [False, True])
+@pytest.mark.parametrize("pending_read", ["idle", "error"])
+def test_cancelled_partial_write_closes_connection_and_preserves_cancellation(
+    monkeypatch: pytest.MonkeyPatch,
+    tcp_reader: TCPReaderWriter,
+    listener: socket.socket,
+    cancellation: str,
+    daemon_available: bool,
+    pending_read: str,
+) -> None:
+    tcp_reader.launch()
+    old_socket = tcp_reader.sock
+    first_peer, _address = listener.accept()
+    first_peer.settimeout(1)
+    sent_prefix, resume = Event(), Event()
+    read_entered, resume_read = Event(), Event()
+    reconnect_entered, resume_reconnect = Event(), Event()
+    send = tcp_reader._write_to_sock
+    read_data = tcp_reader._read_data
+    connect = tcp_module.gevent_socket.create_connection
+    error = gevent.GreenletExit() if cancellation == "kill" else gevent.Timeout(0.05)
+    first_read = True
+    attempts = 0
+
+    def read(sock: socket.socket) -> bytes | None:
+        nonlocal first_read
+        if first_read:
+            first_read = False
+            read_entered.set()
+            assert resume_read.wait(timeout=2)
+            if pending_read == "idle":
+                return None
+        return read_data(sock)
+
+    def reconnect(address: tuple[str, int]) -> socket.socket:
+        nonlocal attempts
+        attempts += 1
+        reconnect_entered.set()
+        assert resume_reconnect.wait(timeout=2)
+        return connect(address)
+
+    def send_part(sock: socket.socket, data: bytes) -> int:
+        sent = send(sock, data[:3])
+        sent_prefix.set()
+        resume.wait()
+        return sent
+
+    def write() -> BaseException:
+        try:
+            if isinstance(error, gevent.Timeout):
+                with error:
+                    tcp_reader.write('{"interrupted":true}\n')
+            else:
+                tcp_reader.write('{"interrupted":true}\n')
+        except BaseException as caught:
+            return caught
+        pytest.fail("cancelled write completed")
+
+    monkeypatch.setattr(tcp_reader, "_write_to_sock", send_part)
+    monkeypatch.setattr(tcp_reader, "_read_data", read)
+    monkeypatch.setattr(tcp_module.gevent_socket, "create_connection", reconnect)
+    subscriber = tcp_reader.read(lambda _message: True)
+    loop = gevent.spawn(tcp_reader.event_loop)
+    task = None
+    try:
+        assert read_entered.wait(timeout=1)
+        task = gevent.spawn(write)
+        assert sent_prefix.wait(timeout=1)
+        if not daemon_available:
+            listener.close()
+        if cancellation == "kill":
+            task.kill(exception=error, block=False)
+        assert task.get(timeout=1) is error
+        assert old_socket.fileno() == -1
+        assert not reconnect_entered.is_set()
+        with first_peer.makefile("rb") as stream:
+            assert json.loads(stream.readline())["type"] == "handshake"
+            assert stream.read() == b'{"i'
+
+        resume_read.set()
+        assert reconnect_entered.wait(timeout=1)
+        resume_reconnect.set()
+        if not daemon_available:
+            loop.get(timeout=1)
+            assert not tcp_reader.alive
+            assert attempts == tcp_reader.reconnect_attempts
+            assert list(subscriber.read()) == []
+            return
+
+        monkeypatch.setattr(tcp_reader, "_write_to_sock", send)
+        second_peer, _address = listener.accept()
+        with second_peer, second_peer.makefile("rb") as stream:
+            second_peer.settimeout(1)
+            assert json.loads(stream.readline())["type"] == "handshake"
+            second_peer.sendall(
+                b'{"session_id":"recovered","event":"request","data":{}}\n'
+            )
+            message = next(subscriber.read(timeout_for_round=1))
+            assert message is not None
+            assert message.session_id == "recovered"
+            tcp_reader.write('{"next":true}\n')
+            assert json.loads(stream.readline()) == {"next": True}
+            tcp_reader.close()
+            loop.get(timeout=2)
+    finally:
+        resume.set()
+        resume_read.set()
+        resume_reconnect.set()
+        if task is not None:
+            task.kill(block=True, timeout=1)
+        tcp_reader.close()
+        loop.kill(block=True, timeout=1)
+        first_peer.close()
+        old_socket.close()
+
+
 def test_tcp_write_without_connection_fails(tcp_reader: TCPReaderWriter) -> None:
     with pytest.raises(Exception, match="connection is dead"):
         tcp_reader.write("payload")

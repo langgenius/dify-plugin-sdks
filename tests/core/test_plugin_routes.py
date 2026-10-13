@@ -78,6 +78,7 @@ CASES = [
             "provider": "contract",
             "tool": "echo",
             "tool_parameters": {"message": "hello"},
+            "credential_type": "oauth2",
         },
         [
             {"type": "text", "message": {"text": "hello"}},
@@ -203,7 +204,11 @@ CASES = [
     (
         "datasource",
         "invoke_online_document_datasource_get_pages",
-        {"provider": "documents", "datasource": "echo", "datasource_parameters": {}},
+        {
+            "provider": "documents",
+            "datasource": "echo",
+            "datasource_parameters": {"workspace": "selected", "limit": 0},
+        },
         [
             {
                 "result": [
@@ -252,7 +257,7 @@ CASES = [
             "datasource": "echo",
             "request": {
                 "bucket": "bucket",
-                "prefix": None,
+                "prefix": "folder/",
                 "max_keys": 20,
                 "next_page_parameters": {},
             },
@@ -296,6 +301,7 @@ CASES = [
             "raw_http_request": raw_request("/events", b'{"message":"hello"}'),
             "parameters": {"field": "message"},
             "payload": {"message": "hello"},
+            "credential_type": "oauth2",
         },
         [
             {
@@ -320,10 +326,18 @@ CASES = [
         {
             "provider": "events",
             "subscription": SUBSCRIPTION,
-            "raw_http_request": raw_request("/events", b'{"message":"hello"}'),
-            "credential_type": "api-key",
+            "raw_http_request": raw_request(
+                "/events", b'{"message":"hello","sender":"external-user"}'
+            ),
+            "credential_type": "oauth2",
         },
-        [{"events": ["echo"], "payload": {"message": "hello"}}],
+        [
+            {
+                "events": ["echo"],
+                "payload": {"message": "hello", "sender": "external-user"},
+                "user_id": "external-user",
+            }
+        ],
     ),
     (
         "trigger",
@@ -552,6 +566,52 @@ MODEL_METHODS = {
     "invoke_moderation": "_invoke",
     "get_ai_model_schemas": "get_model_schema",
 }
+RUNTIME_METHODS = {
+    "invoke_tool": ("get_tool_cls", "_invoke", "tool_parameters"),
+    "get_tool_runtime_parameters": ("get_tool_cls", "_get_runtime_parameters", None),
+    "invoke_agent_strategy": (
+        "get_agent_strategy_cls",
+        "_invoke",
+        "agent_strategy_params",
+    ),
+    "invoke_website_datasource_get_crawl": (
+        "get_website_crawl_datasource_cls",
+        "_get_website_crawl",
+        "datasource_parameters",
+    ),
+    "invoke_online_document_datasource_get_pages": (
+        "get_online_document_datasource_cls",
+        "_get_pages",
+        "datasource_parameters",
+    ),
+    "invoke_online_document_datasource_get_page_content": (
+        "get_online_document_datasource_cls",
+        "_get_content",
+        "page",
+    ),
+    "invoke_online_drive_browse_files": (
+        "get_online_drive_datasource_cls",
+        "_browse_files",
+        "request",
+    ),
+    "invoke_online_drive_download_file": (
+        "get_online_drive_datasource_cls",
+        "_download_file",
+        "request",
+    ),
+}
+TRIGGER_METHODS = {
+    "get_authorization_url": "_oauth_get_authorization_url",
+    "get_credentials": "_oauth_get_credentials",
+    "refresh_credentials": "_oauth_refresh_credentials",
+    "invoke_trigger_event": "_on_event",
+    "validate_trigger_credentials": "_validate_api_key",
+    "dispatch_trigger_event": "_dispatch_event",
+    "subscribe_trigger": "_create_subscription",
+    "unsubscribe_trigger": "_delete_subscription",
+    "refresh_trigger": "_refresh_subscription",
+    "fetch_parameter_options": "_fetch_parameter_options",
+}
 CASES += [
     (
         "model",
@@ -618,6 +678,7 @@ def test_public_actions_execute_registered_plugins(
         "credentials": CREDENTIALS,
         **payload,
     })
+    original = deepcopy(request)
     if action == "invoke_online_drive_download_file":
         mocker.patch.object(
             File,
@@ -642,6 +703,41 @@ def test_public_actions_execute_registered_plugins(
             forwarded.pop(key)
         if action.startswith("invoke_") or action in {"start_polling", "check_polling"}:
             forwarded["user"] = "user-1"
+    elif action in RUNTIME_METHODS:
+        getter, method, parameter = RUNTIME_METHODS[action]
+        provider_cls = getattr(contract_plugin.registration, getter)(
+            request.get("agent_strategy_provider", request.get("provider")),
+            request.get(
+                "tool", request.get("datasource", request.get("agent_strategy"))
+            ),
+        )
+        parameters = signature(getattr(provider_cls, method))
+        call = mocker.spy(provider_cls, method)
+        forwarded = (
+            {
+                "parameters" if kind == "agent_strategy" else parameter: deepcopy(
+                    request[parameter]
+                )
+            }
+            if parameter is not None
+            else {}
+        )
+    elif action in TRIGGER_METHODS:
+        factory = contract_plugin.registration.trigger_factory
+        if action == "invoke_trigger_event":
+            _, provider_cls = factory.iter_events(request["provider"])[request["event"]]
+        elif action == "dispatch_trigger_event":
+            provider_cls = factory.get_provider_cls(request["provider"])
+        else:
+            provider_cls = factory.get_subscription_constructor_cls(request["provider"])
+        method = TRIGGER_METHODS[action]
+        parameters = signature(getattr(provider_cls, method))
+        call = mocker.spy(provider_cls, method)
+        forwarded = {
+            name: deepcopy(request[name])
+            for name in parameters.parameters
+            if name not in {"self", "request"}
+        }
     if action == "get_tool_runtime_parameters":
         with pytest.warns(DeprecationWarning, match="replaced by dynamic select"):
             messages = invoke(contract_plugin, request)
@@ -653,10 +749,44 @@ def test_public_actions_execute_registered_plugins(
         assert message["data"]
         assert_contains(message["data"], fields)
 
-    if action in MODEL_METHODS:
+    if (
+        action in MODEL_METHODS
+        or action in RUNTIME_METHODS
+        or action in TRIGGER_METHODS
+    ):
         call.assert_called_once()
         received = parameters.bind(*call.call_args.args, **call.call_args.kwargs)
-        received.arguments.pop("self")
+        provider = received.arguments.pop("self")
+        if action in RUNTIME_METHODS:
+            assert provider.runtime.user_id == original["user_id"]
+            if kind != "agent_strategy":
+                assert provider.runtime.credentials == original["credentials"]
+                assert provider.runtime.session_id == "session-1"
+            if kind == "tool":
+                assert provider.runtime.credential_type.value == original.get(
+                    "credential_type", "api-key"
+                )
+            assert provider.session.session_id == "session-1"
+        elif action in TRIGGER_METHODS:
+            if kind != "oauth":
+                assert provider.runtime.credentials == original["credentials"]
+                assert provider.runtime.credential_type.value == original.get(
+                    "credential_type", "api-key"
+                )
+            assert provider.runtime.session.session_id == "session-1"
+            if action == "invoke_trigger_event":
+                assert (
+                    provider.runtime.subscription.model_dump()
+                    == original["subscription"]
+                )
+            if "request" in received.arguments:
+                http_request = received.arguments.pop("request")
+                assert (
+                    http_request.get_data()
+                    == bytes.fromhex(original["raw_http_request"]).split(
+                        b"\r\n\r\n", 1
+                    )[1]
+                )
         if action == "invoke_speech2text":
             assert received.arguments.pop("file").closed
             forwarded.pop("file")
@@ -1089,9 +1219,18 @@ def test_dynamic_tool_options_receive_credentials_and_identity(
     assert runtimes[0].session_id == "session-1"
 
 
-def test_dynamic_event_options_dispatch_to_the_event(contract_plugin: Plugin) -> None:
+def test_dynamic_event_options_dispatch_to_the_event(
+    contract_plugin: Plugin, mocker: MockerFixture
+) -> None:
+    _, event_cls = contract_plugin.registration.trigger_factory.iter_events("events")[
+        "echo"
+    ]
+    call = mocker.spy(event_cls, "_fetch_parameter_options")
     messages = invoke(
-        contract_plugin, request_for("fetch_parameter_options", provider_action="echo")
+        contract_plugin,
+        request_for(
+            "fetch_parameter_options", provider_action="echo", credential_type="oauth2"
+        ),
     )
 
     assert len(messages) == 1
@@ -1100,6 +1239,11 @@ def test_dynamic_event_options_dispatch_to_the_event(contract_plugin: Plugin) ->
         messages[0]["data"],
         {"options": [{"value": "echo", "label": {"en_US": "event"}}]},
     )
+    call.assert_called_once()
+    runtime = call.call_args.args[0].runtime
+    assert runtime.credentials == CREDENTIALS
+    assert runtime.credential_type.value == "oauth2"
+    assert runtime.session.session_id == "session-1"
 
 
 def test_unknown_dynamic_action_returns_an_error(contract_plugin: Plugin) -> None:

@@ -5,10 +5,17 @@ from pathlib import Path
 
 import gevent
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 
 from dify_plugin.config.integration_config import IntegrationConfig
-from dify_plugin.core.entities.plugin.request import PluginInvokeType, ToolActions
+from dify_plugin.core.entities.plugin.request import (
+    ModelActions,
+    ModelInvokeRerankRequest,
+    PluginAccessAction,
+    PluginInvokeType,
+    ToolActions,
+    ToolInvokeRequest,
+)
 from dify_plugin.integration import run as runner_module
 from dify_plugin.integration.exc import PluginStoppedError
 from dify_plugin.integration.run import PluginRunner
@@ -57,6 +64,79 @@ def test_runner_reads_local_cli_protocol(local_cli: str, scenario: str) -> None:
     assert not runner.stdout_reader.is_alive()
     assert runner.process.stdin.closed
     assert runner.process.stdout.closed
+
+
+@pytest.mark.parametrize(
+    ("access_type", "access_action", "payload_type", "payload"),
+    [
+        (
+            PluginInvokeType.Tool,
+            ToolActions.InvokeTool,
+            ToolInvokeRequest,
+            {
+                "type": "tool",
+                "action": "invoke_tool",
+                "user_id": "tool-user",
+                "provider": "json_process",
+                "tool": "parse",
+                "credentials": {"api_key": "tool-key"},
+                "credential_type": "api-key",
+                "tool_parameters": {
+                    "content": '{"message":"你好"}',
+                    "ensure_ascii": False,
+                    "limit": 0,
+                },
+            },
+        ),
+        (
+            PluginInvokeType.Model,
+            ModelActions.InvokeRerank,
+            ModelInvokeRerankRequest,
+            {
+                "type": "model",
+                "action": "invoke_rerank",
+                "user_id": "model-user",
+                "provider": "openrouter",
+                "model_type": "rerank",
+                "model": "test-reranker",
+                "credentials": {"api_key": "model-key"},
+                "query": "capital of France",
+                "docs": ["Berlin", "Paris"],
+                "score_threshold": None,
+                "top_n": 1,
+            },
+        ),
+    ],
+    ids=["tool", "model"],
+)
+def test_runner_preserves_cli_request_fields(
+    local_cli: str,
+    access_type: PluginInvokeType,
+    access_action: PluginAccessAction,
+    payload_type: type[BaseModel],
+    payload: dict,
+) -> None:
+    with (
+        PluginRunner(
+            IntegrationConfig(dify_cli_path=local_cli, _env_file=None),
+            "fixture.difypkg",
+            extra_args=["--scenario", "record-request"],
+        ) as runner,
+        gevent.Timeout(2, AssertionError("Invocation stopped responding")),
+    ):
+        (response,) = runner.invoke(
+            access_type,
+            access_action,
+            payload=payload_type.model_validate(payload),
+            response_type=RootModel[dict],
+        )
+    wire = response.root
+    assert wire.pop("invoke_id")
+    assert wire == {
+        "type": payload["type"],
+        "action": payload["action"],
+        "request": payload,
+    }
 
 
 def test_runner_routes_interleaved_invocations(local_cli: str) -> None:
@@ -149,17 +229,18 @@ def test_runner_cleans_packaged_source_directory(
 
 
 @pytest.mark.parametrize(
-    ("scenario", "error"),
+    ("scenario", "error", "message"),
     [
-        ("exit-before-ready", PluginStoppedError),
-        ("error-before-ready", ValueError),
-        ("never-ready", TimeoutError),
+        ("exit-before-ready", PluginStoppedError, None),
+        ("error-before-ready", ValueError, "startup failed"),
+        ("never-ready", TimeoutError, "Plugin failed to start"),
     ],
 )
 def test_startup_failure_exits_promptly_and_reaps_process(
     local_cli: str,
     scenario: str,
     error: type[Exception],
+    message: str | None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     processes = []
@@ -183,7 +264,7 @@ def test_startup_failure_exits_promptly_and_reaps_process(
         monkeypatch.setattr(runner_module, "Semaphore", lambda _value: semaphore)
     with (
         gevent.Timeout(2, AssertionError("Constructor did not notice child exit")),
-        pytest.raises(error),
+        pytest.raises(error, match=message),
     ):
         PluginRunner(config, "fixture.difypkg", extra_args=["--scenario", scenario])
     assert len(processes) == 1

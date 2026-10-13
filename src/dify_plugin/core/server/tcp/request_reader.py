@@ -48,6 +48,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         self.on_connected = on_connected
         self.opt_lock = RLock()
         self._connecting = False
+        self._reconnect_pending = False
 
         # handle SIGINT to exit the program smoothly due to the gevent limitation
         signal.signal(signal.SIGINT, lambda *_args, **_kwargs: os._exit(0))
@@ -97,13 +98,17 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             sock = self.sock
             try:
                 self._write_data(sock, data)
-            except Exception:
+            except BaseException as error:
                 logger.exception("Failed to write data")
                 sock.close()
                 self.alive = False
                 # Registration failures belong to the outer connection retry loop.
                 if not self._closed and not self._connecting:
-                    self._launch()
+                    if isinstance(error, Exception):
+                        self._launch()
+                    else:
+                        # Reconnect in the reader so cancellation can finish now.
+                        self._reconnect_pending = True
                 raise
 
     def done(self) -> None:
@@ -114,6 +119,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
         with self.opt_lock:
             if self.alive or self._closed:
                 return
+            self._reconnect_pending = False
             self._connecting = True
             try:
                 attempts = 0
@@ -193,7 +199,9 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             if not self.alive:
                 with self.opt_lock:
                     if not self.alive:
-                        return
+                        if not self._reconnect_pending:
+                            return
+                        self._launch()
 
             sock = self.sock
             if sock is not source_socket:
