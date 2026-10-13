@@ -86,10 +86,6 @@ Use these commands for normal development:
 Notes:
 
 - `just check` is the non-mutating validation entrypoint used by PR checks and Git hooks.
-- Tests start through `python -m tests` so gevent patches are applied before pytest plugins load.
-- Tests use real localhost HTTP services, reject external sockets in the pytest process, and enforce a 60-second timeout including teardown.
-- Integration tests build and install the current SDK wheel and invoke a local plugin over stdio.
-- `PluginRunner` tests use a local implementation of the CLI JSON protocol.
 - If you change dependencies, refresh and commit [`uv.lock`](uv.lock) before opening a pull request.
 
 Run `just check` for every change, plus `just test` for behavior changes, `just build` for packaging changes, and `just docs` for schema changes.
@@ -101,8 +97,6 @@ Pull requests targeting `main` currently run these checks:
 1. PR title validation with `amannn/action-semantic-pull-request`
 2. `just check` on Python 3.12, including `uv.lock` freshness validation
 3. `just coverage` on Python 3.12 and `just test` on Python 3.13 through the reusable test workflow
-
-The test workflow installs locked dependencies, prepares the tokenizer cache, and uploads JUnit and coverage reports.
 
 Pushes to `main` also run the MkDocs workflow.
 It runs `just docs` on Python 3.12 and deploys `.mkdocs` to GitHub Pages.
