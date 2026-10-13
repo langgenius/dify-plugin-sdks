@@ -232,7 +232,7 @@ def test_closing_tts_stream_closes_provider_without_consuming_more_audio(
     [
         (TimeoutError("provider stalled"), InvokeConnectionError),
         (RuntimeError("audio failed"), InvokeError),
-        (InvokeBadRequestError("invalid voice"), InvokeBadRequestError),
+        (InvokeBadRequestError("invalid voice"), InvokeError),
     ],
 )
 def test_tts_maps_errors_after_audio_starts(
@@ -258,10 +258,7 @@ def test_tts_maps_errors_after_audio_starts(
     with pytest.raises(expected_type) as exc_info:
         next(stream)
 
-    if isinstance(error, InvokeError):
-        assert exc_info.value is error
-        assert exc_info.value.__cause__ is None
-    else:
-        assert exc_info.value.__cause__ is error
+    assert type(exc_info.value) is expected_type
+    assert exc_info.value.__cause__ is error
     assert closed == [True]
     assert model.started_at == 0

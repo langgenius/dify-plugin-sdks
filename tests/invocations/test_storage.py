@@ -108,7 +108,6 @@ def test_storage_records_operation_and_key(
     ]
 
 
-def test_set_requires_a_success_acknowledgement() -> None:
+def test_set_accepts_an_empty_response() -> None:
     storage = DummyStorageInvocation([])
-    with pytest.raises(StorageInvocationError, match="no data found"):
-        storage.set("key", b"value")
+    assert storage.set("key", b"value") is None

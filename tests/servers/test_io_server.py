@@ -1,5 +1,6 @@
 import threading
 from collections.abc import Callable, Generator, Iterator
+from contextvars import ContextVar
 from queue import Queue
 
 import gevent
@@ -11,6 +12,7 @@ from dify_plugin.core.server.__base.filter_reader import FilterReader
 from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.__base.response_writer import ResponseWriter
 from dify_plugin.core.server.serverless.request_reader import ServerlessRequestReader
+from dify_plugin.core.server.serverless.response_writer import ServerlessResponseWriter
 from dify_plugin.errors.model import InvokeAuthorizationError
 from tests.servers.helpers import (
     CallbackIOServer,
@@ -104,6 +106,22 @@ def test_request_metadata_reaches_execution(server: CallbackIOServer) -> None:
     ]
 
 
+def test_serverless_execution_preserves_ambient_context(
+    server: CallbackIOServer,
+) -> None:
+    trace: ContextVar[str] = ContextVar("trace")
+    token = trace.set("request-trace")
+    writer = ServerlessResponseWriter(Queue())
+    received = []
+    server.handler = lambda *_args: received.append(trace.get())
+    try:
+        server._execute_request_in_thread("session", {}, server.request_reader, writer)
+        assert received == ["request-trace"]
+    finally:
+        trace.reset(token)
+        writer.close()
+
+
 @pytest.mark.parametrize("after_chunk", [False, True])
 @pytest.mark.parametrize("serverless", [False, True])
 @pytest.mark.parametrize(
@@ -183,7 +201,7 @@ def test_writer_failure_still_finishes_request(
     assert writer.done_count == 1
 
 
-def test_run_dispatches_only_requests_with_all_metadata_and_returns_at_eof(
+def test_run_dispatches_only_requests_with_all_metadata_until_reader_closes(
     server: CallbackIOServer, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     subscribed = threading.Event()
@@ -202,6 +220,7 @@ def test_run_dispatches_only_requests_with_all_metadata_and_returns_at_eof(
     def stream() -> Generator[PluginInStream, None, None]:
         assert subscribed.wait(timeout=2)
         yield from read_stream()
+        server.request_reader.close()
 
     monkeypatch.setattr(server.request_reader, "read", subscribe)
     monkeypatch.setattr(server.request_reader, "_read_stream", stream)

@@ -142,7 +142,10 @@ def test_close_wakes_blocked_subscriber_and_is_idempotent() -> None:
 
         assert task.get(timeout=1) == []
         assert reader.readers == []
-        assert list(reader.read(lambda _item: True).read()) == []
+        replacement = reader.read(lambda _item: True)
+        item = message(reader, "session", "after-close")
+        reader._process_line(item)
+        assert next(replacement.read(timeout_for_round=0)) == item
     finally:
         reader.close()
         task.kill()
@@ -202,13 +205,26 @@ def test_filter_reader_notifies_waiter_when_close_callback_fails() -> None:
         task.kill()
 
 
-def test_event_loop_ends_and_closes_subscribers_at_eof() -> None:
-    reader = MemoryReader()
+def test_event_loop_restarts_when_a_reader_returns_batches() -> None:
+    class BatchedReader(MemoryReader):
+        calls = 0
+
+        def _read_stream(self) -> Generator[PluginInStream, None, None]:
+            self.calls += 1
+            if self.calls <= 2:
+                yield message(self, "session", str(self.calls))
+            else:
+                self.close()
+
+    reader = BatchedReader()
     subscriber = reader.read(lambda _item: True)
     loop = gevent.spawn(reader.event_loop)
     try:
         loop.get(timeout=1)
-        assert list(subscriber.read()) == []
+        assert [item.data["backwards_request_id"] for item in subscriber.read()] == [
+            "1",
+            "2",
+        ]
         assert reader.readers == []
     finally:
         reader.close()
@@ -228,6 +244,7 @@ def test_event_loop_recovers_from_read_error(
         if isinstance(result, OSError):
             raise result
         yield result
+        reader.close()
 
     monkeypatch.setattr(reader, "_read_stream", read_stream)
     loop = gevent.spawn(reader.event_loop)

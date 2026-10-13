@@ -157,10 +157,17 @@ def test_plain_prompt_content_presence(content: str | list | None) -> None:
     assert message.get_text_content() == (content or "")
 
 
-@pytest.mark.parametrize("has_content", [False, True])
-@pytest.mark.parametrize("has_tool_call", [False, True])
-def test_assistant_message_with_tool_call_is_not_empty(
-    has_content: bool, has_tool_call: bool
+@pytest.mark.parametrize(
+    ("has_content", "has_tool_call", "expected"),
+    [
+        (False, False, True),
+        (False, True, True),
+        (True, False, False),
+        (True, True, True),
+    ],
+)
+def test_assistant_message_keeps_legacy_empty_result(
+    has_content: bool, has_tool_call: bool, expected: bool
 ) -> None:
     tool_call = {
         "id": "call-1",
@@ -172,27 +179,34 @@ def test_assistant_message_with_tool_call_is_not_empty(
         tool_calls=[tool_call] if has_tool_call else [],
     )
 
-    assert message.is_empty() is (not has_content and not has_tool_call)
+    assert message.is_empty() is expected
 
 
 @pytest.mark.parametrize("snapshot", [None, {}, [], "", 0, False, {"signature": "s"}])
-def test_assistant_replay_state_counts_as_content(snapshot: JsonValue) -> None:
+def test_assistant_opaque_body_keeps_legacy_empty_result(snapshot: JsonValue) -> None:
     message = AssistantPromptMessage(opaque_body=snapshot)
 
-    assert message.is_empty() is (snapshot is None)
+    assert message.is_empty() is True
 
 
-@pytest.mark.parametrize("has_content", [False, True])
-@pytest.mark.parametrize("has_call_id", [False, True])
-def test_tool_message_with_call_id_is_not_empty(
-    has_content: bool, has_call_id: bool
+@pytest.mark.parametrize(
+    ("has_content", "has_call_id", "expected"),
+    [
+        (False, False, True),
+        (False, True, True),
+        (True, False, False),
+        (True, True, True),
+    ],
+)
+def test_tool_message_keeps_legacy_empty_result(
+    has_content: bool, has_call_id: bool, expected: bool
 ) -> None:
     message = ToolPromptMessage(
         content="result" if has_content else None,
         tool_call_id="call-1" if has_call_id else "",
     )
 
-    assert message.is_empty() is (not has_content and not has_call_id)
+    assert message.is_empty() is expected
 
 
 @pytest.mark.parametrize(

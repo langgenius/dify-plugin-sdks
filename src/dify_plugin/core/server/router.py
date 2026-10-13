@@ -1,10 +1,13 @@
 import inspect
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.__base.response_writer import ResponseWriter
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,7 +46,17 @@ class Router:
             annotation = parameter.annotation
 
             def wrapper(session: Session, data: dict) -> object:
-                return f(instance, session, annotation(**data))
+                try:
+                    data = annotation(**data)
+                except TypeError as e:
+                    if not self.response_writer:
+                        logger.exception("failed to route request: %s")
+                    else:
+                        self.response_writer.error(
+                            session_id=session.session_id,
+                            data={"error": str(e), "error_type": type(e).__name__},
+                        )
+                return f(instance, session, data)
 
         else:
             # get first parameter of func
@@ -52,7 +65,17 @@ class Router:
             annotation = parameter.annotation
 
             def wrapper(session: Session, data: dict) -> object:
-                return f(session, annotation(**data))
+                try:
+                    data = annotation(**data)
+                except TypeError as e:
+                    if not self.response_writer:
+                        logger.exception("failed to route request: %s")
+                    else:
+                        self.response_writer.error(
+                            session_id=session.session_id,
+                            data={"error": str(e), "error_type": type(e).__name__},
+                        )
+                return f(session, data)
 
         self.routes.append(Route(filter, wrapper))
 

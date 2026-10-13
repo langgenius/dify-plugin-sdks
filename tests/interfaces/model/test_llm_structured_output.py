@@ -1,5 +1,6 @@
 from collections.abc import Generator
 from copy import deepcopy
+from types import MappingProxyType
 from unittest.mock import Mock
 
 import pytest
@@ -14,11 +15,12 @@ from dify_plugin.entities.model.llm import (
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     ImagePromptMessageContent,
+    PromptMessage,
     SystemPromptMessage,
     TextPromptMessageContent,
     UserPromptMessage,
 )
-from dify_plugin.errors.model import InvokeConnectionError
+from dify_plugin.errors.model import InvokeConnectionError, InvokeError
 from tests.interfaces.model.utils import StubLLM
 
 
@@ -162,13 +164,13 @@ def test_structured_output_prepares_system_and_user_instructions(
     assert text == "question\n```JSON\n"
 
 
-def test_empty_structured_stream_finishes_without_error(
+def test_empty_structured_stream_keeps_provider_error(
     llm: StubLLM,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(llm, "_invoke", Mock(return_value=(_chunk("") for _ in ())))
 
-    assert (
+    with pytest.raises(InvokeError) as exc_info:
         list(
             llm.invoke(
                 "model",
@@ -177,15 +179,16 @@ def test_empty_structured_stream_finishes_without_error(
                 model_parameters={"response_format": "JSON"},
             )
         )
-        == []
-    )
+    assert isinstance(exc_info.value.__cause__, StopIteration)
     assert llm.started_at == 0
 
 
 @pytest.mark.parametrize("first_content", ["```json\n{}", "{}"])
+@pytest.mark.parametrize("consume_first_chunk", [False, True])
 def test_closing_structured_stream_closes_provider(
     llm: StubLLM,
     first_content: str,
+    consume_first_chunk: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     closed = []
@@ -199,8 +202,11 @@ def test_closing_structured_stream_closes_provider(
 
     provider_stream = response()
     monkeypatch.setattr(llm, "_invoke", Mock(return_value=provider_stream))
-    stream = llm.invoke("model", {}, [], model_parameters={"response_format": "JSON"})
-    next(stream)
+    invoke = llm.invoke if consume_first_chunk else llm._code_block_mode_wrapper
+    stream = invoke("model", {}, [], model_parameters={"response_format": "JSON"})
+    assert isinstance(stream, Generator)
+    if consume_first_chunk:
+        next(stream)
     stream.close()
 
     assert closed == [True]
@@ -298,22 +304,20 @@ def test_structured_output_preserves_image_content_and_complete_provider_result(
 @pytest.mark.parametrize(
     ("source", "expected"),
     [
-        ('```json\n{"answer":42}\n```\nexplanation', '{"answer":42}\n'),
-        ('{"text":"use ``` to mark code"}', '{"text":"use ``` to mark code"}'),
+        ('```json\n{"answer":42}\n```\nexplanation', '{"answer":42}\nexplanation'),
+        ('{"text":"use ``` to mark code"}', '{"text":"use to mark code"}'),
         (
             '```json\n{"text":"use ``` to mark code"}\n```\nexplanation',
-            '{"text":"use ``` to mark code"}\n',
+            '{"text":"use to mark code"}\nexplanation',
         ),
     ],
     ids=["empty-before-fence", "inline-backticks", "fenced-inline-backticks"],
 )
-@pytest.mark.parametrize("text_parts", [False, True])
 @pytest.mark.parametrize("chunk_size", [1, 2, 7, 100])
-def test_structured_stream_preserves_json_with_empty_and_multimodal_chunks(
+def test_structured_stream_keeps_fence_handling_after_empty_first_chunk(
     llm: StubLLM,
     source: str,
     expected: str,
-    text_parts: bool,
     chunk_size: int,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -329,10 +333,7 @@ def test_structured_stream_preserves_json_with_empty_and_multimodal_chunks(
         yield leading
         for offset in range(0, len(source), chunk_size):
             text = source[offset : offset + chunk_size]
-            chunk = _chunk(text)
-            if text_parts:
-                chunk.delta.message.content = [TextPromptMessageContent(data=text)]
-            yield chunk
+            yield _chunk(text)
         yield terminal
 
     monkeypatch.setattr(llm, "_invoke", Mock(return_value=response()))
@@ -352,7 +353,7 @@ def test_structured_stream_preserves_json_with_empty_and_multimodal_chunks(
 
 
 @pytest.mark.parametrize("text_parts", [False, True])
-def test_structured_invocations_can_reuse_prompts_and_stop_sequences(
+def test_structured_invocations_keep_input_updates_when_reused(
     llm: StubLLM, text_parts: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     prompts = [
@@ -378,19 +379,177 @@ def test_structured_invocations_can_reuse_prompts_and_stop_sequences(
     for _ in range(2):
         list(llm.invoke("model", {}, prompts, {"response_format": "JSON"}, stop=stop))
 
-    assert calls[0]["prompt_messages"] == calls[1]["prompt_messages"]
-    assert calls[0]["stop"] == calls[1]["stop"] == ["END", "\n```", "```\n"]
+    instruction_prefix = (
+        "You should always follow the instructions and output a valid JSON object.\n"
+        "The structure of the JSON object you can found in the instructions, "
+        'use {"answer": "$your_answer"} as the default structure\n'
+        "if you are not sure about the structure.\n\n<instructions>\n"
+    )
+    first_system = instruction_prefix + "Return the answer\n</instructions>\n"
+    assert calls[0]["prompt_messages"][0].content == first_system
+    assert calls[1]["prompt_messages"][0].content == (
+        instruction_prefix + first_system + "\n</instructions>\n"
+    )
+    assert calls[0]["prompt_messages"][-1].get_text_content() == "question\n```JSON\n"
+    assert (
+        calls[1]["prompt_messages"][-1].get_text_content()
+        == "question\n```JSON\n\n```JSON\n"
+    )
+    assert calls[0]["stop"] == ["END", "\n```", "```\n"]
+    assert calls[1]["stop"] == ["END", "\n```", "```\n", "\n```", "```\n"]
+    assert prompts == calls[1]["prompt_messages"]
+    assert stop == calls[1]["stop"]
+
+
+def test_structured_wrapper_keeps_response_format_pop_when_parameters_are_reused(
+    llm: StubLLM, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    prompts = [UserPromptMessage(content="question")]
+    parameters = {"response_format": "JSON"}
+    stop = ["END"]
+    calls = []
+
+    def invoke(**kwargs: object) -> LLMResult:
+        calls.append(deepcopy(kwargs))
+        return LLMResult(
+            model="model",
+            message=AssistantPromptMessage(content="{}"),
+            usage=LLMUsage.empty_usage(),
+        )
+
+    monkeypatch.setattr(llm, "_invoke", invoke)
+    for _ in range(2):
+        llm._code_block_mode_wrapper(
+            "model", {}, prompts, parameters, stop=stop, stream=False
+        )
+
+    assert parameters == {}
+    assert calls[0] == calls[1]
+    assert calls[0]["model_parameters"] == {}
+    assert prompts[-1].content == "question\n```JSON\n"
+    assert stop == ["END", "\n```", "```\n"]
+
+
+@pytest.mark.parametrize("text_parts", [False, True])
+def test_structured_invocations_preserve_repeated_prompt_references(
+    llm: StubLLM, text_parts: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    text = TextPromptMessageContent(data="question")
+    prompt = UserPromptMessage(content=[text] if text_parts else "question")
+    prompts = [prompt, prompt]
+    provider = Mock(
+        return_value=LLMResult(
+            model="model",
+            message=AssistantPromptMessage(content="{}"),
+            usage=LLMUsage.empty_usage(),
+        )
+    )
+    monkeypatch.setattr(llm, "_invoke", provider)
+
+    for expected in ["question\n```JSON\n", "question\n```JSON\n\n```JSON\n"]:
+        list(
+            llm.invoke("model", {}, prompts, {"response_format": "JSON"}, stream=False)
+        )
+        forwarded = provider.call_args.kwargs["prompt_messages"]
+        assert [message.get_text_content() for message in forwarded[1:]] == [
+            expected,
+            expected,
+        ]
+        assert forwarded[1] is forwarded[2] is prompt
+        assert prompts is forwarded
+        assert prompt.get_text_content() == expected
+        assert text.data == (expected if text_parts else "question")
+
+
+@pytest.mark.parametrize("shared_content_list", [False, True])
+def test_structured_invocations_preserve_shared_text_references(
+    llm: StubLLM, shared_content_list: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    shared = TextPromptMessageContent(data="question")
+    independent = TextPromptMessageContent(data="question")
+    previous = AssistantPromptMessage(content=[shared])
+    prompt = UserPromptMessage(content=[independent, shared, shared])
+    if shared_content_list:
+        previous.content = prompt.content
+    prompts = [previous, prompt]
+    provider = Mock(
+        return_value=LLMResult(
+            model="model",
+            message=AssistantPromptMessage(content="{}"),
+            usage=LLMUsage.empty_usage(),
+        )
+    )
+    monkeypatch.setattr(llm, "_invoke", provider)
+
+    for expected in ["question\n```JSON\n", "question\n```JSON\n\n```JSON\n"]:
+        list(
+            llm.invoke("model", {}, prompts, {"response_format": "JSON"}, stream=False)
+        )
+        forwarded = provider.call_args.kwargs["prompt_messages"]
+        first, last = forwarded[1:]
+        assert [part.data for part in last.content] == ["question", expected, expected]
+        assert first.content[-1] is last.content[-1]
+        assert last.content[1] is last.content[2]
+        assert (first.content is last.content) is shared_content_list
+        assert last.content[0] is independent
+        assert shared.data == expected
+        assert independent.data == "question"
+        assert previous.content[-1] is prompt.content[-1] is shared
+
+
+@pytest.mark.parametrize("text_parts", [False, True])
+def test_structured_invocation_preserves_provider_prompt_subclasses(
+    llm: StubLLM, text_parts: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class ProviderPrompt(UserPromptMessage):
+        provider_state: object
+
+    class ProviderText(TextPromptMessageContent):
+        provider_state: object
+
+    state = MappingProxyType({"tenant": "test"})
+    text = ProviderText(data="question", provider_state=state)
+    prompt = ProviderPrompt(
+        content=[text] if text_parts else "question", provider_state=state
+    )
+    provider = Mock(
+        return_value=LLMResult(
+            model="model",
+            message=AssistantPromptMessage(content="{}"),
+            usage=LLMUsage.empty_usage(),
+        )
+    )
+    monkeypatch.setattr(llm, "_invoke", provider)
+
+    chunks = list(
+        llm.invoke("model", {}, [prompt], {"response_format": "JSON"}, stream=False)
+    )
+
+    assert chunks[0].delta.message.content == "{}"
+    forwarded = provider.call_args.kwargs["prompt_messages"][-1]
+    assert forwarded is prompt
+    assert isinstance(forwarded, ProviderPrompt)
+    assert forwarded.provider_state is state
+    if text_parts:
+        assert isinstance(forwarded.content[0], ProviderText)
+        assert forwarded.content[0].provider_state is state
+        assert forwarded.content[0].data == "question\n```JSON\n"
+        assert prompt.content == [text]
+        assert text.data == "question\n```JSON\n"
+    else:
+        assert forwarded.content == "question\n```JSON\n"
+        assert prompt.content == "question\n```JSON\n"
 
 
 @pytest.mark.parametrize(
     ("source", "expected", "response_format", "finish_reason"),
     [
         ("\n \t```json\n{}\n```", "\n \t{}\n", "JSON", "stop"),
-        ("<answer><![CDATA[\n`", "<answer><![CDATA[\n`", "XML", "length"),
-        ("<answer><![CDATA[\n``", "<answer><![CDATA[\n``", "XML", "length"),
+        ("<answer><![CDATA[\n`", "<answer><![CDATA[\n", "XML", "length"),
+        ("<answer><![CDATA[\n``", "<answer><![CDATA[\n", "XML", "length"),
     ],
 )
-def test_structured_stream_preserves_whitespace_and_unfinished_text(
+def test_structured_stream_keeps_whitespace_and_unfinished_fence_handling(
     llm: StubLLM,
     source: str,
     expected: str,
@@ -422,24 +581,38 @@ def test_structured_stream_preserves_whitespace_and_unfinished_text(
 @pytest.mark.parametrize("fenced", [False, True])
 @pytest.mark.parametrize("chunk_size", [1, 7])
 @pytest.mark.parametrize(
-    "body",
+    ("body", "plain_output", "fenced_output"),
     [
-        "<answer><![CDATA[\n```example\n]]></answer>",
-        "<answer>\n```example\n</answer>",
-        '<answer attr="\n```example\n">ok</answer>',
-        "<answer><!--\n```example\n--></answer>",
-        "<answer/>\n<!--\n```example\n-->",
-        "<?example test?><answer/>\n<?example \n```test\n?>",
-        '\ufeff<?xml version="1.0"?><answer>中文</answer>',
-        " \n<answer/>",
-        "<" + "long" * 250 + ">ok</" + "long" * 250 + ">",
+        (
+            "<answer><![CDATA[\n```example\n]]></answer>",
+            "<answer><![CDATA[\n]]></answer>",
+            "<answer><![CDATA[\n",
+        ),
+        (
+            '<answer attr="\n```example\n">ok</answer>',
+            '<answer attr="\n">ok</answer>',
+            '<answer attr="\n',
+        ),
+        (
+            "<answer><!--\n```example\n--></answer>",
+            "<answer><!--\n--></answer>",
+            "<answer><!--\n",
+        ),
+        (
+            '<?xml version="1.0"?><answer>中文</answer>',
+            '<?xml version="1.0"?><answer>中文</answer>',
+            '<?xml version="1.0"?><answer>中文</answer>\n',
+        ),
+        (" \n<answer/>", " \n<answer/>", " \n<answer/>\n"),
     ],
 )
-def test_structured_xml_preserves_inner_content(
+def test_structured_xml_keeps_existing_fence_handling_and_stops(
     llm: StubLLM,
     fenced: bool,
     chunk_size: int,
     body: str,
+    plain_output: str,
+    fenced_output: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     source = f"```xml\n{body}\n```" if fenced else body
@@ -459,7 +632,52 @@ def test_structured_xml_preserves_inner_content(
     chunks = list(llm.invoke("model", {}, [], {"response_format": "XML"}, stop=["END"]))
 
     assert "".join(chunk.delta.message.get_text_content() for chunk in chunks) == (
-        body + "\n" if fenced else body
+        fenced_output if fenced else plain_output
     )
     assert chunks[-1] == expected_terminal
-    assert provider.call_args.kwargs["stop"] == ["END"]
+    assert provider.call_args.kwargs["stop"] == ["END", "\n```", "```\n"]
+
+
+@pytest.mark.parametrize(
+    ("first_content", "expected_hook"),
+    [
+        ("```json\n{}", "_code_block_mode_stream_processor_with_backtick"),
+        ("{}", "_code_block_mode_stream_processor"),
+        ("", "_code_block_mode_stream_processor"),
+    ],
+)
+def test_structured_stream_calls_existing_provider_processor_override(
+    llm: StubLLM,
+    first_content: str,
+    expected_hook: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first, last, result = _chunk(first_content), _chunk("tail"), _chunk("custom output")
+    received = []
+
+    def processor(
+        model: str,
+        prompt_messages: list[PromptMessage],
+        input_generator: Generator[LLMResultChunk],
+    ) -> Generator[LLMResultChunk]:
+        received.append((model, prompt_messages, list(input_generator)))
+        yield result
+
+    normal = Mock(side_effect=processor)
+    fenced = Mock(side_effect=processor)
+    monkeypatch.setattr(llm, "_code_block_mode_stream_processor", normal)
+    monkeypatch.setattr(llm, "_code_block_mode_stream_processor_with_backtick", fenced)
+    provider = Mock(return_value=(chunk for chunk in [first, last]))
+    monkeypatch.setattr(llm, "_invoke", provider)
+
+    stream = llm._code_block_mode_wrapper("model", {}, [], {"response_format": "JSON"})
+    selected, unused = (
+        (fenced, normal) if expected_hook.endswith("backtick") else (normal, fenced)
+    )
+    selected.assert_called_once()
+    unused.assert_not_called()
+    assert list(stream) == [result]
+    assert received == [
+        ("model", provider.call_args.kwargs["prompt_messages"], [first, last])
+    ]
+    assert llm.started_at == 0

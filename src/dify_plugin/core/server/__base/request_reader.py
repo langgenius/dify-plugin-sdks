@@ -40,8 +40,6 @@ class RequestReader(ABC):
                 except Exception:
                     logger.exception("Error in event loop")
                     time.sleep(0.01)  # Prevent high CPU usage after failures
-                else:
-                    return
         finally:
             self.close()
 
@@ -89,14 +87,9 @@ class RequestReader(ABC):
 
         self.lock.acquire()
         try:
-            closed = self._closed
-            if not closed:
-                self.readers.append(reader)
+            self.readers.append(reader)
         finally:
             self.lock.release()
-
-        if closed:
-            reader.close()
 
         return reader
 

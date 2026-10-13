@@ -93,11 +93,7 @@ def deserialize_request(raw_data: bytes) -> Request:
         if key in environ and name in {b"content-type", b"content-length"}:
             msg = f"Duplicate HTTP header: {name.decode('ascii')}"
             raise ValueError(msg)
-        decoded_value = value.decode()
-        if key in environ:
-            separator = "; " if name == b"cookie" else ", "
-            decoded_value = environ[key] + separator + decoded_value
-        environ[key] = decoded_value
+        environ[key] = value.decode()
 
     if content_length is None and body:
         environ["CONTENT_LENGTH"] = str(len(body))

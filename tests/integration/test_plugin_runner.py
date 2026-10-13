@@ -1,3 +1,4 @@
+import os
 import threading
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
@@ -36,6 +37,21 @@ def _invoke(runner: PluginRunner, value: str = "hello") -> Generator[Payload]:
     )
 
 
+def _assert_pipes_closed(runner: PluginRunner) -> None:
+    # gevent defers os.close until the next event loop iteration.
+    gevent.sleep(0.001)
+    for pipe in (
+        runner.stdout_pipe_read,
+        runner.stdout_pipe_write,
+        runner.stderr_pipe_read,
+        runner.stderr_pipe_write,
+        runner.stdin_pipe_read,
+        runner.stdin_pipe_write,
+    ):
+        with pytest.raises(OSError, match="Bad file descriptor"):
+            os.fstat(pipe)
+
+
 def test_child_exit_unblocks_pending_invocation(local_cli: str) -> None:
     with (
         PluginRunner(
@@ -49,10 +65,21 @@ def test_child_exit_unblocks_pending_invocation(local_cli: str) -> None:
         list(_invoke(runner))
 
 
-@pytest.mark.parametrize("scenario", ["echo", "mixed", "stderr"])
+@pytest.mark.parametrize("scenario", ["echo", "mixed", "stderr", "stderr-error"])
 def test_runner_reads_local_cli_protocol(local_cli: str, scenario: str) -> None:
+    read_pipes: set[int] = set()
+
+    class Runner(PluginRunner):
+        def _message_reader(self, pipe: int) -> None:
+            assert pipe == self.stdout_pipe_read
+            super()._message_reader(pipe)
+
+        def _read_async(self, fd: int) -> bytes:
+            read_pipes.add(fd)
+            return super()._read_async(fd)
+
     with (
-        PluginRunner(
+        Runner(
             IntegrationConfig(dify_cli_path=local_cli, _env_file=None),
             "fixture.difypkg",
             extra_args=["--scenario", scenario],
@@ -60,10 +87,13 @@ def test_runner_reads_local_cli_protocol(local_cli: str, scenario: str) -> None:
         gevent.Timeout(2, AssertionError("Invocation stopped responding")),
     ):
         assert list(_invoke(runner, "你好")) == [Payload(value="你好")]
+        assert read_pipes == {runner.stdout_pipe_read}
+        assert runner.process.stdin is None
+        assert runner.process.stdout is None
+        assert runner.process.stderr is None
     assert runner.process.poll() is not None
     assert not runner.stdout_reader.is_alive()
-    assert runner.process.stdin.closed
-    assert runner.process.stdout.closed
+    _assert_pipes_closed(runner)
 
 
 @pytest.mark.parametrize(
@@ -229,22 +259,22 @@ def test_runner_cleans_packaged_source_directory(
 
 
 @pytest.mark.parametrize(
-    ("scenario", "error", "message"),
-    [
-        ("exit-before-ready", PluginStoppedError, None),
-        ("error-before-ready", ValueError, "startup failed"),
-        ("never-ready", TimeoutError, "Plugin failed to start"),
-    ],
+    "scenario", ["exit-before-ready", "error-before-ready", "never-ready"]
 )
-def test_startup_failure_exits_promptly_and_reaps_process(
+def test_startup_failure_preserves_timeout_and_reaps_process(
     local_cli: str,
     scenario: str,
-    error: type[Exception],
-    message: str | None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     processes = []
+    pipes = []
+    pipe = runner_module.os.pipe
     popen = runner_module.subprocess.Popen
+
+    def record_pipe() -> tuple[int, int]:
+        descriptors = pipe()
+        pipes.extend(descriptors)
+        return descriptors
 
     def record_process(
         *args: object, **kwargs: object
@@ -254,23 +284,28 @@ def test_startup_failure_exits_promptly_and_reaps_process(
         return process
 
     config = IntegrationConfig(dify_cli_path=local_cli, _env_file=None)
+    monkeypatch.setattr(runner_module.os, "pipe", record_pipe)
     monkeypatch.setattr(runner_module.subprocess, "Popen", record_process)
-    if scenario == "never-ready":
-        semaphore = runner_module.Semaphore(0)
-        acquire = semaphore.acquire
-        monkeypatch.setattr(
-            semaphore, "acquire", lambda **_kwargs: acquire(timeout=0.05)
-        )
-        monkeypatch.setattr(runner_module, "Semaphore", lambda _value: semaphore)
+    semaphore = runner_module.Semaphore(0)
+    acquire = semaphore.acquire
+
+    def acquire_ready(*, timeout: float) -> bool:
+        assert timeout == 30
+        return acquire(timeout=0.2)
+
+    monkeypatch.setattr(semaphore, "acquire", acquire_ready)
+    monkeypatch.setattr(runner_module, "Semaphore", lambda _value: semaphore)
     with (
         gevent.Timeout(2, AssertionError("Constructor did not notice child exit")),
-        pytest.raises(error, match=message),
+        pytest.raises(TimeoutError, match="Plugin failed to start within 30 seconds"),
     ):
         PluginRunner(config, "fixture.difypkg", extra_args=["--scenario", scenario])
     assert len(processes) == 1
     assert processes[0].poll() is not None
-    assert processes[0].stdin.closed
-    assert processes[0].stdout.closed
+    gevent.sleep(0.001)
+    for fd in pipes[:6]:
+        with pytest.raises(OSError, match="Bad file descriptor"):
+            os.fstat(fd)
 
 
 def test_packaging_failure_removes_temporary_directory(
@@ -295,16 +330,33 @@ def test_packaging_failure_removes_temporary_directory(
     assert not temporary_paths[0].exists()
 
 
-def test_runner_kills_process_that_ignores_termination(
-    local_cli: str, monkeypatch: pytest.MonkeyPatch
+def test_runner_waits_for_graceful_shutdown(
+    local_cli: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    with PluginRunner(
+    gate = tmp_path / "allow-shutdown"
+    runner = PluginRunner(
         IntegrationConfig(dify_cli_path=local_cli, _env_file=None),
         "fixture.difypkg",
-        extra_args=["--scenario", "ignore-termination"],
-    ) as runner:
-        wait = runner.process.wait
-        monkeypatch.setattr(runner.process, "wait", lambda **_kwargs: wait(timeout=0.1))
+        extra_args=["--scenario", "graceful-termination", str(gate)],
+    )
+    wait = runner.process.wait
+
+    def wait_for_exit(timeout: float | None = None) -> int:
+        assert timeout is None
+        return wait(timeout=timeout)
+
+    monkeypatch.setattr(runner.process, "wait", wait_for_exit)
+    closing = gevent.spawn(runner._close)
+    try:
+        with gevent.Timeout(2):
+            while not gate.with_suffix(".started").exists():
+                gevent.sleep(0.01)
+        assert not closing.ready()
+        assert runner.process.poll() is None
+    finally:
+        gate.touch()
+        closing.get(timeout=2)
+    assert gate.with_suffix(".completed").exists()
     assert runner.process.poll() is not None
     assert not runner.stdout_reader.is_alive()
 
@@ -341,8 +393,7 @@ def test_concurrent_context_exits_wait_for_resource_cleanup(
             second.result(timeout=2)
     assert runner.process.poll() is not None
     assert not runner.stdout_reader.is_alive()
-    assert runner.process.stdin.closed
-    assert runner.process.stdout.closed
+    _assert_pipes_closed(runner)
     assert not package.parent.exists()
 
 

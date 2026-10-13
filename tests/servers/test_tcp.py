@@ -158,7 +158,7 @@ def test_tcp_preserves_frames_metadata_and_split_utf8(
     wire = b"\n" + json.dumps(payload, ensure_ascii=False).encode() + b"\r\n \n"
     wire += json.dumps(second).encode() + b"\n"
     monkeypatch.setattr(
-        reader, "_recv_from_sock", lambda sock, size: sock.recv(min(size, chunk_size))
+        reader, "_recv_from_sock", lambda size: reader.sock.recv(min(size, chunk_size))
     )
     peer.sendall(wire)
     stream = reader._read_stream()
@@ -232,8 +232,8 @@ def test_tcp_idle_read_can_be_followed_by_data(
     idle = Event()
     read_data = reader._read_data
 
-    def observe_idle_read(sock: socket.socket) -> bytes | None:
-        data = read_data(sock)
+    def observe_idle_read() -> bytes | None:
+        data = read_data()
         if data is None:
             idle.set()
         return data
@@ -272,10 +272,10 @@ def test_tcp_read_handles_only_retryable_socket_errors(
     )
 
     if error_number == errno.EAGAIN:
-        assert reader._read_data(reader.sock) is None
+        assert reader._read_data() is None
     else:
         with pytest.raises(BlockingIOError) as error:
-            reader._read_data(reader.sock)
+            reader._read_data()
         assert error.value.errno == error_number
 
 
@@ -364,12 +364,12 @@ def test_tcp_concurrent_partial_writes_keep_complete_payloads(
     send = reader._write_to_sock
     blocked = False
 
-    def send_part(sock: socket.socket, data: bytes) -> int:
+    def send_part(data: bytes) -> int:
         nonlocal blocked
         if not blocked:
             blocked = True
             raise BlockingIOError(errno.EAGAIN, "try again")
-        sent = send(sock, data[:3])
+        sent = send(data[:3])
         gevent.sleep(0)
         return sent
 
@@ -392,7 +392,7 @@ def test_tcp_concurrent_partial_writes_keep_complete_payloads(
             writer.kill()
 
 
-def test_tcp_zero_byte_send_is_reported_as_connection_failure(
+def test_tcp_zero_byte_send_reconnects(
     monkeypatch: pytest.MonkeyPatch, connected: tuple[TCPReaderWriter, socket.socket]
 ) -> None:
     reader, _peer = connected
@@ -403,8 +403,8 @@ def test_tcp_zero_byte_send_is_reported_as_connection_failure(
     )
     monkeypatch.setattr(reader, "_launch", Mock())
 
-    with pytest.raises(ConnectionError, match="Connection is closed"):
-        reader.write("payload")
+    assert reader.write("payload") is None
+    reader._launch.assert_called_once_with()
 
 
 @pytest.mark.parametrize(
@@ -415,7 +415,7 @@ def test_tcp_zero_byte_send_is_reported_as_connection_failure(
     ],
     ids=["broken-pipe", "nonretryable-blocking-error"],
 )
-def test_tcp_write_failure_reconnects_but_reports_unsent_payload(
+def test_tcp_write_failure_returns_after_successful_reconnect(
     monkeypatch: pytest.MonkeyPatch,
     tcp_reader: TCPReaderWriter,
     listener: socket.socket,
@@ -431,9 +431,7 @@ def test_tcp_write_failure_reconnects_but_reports_unsent_payload(
             "_write_to_sock",
             Mock(side_effect=write_error),
         )
-        with pytest.raises(OSError, match="write failed") as error:
-            tcp_reader.write("unsent payload\n")
-        assert error.value is write_error
+        assert tcp_reader.write("unsent payload\n") is None
         assert old_socket.fileno() == -1
         monkeypatch.setattr(tcp_reader, "_write_to_sock", send)
         second_peer, _address = listener.accept()
@@ -472,7 +470,7 @@ def test_cancelled_partial_write_closes_connection_and_preserves_cancellation(
     first_read = True
     attempts = 0
 
-    def read(sock: socket.socket) -> bytes | None:
+    def read() -> bytes | None:
         nonlocal first_read
         if first_read:
             first_read = False
@@ -480,7 +478,7 @@ def test_cancelled_partial_write_closes_connection_and_preserves_cancellation(
             assert resume_read.wait(timeout=2)
             if pending_read == "idle":
                 return None
-        return read_data(sock)
+        return read_data()
 
     def reconnect(address: tuple[str, int]) -> socket.socket:
         nonlocal attempts
@@ -489,8 +487,8 @@ def test_cancelled_partial_write_closes_connection_and_preserves_cancellation(
         assert resume_reconnect.wait(timeout=2)
         return connect(address)
 
-    def send_part(sock: socket.socket, data: bytes) -> int:
-        sent = send(sock, data[:3])
+    def send_part(data: bytes) -> int:
+        sent = send(data[:3])
         sent_prefix.set()
         resume.wait()
         return sent
@@ -576,10 +574,10 @@ def test_tcp_close_during_write_reports_error_without_reconnecting(
     entered, resume = Event(), Event()
     send = reader._write_to_sock
 
-    def wait_for_close(sock: socket.socket, data: bytes) -> int:
+    def wait_for_close(data: bytes) -> int:
         entered.set()
         assert resume.wait(timeout=1)
-        return send(sock, data)
+        return send(data)
 
     monkeypatch.setattr(reader, "_write_to_sock", wait_for_close)
     writer = gevent.spawn(reader.write, "pending payload")
@@ -598,18 +596,25 @@ def test_tcp_close_during_write_reports_error_without_reconnecting(
         writer.kill()
 
 
-def test_closed_tcp_reader_does_not_open_new_connection(
-    tcp_reader: TCPReaderWriter, listener: socket.socket
+@pytest.mark.parametrize("close_first", [False, True])
+def test_explicit_launch_reopens_or_replaces_connection(
+    tcp_reader: TCPReaderWriter, listener: socket.socket, close_first: bool
 ) -> None:
-    tcp_reader.close()
-
     tcp_reader.launch()
-
-    assert not tcp_reader.alive
-    assert list(tcp_reader._read_stream()) == []
-    listener.settimeout(0.01)
-    with pytest.raises(TimeoutError):
-        listener.accept()
+    first_socket = tcp_reader.sock
+    first_peer, _address = listener.accept()
+    with first_peer:
+        if close_first:
+            tcp_reader.close()
+        tcp_reader.launch()
+        assert tcp_reader.alive
+        assert first_socket.fileno() == -1
+        second_peer, _address = listener.accept()
+        with second_peer, second_peer.makefile("rb") as stream:
+            second_peer.settimeout(1)
+            assert json.loads(stream.readline())["type"] == "handshake"
+            tcp_reader.write("after launch\n")
+            assert stream.readline() == b"after launch\n"
 
 
 def test_registration_write_failure_respects_connection_attempt_limit(
@@ -698,7 +703,7 @@ def test_read_loop_survives_idle_read_during_write_reconnection(
     first_read = True
     subscriber = reader.read(lambda _message: True)
 
-    def read(sock: socket.socket) -> bytes | None:
+    def read() -> bytes | None:
         nonlocal first_read
         if first_read:
             first_read = False
@@ -706,7 +711,7 @@ def test_read_loop_survives_idle_read_during_write_reconnection(
             assert connecting.wait(timeout=1)
             idle_returned.set()
             return None
-        return read_data(sock)
+        return read_data()
 
     def connect(_address: tuple[str, int]) -> socket.socket:
         connecting.set()
@@ -729,8 +734,7 @@ def test_read_loop_survives_idle_read_during_write_reconnection(
         assert not loop.ready()
         assert not reader._closed
         resume_connect.set()
-        with pytest.raises(BrokenPipeError, match="write failed"):
-            writer.get(timeout=1)
+        assert writer.get(timeout=1) is None
         replacement_peer.sendall(
             b'{"session_id":"new-connection","event":"request","data":{}}\n'
         )
@@ -762,7 +766,7 @@ def test_stale_read_cannot_close_or_corrupt_replacement_connection(
     read_data = reader._read_data
     reads = 0
 
-    def read(sock: socket.socket) -> bytes | None:
+    def read() -> bytes | None:
         nonlocal reads
         reads += 1
         if reads == 1:
@@ -773,7 +777,7 @@ def test_stale_read_cannot_close_or_corrupt_replacement_connection(
             if isinstance(stale_result, OSError):
                 raise stale_result
             return stale_result
-        return read_data(sock)
+        return read_data()
 
     connect = Mock(side_effect=[replacement])
     monkeypatch.setattr(reader, "_read_data", read)
@@ -785,8 +789,7 @@ def test_stale_read_cannot_close_or_corrupt_replacement_connection(
     consumer = gevent.spawn(next, stream)
     try:
         assert pending_read.wait(timeout=1)
-        with pytest.raises(BrokenPipeError, match="write failed"):
-            reader.write("failed payload")
+        assert reader.write("failed payload") is None
         replacement_peer.sendall(
             b'{"session_id":"first-after-reconnect","event":"request","data":{}}\n'
             b'{"session_id":"second-after-reconnect","event":"request","data":{}}\n'
@@ -861,13 +864,13 @@ def test_connection_recovers_from_one_registration_write_failure(
     first_write = True
     send = tcp_reader._write_to_sock
 
-    def fail_first_write(sock: socket.socket, data: bytes) -> int:
+    def fail_first_write(data: bytes) -> int:
         nonlocal first_write
         if first_write:
             first_write = False
             msg = "first registration failed"
             raise BrokenPipeError(msg)
-        return send(sock, data)
+        return send(data)
 
     monkeypatch.setattr(
         tcp_module.gevent_socket,
@@ -937,19 +940,19 @@ def test_read_reconnection_waits_for_complete_pending_write(
     read_data = reader._read_data
     first_write = True
 
-    def send_part(sock: socket.socket, data: bytes) -> int:
+    def send_part(data: bytes) -> int:
         nonlocal first_write
         if first_write:
             first_write = False
-            sent = send(sock, data[:3])
+            sent = send(data[:3])
             sent_prefix.set()
             assert resume_write.wait(timeout=1)
             return sent
-        return send(sock, data)
+        return send(data)
 
-    def read(sock: socket.socket) -> bytes | None:
+    def read() -> bytes | None:
         try:
-            return read_data(sock)
+            return read_data()
         except Exception:
             read_failed.set()
             raise

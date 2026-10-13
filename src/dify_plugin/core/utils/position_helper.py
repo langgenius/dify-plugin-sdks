@@ -23,8 +23,8 @@ def get_position_map(
     position_map = {}
     index = 0
     for name in positions:
-        if isinstance(name, str) and (name := name.strip()):
-            position_map[name] = index
+        if name and isinstance(name, str):
+            position_map[name.strip()] = index
             index += 1
     return position_map
 

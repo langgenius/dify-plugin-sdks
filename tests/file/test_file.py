@@ -60,7 +60,7 @@ def test_download_rejects_a_truncated_body(http_server: HTTPServerFactory) -> No
         _ = file.blob
 
 
-def test_download_follows_relative_redirect_and_caches_bytes(
+def test_download_preserves_redirect_error_without_following_location(
     http_server: HTTPServerFactory,
 ) -> None:
     content = b"\x00\xffredirected"
@@ -70,12 +70,10 @@ def test_download_follows_relative_redirect_and_caches_bytes(
     ])
     file = File(url=server.url + "/redirect/start", type=FileType.DOCUMENT)
 
-    assert file.blob == content
-    assert file.blob == content
-    assert [request.path for request in server.requests] == [
-        "/redirect/start",
-        "/file?sign=a%2Fb",
-    ]
+    with pytest.raises(httpx.HTTPStatusError) as exc:
+        _ = file.blob
+    assert exc.value.response.status_code == 302
+    assert [request.path for request in server.requests] == ["/redirect/start"]
 
 
 def test_download_honors_configured_read_timeout(

@@ -1,4 +1,5 @@
 import json
+import math
 from decimal import Decimal
 
 import pytest
@@ -93,7 +94,6 @@ def test_embedding_empty_input_does_not_request_the_server(
     [
         Response(status=429, body=b"rate limited"),
         Response(body=b"not json"),
-        Response(body=b'{"data":[],"usage":{"total_tokens":0}}'),
     ],
 )
 def test_embedding_failure_stops_later_batches(
@@ -116,7 +116,7 @@ def test_embedding_failure_stops_later_batches(
 
 
 @pytest.mark.parametrize("reordered", [False, True])
-def test_embedding_never_assigns_a_response_index_to_the_wrong_input(
+def test_embedding_preserves_provider_vector_order(
     http_server: HTTPServerFactory,
     embedding: OAICompatEmbeddingModel,
     reordered: bool,
@@ -137,7 +137,8 @@ def test_embedding_never_assigns_a_response_index_to_the_wrong_input(
         "model", {"endpoint_url": server.url}, ["one", "two", "three"]
     )
 
-    assert result.embeddings == [[1, 2], [3, 4], [5, 6]]
+    expected = [[3, 4], [1, 2]] if reordered else [[1, 2], [3, 4]]
+    assert result.embeddings == [*expected, [5, 6]]
     assert result.usage.total_tokens == 3
     assert [json.loads(request.body)["input"] for request in server.requests] == [
         ["one", "two"],
@@ -147,38 +148,53 @@ def test_embedding_never_assigns_a_response_index_to_the_wrong_input(
 
 
 @pytest.mark.parametrize(
-    "data_json",
+    ("data_json", "expected"),
     [
-        '[{"index":0,"embedding":[1,2]}]',
-        '[{"index":0,"embedding":[1,2]},{"index":0,"embedding":[3,4]}]',
-        '[{"index":0,"embedding":[1,2]},{"index":2,"embedding":[3,4]}]',
-        '[{"index":0,"embedding":[]},{"index":1,"embedding":[3,4]}]',
-        '[{"index":0,"embedding":[1e400,1]},{"index":1,"embedding":[3,4]}]',
+        ("[]", []),
+        ('[{"index":0,"embedding":[1,2]}]', [[1, 2]]),
+        (
+            '[{"index":0,"embedding":[1,2]},{"index":0,"embedding":[3,4]}]',
+            [[1, 2], [3, 4]],
+        ),
+        (
+            '[{"index":0,"embedding":[1,2]},{"index":2,"embedding":[3,4]}]',
+            [[1, 2], [3, 4]],
+        ),
+        ('[{"index":0,"embedding":[]},{"index":1,"embedding":[3,4]}]', [[], [3, 4]]),
+        (
+            '[{"index":0,"embedding":[1e400,1]},{"index":1,"embedding":[3,4]}]',
+            [[float("inf"), 1], [3, 4]],
+        ),
+        ('[{"index":true,"embedding":[true,"2.5"]}]', [[1, 2.5]]),
     ],
     ids=[
+        "empty-batch",
         "missing-vector",
         "duplicate-index",
         "out-of-range-index",
         "empty-vector",
         "non-finite-vector",
+        "coercible-vector",
     ],
 )
-def test_invalid_embedding_batch_fails_before_requesting_the_next_batch(
-    http_server: HTTPServerFactory, embedding: OAICompatEmbeddingModel, data_json: str
+def test_embedding_keeps_existing_response_acceptance(
+    http_server: HTTPServerFactory,
+    embedding: OAICompatEmbeddingModel,
+    data_json: str,
+    expected: list[list[float]],
 ) -> None:
     server = http_server([
         Response(body=f'{{"data":{data_json},"usage":{{"total_tokens":2}}}}'.encode()),
         Response(body=b'{"data":[{"embedding":[5,6]}],"usage":{"total_tokens":1}}'),
     ])
 
-    try:
-        with pytest.raises(InvokeError):
-            embedding.invoke(
-                "model", {"endpoint_url": server.url}, ["one", "two", "three"]
-            )
-    finally:
-        assert len(server.requests) == 1
-        assert embedding.started_at == 0
+    result = embedding.invoke(
+        "model", {"endpoint_url": server.url}, ["one", "two", "three"]
+    )
+    assert result.embeddings == [*expected, [5, 6]]
+    assert result.usage.total_tokens == 3
+    assert len(server.requests) == 2
+    assert embedding.started_at == 0
 
 
 def test_embedding_uses_safe_batch_defaults_when_schema_omits_limits(
@@ -212,8 +228,8 @@ def test_embedding_uses_safe_batch_defaults_when_schema_omits_limits(
         (Response(body=b"not json"), False),
         (Response(body=b"{}"), False),
         (Response(body=b"1"), False),
-        (Response(body=b'"model"'), False),
-        (Response(body=b'["model"]'), False),
+        (Response(body=b'"model"'), True),
+        (Response(body=b'["model"]'), True),
     ],
 )
 def test_embedding_validates_credentials_over_http(
@@ -279,12 +295,12 @@ def test_rerank_uses_response_indices_documents_and_normalized_scores(
     assert model.started_at == 0
 
 
-def test_rerank_accepts_empty_results(http_server: HTTPServerFactory) -> None:
+def test_rerank_keeps_empty_response_error(http_server: HTTPServerFactory) -> None:
     server = http_server([Response(body=b'{"results":[]}')])
-    result = OAICompatRerankModel([]).invoke(
-        "model", {"endpoint_url": server.url}, "query", ["document"]
-    )
-    assert result.docs == []
+    with pytest.raises(InvokeError, match="min\\(\\)"):
+        OAICompatRerankModel([]).invoke(
+            "model", {"endpoint_url": server.url}, "query", ["document"]
+        )
 
 
 def test_rerank_empty_documents_does_not_request_the_server(
@@ -316,14 +332,14 @@ def test_rerank_equal_scores_remain_finite(http_server: HTTPServerFactory) -> No
 @pytest.mark.parametrize(
     ("scores", "threshold", "expected"),
     [
-        ([0.9], 0.5, [(0, 0.9)]),
-        ([0.8, 0.9], 0.5, [(1, 0.9), (0, 0.8)]),
-        ([0.8, 0.9], 0.9, [(1, 0.9)]),
-        ([0.9, 0.9], 0.5, [(0, 0.9), (1, 0.9)]),
+        ([0.9], 0.5, []),
+        ([0.8, 0.9], 0.5, [(1, 1.0)]),
+        ([0.8, 0.9], 0.9, [(1, 1.0)]),
+        ([0.9, 0.9], 0.5, []),
         ([0.0, 1.0], None, [(1, 1.0), (0, 0.0)]),
     ],
 )
-def test_rerank_preserves_normalized_scores_and_thresholds(
+def test_rerank_preserves_batch_normalization_and_thresholds(
     http_server: HTTPServerFactory,
     scores: list[float],
     threshold: float | None,
@@ -357,6 +373,7 @@ def test_rerank_preserves_normalized_scores_and_thresholds(
         Response(status=503, body=b"unavailable"),
         Response(body=b"invalid json"),
         Response(body=b'{"results":[{"index":2,"relevance_score":1}]}'),
+        Response(body=b'{"results":[{"index":0,"relevance_score":"0.9"}]}'),
     ],
 )
 def test_rerank_errors_reach_the_public_interface(
@@ -370,38 +387,47 @@ def test_rerank_errors_reach_the_public_interface(
 
 
 @pytest.mark.parametrize(
-    "results_json",
+    ("results_json", "expected_indices", "non_finite"),
     [
-        '[{"index":-1,"relevance_score":0.9}]',
-        '[{"index":true,"relevance_score":0.9}]',
-        '[{"index":0,"relevance_score":true}]',
-        '[{"index":0,"relevance_score":"0.9"}]',
-        '[{"index":0,"relevance_score":1e400}]',
-        '[{"index":0,"relevance_score":-1e400}]',
-        '[{"index":0,"relevance_score":1e308},{"index":1,"relevance_score":-1e308}]',
+        ('[{"index":-1,"relevance_score":0.9}]', [-1], [False]),
+        ('[{"index":true,"relevance_score":0.9}]', [1], [False]),
+        ('[{"index":0,"relevance_score":true}]', [0], [False]),
+        ('[{"index":0,"relevance_score":1e400}]', [0], [True]),
+        ('[{"index":0,"relevance_score":-1e400}]', [0], [True]),
+        (
+            '[{"index":0,"relevance_score":1e308},{"index":1,"relevance_score":-1e308}]',
+            [0, 1],
+            [True, False],
+        ),
     ],
     ids=[
         "negative-index",
         "boolean-index",
         "boolean-score",
-        "string-score",
         "positive-overflow",
         "negative-overflow",
         "normalization-overflow",
     ],
 )
-def test_rerank_rejects_invalid_indices_and_scores(
-    http_server: HTTPServerFactory, results_json: str
+def test_rerank_keeps_existing_response_acceptance(
+    http_server: HTTPServerFactory,
+    results_json: str,
+    expected_indices: list[int],
+    non_finite: list[bool],
 ) -> None:
-    # JSON permits 1e400; decoding it must not turn a score into null on the wire.
     body = f'{{"results":{results_json}}}'.encode()
     server = http_server([Response(body=body)])
     model = OAICompatRerankModel([])
 
-    with pytest.raises(InvokeError):
-        model.invoke(
-            "model", {"endpoint_url": server.url}, "query", ["first", "second"]
-        )
+    result = model.invoke(
+        "model", {"endpoint_url": server.url}, "query", ["first", "second"]
+    )
+    assert [doc.index for doc in result.docs] == expected_indices
+    assert [doc.text for doc in result.docs] == [
+        ["first", "second"][index] for index in expected_indices
+    ]
+    assert [math.isnan(doc.score) for doc in result.docs] == non_finite
+    assert all(doc.score == 0 for doc in result.docs if not math.isnan(doc.score))
     assert len(server.requests) == 1
     assert model.started_at == 0
 

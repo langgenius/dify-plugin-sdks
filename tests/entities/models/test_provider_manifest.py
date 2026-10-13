@@ -62,3 +62,19 @@ def test_model_provider_manifest_can_be_reused_without_losing_globs(
     second = ModelProviderConfiguration.model_validate(data)
 
     assert first == second
+
+
+def test_model_providers_keep_updates_to_shared_position_data(
+    contract_source: Path,
+) -> None:
+    data = yaml.safe_load((contract_source / "models/provider.yaml").read_text())
+    data["models"]["llm"]["predefined"] = ["models/llm.yaml", "models/_position.yaml"]
+    data["position"] = {"llm": ["initial"]}
+    other_data = {**data, "models": {}}
+    (contract_source / "models/_position.yaml").write_text("- echo\n")
+
+    first = ModelProviderConfiguration.model_validate(data)
+    second = ModelProviderConfiguration.model_validate(other_data)
+
+    assert first.position.llm == ["echo"]
+    assert second.position.llm == ["echo"]

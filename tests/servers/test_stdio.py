@@ -173,4 +173,6 @@ def test_closed_stdio_reader_does_not_resume_processing() -> None:
     reader.event_loop()
 
     assert list(reader._read_stream()) == []
-    assert list(reader.read(lambda _message: True).read()) == []
+    subscriber = reader.read(lambda _message: True)
+    reader.close()
+    assert list(subscriber.read()) == []

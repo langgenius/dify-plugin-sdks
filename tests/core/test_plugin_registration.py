@@ -41,6 +41,25 @@ def test_subscription_constructor_loads_its_declared_source(
     assert constructor.__module__ == "triggers.constructor"
 
 
+def test_subscription_constructor_keeps_provider_source_precedence(
+    contract_source: Path,
+) -> None:
+    provider_file = contract_source / "triggers/events.yaml"
+    provider = yaml.safe_load(provider_file.read_text())
+    provider["subscription_constructor"]["extra"] = {
+        "python": {"source": "triggers/unused_missing_constructor.py"}
+    }
+    provider_file.write_text(yaml.safe_dump(provider))
+
+    registration = PluginRegistration(DifyPluginEnv())
+
+    constructor = registration.trigger_factory.get_subscription_constructor_cls(
+        "events"
+    )
+    assert constructor is not None
+    assert constructor.__module__ == "triggers.constructor"
+
+
 def test_subscription_constructor_requires_one_implementation(
     contract_source: Path,
 ) -> None:

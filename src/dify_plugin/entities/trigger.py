@@ -131,7 +131,7 @@ class EventParameter(BaseModel):
             "or dynamic-select type"
         ),
     )
-    default: int | float | str | bool | list | None = None
+    default: int | float | str | list | None = None
     min: float | int | None = None
     max: float | int | None = None
     precision: int | None = None
@@ -314,7 +314,8 @@ class TriggerSubscriptionConstructorConfiguration(BaseModel):
         if isinstance(original_credentials_schema, dict):
             credentials_schema: list[dict[str, Any]] = []
             for name, param in original_credentials_schema.items():
-                credentials_schema.append({**param, "name": name})
+                param["name"] = name
+                credentials_schema.append(param)
             normalised["credentials_schema"] = credentials_schema
         elif isinstance(original_credentials_schema, list):
             normalised["credentials_schema"] = original_credentials_schema
@@ -359,13 +360,13 @@ class TriggerProviderConfiguration(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_credentials_schema(cls, data: dict) -> dict:
-        data = data.copy()
         # Handle credentials_schema conversion from dict to list format
         original_credentials_schema = data.get("credentials_schema", [])
         if isinstance(original_credentials_schema, dict):
             credentials_schema: list[dict[str, Any]] = []
             for name, param in original_credentials_schema.items():
-                credentials_schema.append({**param, "name": name})
+                param["name"] = name
+                credentials_schema.append(param)
             data["credentials_schema"] = credentials_schema
         elif isinstance(original_credentials_schema, list):
             data["credentials_schema"] = original_credentials_schema

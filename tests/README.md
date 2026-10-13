@@ -25,7 +25,7 @@ just test -m integration
 Calling `pytest` directly can patch SSL too late and change the concurrency behavior under test.
 CI runs Python 3.12 with coverage and Python 3.13 without coverage.
 The process and socket fixtures are validated on Linux, matching CI.
-The [regression map](regressions.md) links corrected behavior to the tests that protect it.
+The [regression map](regressions.md) links resource fixes and existing compatibility behavior to their tests.
 Do not treat passing coverage thresholds as a passing test suite.
 
 ## Pytest dependencies
@@ -47,7 +47,7 @@ The reviewed mutation was applied in a temporary copy: discarding rerank inputs 
 Equivalent changes to mapping access, YAML path construction and registration list updates exposed tests that constrained internal call order; those assertions have been removed.
 Stream tests accept independent copies of response chunks and compare them with snapshots taken before invocation, so shared mutable objects cannot hide corrupted usage or metadata.
 Temporary mutations confirm that the tests accept serialization under a lock and reject interleaved frames or altered usage counts.
-Further mutations confirm that dispatch tests detect missing credentials and session context, CLI tests detect incorrect routing and error fields, and valid reordered embedding results must succeed.
+Further mutations confirm that dispatch tests detect missing credentials and session context and CLI tests detect incorrect routing and error fields.
 Mutation testing does not require another permanent dependency for these focused experiments.
 The socket guard does not sandbox child processes; process fixtures run the local contract plugin and CLI emulator.
 
@@ -100,12 +100,12 @@ Fixtures are based on these source revisions so that wire expectations can be ch
 - Official plugins: [`de2b2517039a9851fb1f056f06474fbf142154b9`](https://github.com/langgenius/dify-official-plugins/tree/de2b2517039a9851fb1f056f06474fbf142154b9).
 
 Additional test review uses Dify [`982c56b1fdd40fb8ce27259464d736744e7e1c83`](https://github.com/langgenius/dify/tree/982c56b1fdd40fb8ce27259464d736744e7e1c83) and official plugins [`e7db65b5cabcaca6c6abba3d437bf57bd73055d3`](https://github.com/langgenius/dify-official-plugins/tree/e7db65b5cabcaca6c6abba3d437bf57bd73055d3).
-The review checks embedding output against Dify's positional cache association, boolean defaults against its form fields, and trigger inputs against real webhook handlers.
-The embedding response test uses the valid JSON number `1e400` to detect overflow: SDK serialization changes the resulting infinity to `null`, which the daemon's numeric decoder accepts as zero.
-Agent boolean defaults follow the [strategy parameter mapping](https://github.com/langgenius/dify/blob/982c56b1fdd40fb8ce27259464d736744e7e1c83/web/app/components/workflow/nodes/_base/components/agent-strategy.tsx#L125) into a [form field that requires a boolean](https://github.com/langgenius/dify/blob/982c56b1fdd40fb8ce27259464d736744e7e1c83/web/app/components/header/account-setting/model-provider-page/model-modal/Form.tsx#L402); serializing them as zero or one loses the selected default.
+The review checks embedding output, manifest defaults and trigger inputs against real consumers.
+Compatibility assertions retain the SDK's existing response ordering and numeric serialization of boolean defaults.
 Webhook fixtures follow Dify's [decoded request serialization](https://github.com/langgenius/dify/blob/982c56b1fdd40fb8ce27259464d736744e7e1c83/api/core/plugin/utils/http_parser.py#L7), Twilio's [form handling](https://github.com/langgenius/dify-official-plugins/blob/e7db65b5cabcaca6c6abba3d437bf57bd73055d3/triggers/twilio_trigger/provider/twilio.py#L74), and Discord's [signature input](https://github.com/langgenius/dify-official-plugins/blob/e7db65b5cabcaca6c6abba3d437bf57bd73055d3/triggers/discord_trigger/provider/discord.py#L41).
 The subsequent review checks current consumers in Dify [`6b9bb4c7e8aac7f7930a2d25d3f3ae9fb3f2a217`](https://github.com/langgenius/dify/tree/6b9bb4c7e8aac7f7930a2d25d3f3ae9fb3f2a217) and official plugins [`24d1b811877408af1b5dfc2bf1cd2a3ec17d91df`](https://github.com/langgenius/dify-official-plugins/tree/24d1b811877408af1b5dfc2bf1cd2a3ec17d91df).
-Rerank assertions follow Jina's [unmodified relevance scores](https://github.com/langgenius/dify-official-plugins/blob/24d1b811877408af1b5dfc2bf1cd2a3ec17d91df/models/jina/models/rerank/rerank.py#L92) and Dify's [score threshold and document association](https://github.com/langgenius/dify/blob/6b9bb4c7e8aac7f7930a2d25d3f3ae9fb3f2a217/api/core/rag/rerank/rerank_model.py#L57).
+Dify applies [score thresholds](https://github.com/langgenius/dify/blob/6b9bb4c7e8aac7f7930a2d25d3f3ae9fb3f2a217/api/core/rag/rerank/rerank_model.py#L57) to rerank output, so changing SDK score normalization would change existing retrieval results.
+Tests retain the SDK's original min/max normalization for every batch.
 
 | Contract | Source |
 | --- | --- |
@@ -118,24 +118,32 @@ Rerank assertions follow Jina's [unmodified relevance scores](https://github.com
 
 When changing one of these contracts, inspect the corresponding consumer and update the request and response assertions together.
 
-Datasource document content and drive downloads upload blob bytes through `session.file.upload` and emit the existing `binary_link` or `image_link` message.
-The referenced Dify datasource consumer already resolves these file links; no consumer change is required.
-This path requires access to Dify's signed file-upload endpoint and inherits its upload policy and the SDK's 10-second upload timeout.
-HTTP regressions verify empty, small, image and 4 MiB uploads, metadata, and failure propagation for both datasource actions.
-Tool and agent blob frames preserve the empty terminal chunk, metadata and input object, and stay below the daemon's default 5 MiB line limit for a 4 MiB payload.
+## Compatibility baseline
+
+Existing behavior is checked against SDK `main` at `86e81e72`.
+Changes to accepted values, output types, numerical policies and required services need separate consideration from resource fixes.
+The suite pins these behaviors explicitly:
+
+- Blocking LLM calls return text strings, retain the requested model and use the existing usage aggregation; streaming calls preserve their original chunks.
+- Provider response handlers retain four-argument signatures, structured-output processor hooks and their original fallback token accounting.
+- Rerank normalizes every batch, including bounded, single and equal scores; embedding vectors retain response order and established coercion.
+- Numeric parameters, required defaults and template defaults follow the existing validation rules; manifest boolean defaults retain their numeric output types.
+- Structured calls use the existing processor selection, stop sequences and regular-expression matching.
+- Shared prompts, blob metadata and Agent usage objects retain their existing update behavior.
+- Datasource and agent blob messages pass through unchanged without automatic uploads; tool blob chunks retain their empty terminal frame.
+- WAV chunks are yielded as each provider response arrives, preserving its bytes.
+- Stream EOF, backwards-invocation timeouts, serverless expiry, storage acknowledgements and TCP reconnect results retain their existing acceptance and error behavior.
+- File redirects still raise HTTP status errors, repeated request headers retain the last value, and trigger registration prioritizes the constructor exported by the provider module.
+
+These assertions intentionally preserve limitations in the baseline.
+A 4 MiB datasource or agent blob can exceed the daemon's default 5 MiB JSON line limit after base64 encoding; changing its transport requires a separate compatible protocol design.
+Tool blobs use bounded chunks and stay below that limit.
 Initialization assets with no bytes emit no chunks because the daemon requires nonempty asset data.
+Rerank does not infer whether scores are logits or normalized probabilities.
+Blocking LLM aggregation retains its existing text-only result and does not require changes in downstream text consumers.
 
-Response handler dispatch preserves the four-argument override contract used by DeepSeek, GPUStack, Moonshot, OpenAI API Compatible, OpenRouter, StepFun and LiteLLM.
-The base handlers read tool definitions from the prepared HTTP request when calculating missing usage, including definitions injected by a provider.
-Server-reported zero counts are preserved and the base streaming handler rejects incomplete streams.
-Providers that replace the base handlers retain their own parsing and accounting behavior.
-
-Serverless idle expiry emits an error followed by an end frame, and client disconnect cancels the request's provider task.
-Backwards-invocation idle time counts business responses, so blank heartbeat lines cannot keep a silent invocation alive forever.
-Cancelling a partial TCP write closes that socket before propagating cancellation; reconnection runs in the read loop so it cannot delay the cancelled caller.
-Rerank scores already in `[0, 1]` are preserved, while batches containing values outside that interval retain min/max normalization.
-The response does not distinguish raw logits that happen to fall inside `[0, 1]`; those values are preserved too.
-When TTS splits WAV output, the SDK validates and combines PCM frames into one WAV file before yielding it; this requires buffering that output.
+Resource tests separately verify that completion, failures, cancellation and reader shutdown release owned resources.
+Cancelling a partial TCP write closes its socket before propagating cancellation; reconnection runs in the read loop so it cannot delay the cancelled caller.
 
 ## Fixtures and isolation
 

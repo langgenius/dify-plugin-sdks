@@ -1,3 +1,5 @@
+from types import MappingProxyType
+
 import pytest
 from pydantic import ValidationError
 
@@ -38,22 +40,30 @@ def test_subscription_credentials_support_repeated_normalization(
     assert first.oauth_schema.client_schema[0].name == "client_id"
 
 
-def test_subscription_credentials_do_not_alias_shared_yaml_mapping() -> None:
+@pytest.mark.parametrize("immutable_field", [None, "label", "ignored"])
+def test_subscription_credentials_keep_legacy_shared_yaml_mapping_names(
+    immutable_field: str | None,
+) -> None:
     credential = {"type": "secret-input", "label": {"en_US": "Token"}}
+    if immutable_field == "label":
+        credential["label"] = MappingProxyType(credential["label"])
     data = {
         "credentials_schema": {"access_token": credential, "refresh_token": credential}
     }
+    if immutable_field == "ignored":
+        data["unused"] = MappingProxyType({})
 
     result = TriggerSubscriptionConstructorConfiguration.model_validate(data)
 
     assert [item.name for item in result.credentials_schema] == [
-        "access_token",
+        "refresh_token",
         "refresh_token",
     ]
+    assert TriggerSubscriptionConstructorConfiguration.model_validate(data) == result
 
 
-@pytest.mark.parametrize("data", [[], "constructor", 42])
-def test_subscription_constructor_rejects_non_mapping_configuration(
+@pytest.mark.parametrize("data", [[], "constructor", 42, MappingProxyType({})])
+def test_subscription_constructor_rejects_non_dict_configuration(
     data: object,
 ) -> None:
     with pytest.raises((TypeError, ValidationError)):
@@ -82,9 +92,10 @@ def test_subscription_constructor_accepts_no_authentication(data: object) -> Non
     assert result.oauth_schema is None or result.oauth_schema.client_schema == []
 
 
-@pytest.mark.parametrize("default", [False, True])
-def test_subscription_manifest_preserves_boolean_parameter_default(
+@pytest.mark.parametrize(("default", "expected"), [(False, 0), (True, 1)])
+def test_subscription_manifest_keeps_legacy_numeric_boolean_defaults(
     default: bool,
+    expected: int,
 ) -> None:
     # Google Calendar declares this as a boolean in its subscription constructor.
     result = TriggerSubscriptionConstructorConfiguration.model_validate({
@@ -98,4 +109,6 @@ def test_subscription_manifest_preserves_boolean_parameter_default(
         ]
     })
 
-    assert result.model_dump(mode="json")["parameters"][0]["default"] is default
+    serialized = result.model_dump(mode="json")["parameters"][0]["default"]
+    assert type(serialized) is int
+    assert serialized == expected

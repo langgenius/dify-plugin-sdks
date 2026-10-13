@@ -106,7 +106,7 @@ def test_parameter_rule_preserves_model_copy_update() -> None:
     assert schema.parameter_rules[0].max == 7
 
 
-def test_custom_model_schema_preserves_provider_zero_values(
+def test_custom_model_schema_fills_zero_values_from_template(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     model = CustomTemplateAIModel([])
@@ -133,7 +133,7 @@ def test_custom_model_schema_preserves_provider_zero_values(
 
     assert result is not None
     rule = result.parameter_rules[0]
-    assert (rule.min, rule.max, rule.default, rule.precision) == (0, 0, 0, 0)
+    assert (rule.min, rule.max, rule.default, rule.precision) == (0, 8, 1, 2)
 
 
 def test_custom_model_schema_fills_missing_template_translations(

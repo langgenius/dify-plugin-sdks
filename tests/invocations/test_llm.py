@@ -81,7 +81,7 @@ def llm_response() -> dict:
 )
 @pytest.mark.parametrize("stream", [False, True])
 @pytest.mark.parametrize("dict_config", [False, True])
-def test_llm_preserves_dify_result_and_request(
+def test_llm_keeps_legacy_result_and_request(
     record_invocation: RecordInvocation,
     llm_response: dict,
     invocation_type: type[LLMInvocation | LLMStructuredOutputInvocation],
@@ -135,13 +135,19 @@ def test_llm_preserves_dify_result_and_request(
     else:
         assert isinstance(result, LLMResult)
         assert result.message == AssistantPromptMessage(
-            **llm_response["delta"]["message"]
+            content="你好", tool_calls=llm_response["delta"]["message"]["tool_calls"]
         )
-        assert result.usage == LLMUsage(**llm_response["delta"]["usage"])
-        assert result.model == "resolved-model"
-        assert result.system_fingerprint == "provider-revision"
+        assert result.usage == LLMUsage(**{
+            **llm_response["delta"]["usage"],
+            "prompt_unit_price": "0.0",
+            "prompt_price_unit": "0.0",
+            "completion_unit_price": "0.0",
+            "completion_price_unit": "0.0",
+        })
+        assert result.model == "requested-model"
+        assert result.system_fingerprint is None
         if isinstance(result, LLMResultWithStructuredOutput):
-            assert result.structured_output == {}
+            assert result.structured_output is None
 
     assert recorded.requests == [(invoke_type, response_type, expected)]
     assert recorded.closed
@@ -156,12 +162,36 @@ def test_llm_joins_text_chunks_and_keeps_terminal_usage(
     invocation = LLMStructuredOutputInvocation() if structured else LLMInvocation()
     first = {
         "model": "model",
-        "delta": {"index": 0, "message": {"role": "assistant", "content": "first "}},
+        "delta": {
+            "index": 0,
+            "message": {"role": "assistant", "content": "first "},
+            "usage": {
+                **llm_response["delta"]["usage"],
+                "prompt_tokens": 2,
+                "completion_tokens": 1,
+                "total_tokens": 3,
+                "total_price": "0.001",
+            },
+        },
     }
     terminal = deepcopy(llm_response)
     terminal["delta"]["message"]["content"] = "last"
     terminal["structured_output"] = {"answer": "first last"}
-    recorded = record_invocation(invocation, [first, terminal])
+    recorded = record_invocation(
+        invocation,
+        [
+            first,
+            terminal,
+            {
+                "model": "model",
+                "delta": {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": None},
+                },
+                "structured_output": {},
+            },
+        ],
+    )
     arguments = {
         "model_config": {"provider": "provider", "model": "model", "mode": "chat"},
         "prompt_messages": [],
@@ -174,7 +204,9 @@ def test_llm_joins_text_chunks_and_keeps_terminal_usage(
 
     assert isinstance(result, LLMResult)
     assert result.message.content == "first last"
-    assert result.usage.total_tokens == 7
+    assert result.usage.prompt_tokens == 7
+    assert result.usage.completion_tokens == 3
+    assert result.usage.total_tokens == 10
     assert (
         result.usage.total_price
         == LLMUsage(**llm_response["delta"]["usage"]).total_price
@@ -188,6 +220,7 @@ def test_llm_joins_text_chunks_and_keeps_terminal_usage(
 
 
 @pytest.mark.parametrize("structured", [False, True])
+@pytest.mark.parametrize("stream", [False, True])
 @pytest.mark.parametrize(
     "chunk_order",
     [
@@ -200,8 +233,11 @@ def test_llm_joins_text_chunks_and_keeps_terminal_usage(
         "terminal-empty",
     ],
 )
-def test_llm_keeps_multimodal_content_in_response_order(
-    record_invocation: RecordInvocation, structured: bool, chunk_order: str
+def test_llm_keeps_legacy_content_shape_for_each_stream_mode(
+    record_invocation: RecordInvocation,
+    structured: bool,
+    stream: bool,
+    chunk_order: str,
 ) -> None:
     image = {
         "type": "image",
@@ -212,19 +248,19 @@ def test_llm_keeps_multimodal_content_in_response_order(
     }
     text = {"type": "text", "data": "Here is the image"}
     if chunk_order == "multimodal":
-        contents, expected = [[text, image]], [text, image]
+        contents, expected = [[text, image]], ""
     elif chunk_order == "text-image":
-        contents, expected = [text["data"], [image]], [text, image]
+        contents, expected = [text["data"], [image]], "Here is the image"
     elif chunk_order == "image-text":
-        contents, expected = [[image], text["data"]], [image, text]
+        contents, expected = [[image], text["data"]], "Here is the image"
     elif chunk_order == "lists":
-        contents, expected = [[text], [image]], [text, image]
+        contents, expected = [[text], [image]], ""
     elif chunk_order == "text-blocks":
         continuation = {"type": "text", "data": "<think>hidden</think>answer"}
-        contents, expected = [[text], [continuation]], [text, continuation]
+        contents, expected = [[text], [continuation]], ""
     else:
         terminal_content = None if chunk_order == "terminal-none" else ""
-        contents, expected = [[text, image], terminal_content], [text, image]
+        contents, expected = [[text, image], terminal_content], ""
     invocation = LLMStructuredOutputInvocation() if structured else LLMInvocation()
     recorded = record_invocation(
         invocation,
@@ -242,14 +278,20 @@ def test_llm_keeps_multimodal_content_in_response_order(
     arguments = {
         "model_config": {"provider": "provider", "model": "model", "mode": "chat"},
         "prompt_messages": [],
-        "stream": False,
+        "stream": stream,
     }
     if structured:
         arguments["structured_output_schema"] = {"type": "object"}
 
     result = invocation.invoke(**arguments)
 
-    assert result.message.content == AssistantPromptMessage(content=expected).content
+    if stream:
+        assert [chunk.delta.message.content for chunk in result] == [
+            AssistantPromptMessage(content=content).content for content in contents
+        ]
+    else:
+        assert type(result.message.content) is str
+        assert result.message.content == expected
     assert recorded.closed
 
 
@@ -341,14 +383,13 @@ def test_summary_rejects_an_empty_response(record_invocation: RecordInvocation) 
     ],
     ids=["object", "array", "string", "integer", "boolean", "nested-large-integer"],
 )
-def test_llm_replays_last_non_null_opaque_snapshot_over_http(
+def test_llm_stream_replays_explicit_opaque_snapshot_over_http(
     session: Session,
     http_server: HTTPServerFactory,
     monkeypatch: pytest.MonkeyPatch,
     structured: bool,
     snapshot: JsonValue,
 ) -> None:
-    # SDK #389 requires the last non-null snapshot, including falsy JSON values.
     invocation = (
         session.model.llm_structured_output if structured else session.model.llm
     )
@@ -398,26 +439,35 @@ def test_llm_replays_last_non_null_opaque_snapshot_over_http(
     session.dify_plugin_daemon_url = server.url
     arguments = {
         "model_config": {"provider": "provider", "model": "model", "mode": "chat"},
-        "stream": False,
+        "stream": True,
     }
     if structured:
         arguments["structured_output_schema"] = {"type": "object"}
 
-    result = invocation.invoke(
-        **arguments, prompt_messages=[UserPromptMessage(content="first")]
+    chunks = list(
+        invocation.invoke(
+            **arguments, prompt_messages=[UserPromptMessage(content="first")]
+        )
     )
 
-    assert result.message.content == "first"
-    assert result.message.opaque_body == original
-    assert type(result.message.opaque_body) is type(original)
+    assert [chunk.delta.message.opaque_body for chunk in chunks] == [
+        {"old": 1},
+        original,
+        None,
+    ]
+    message = chunks[1].delta.message
+    assert type(message.opaque_body) is type(original)
 
-    following = invocation.invoke(
-        **arguments,
-        prompt_messages=[result.message, UserPromptMessage(content="next")],
+    following = list(
+        invocation.invoke(
+            **arguments,
+            prompt_messages=[message, UserPromptMessage(content="next")],
+        )
     )
 
-    assert following.message.content == "next"
-    assert following.message.opaque_body is None
+    assert len(following) == 1
+    assert following[0].delta.message.content == "next"
+    assert following[0].delta.message.opaque_body is None
     assert len(server.requests) == 2
     request = json.loads(server.requests[1].body)["data"]["data"]
     assert request["type"] == (
@@ -426,7 +476,7 @@ def test_llm_replays_last_non_null_opaque_snapshot_over_http(
     replayed = request["request"]["prompt_messages"][0]
     assert replayed == {
         "role": "assistant",
-        "content": "first",
+        "content": "",
         "name": None,
         "tool_calls": [],
         "opaque_body": original,

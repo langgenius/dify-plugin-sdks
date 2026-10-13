@@ -1,17 +1,29 @@
 import json
 from concurrent.futures import ThreadPoolExecutor
 from operator import itemgetter
+from queue import Queue
 from threading import Barrier
 
 import gevent
 import pytest
 from pydantic import BaseModel
 
+from dify_plugin.core.server.serverless.response_writer import ServerlessResponseWriter
 from tests.servers.helpers import RecordingResponseWriter
 
 
 class Payload(BaseModel):
     text: str
+
+
+@pytest.mark.parametrize("data", [b"bytes\n\n", "text\n\n"])
+def test_serverless_writer_preserves_bytes_and_text(data: bytes | str) -> None:
+    queue = Queue()
+    writer = ServerlessResponseWriter(queue)
+    writer.write(data)
+    writer.done()
+    assert queue.get_nowait() == data
+    assert queue.get_nowait() is None
 
 
 @pytest.mark.parametrize("method", ["stream", "error", "invoke", "end"])

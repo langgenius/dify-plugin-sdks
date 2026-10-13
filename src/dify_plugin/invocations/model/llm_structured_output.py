@@ -108,7 +108,7 @@ class LLMStructuredOutputInvocation(
             merge_llm_result_chunk(result, llm_result)
 
             # Handle structured output
-            if llm_result.structured_output is not None:
+            if llm_result.structured_output:
                 result.structured_output = llm_result.structured_output
 
         return result

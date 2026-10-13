@@ -1,3 +1,4 @@
+import math
 from unittest.mock import Mock
 
 import pytest
@@ -42,9 +43,11 @@ def llm() -> StubLLM:
     [
         {"max_tokens": 1},
         {"max_tokens": 8},
+        {"max_tokens": True},
         {"temperature": 0},
         {"temperature": 2.0},
         {"temperature": 1.25},
+        {"temperature": False},
         {"penalty": 0.125},
         {"count": 2.0},
         {"enabled": False},
@@ -106,15 +109,10 @@ def test_model_parameter_defaults_and_aliases(
         ("max_tokens", 9, "less than or equal"),
         ("max_tokens", 1.0, "should be int"),
         ("max_tokens", "2", "should be int"),
-        ("max_tokens", True, "should be int"),
         ("temperature", -0.01, "greater than or equal"),
         ("temperature", 2.01, "less than or equal"),
         ("temperature", "1.2", "should be float"),
-        ("temperature", False, "should be float"),
         ("temperature", 1.234, "decimal places"),
-        ("penalty", float("nan"), "finite"),
-        ("penalty", float("inf"), "finite"),
-        ("penalty", float("-inf"), "finite"),
         ("count", 2.5, "should be int"),
         ("enabled", 1, "should be bool"),
         ("enabled", "false", "should be bool"),
@@ -147,19 +145,26 @@ def test_invalid_model_parameters_fail_before_provider_invocation(
     assert llm.started_at == 0
 
 
-@pytest.mark.parametrize(
-    ("default", "message"),
-    [
-        (None, "is required"),
-        (True, "should be int"),
-        (0, "greater than or equal"),
-        (9, "less than or equal"),
-    ],
-)
-def test_required_model_parameter_default_is_validated(
-    llm: StubLLM, default: object, message: str
+@pytest.mark.parametrize("default", [True, 0, 9])
+def test_required_model_parameter_keeps_provider_default(
+    llm: StubLLM, default: object
 ) -> None:
     llm.model_schemas[0].parameter_rules[0].default = default
 
-    with pytest.raises(ValueError, match=message):
+    assert llm._validate_and_filter_model_parameters("model", {}, {}) == {
+        "max_tokens": default
+    }
+
+
+def test_required_model_parameter_without_default_fails(llm: StubLLM) -> None:
+    llm.model_schemas[0].parameter_rules[0].default = None
+
+    with pytest.raises(ValueError, match="is required"):
         llm._validate_and_filter_model_parameters("model", {}, {})
+
+
+def test_float_parameter_keeps_nan_acceptance(llm: StubLLM) -> None:
+    parameters = llm._validate_and_filter_model_parameters(
+        "model", {"penalty": float("nan")}, {}
+    )
+    assert math.isnan(parameters["penalty"])

@@ -120,9 +120,6 @@ class AIModel(ABC):
         Returns:
             The return value.
         """
-        if isinstance(error, InvokeError):
-            return error
-
         provider_name = self.__class__.__module__.split(".")[-3:][0]
 
         for invoke_error, model_errors in self._invoke_error_mapping.items():
@@ -280,17 +277,17 @@ class AIModel(ABC):
                             default_parameter_name
                         )
                     )
-                    if parameter_rule.max is None and "max" in default_parameter_rule:
+                    if not parameter_rule.max and "max" in default_parameter_rule:
                         parameter_rule.max = default_parameter_rule["max"]
-                    if parameter_rule.min is None and "min" in default_parameter_rule:
+                    if not parameter_rule.min and "min" in default_parameter_rule:
                         parameter_rule.min = default_parameter_rule["min"]
                     if (
-                        parameter_rule.default is None
+                        not parameter_rule.default
                         and "default" in default_parameter_rule
                     ):
                         parameter_rule.default = default_parameter_rule["default"]
                     if (
-                        parameter_rule.precision is None
+                        not parameter_rule.precision
                         and "precision" in default_parameter_rule
                     ):
                         parameter_rule.precision = default_parameter_rule["precision"]
