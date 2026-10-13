@@ -1,6 +1,8 @@
 from collections.abc import Generator, Mapping
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Literal
+from unittest.mock import Mock
 
 import pytest
 from pydantic import JsonValue, ValidationError
@@ -28,7 +30,7 @@ from dify_plugin.entities.model.message import (
     PromptMessageTool,
     UserPromptMessage,
 )
-from dify_plugin.errors.model import InvokeError
+from dify_plugin.errors.model import InvokeBadRequestError, InvokeError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
 
@@ -249,6 +251,12 @@ class NonPollingLLM(PollingLLM):
         self.model_schemas[0].features = []
 
 
+@pytest.fixture
+def session() -> Generator[Session]:
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        yield Session("polling-test", pool, Mock(), Mock())
+
+
 def test_polling_requests_parse_daemon_payloads() -> None:
     scenario = PollingScenario()
 
@@ -295,13 +303,13 @@ def test_check_polling_request_rejects_empty_plugin_state() -> None:
         ModelCheckPollingRequest(**data)
 
 
-def test_executor_starts_llm_polling() -> None:
+def test_executor_starts_llm_polling(session: Session) -> None:
     scenario = PollingScenario()
     model = PollingLLM(scenario)
     executor = PluginExecutor(DifyPluginEnv(), ModelRegistration(model))
 
     response = executor.start_llm_polling(
-        Session.empty_session(),
+        session,
         scenario.start_request(
             model_parameters={"temperature": 0.2},
             json_schema=scenario.json_schema,
@@ -318,17 +326,22 @@ def test_executor_starts_llm_polling() -> None:
     assert model.supports_polling(scenario.model, scenario.credentials)
     assert model.start_call["json_schema"] == scenario.json_schema
     assert model.start_call["model_parameters"] == {}
+    assert model.start_call["prompt_messages"] == scenario.prompt_messages
+    assert model.start_call["credentials"] == scenario.credentials
+    assert model.start_call["stream"] is False
+    assert model.start_call["user"] == scenario.user_id
+    assert model.started_at == 0
     assert "workflow_run_id" not in model.start_call
     assert "node_id" not in model.start_call
 
 
-def test_executor_checks_llm_polling() -> None:
+def test_executor_checks_llm_polling(session: Session) -> None:
     scenario = PollingScenario()
     model = PollingLLM(scenario)
     executor = PluginExecutor(DifyPluginEnv(), ModelRegistration(model))
 
     response = executor.check_llm_polling(
-        Session.empty_session(),
+        session,
         scenario.check_request(),
     )
 
@@ -338,20 +351,69 @@ def test_executor_checks_llm_polling() -> None:
     assert response.result.message.content == scenario.result_content
     assert model.check_call is not None
     assert model.check_call["plugin_state"] == scenario.plugin_state
+    assert model.check_call["credentials"] == scenario.credentials
+    assert model.check_call["user"] == scenario.user_id
+    assert model.started_at == 0
     assert "workflow_run_id" not in model.check_call
     assert "node_id" not in model.check_call
 
 
-def test_executor_rejects_llm_without_polling_feature() -> None:
+def test_executor_rejects_llm_without_polling_feature(session: Session) -> None:
     scenario = PollingScenario()
     model = NonPollingLLM(scenario)
     executor = PluginExecutor(DifyPluginEnv(), ModelRegistration(model))
 
     with pytest.raises(ValueError, match="does not support polling"):
         executor.start_llm_polling(
-            Session.empty_session(),
+            session,
             scenario.start_request(),
         )
+
+
+@pytest.mark.parametrize("missing_method", ["_start_polling", "_check_polling"])
+def test_polling_requires_both_provider_methods(
+    missing_method: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        PollingLLM,
+        missing_method,
+        getattr(LargeLanguageModel, missing_method),
+    )
+    model = PollingLLM()
+
+    assert not model.supports_polling(model.scenario.model, {})
+    with pytest.raises(NotImplementedError, match="does not support polling"):
+        model.start_polling(model.scenario.model, {}, [])
+    with pytest.raises(NotImplementedError, match="does not support polling"):
+        model.check_polling(model.scenario.model, {}, {"job_id": "job-1"})
+    assert model.started_at == 0
+
+
+@pytest.mark.parametrize("operation", ["start", "check"])
+@pytest.mark.parametrize(
+    "error", [InvokeBadRequestError("invalid polling job"), RuntimeError("job failed")]
+)
+def test_polling_errors_preserve_sdk_errors_and_reset_timing(
+    operation: str, error: Exception, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    model = PollingLLM()
+    cause = ValueError("original cause")
+    error.__cause__ = cause
+    monkeypatch.setattr(model, f"_{operation}_polling", Mock(side_effect=error))
+    invoke = getattr(model, f"{operation}_polling")
+    payload = [] if operation == "start" else {"job_id": "job-1"}
+
+    with pytest.raises(InvokeError) as exc_info:
+        invoke(model.scenario.model, {}, payload)
+
+    if isinstance(error, InvokeError):
+        assert exc_info.value is error
+        assert exc_info.value.__cause__ is cause
+    else:
+        assert type(exc_info.value) is InvokeError
+        assert exc_info.value.__cause__ is error
+        assert "job failed" in str(exc_info.value)
+    assert model.started_at == 0
 
 
 def test_polling_result_validates_state_payloads() -> None:

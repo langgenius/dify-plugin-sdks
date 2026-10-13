@@ -78,7 +78,7 @@ class AgentStrategyParameter(BaseModel):
     )
     scope: str | None = None
     required: bool | None = False
-    default: int | float | str | None = None
+    default: int | float | str | bool | None = None
     min: float | int | None = None
     max: float | int | None = None
     precision: int | None = None

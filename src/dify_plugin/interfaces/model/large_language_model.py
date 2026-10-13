@@ -1,10 +1,12 @@
 import inspect
 import logging
-import re
+import math
 import time
 from abc import abstractmethod
-from collections.abc import Generator, Mapping
+from collections.abc import Callable, Generator, Mapping
+from contextlib import closing
 from typing import Literal
+from xml.parsers import expat
 
 from pydantic import ConfigDict, JsonValue
 
@@ -39,6 +41,67 @@ logger = logging.getLogger(__name__)
 
 CODE_FENCE_BACKTICK_COUNT = 3
 STRUCTURED_RESPONSE_FORMATS = frozenset({"JSON", "XML"})
+
+
+def _xml_code_fence_filter() -> Callable[[str, bool], str]:
+    parser = expat.ParserCreate()
+    depth = 0
+    root_closed = False
+    pending = bytearray()
+    offset = position = 0
+    line_start = True
+    failed = done = False
+
+    def start(_name: str, _attributes: dict[str, str]) -> None:
+        nonlocal depth
+        depth += 1
+
+    def end(_name: str) -> None:
+        nonlocal depth, root_closed
+        depth -= 1
+        root_closed = depth == 0
+
+    parser.StartElementHandler = start
+    parser.EndElementHandler = end
+
+    def feed(char: str, final: bool) -> str:
+        nonlocal pending, offset, position, line_start, failed, done
+        if done:
+            return ""
+        data = char.encode()
+        position += len(data)
+        if not failed:
+            try:
+                parser.Parse(char, final)
+            except expat.ExpatError:
+                failed = True
+        if not pending and not (line_start and char == "`"):
+            line_start = char == "\n"
+            return char
+        if not pending:
+            offset = position - len(data)
+        pending += data
+        # Expat can defer parsing; retain fence candidates until it consumes them.
+        consumed = max(0, parser.CurrentByteIndex - offset)
+        safe = bytearray()
+        if consumed:
+            safe, pending = pending[:consumed], pending[consumed:]
+            line_start, offset = safe.endswith(b"\n"), offset + len(safe)
+        if failed:
+            if root_closed and parser.ErrorByteIndex == offset and line_start:
+                if pending.startswith(b"```"):
+                    done = True
+                    return safe.decode()
+                if not final and bytes(pending) in {b"`", b"``"}:
+                    return safe.decode()
+            safe += pending
+            line_start, pending = pending.endswith(b"\n"), bytearray()
+        elif final:
+            safe += pending
+            pending = bytearray()
+        return safe.decode()
+
+    return feed
 
 
 class LargeLanguageModel(AIModel):
@@ -141,7 +204,11 @@ class LargeLanguageModel(AIModel):
 
     def enforce_stop_tokens(self, text: str, stop: list[str]) -> str:
         """Cut off the text as soon as any stop words occur."""
-        return re.split("|".join(stop), text, maxsplit=1)[0]
+        for sequence in stop:
+            index = text.find(sequence)
+            if index >= 0:
+                text = text[:index]
+        return text
 
     def get_parameter_rules(self, model: str, credentials: dict) -> list[ParameterRule]:
         """Get parameter rules
@@ -293,21 +360,18 @@ class LargeLanguageModel(AIModel):
                     # name instead
                     parameter_value = model_parameters[parameter_rule.use_template]
                 elif parameter_rule.required:
-                    if parameter_rule.default is not None:
-                        filtered_model_parameters[parameter_name] = (
-                            parameter_rule.default
-                        )
-                        continue
-                    msg = f"Model Parameter {parameter_name} is required."
-                    raise ValueError(
-                        msg,
-                    )
+                    if parameter_rule.default is None:
+                        msg = f"Model Parameter {parameter_name} is required."
+                        raise ValueError(msg)
+                    parameter_value = parameter_rule.default
                 else:
                     continue
 
             # validate parameter value type
             if parameter_rule.type == ParameterType.INT:
-                if not isinstance(parameter_value, int):
+                if isinstance(parameter_value, bool) or not isinstance(
+                    parameter_value, int
+                ):
                     msg = f"Model Parameter {parameter_name} should be int."
                     raise ValueError(msg)
 
@@ -336,11 +400,19 @@ class LargeLanguageModel(AIModel):
                         msg,
                     )
             elif parameter_rule.type == ParameterType.FLOAT:
-                if not isinstance(parameter_value, float | int):
+                if isinstance(parameter_value, bool) or not isinstance(
+                    parameter_value, float | int
+                ):
                     msg = f"Model Parameter {parameter_name} should be float."
                     raise ValueError(
                         msg,
                     )
+
+                if isinstance(parameter_value, float) and not math.isfinite(
+                    parameter_value
+                ):
+                    msg = f"Model Parameter {parameter_name} should be finite."
+                    raise ValueError(msg)
 
                 # validate parameter value precision
                 if parameter_rule.precision is not None:
@@ -484,9 +556,12 @@ class LargeLanguageModel(AIModel):
                 user=user,
             )
 
+        prompt_messages = [message.model_copy(deep=True) for message in prompt_messages]
+        model_parameters = model_parameters.copy()
         model_parameters.pop("response_format")
-        stop = stop or []
-        stop.extend(["\n```", "```\n"])
+        stop = list(stop or [])
+        if code_block == "JSON":
+            stop.extend(["\n```", "```\n"])
         block_prompts = block_prompts.replace("{{block}}", code_block)
 
         # check if there is a system message
@@ -544,27 +619,16 @@ class LargeLanguageModel(AIModel):
         )
 
         if isinstance(response, Generator):
-            first_chunk = next(response)
 
-            def new_generator() -> Generator[LLMResultChunk, None, None]:
-                yield first_chunk
-                yield from response
+            def process_response() -> Generator[LLMResultChunk, None, None]:
+                with closing(response):
+                    yield from self._code_block_mode_stream_processor(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        input_generator=response,
+                    )
 
-            if (
-                first_chunk.delta.message.content
-                and isinstance(first_chunk.delta.message.content, str)
-                and first_chunk.delta.message.content.startswith("`")
-            ):
-                return self._code_block_mode_stream_processor_with_backtick(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    input_generator=new_generator(),
-                )
-            return self._code_block_mode_stream_processor(
-                model=model,
-                prompt_messages=prompt_messages,
-                input_generator=new_generator(),
-            )
+            return process_response()
 
         return response
 
@@ -574,8 +638,7 @@ class LargeLanguageModel(AIModel):
         prompt_messages: list[PromptMessage],
         input_generator: Generator[LLMResultChunk, None, None],
     ) -> Generator[LLMResultChunk, None, None]:
-        """Code block mode stream processor, ensure the response is a code block
-        with output markdown quote
+        """Strip outer code fences while preserving streamed content and metadata.
 
         :param model: model name
         :param prompt_messages: prompt messages
@@ -586,124 +649,65 @@ class LargeLanguageModel(AIModel):
             Generated values.
         """
         del prompt_messages
-        state = "normal"
+        state = "start"
         backtick_count = 0
+        at_line_start = True
+        body_started = False
+        xml_filter = None
         for chunk in input_generator:
-            if chunk.delta.message.content:
-                content = chunk.delta.message.content
-                chunk.delta.message.content = ""
-                yield chunk
-            else:
-                yield chunk
-                continue
-            new_piece: str = ""
-            for raw_char in content:
-                char = str(raw_char)
-                if state == "normal":
-                    if char == "`":
-                        state = "in_backticks"
-                        backtick_count = 1
-                    else:
-                        new_piece += char
-                elif state == "in_backticks":
-                    if char == "`":
-                        backtick_count += 1
-                        if backtick_count == CODE_FENCE_BACKTICK_COUNT:
-                            state = "skip_content"
-                            backtick_count = 0
-                    else:
-                        new_piece += "`" * backtick_count + char
-                        state = "normal"
-                        backtick_count = 0
-                elif state == "skip_content" and char.isspace():
-                    state = "normal"
-
-            if new_piece:
-                yield LLMResultChunk(
-                    model=model,
-                    delta=LLMResultChunkDelta(
-                        index=0,
-                        message=AssistantPromptMessage(
-                            content=new_piece,
-                            tool_calls=[],
-                        ),
-                    ),
-                )
-
-    def _code_block_mode_stream_processor_with_backtick(
-        self,
-        model: str,
-        prompt_messages: list,
-        input_generator: Generator[LLMResultChunk, None, None],
-    ) -> Generator[LLMResultChunk, None, None]:
-        """Code block mode stream processor, ensure the response is a code block
-        with output markdown quote.
-        This version skips the language identifier that follows the opening
-        triple backticks.
-
-        :param model: model name
-        :param prompt_messages: prompt messages
-        :param input_generator: input generator
-        :return: output generator
-
-        Yields:
-            Generated values.
-        """
-        del prompt_messages
-        state = "search_start"
-        backtick_count = 0
-
-        for chunk in input_generator:
-            if chunk.delta.message.content:
-                content = chunk.delta.message.content
-                # Reset content to ensure we're only processing and yielding
-                # the relevant parts
-                chunk.delta.message.content = ""
-                # Yield a piece with cleared content before processing it
-                # to maintain the generator structure
-                yield chunk
-            else:
-                # Yield pieces without content directly
+            content = chunk.delta.message.get_text_content()
+            if not content:
+                if xml_filter is not None and chunk.delta.finish_reason is not None:
+                    remaining = xml_filter("", True)
+                    if remaining:
+                        yield LLMResultChunk(
+                            model=model,
+                            delta=LLMResultChunkDelta(
+                                index=0,
+                                message=AssistantPromptMessage(content=remaining),
+                            ),
+                        )
                 yield chunk
                 continue
-
-            if state == "done":
-                continue
-
+            chunk.delta.message.content = ""
+            yield chunk
             new_piece: str = ""
             for char in content:
-                if state == "search_start":
-                    if char == "`":
-                        backtick_count += 1
-                        if backtick_count == CODE_FENCE_BACKTICK_COUNT:
-                            state = "skip_language"
-                            backtick_count = 0
-                    else:
-                        backtick_count = 0
-                elif state == "skip_language":
-                    # Skip everything until the first newline, marking the end
-                    # of the language identifier
-                    if char == "\n":
-                        state = "in_code_block"
-                elif state == "in_code_block":
-                    if char == "`":
-                        backtick_count += 1
-                        if backtick_count == CODE_FENCE_BACKTICK_COUNT:
-                            state = "done"
-                            break
-                    else:
-                        if backtick_count > 0:
-                            # If backticks were counted but we're still
-                            # collecting content, it was a false start
-                            new_piece += "`" * backtick_count
-                            backtick_count = 0
-                        new_piece += str(char)
-
-                elif state == "done":
+                if state == "done":
                     break
+                if state == "opening_fence":
+                    if char == "\n":
+                        state = "content"
+                    continue
+                if state == "start":
+                    if char == "`":
+                        backtick_count += 1
+                        if backtick_count == CODE_FENCE_BACKTICK_COUNT:
+                            state = "opening_fence"
+                            backtick_count = 0
+                        continue
+                    if not backtick_count and char.isspace():
+                        new_piece += char
+                        continue
+                    state = "content"
+                if not body_started and not char.isspace():
+                    body_started = True
+                    if char in {"<", "\ufeff"}:
+                        xml_filter = _xml_code_fence_filter()
+                if xml_filter is not None:
+                    new_piece += xml_filter(char, False)
+                    continue
+                if at_line_start and char == "`":
+                    backtick_count += 1
+                    if backtick_count == CODE_FENCE_BACKTICK_COUNT:
+                        state = "done"
+                        backtick_count = 0
+                    continue
+                new_piece += "`" * backtick_count + char
+                backtick_count = 0
+                at_line_start = char == "\n"
 
             if new_piece:
-                # Only yield content collected within the code block
                 yield LLMResultChunk(
                     model=model,
                     delta=LLMResultChunkDelta(
@@ -714,6 +718,18 @@ class LargeLanguageModel(AIModel):
                         ),
                     ),
                 )
+
+        remaining = (
+            xml_filter("", True) if xml_filter is not None else "`" * backtick_count
+        )
+        if remaining:
+            yield LLMResultChunk(
+                model=model,
+                delta=LLMResultChunkDelta(
+                    index=0,
+                    message=AssistantPromptMessage(content=remaining),
+                ),
+            )
 
     def _wrap_thinking_by_reasoning_content(
         self,
@@ -790,6 +806,8 @@ class LargeLanguageModel(AIModel):
                     user=user,
                     json_schema=json_schema,
                 )
+            except InvokeError:
+                raise
             except Exception as e:
                 raise self._transform_invoke_error(e) from e
 
@@ -813,6 +831,8 @@ class LargeLanguageModel(AIModel):
                     plugin_state=plugin_state,
                     user=user,
                 )
+            except InvokeError:
+                raise
             except Exception as e:
                 raise self._transform_invoke_error(e) from e
 

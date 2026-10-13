@@ -694,42 +694,45 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
         except Exception as e:
             response = Response(f"Internal Server Error: {e!s}", status=500)
 
-        # check if response is a generator
-        if isinstance(response.response, Generator):
-            # return headers
-            yield {
-                "status": response.status_code,
-                "headers": dict(response.headers.items()),
-            }
+        with response:
+            # check if response is a generator
+            if isinstance(response.response, Generator):
+                # return headers
+                yield {
+                    "status": response.status_code,
+                    "headers": dict(response.headers.items()),
+                }
 
-            for chunk in response.response:
-                if isinstance(chunk, bytes | bytearray | memoryview):
-                    yield {"result": binascii.hexlify(chunk).decode()}
-                else:
-                    yield {"result": binascii.hexlify(chunk.encode("utf-8")).decode()}
-        else:
-            result = {
-                "status": response.status_code,
-                "headers": dict(response.headers.items()),
-            }
-
-            if isinstance(response.response, bytes | bytearray | memoryview):
-                result["result"] = binascii.hexlify(response.response).decode()
-            elif isinstance(response.response, str):
-                result["result"] = binascii.hexlify(
-                    response.response.encode("utf-8"),
-                ).decode()
-            elif isinstance(response.response, Iterable):
-                result["result"] = ""
                 for chunk in response.response:
                     if isinstance(chunk, bytes | bytearray | memoryview):
-                        result["result"] += binascii.hexlify(chunk).decode()
+                        yield {"result": binascii.hexlify(chunk).decode()}
                     else:
-                        result["result"] += binascii.hexlify(
-                            chunk.encode("utf-8"),
-                        ).decode()
+                        yield {
+                            "result": binascii.hexlify(chunk.encode("utf-8")).decode()
+                        }
+            else:
+                result = {
+                    "status": response.status_code,
+                    "headers": dict(response.headers.items()),
+                }
 
-            yield result
+                if isinstance(response.response, bytes | bytearray | memoryview):
+                    result["result"] = binascii.hexlify(response.response).decode()
+                elif isinstance(response.response, str):
+                    result["result"] = binascii.hexlify(
+                        response.response.encode("utf-8"),
+                    ).decode()
+                elif isinstance(response.response, Iterable):
+                    result["result"] = ""
+                    for chunk in response.response:
+                        if isinstance(chunk, bytes | bytearray | memoryview):
+                            result["result"] += binascii.hexlify(chunk).decode()
+                        else:
+                            result["result"] += binascii.hexlify(
+                                chunk.encode("utf-8"),
+                            ).decode()
+
+                yield result
 
     def _get_oauth_provider_instance(
         self,
@@ -881,6 +884,7 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
             return tool_cls(
                 runtime=ToolRuntime(
                     credentials=data.credentials,
+                    credential_type=data.credential_type,
                     user_id=data.user_id,
                     session_id=session.session_id,
                 ),
@@ -966,14 +970,15 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
             subscription=subscription,
             request=original_request,
         )
-        return TriggerDispatchResponse(
-            user_id=dispatch_result.user_id,
-            events=dispatch_result.events,
-            response=binascii.hexlify(
-                data=serialize_response(response=dispatch_result.response),
-            ).decode(),
-            payload=dispatch_result.payload,
-        )
+        with dispatch_result.response:
+            return TriggerDispatchResponse(
+                user_id=dispatch_result.user_id,
+                events=dispatch_result.events,
+                response=binascii.hexlify(
+                    data=serialize_response(response=dispatch_result.response),
+                ).decode(),
+                payload=dispatch_result.payload,
+            )
 
     def subscribe_trigger(
         self,

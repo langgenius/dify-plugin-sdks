@@ -20,6 +20,7 @@ class RequestReader(ABC):
         # Convert class variables to instance variables to avoid global lock contention
         self.lock = threading.Lock()
         self.readers: list[FilterReader] = []
+        self._closed = False
 
     @abstractmethod
     def _read_stream(self) -> Generator["PluginInStream", None, None]:
@@ -29,14 +30,20 @@ class RequestReader(ABC):
         raise NotImplementedError
 
     def event_loop(self) -> None:
-        # read line by line
-        while True:
-            try:
-                for line in self._read_stream():
-                    self._process_line(line)
-            except Exception:
-                logger.exception("Error in event loop")
-                time.sleep(0.01)  # Prevent high CPU usage after failures
+        try:
+            while not self._closed:
+                try:
+                    for line in self._read_stream():
+                        if self._closed:
+                            return
+                        self._process_line(line)
+                except Exception:
+                    logger.exception("Error in event loop")
+                    time.sleep(0.01)  # Prevent high CPU usage after failures
+                else:
+                    return
+        finally:
+            self.close()
 
     def _process_line(self, data: "PluginInStream") -> None:
         session_id = data.session_id
@@ -82,9 +89,14 @@ class RequestReader(ABC):
 
         self.lock.acquire()
         try:
-            self.readers.append(reader)
+            closed = self._closed
+            if not closed:
+                self.readers.append(reader)
         finally:
             self.lock.release()
+
+        if closed:
+            reader.close()
 
         return reader
 
@@ -94,6 +106,7 @@ class RequestReader(ABC):
         """
         self.lock.acquire()
         try:
+            self._closed = True
             readers_to_close = self.readers.copy()
             self.readers.clear()
         finally:

@@ -1,0 +1,10 @@
+identity:
+  author: sdk_tests
+  name: contract_agents
+  label:
+    en_US: Contract agents
+  description:
+    en_US: Local SDK test agent.
+  icon: icon.svg
+strategies:
+  - agents/echo.yaml

@@ -1,0 +1,24 @@
+identity:
+  author: sdk_tests
+  name: echo
+  label:
+    en_US: Echo
+description:
+  en_US: Return the decoded webhook payload.
+parameters:
+  - name: event
+    type: dynamic-select
+    label:
+      en_US: Event
+extra:
+  python:
+    source: triggers/event.py
+output_schema:
+  type: object
+  properties:
+    payload:
+      type: object
+    parameters:
+      type: object
+    body:
+      type: string

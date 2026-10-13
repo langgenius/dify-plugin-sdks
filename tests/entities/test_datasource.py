@@ -1,10 +1,13 @@
 import base64
 
+import pytest
+
 from dify_plugin.entities.datasource import (
     DatasourceMessage,
     OnlineDriveBrowseFilesResponse,
     OnlineDriveFile,
 )
+from dify_plugin.entities.datasource_manifest import DatasourceEntity
 
 
 def test_online_drive_file_keeps_legacy_payload_compatible() -> None:
@@ -71,3 +74,30 @@ def test_datasource_blob_message_keeps_online_drive_remote_metadata() -> None:
 
     assert serialized["meta"] == {"remote_metadata": metadata}
     assert serialized["message"]["blob"] == base64.b64encode(b"content").decode()
+
+
+@pytest.mark.parametrize("default", [False, True])
+def test_datasource_manifest_preserves_boolean_defaults_for_crawl_requests(
+    default: bool,
+) -> None:
+    # Tavily and Firecrawl pass these boolean defaults to their upstream APIs.
+    datasource = DatasourceEntity.model_validate({
+        "identity": {
+            "author": "langgenius",
+            "name": "crawl",
+            "label": {"en_US": "Crawl"},
+        },
+        "description": {"en_US": "Crawl a website"},
+        "extra": {"python": {"source": "datasources/crawl.py"}},
+        "parameters": [
+            {
+                "name": "only_main_content",
+                "type": "boolean",
+                "default": default,
+                "label": {"en_US": "Only main content"},
+                "description": {"en_US": "Exclude navigation and footer content"},
+            }
+        ],
+    })
+
+    assert datasource.model_dump(mode="json")["parameters"][0]["default"] is default

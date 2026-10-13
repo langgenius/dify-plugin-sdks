@@ -7,7 +7,7 @@ from werkzeug import Request, Response
 
 from dify_plugin.core.runtime import Session
 from dify_plugin.core.trigger_factory import TriggerFactory
-from dify_plugin.entities import I18nObject, ParameterOption
+from dify_plugin.entities import I18nObject
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import (
     EventConfiguration,
@@ -22,14 +22,15 @@ from dify_plugin.entities.trigger import (
     TriggerSubscriptionConstructorConfiguration,
     TriggerSubscriptionConstructorConfigurationExtra,
     TriggerSubscriptionConstructorRuntime,
-    UnsubscribeResult,
     Variables,
 )
 from dify_plugin.interfaces.trigger import (
     Event,
     EventRuntime,
     Trigger,
-    TriggerSubscriptionConstructor,
+)
+from tests.fixtures.plugins.contract_plugin.triggers.constructor import (
+    ContractConstructor,
 )
 
 
@@ -45,69 +46,6 @@ class MockTriggerProvider(Trigger):
         del subscription
         del request
         return EventDispatch(events=["test_event"], response=Response("OK", status=200))
-
-
-class MockTriggerSubscriptionConstructor(TriggerSubscriptionConstructor):
-    """Mock Trigger Subscription Constructor"""
-
-    def _validate_api_key(self, credentials: dict) -> None:
-        """Validate API key"""
-
-    def _create_subscription(
-        self,
-        endpoint: str,
-        credentials: Mapping[str, Any],
-        selected_events: list[str],
-        parameters: Mapping[str, Any],
-    ) -> Subscription:
-        """Create subscription"""
-        del credentials
-        del parameters
-        return Subscription(
-            expires_at=1234567890,
-            endpoint=endpoint,
-            properties={
-                "external_id": "test_external_id",
-                "webhook_secret": "test_secret",
-            },
-            subscribed_events=selected_events,
-        )
-
-    def _delete_subscription(
-        self,
-        subscription: Subscription,
-        credentials: Mapping[str, Any],
-    ) -> UnsubscribeResult:
-        """Delete subscription"""
-        del subscription
-        del credentials
-        return UnsubscribeResult(success=True, message="Successfully unsubscribed")
-
-    def _refresh_subscription(
-        self,
-        subscription: Subscription,
-        credentials: Mapping[str, Any],
-    ) -> Subscription:
-        """Refresh subscription"""
-        del credentials
-        return Subscription(
-            expires_at=9999999999,
-            endpoint=subscription.endpoint,
-            properties=subscription.properties,
-        )
-
-    def _fetch_parameter_options(
-        self,
-        credentials: Mapping[str, Any],
-        parameter: str,
-    ) -> list[ParameterOption]:
-        """Fetch parameter options"""
-        del credentials
-        del parameter
-        return [
-            ParameterOption(value="option1", label=I18nObject(en_us="Option 1")),
-            ParameterOption(value="option2", label=I18nObject(en_us="Option 2")),
-        ]
 
 
 class MockEventHandler(Event):
@@ -182,7 +120,7 @@ def test_trigger_factory_register_and_get_provider() -> None:
     factory.register_trigger_provider(
         configuration=provider_config,
         provider_cls=MockTriggerProvider,
-        subscription_constructor_cls=MockTriggerSubscriptionConstructor,
+        subscription_constructor_cls=ContractConstructor,
         events={"test_event": (trigger_config, MockEventHandler)},
     )
 
@@ -203,8 +141,9 @@ def test_trigger_factory_register_and_get_provider() -> None:
 def test_trigger_factory_subscription_constructor() -> None:
     """Test trigger factory subscription constructor"""
     factory = TriggerFactory()
+    credentials = {"api_key": "valid"}
     runtime = TriggerSubscriptionConstructorRuntime(
-        credentials={"api_key": "test_key"},
+        credentials=credentials,
         session=MagicMock(spec=Session),
         credential_type=CredentialType.API_KEY,
     )
@@ -235,7 +174,7 @@ def test_trigger_factory_subscription_constructor() -> None:
     factory.register_trigger_provider(
         configuration=provider_config,
         provider_cls=MockTriggerProvider,
-        subscription_constructor_cls=MockTriggerSubscriptionConstructor,
+        subscription_constructor_cls=ContractConstructor,
         events={},
     )
 
@@ -244,12 +183,39 @@ def test_trigger_factory_subscription_constructor() -> None:
 
     # Test get subscription constructor instance
     constructor = factory.get_subscription_constructor("test_provider", runtime)
-    assert isinstance(constructor, MockTriggerSubscriptionConstructor)
+    assert isinstance(constructor, ContractConstructor)
     assert constructor.runtime.session == runtime.session
 
     # Test get subscription constructor class
     constructor_cls = factory.get_subscription_constructor_cls("test_provider")
-    assert constructor_cls == MockTriggerSubscriptionConstructor
+    assert constructor_cls == ContractConstructor
+
+    constructor.validate_api_key(credentials)
+    options = constructor.fetch_parameter_options("event")
+    assert [option.value for option in options] == ["echo"]
+    subscription = constructor.create_subscription(
+        endpoint="https://callback.invalid/webhook",
+        parameters={"event": options[0].value},
+        credentials=credentials,
+        credential_type=runtime.credential_type,
+    )
+    assert subscription.parameters == {"event": "echo"}
+    assert subscription.properties["credential_type"] == "api-key"
+    refreshed = constructor.refresh_subscription(
+        subscription, credentials, runtime.credential_type
+    )
+    assert subscription.expires_at == 100
+    assert refreshed.expires_at == 200
+    assert (
+        refreshed.endpoint
+        == subscription.endpoint
+        == "https://callback.invalid/webhook"
+    )
+    result = constructor.delete_subscription(
+        refreshed, credentials, runtime.credential_type
+    )
+    assert result.success
+    assert result.message == subscription.properties["external_id"]
 
 
 def test_trigger_factory_trigger_events() -> None:

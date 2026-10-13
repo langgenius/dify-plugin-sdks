@@ -20,6 +20,7 @@ class FilterReader:
         self.filter = filter
         self.queue = Queue()
         self.close_callback = close_callback
+        self._closed = False
 
     @overload
     def read(
@@ -32,7 +33,7 @@ class FilterReader:
     def read(
         self, timeout_for_round: float | None = None
     ) -> Generator[PluginInStream | None, None, None]:
-        while True:
+        while not self._closed or not self.queue.empty():
             try:
                 data = self.queue.get(timeout=timeout_for_round)
                 if data is None:
@@ -45,13 +46,19 @@ class FilterReader:
                 break
 
     def close(self) -> None:
-        if self.close_callback:
-            self.close_callback()
+        if self._closed:
+            return
 
-        self.queue.put(None)
+        self._closed = True
+        try:
+            if self.close_callback:
+                self.close_callback()
+        finally:
+            self.queue.put(None)
 
     def write(self, data: PluginInStream) -> None:
-        self.queue.put(data)
+        if not self._closed:
+            self.queue.put(data)
 
     def __enter__(self) -> Self:
         return self

@@ -35,7 +35,8 @@ source .venv/bin/activate
 
 The repository uses [`uv`](https://docs.astral.sh/uv/) for dependency and
 virtual environment management. The default development environment includes
-`pytest`, `pytest-cov`, `pytest-mock`, `pytest-xprocess`, `ruff`, `ty`, and
+`pytest`, `pytest-cov`, `pytest-mock`, `pytest-httpserver`, `pytest-timeout`,
+`pytest-socket`, `hypothesis`, `ruff`, `ty`, and
 [`prek`](https://prek.j178.dev/).
 
 ### Git Hooks
@@ -65,7 +66,7 @@ Use `just` by default. For targeted work, direct tool usage is still fine:
 
 ```bash
 uv run ruff check src/dify_plugin/path.py
-uv run pytest tests/path/test_file.py -k keyword
+just test tests/path/test_file.py -k keyword
 uv run prek run -a
 ```
 
@@ -77,6 +78,7 @@ Use these commands for normal development:
 - `just lint`: run `just fmt`, then `uv run ruff check --fix`
 - `just check`: run `uv lock --check`, `ruff format --check --diff`, and `ruff check`
 - `just test`: run the SDK tests
+- `just coverage`: run tests with subprocess and branch coverage, then enforce the coverage gates
 - `just build`: build source and wheel distributions
 - `just docs`: generate schema documentation into `.mkdocs/docs/schema.md`
 - `just clean`: remove local build, test, and lint artifacts
@@ -84,8 +86,11 @@ Use these commands for normal development:
 Notes:
 
 - `just check` is the non-mutating validation entrypoint used by PR checks and Git hooks.
-- Integration tests that need the Dify plugin CLI are skipped when the binary is unavailable.
-- CI installs the CLI with [`scripts/setup-dify-plugin-cli.sh`](scripts/setup-dify-plugin-cli.sh) before running tests.
+- Tests start through `python -m tests` so gevent patches are applied before pytest plugins load.
+- Tests use real localhost HTTP services, reject external sockets in the pytest process, and enforce a 60-second timeout including teardown.
+- Integration tests build and install the current SDK wheel and invoke a local plugin over stdio.
+- `PluginRunner` tests use a local implementation of the CLI JSON protocol.
+- See [the testing guide](tests/README.md) for protocol sources, fixtures, coverage gates, and validation limits.
 - If you change dependencies, refresh and commit [`uv.lock`](uv.lock) before opening a pull request.
 
 Run `just check` for every change, plus `just test` for behavior changes, `just build` for packaging changes, and `just docs` for schema changes.
@@ -96,9 +101,9 @@ Pull requests targeting `main` currently run these checks:
 
 1. PR title validation with `amannn/action-semantic-pull-request`
 2. `just check` on Python 3.12, including `uv.lock` freshness validation
-3. `just test` on Python 3.12 and 3.13 through the reusable test workflow
+3. `just coverage` on Python 3.12 and `just test` on Python 3.13 through the reusable test workflow
 
-The test workflow installs the Dify plugin CLI, runs `just dev`, and then runs `just test`.
+The test workflow installs locked dependencies, prepares the tokenizer cache, and uploads JUnit and coverage reports.
 
 Pushes to `main` also run the MkDocs workflow.
 It runs `just docs` on Python 3.12 and deploys `.mkdocs` to GitHub Pages.

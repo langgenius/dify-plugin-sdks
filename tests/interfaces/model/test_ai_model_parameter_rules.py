@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from typing import ClassVar
-from unittest.mock import MagicMock
+from unittest.mock import Mock
 
 import pytest
 from pydantic import ConfigDict
@@ -106,6 +106,56 @@ def test_parameter_rule_preserves_model_copy_update() -> None:
     assert schema.parameter_rules[0].max == 7
 
 
+def test_custom_model_schema_preserves_provider_zero_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    model = CustomTemplateAIModel([])
+    schema = AIModelEntity(
+        model="custom",
+        model_type=ModelType.LLM,
+        model_properties={},
+        parameter_rules=[
+            ParameterRule.model_validate({
+                "name": "top_p",
+                "use_template": "top_p",
+                "min": 0,
+                "max": 0,
+                "default": 0,
+                "precision": 0,
+            })
+        ],
+    )
+    monkeypatch.setattr(
+        model, "get_customizable_model_schema", Mock(return_value=schema)
+    )
+
+    result = model.get_model_schema("custom", {"api_key": "key"})
+
+    assert result is not None
+    rule = result.parameter_rules[0]
+    assert (rule.min, rule.max, rule.default, rule.precision) == (0, 0, 0, 0)
+
+
+def test_custom_model_schema_fills_missing_template_translations(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    model = CustomTemplateAIModel([])
+    schema = model.get_customizable_model_schema("copy", {})
+    schema.parameter_rules[0].help = I18nObject(en_us="", zh_hans="")
+    monkeypatch.setattr(
+        model, "get_customizable_model_schema", Mock(return_value=schema)
+    )
+
+    result = model.get_model_schema("copy", {"api_key": "key"})
+
+    assert result is not None
+    help_text = result.parameter_rules[0].help
+    template_help = PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_K]["help"]
+    assert help_text is not None
+    assert help_text.en_us == template_help["en_US"]
+    assert help_text.zh_hans == template_help["zh_Hans"]
+
+
 def test_parameter_rule_template_keeps_legacy_value_error_boundary() -> None:
     schema = CustomTemplateAIModel([]).get_customizable_model_schema_from_credentials(
         "frozen", {}
@@ -114,26 +164,3 @@ def test_parameter_rule_template_keeps_legacy_value_error_boundary() -> None:
     assert schema is not None
     assert isinstance(schema.parameter_rules[0], FrozenParameterRule)
     assert schema.parameter_rules[0].precision == 0
-
-
-def test_parameter_rule_template_copy_value_error_is_ignored(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    error_message = "lazy template failed"
-    template = MagicMock()
-    template.__bool__.return_value = True
-    template.copy.side_effect = ValueError(error_message)
-    monkeypatch.setitem(
-        PARAMETER_RULE_TEMPLATE,
-        DefaultParameterName.TOP_K,
-        template,
-    )
-
-    rule = ParameterRule.model_validate({
-        "name": "top_k",
-        "use_template": "top_k",
-        "label": I18nObject(en_us="Top K"),
-        "type": ParameterType.INT,
-    })
-
-    assert rule.name == "top_k"

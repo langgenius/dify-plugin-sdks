@@ -1,4 +1,5 @@
 import json
+import math
 import time
 from contextlib import suppress
 from decimal import Decimal
@@ -40,7 +41,7 @@ def _validate_credentials_response(response: requests.Response) -> None:
     except CredentialsValidateFailedError:
         raise
 
-    if "model" not in json_result:
+    if not isinstance(json_result, dict) or "model" not in json_result:
         msg = "Credentials validation failed: invalid response"
         raise CredentialsValidateFailedError(msg)
 
@@ -70,6 +71,9 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
 
         Returns:
             The return value.
+
+        Raises:
+            ValueError: If a response cannot be safely associated with its inputs.
         """
         del input_type
 
@@ -96,10 +100,9 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         max_chunks = self._get_max_chunks(model, credentials)
 
         inputs = []
-        indices = []
         used_tokens = 0
 
-        for i, text in enumerate(texts):
+        for text in texts:
             # Here token count is only an approximation based on the GPT2 tokenizer
             # Better token estimation would make chunking more precise.
             num_tokens = self._get_num_tokens_by_gpt2(text)
@@ -110,7 +113,6 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
                 inputs.append(text[0:cutoff])
             else:
                 inputs.append(text)
-            indices += [i]
 
         batched_embeddings = []
         iter_ = range(0, len(inputs), max_chunks)
@@ -135,7 +137,38 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             response_data = response.json()
 
             # Extract embeddings and used tokens from the response
-            embeddings_batch = [data["embedding"] for data in response_data["data"]]
+            data = response_data["data"]
+            batch_size = len(payload["input"])
+            if not isinstance(data, list) or len(data) != batch_size:
+                msg = "Embedding response must contain one vector per input."
+                raise ValueError(msg)
+            embeddings_by_index = {}
+            for position, item in enumerate(data):
+                index = item.get("index", position)
+                if (
+                    type(index) is not int
+                    or not 0 <= index < batch_size
+                    or index in embeddings_by_index
+                ):
+                    msg = "Embedding response contains an invalid or duplicate index."
+                    raise ValueError(msg)
+                vector = item["embedding"]
+                if (
+                    not isinstance(vector, list)
+                    or not vector
+                    or any(
+                        isinstance(value, bool)
+                        or not isinstance(value, int | float)
+                        or not math.isfinite(value)
+                        for value in vector
+                    )
+                ):
+                    msg = "Embedding vectors must contain finite numbers."
+                    raise ValueError(msg)
+                embeddings_by_index[index] = vector
+            embeddings_batch = [
+                embeddings_by_index[index] for index in range(batch_size)
+            ]
             embedding_used_tokens = response_data["usage"]["total_tokens"]
 
             used_tokens += embedding_used_tokens

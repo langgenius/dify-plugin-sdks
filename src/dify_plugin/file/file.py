@@ -35,7 +35,11 @@ class File(BaseModel):
         """
         if self._blob is None:
             try:
-                response = httpx.get(self.url, timeout=_plugin_config.HTTPX_TIMEOUT)
+                response = httpx.get(
+                    self.url,
+                    timeout=_plugin_config.HTTPX_TIMEOUT,
+                    follow_redirects=True,
+                )
                 response.raise_for_status()
                 self._blob = response.content
             except httpx.UnsupportedProtocol as e:

@@ -9,6 +9,9 @@ dist/
 
 # Unit test
 .pytest_cache/
+.hypothesis/
+.coverage*
+reports/
 
 # Environments
 .venv/

@@ -1,0 +1,8 @@
+model: echo
+model_type: tts
+model_properties:
+  audio_type: wav
+  voices:
+    - name: Echo
+      mode: echo
+      language: [en_US]

@@ -91,8 +91,8 @@ class OAICompatRerankModel(RerankModel):
         results = response.json()
         rerank_documents = []
         scores = [result["relevance_score"] for result in results["results"]]
-        min_score = min(scores)
-        max_score = max(scores)
+        min_score = min(scores, default=0.0)
+        max_score = max(scores, default=0.0)
         score_range = max_score - min_score if max_score != min_score else 1.0
 
         for result in results["results"]:

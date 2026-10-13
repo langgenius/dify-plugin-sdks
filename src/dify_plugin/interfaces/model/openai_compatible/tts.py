@@ -1,5 +1,8 @@
+import wave
 from collections.abc import Generator
+from contextlib import ExitStack, closing
 from http import HTTPStatus
+from io import BytesIO
 
 import requests
 
@@ -69,31 +72,51 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
         word_limit = self._get_model_word_limit(model, credentials)
         sentences = self._split_text_into_sentences(content_text, word_limit or 2000)
 
-        for sentence in sentences:
-            # Prepare request payload
-            payload = {
-                "model": credentials.get("endpoint_model_name", model),
-                "input": sentence,
-                "voice": voice,
-                "response_format": audio_format,
-            }
+        output = BytesIO()
+        wav = None
+        with ExitStack() as stack:
+            for sentence in sentences:
+                # Prepare request payload
+                payload = {
+                    "model": credentials.get("endpoint_model_name", model),
+                    "input": sentence,
+                    "voice": voice,
+                    "response_format": audio_format,
+                }
 
-            # Make POST request
-            response = requests.post(
-                endpoint_url,
-                headers=headers,
-                json=payload,
-                stream=True,
-                timeout=(10, 300),
-            )
+                # Make POST request
+                with requests.post(
+                    endpoint_url,
+                    headers=headers,
+                    json=payload,
+                    stream=True,
+                    timeout=(10, 300),
+                ) as response:
+                    if response.status_code != HTTPStatus.OK:
+                        raise InvokeBadRequestError(response.text)
 
-            if response.status_code != HTTPStatus.OK:
-                raise InvokeBadRequestError(response.text)
+                    if audio_format != "wav" or len(sentences) == 1:
+                        yield from filter(None, response.iter_content(chunk_size=4096))
+                        continue
 
-            # Stream the audio data
-            for chunk in response.iter_content(chunk_size=4096):
-                if chunk:
-                    yield chunk
+                    with wave.open(BytesIO(response.content), "rb") as source:
+                        params = source.getparams()
+                        frames = source.readframes(params.nframes)
+                    if (
+                        len(frames)
+                        != params.nframes * params.nchannels * params.sampwidth
+                    ):
+                        msg = "Provider returned truncated WAV audio"
+                        raise InvokeBadRequestError(msg)
+                    if wav is None:
+                        wav = stack.enter_context(wave.open(output, "wb"))
+                        wav.setparams(params)
+                    elif params[:3] != wav.getparams()[:3]:
+                        msg = "Provider returned inconsistent WAV audio formats"
+                        raise InvokeBadRequestError(msg)
+                    wav.writeframesraw(frames)
+        if wav is not None:
+            yield output.getvalue()
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -111,7 +134,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
             voice = self._get_model_default_voice(model, credentials)
 
             # Test with a simple text
-            next(
+            with closing(
                 self._invoke(
                     model=model,
                     tenant_id="validate",
@@ -119,7 +142,8 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
                     content_text="Test.",
                     voice=voice,
                 )
-            )
+            ) as stream:
+                next(stream)
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex)) from ex
 

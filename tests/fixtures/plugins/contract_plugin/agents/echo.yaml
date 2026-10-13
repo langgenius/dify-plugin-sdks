@@ -1,0 +1,11 @@
+identity:
+  author: sdk_tests
+  name: echo
+  label:
+    en_US: Echo
+description:
+  en_US: Return the requested message.
+parameters: []
+extra:
+  python:
+    source: agents/echo.py

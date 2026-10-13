@@ -237,6 +237,7 @@ class ProviderEntity(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_models(cls, values: dict[str, object]) -> dict[str, object]:
+        values = values.copy()
         value = values.get("models", {})
         if not isinstance(value, dict):
             msg = "models should be a glob path list"
@@ -254,11 +255,9 @@ class ProviderEntity(BaseModel):
                 yaml_paths = cwd.glob(path)
                 for yaml_path in yaml_paths:
                     if str(yaml_path).endswith("_position.yaml"):
-                        if "position" not in values:
-                            values["position"] = {}
-
-                        position = load_yaml_file(str(yaml_path))
-                        values["position"][model_type] = position
+                        position = dict(values.get("position") or {})
+                        position[model_type] = load_yaml_file(str(yaml_path))
+                        values["position"] = position
                     else:
                         model_entity = load_yaml_file(str(yaml_path))
                         if not model_entity:

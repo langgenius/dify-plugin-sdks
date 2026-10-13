@@ -1,0 +1,36 @@
+version: 0.0.1
+type: plugin
+author: sdk_tests
+name: contract_plugin
+label:
+  en_US: SDK contract fixture
+description:
+  en_US: Local plugin used by SDK tests.
+icon: icon.svg
+created_at: "2026-01-01T00:00:00Z"
+resource:
+  memory: 1048576
+plugins:
+  tools:
+    - provider/contract.yaml
+  models:
+    - models/provider.yaml
+  agent_strategies:
+    - agents/provider.yaml
+  endpoints:
+    - endpoints/provider.yaml
+  datasources:
+    - datasources/website.yaml
+    - datasources/documents.yaml
+    - datasources/drive.yaml
+  triggers:
+    - triggers/events.yaml
+meta:
+  version: 0.0.2
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main

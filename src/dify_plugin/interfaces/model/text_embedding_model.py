@@ -8,6 +8,7 @@ from dify_plugin.entities.model.text_embedding import (
     MultiModalEmbeddingResult,
     TextEmbeddingResult,
 )
+from dify_plugin.errors.model import InvokeError
 from dify_plugin.interfaces.model.ai_model import AIModel
 
 
@@ -146,10 +147,15 @@ class TextEmbeddingModel(AIModel):
 
         Returns:
             The return value.
+
+        Raises:
+            InvokeError: If invoking the model fails.
         """
         with self.timing_context():
             try:
                 return self._invoke(model, credentials, texts, user, input_type)
+            except InvokeError:
+                raise
             except Exception as e:
                 raise self._transform_invoke_error(e) from e
 
@@ -172,7 +178,7 @@ class TextEmbeddingModel(AIModel):
                     user,
                     input_type,
                 )
-            except NotImplementedError:
+            except (InvokeError, NotImplementedError):
                 raise
             except Exception as e:
                 raise self._transform_invoke_error(e) from e

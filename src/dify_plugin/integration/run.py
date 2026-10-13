@@ -1,13 +1,8 @@
 import logging
-import os
 import pathlib
-import select
-import shutil
-import signal
 import subprocess  # ruff:ignore[suspicious-subprocess-import]
 import tempfile
 import threading
-import time
 import uuid
 from collections.abc import Generator
 from queue import Queue
@@ -28,8 +23,6 @@ from dify_plugin.integration.entities import (
     ResponseType,
 )
 from dify_plugin.integration.exc import PluginStoppedError
-
-T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
 
@@ -69,68 +62,55 @@ class PluginRunner:
         self.config = config
         self.plugin_package_path = plugin_package_path
         self.extra_args = extra_args or []
-        self.resources_need_to_be_cleaned = []
-
-        # create pipe to communicate with the plugin
-        self.stdout_pipe_read, self.stdout_pipe_write = os.pipe()
-        self.stderr_pipe_read, self.stderr_pipe_write = os.pipe()
-        self.stdin_pipe_read, self.stdin_pipe_write = os.pipe()
-
-        # stdin write lock
         self.stdin_write_lock = Lock()
-
-        # setup stop flag
         self.stop_flag = False
-        self.stop_flag_lock = Lock()
+        self.q: dict[str, Queue[PluginGenericResponse | Exception | None]] = {}
+        self.q_lock = Lock()
+        self.ready_semaphore = Semaphore(0)
+        self._close_complete = threading.Event()
+        self.process: subprocess.Popen[bytes] | None = None
+        self.stdout_reader: threading.Thread | None = None
+        self._temporary_directory: tempfile.TemporaryDirectory[str] | None = None
+        self._reader_error: Exception | None = None
 
-        logger.info("Running plugin from %s", plugin_package_path)
-
-        # check if plugin is a directory
-        if pathlib.Path(plugin_package_path).is_dir():
-            logger.info("plugin source directory detected, building plugin")
-            with tempfile.TemporaryDirectory(delete=False) as temp_dir:
-                output_path = str(pathlib.Path(temp_dir) / "plugin.difypkg")
+        # Every startup failure must release the process and temporary package.
+        try:  # ruff:ignore[too-many-statements-in-try-clause]
+            if pathlib.Path(plugin_package_path).is_dir():
+                self._temporary_directory = tempfile.TemporaryDirectory()
+                output_path = str(
+                    pathlib.Path(self._temporary_directory.name) / "plugin.difypkg"
+                )
                 self._build_plugin(plugin_package_path, output_path)
                 self.plugin_package_path = output_path
-                logger.info("Plugin built in %s", self.plugin_package_path)
-                self.resources_need_to_be_cleaned.append(temp_dir)
 
-        self.process = subprocess.Popen(  # ruff:ignore[subprocess-without-shell-equals-true]
-            [
-                self.config.dify_cli_path,
-                "plugin",
-                "run",
-                self.plugin_package_path,
-                "--response-format",
-                "json",
-                *self.extra_args,
-            ],
-            stdout=self.stdout_pipe_write,
-            stderr=self.stderr_pipe_write,
-            stdin=self.stdin_pipe_read,
-        )
+            self.process = subprocess.Popen(  # ruff:ignore[subprocess-without-shell-equals-true]
+                [
+                    self.config.dify_cli_path,
+                    "plugin",
+                    "run",
+                    self.plugin_package_path,
+                    "--response-format",
+                    "json",
+                    *self.extra_args,
+                ],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                # CLI startup errors and logs use the same JSON format on stderr.
+                stderr=subprocess.STDOUT,
+            )
+            self.stdout_reader = threading.Thread(target=self._message_reader)
+            self.stdout_reader.start()
 
-        logger.info("Plugin process created with pid %s", self.process.pid)
-
-        # wait for plugin to be ready
-        self.ready_semaphore = Semaphore(0)
-
-        # create a thread to read the stdout and stderr
-        self.stdout_reader = threading.Thread(
-            target=self._message_reader,
-            args=(self.stdout_pipe_read,),
-        )
-        self.stdout_reader.start()
-
-        self.q = dict[str, Queue[PluginGenericResponse | None]]()
-        self.q_lock = Lock()
-
-        # wait for the plugin to be ready with timeout
-        if not self.ready_semaphore.acquire(timeout=30):  # 30 seconds timeout
-            msg = "Plugin failed to start within 30 seconds"
-            raise TimeoutError(msg)
-
-        logger.info("Plugin ready")
+            if not self.ready_semaphore.acquire(timeout=30):
+                msg = "Plugin failed to start within 30 seconds"
+                raise TimeoutError(msg)
+            if self._reader_error is not None:
+                raise self._reader_error
+            if self.stop_flag:
+                raise PluginStoppedError
+        except BaseException:
+            self._close()
+            raise
 
     def _build_plugin(self, package_path: str, output_path: str) -> None:
         # build plugin
@@ -147,70 +127,58 @@ class PluginRunner:
         logger.info(output.decode("utf-8"))
 
     def _close(self) -> None:
-        with self.stop_flag_lock:
-            if self.stop_flag:
-                return
-
-            # stop the plugin
+        with self.q_lock:
+            first_close = not self.stop_flag
             self.stop_flag = True
+            if first_close:
+                for queue in self.q.values():
+                    queue.put(self._reader_error or PluginStoppedError())
+                self.ready_semaphore.release()
 
-        # send signal SIGTERM to the plugin, so it can exit gracefully
-        # do collect garbage like removing temporary files
-        os.kill(self.process.pid, signal.SIGTERM)
+        if not first_close:
+            # The owner may be joining this reader while it finishes.
+            if self.stdout_reader is threading.current_thread():
+                return
+            self._close_complete.wait()
 
-        # wait for the plugin to exit
-        self.process.wait()
-
-        # close the pipes
-        os.close(self.stdout_pipe_write)
-        os.close(self.stderr_pipe_write)
-        os.close(self.stdin_pipe_read)
-
-    def _read_async(self, fd: int) -> bytes:
-        ready, _, _ = select.select([fd], [], [], 0.1)
-        if not ready:
-            return b""
-
-        # read data from stdin using os.read in 64KB chunks.
-        # the OS buffer for stdin is usually 64KB, so using a larger value
-        # doesn't make sense.
-        b = os.read(fd, 65536)
-        if not b:
-            raise PluginStoppedError
-        return b
-
-    def _message_reader(self, pipe: int) -> None:
-        # create a scanner to read the message line by line
-        """Read messages line by line from the pipe."""
-        buffer = b""
         try:
-            while True:
+            if first_close and self.process is not None:
+                if self.process.poll() is None:
+                    self.process.terminate()
                 try:
-                    data = self._read_async(pipe)
-                except PluginStoppedError:
-                    break
+                    self.process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait(timeout=5)
 
-                if not data:
-                    time.sleep(0.01)
-                    continue
+            if (
+                self.stdout_reader is not None
+                and self.stdout_reader.ident is not None
+                and self.stdout_reader is not threading.current_thread()
+            ):
+                self.stdout_reader.join(timeout=5)
 
-                buffer += data
+            if first_close:
+                if self.process is not None:
+                    for pipe in (self.process.stdin, self.process.stdout):
+                        if pipe is not None:
+                            pipe.close()
+                if self._temporary_directory is not None:
+                    self._temporary_directory.cleanup()
+        finally:
+            if first_close:
+                self._close_complete.set()
 
-                # if no b"\n" is in data, skip to the next iteration
-                if data.find(b"\n") == -1:
-                    continue
-
-                # process line by line and keep the last line if it is not complete
-                lines = buffer.split(b"\n")
-                buffer = lines[-1]
-
-                lines = lines[:-1]
-                for raw_line in lines:
-                    line = raw_line.strip()
-                    if not line:
-                        continue
-
+    def _message_reader(self) -> None:
+        try:
+            if self.process is None or self.process.stdout is None:
+                raise PluginStoppedError
+            for raw_line in self.process.stdout:
+                line = raw_line.strip()
+                if line:
                     self._publish_message(line.decode("utf-8"))
+        except Exception as error:
+            self._reader_error = error
         finally:
             self._close()
 
@@ -242,13 +210,14 @@ class PluginRunner:
                 self.q[parsed_message.invoke_id].put(parsed_message)
 
     def _write_to_pipe(self, data: bytes) -> None:
-        # split the data into chunks of 4096 bytes
-        chunks = [data[i : i + 4096] for i in range(0, len(data), 4096)]
-        # A lock is needed to avoid race conditions when multiple threads
-        # write to the pipe.
         with self.stdin_write_lock:
-            for chunk in chunks:
-                os.write(self.stdin_pipe_write, chunk)
+            if self.stop_flag or self.process is None or self.process.stdin is None:
+                raise PluginStoppedError
+            try:
+                self.process.stdin.write(data)
+                self.process.stdin.flush()
+            except (BrokenPipeError, ValueError) as error:
+                raise PluginStoppedError from error
 
     def invoke(
         self,
@@ -257,10 +226,6 @@ class PluginRunner:
         payload: BaseModel,
         response_type: type[R],
     ) -> Generator[R, None, None]:
-        with self.stop_flag_lock:
-            if self.stop_flag:
-                raise PluginStoppedError
-
         invoke_id = uuid.uuid4().hex
         request = PluginInvokeRequest(
             invoke_id=invoke_id,
@@ -269,8 +234,10 @@ class PluginRunner:
             request=payload,
         )
 
-        q = Queue[PluginGenericResponse | None]()
+        q = Queue[PluginGenericResponse | Exception | None]()
         with self.q_lock:
+            if self.stop_flag:
+                raise PluginStoppedError
             self.q[invoke_id] = q
 
         try:
@@ -278,7 +245,9 @@ class PluginRunner:
             self._write_to_pipe(request.model_dump_json().encode("utf-8") + b"\n")
 
             # wait for events
-            while message := q.get():
+            while (message := q.get()) is not None:
+                if isinstance(message, Exception):
+                    raise message
                 if message.invoke_id == invoke_id:
                     if message.type == ResponseType.PLUGIN_RESPONSE:
                         yield response_type.model_validate(message.response)
@@ -292,7 +261,7 @@ class PluginRunner:
                     raise ValueError(msg)
         finally:
             with self.q_lock:
-                del self.q[invoke_id]
+                self.q.pop(invoke_id, None)
 
     def __enter__(self) -> Self:
         return self
@@ -304,6 +273,3 @@ class PluginRunner:
         traceback: TracebackType | None,
     ) -> None:
         self._close()
-
-        for resource in self.resources_need_to_be_cleaned:
-            shutil.rmtree(resource)

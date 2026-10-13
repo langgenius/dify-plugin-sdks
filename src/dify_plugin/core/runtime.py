@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any
 
 import httpx
+from gevent import Timeout
 from pydantic import BaseModel, Field, TypeAdapter
 from yarl import URL
 
@@ -287,43 +288,33 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
         """
         convert string into type T
         """
-        empty_response_count = 0
-        # get max timeout count, each wait is 1 second, so timeout count
-        # equals timeout seconds
-        max_timeout_count = self.session.max_invocation_timeout if self.session else 250
+        timeout = self.session.max_invocation_timeout if self.session else 250
+        while True:
+            error = TimeoutError(
+                f"invocation exited without response after {timeout} seconds"
+            )
+            with Timeout(timeout, error):
+                for chunk in generator:
+                    if chunk is None:
+                        continue
 
-        for chunk in generator:
-            """
-            accept response from input stream and wait,
-            exit when consecutive empty responses exceed configured timeout value
-            """
-            if chunk is None:
-                empty_response_count += 1
-                # if consecutive empty responses exceed max timeout count, break
-                if empty_response_count >= max_timeout_count:
-                    msg = (
-                        "invocation exited without response after "
-                        f"{max_timeout_count} seconds"
-                    )
+                    event = BackwardsInvocationResponseEvent(**chunk.data)
+                    if event.event == BackwardsInvocationResponseEvent.Event.End:
+                        return
+                    if event.event == BackwardsInvocationResponseEvent.Event.Error:
+                        raise Exception(event.message)
+                    if event.data is None:
+                        return
+                    try:
+                        result = data_type(**event.data)
+                    except Exception as e:
+                        msg = f"Failed to parse response: {e!s}"
+                        raise Exception(msg) from e
+                    break
+                else:
+                    msg = "invocation exited without end response"
                     raise Exception(msg)
-                continue
-
-            event = BackwardsInvocationResponseEvent(**chunk.data)
-            if event.event == BackwardsInvocationResponseEvent.Event.End:
-                break
-
-            if event.event == BackwardsInvocationResponseEvent.Event.Error:
-                raise Exception(event.message)
-
-            if event.data is None:
-                break
-
-            empty_response_count = 0
-            try:
-                yield data_type(**event.data)
-            except Exception as e:
-                msg = f"Failed to parse response: {e!s}"
-                raise Exception(msg) from e
+            yield result
 
     def _http_backwards_invoke(
         self,
@@ -374,6 +365,7 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
                 ),
             ) as response,
         ):
+            response.raise_for_status()
 
             def generator() -> Generator[PluginInStreamBase, None, None]:
                 for line in response.iter_lines():
@@ -396,28 +388,29 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
         data_type: type[T],
         data: dict,
     ) -> Generator[T, None, None]:
-        if not self.session:
+        session = self.session
+        if not session:
             msg = "current tool runtime does not support backwards invoke"
             raise Exception(msg)
 
-        self.session.writer.session_message(
-            session_id=self.session.session_id,
-            data=self.session.writer.stream_invoke_object(
-                data={
-                    "type": type.value,
-                    "backwards_request_id": backwards_request_id,
-                    "request": data,
-                }
-            ),
-        )
-
         def filter(data: PluginInStream) -> bool:  # ruff:ignore[builtin-variable-shadowing]
             return (
-                data.event == PluginInStreamEvent.BackwardInvocationResponse
+                data.session_id == session.session_id
+                and data.event == PluginInStreamEvent.BackwardInvocationResponse
                 and data.data.get("backwards_request_id") == backwards_request_id
             )
 
-        with self.session.reader.read(filter) as reader:
+        with session.reader.read(filter) as reader:
+            session.writer.session_message(
+                session_id=session.session_id,
+                data=session.writer.stream_invoke_object(
+                    data={
+                        "type": type.value,
+                        "backwards_request_id": backwards_request_id,
+                        "request": data,
+                    }
+                ),
+            )
             yield from self._line_converter_wrapper(
                 reader.read(timeout_for_round=1), data_type
             )

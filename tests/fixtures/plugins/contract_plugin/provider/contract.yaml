@@ -1,0 +1,19 @@
+identity:
+  author: sdk_tests
+  name: contract
+  label:
+    en_US: Contract
+  description:
+    en_US: Local SDK test provider.
+  icon: icon.svg
+credentials_for_provider:
+  api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: API key
+tools:
+  - tools/echo.yaml
+extra:
+  python:
+    source: provider/contract.py

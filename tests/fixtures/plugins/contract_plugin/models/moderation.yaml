@@ -1,0 +1,3 @@
+model: echo
+model_type: moderation
+model_properties: {}

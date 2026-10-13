@@ -1,0 +1,29 @@
+provider: contract_models
+label:
+  en_US: Contract models
+supported_model_types:
+  - llm
+  - text-embedding
+  - rerank
+  - tts
+  - speech2text
+  - moderation
+configurate_methods:
+  - predefined-model
+models:
+  llm:
+    predefined: [models/llm.yaml]
+  text_embedding:
+    predefined: [models/embedding.yaml]
+  rerank:
+    predefined: [models/rerank.yaml]
+  tts:
+    predefined: [models/tts.yaml]
+  speech2text:
+    predefined: [models/speech2text.yaml]
+  moderation:
+    predefined: [models/moderation.yaml]
+extra:
+  python:
+    provider_source: models/provider.py
+    model_sources: [models/implementations.py]
