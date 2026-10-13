@@ -90,7 +90,6 @@ Notes:
 - Tests use real localhost HTTP services, reject external sockets in the pytest process, and enforce a 60-second timeout including teardown.
 - Integration tests build and install the current SDK wheel and invoke a local plugin over stdio.
 - `PluginRunner` tests use a local implementation of the CLI JSON protocol.
-- See [the testing guide](tests/README.md) for protocol sources, fixtures, coverage gates, and validation limits.
 - If you change dependencies, refresh and commit [`uv.lock`](uv.lock) before opening a pull request.
 
 Run `just check` for every change, plus `just test` for behavior changes, `just build` for packaging changes, and `just docs` for schema changes.

@@ -38,5 +38,4 @@ Manifest reuse tests check successful reuse, repaired-input retries and observab
 Structured-call and shared-object regressions retain the baseline's existing input updates and resulting provider requests.
 An SSE event starting with a comment is still discarded, including its data; [#397](https://github.com/langgenius/dify-plugin-sdks/issues/397) tracks the protocol fix and its compatibility impact.
 
-Protocol evidence and test isolation limits are recorded in [README.md](README.md).
 These regressions do not establish compatibility with a running Dify deployment or external model service.

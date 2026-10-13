@@ -46,7 +46,7 @@ OAuth expiration conversion, manifest default types, regular-expression stop mat
 
 Resource cleanup covers completed, failed and cancelled calls, including TCP partial writes and Serverless shutdown.
 Existing updates to structured prompts, stop lists, blob messages and shared usage objects retain their original results.
-See the [regression map](tests/regressions.md) and [testing guide](tests/README.md) for covered behavior and validation limits.
+See the [regression map](tests/regressions.md) for covered behavior.
 
 ## Production Plugin Examples
 
