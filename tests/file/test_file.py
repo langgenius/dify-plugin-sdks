@@ -1,7 +1,6 @@
-from pathlib import Path
-
 import httpx
 import pytest
+import trustme
 
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.file import file as file_module
@@ -118,9 +117,8 @@ def test_download_honors_custom_ca_and_verifies_hostname(
     http_server: HTTPServerFactory,
     monkeypatch: pytest.MonkeyPatch,
     matching_hostname: bool,
+    tls_ca: trustme.CA,
 ) -> None:
-    cert = Path(__file__).parents[1] / "fixtures" / "certs" / "localhost.pem"
-    monkeypatch.setenv("SSL_CERT_FILE", str(cert))
     server = http_server([Response(body=b"secure")], tls=True)
     url = (
         server.url.replace("127.0.0.1", "localhost")
@@ -129,10 +127,12 @@ def test_download_honors_custom_ca_and_verifies_hostname(
     )
     file = File(url=url, type=FileType.DOCUMENT)
 
-    if matching_hostname:
-        assert file.blob == b"secure"
-        assert len(server.requests) == 1
-    else:
-        with pytest.raises(httpx.ConnectError, match="CERTIFICATE_VERIFY_FAILED"):
-            _ = file.blob
-        assert server.requests == []
+    with tls_ca.cert_pem.tempfile() as cert:
+        monkeypatch.setenv("SSL_CERT_FILE", cert)
+        if matching_hostname:
+            assert file.blob == b"secure"
+            assert len(server.requests) == 1
+        else:
+            with pytest.raises(httpx.ConnectError, match="CERTIFICATE_VERIFY_FAILED"):
+                _ = file.blob
+            assert server.requests == []

@@ -3,10 +3,10 @@ import re
 import ssl
 from collections.abc import Generator
 from contextlib import ExitStack
-from pathlib import Path
 from threading import Event
 
 import pytest
+import trustme
 from werkzeug.wrappers import Request as HTTPRequest
 from werkzeug.wrappers import Response as HTTPResponse
 
@@ -34,8 +34,13 @@ def isolated_http_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("NETRC", os.devnull)
 
 
+@pytest.fixture(scope="session")
+def tls_ca() -> trustme.CA:
+    return trustme.CA()
+
+
 @pytest.fixture
-def http_server() -> Generator[HTTPServerFactory]:
+def http_server(tls_ca: trustme.CA) -> Generator[HTTPServerFactory]:
     stopped = Event()
     servers: list[HTTPServer] = []
     with ExitStack() as stack:
@@ -43,11 +48,8 @@ def http_server() -> Generator[HTTPServerFactory]:
         def start(responses: list[Response], *, tls: bool = False) -> TestHTTPServer:
             context = None
             if tls:
-                certs = Path(__file__).parent / "fixtures" / "certs"
                 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-                context.load_cert_chain(
-                    certs / "localhost.pem", certs / "localhost-key.pem"
-                )
+                tls_ca.issue_cert("localhost").configure_cert(context)
             server = stack.enter_context(
                 HTTPServer(host="127.0.0.1", threaded=True, ssl_context=context)
             )
