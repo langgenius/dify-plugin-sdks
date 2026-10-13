@@ -19,7 +19,7 @@ def write_cli(tmp_path: Path, name: str, version: str) -> Path:
     return cli
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)  # ruff: ignore[pytest-fixture-autouse]
 def isolated_cli_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("DIFY_CLI_PATH", raising=False)

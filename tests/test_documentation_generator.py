@@ -17,7 +17,7 @@ class ReferencedEnum(Enum):
     VALUE = "value"
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)  # ruff: ignore[pytest-fixture-autouse]
 def isolated_schema_registry(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(schema_doc, "__cls_mapping__", {})
 

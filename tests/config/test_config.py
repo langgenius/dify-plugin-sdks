@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from dify_plugin.config.config import DifyPluginEnv, InstallMethod
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)  # ruff: ignore[pytest-fixture-autouse]
 def isolated_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     for name in DifyPluginEnv.model_fields:
         monkeypatch.delenv(name, raising=False)

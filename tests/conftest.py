@@ -19,7 +19,7 @@ from tests.http_server import (
 )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)  # ruff: ignore[pytest-fixture-autouse]
 def isolated_http_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     for name in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
         monkeypatch.delenv(name, raising=False)

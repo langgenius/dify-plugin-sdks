@@ -109,5 +109,4 @@ ignore-one-line-docstrings = true
     'assert',    # Assert statements used for pytest.
     'private-member-access',  # Tests may inspect private implementation details.
     'magic-value-comparison', # Magic value used in test cases.
-    'pytest-fixture-autouse', # Isolate environment and registries for every test.
 ]
