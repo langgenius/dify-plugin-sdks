@@ -14,9 +14,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version:
-          - "3.12"
-          - "3.13"
+        include:
+          - python-version: "3.12"
+            command: just coverage
+          - python-version: "3.13"
+            command: just test --junitxml=reports/junit.xml
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,19 +33,10 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
 
-      - name: Install dependencies
-        run: uv sync --locked
-
-      - name: Prepare tokenizer cache
-        run: uv run python -c 'import tiktoken; tiktoken.encoding_for_model("gpt2")'
-
-      - name: Run tests
-        if: matrix.python-version != '3.12'
-        run: just test --junitxml=reports/junit.xml
-
-      - name: Run tests with branch coverage
-        if: matrix.python-version == '3.12'
-        run: just coverage
+      - name: Install dependencies and run tests
+        run: |
+          uv sync --locked
+          ${{ matrix.command }}
 
       - name: Upload test reports
         if: always()
