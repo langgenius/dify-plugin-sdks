@@ -35,12 +35,16 @@ build-backend = 'uv_build'
 
 [dependency-groups]
 dev = [
+    "hypothesis>=6.169.0",
     'prek',
     'pytest',
     'pytest-cov',
+    "pytest-httpserver>=1.2.0",
     'pytest-mock',
-    'pytest-xprocess',
+    "pytest-socket>=0.8.1",
+    "pytest-timeout>=2.4.0",
     'ruff',
+    "trustme>=1.2.1",
     'ty',
 ]
 
@@ -50,6 +54,27 @@ default-groups = ['dev']
 [tool.pytest]
 minversion = '9.0'
 testpaths = ['tests']
+addopts = ['--strict-config', '--strict-markers', '--allow-hosts=127.0.0.1,::1']
+# pytest-timeout registers a string ini value, even with pytest's native TOML config.
+timeout = '60'
+xfail_strict = true
+markers = ['integration: runs a real plugin process or local protocol service']
+filterwarnings = [
+    'error::ResourceWarning',
+    'error::pytest.PytestUnhandledThreadExceptionWarning',
+    'error::pytest.PytestUnraisableExceptionWarning',
+]
+
+[tool.coverage.run]
+branch = true
+source_pkgs = ['dify_plugin']
+# SDK threads are monkey-patched greenlets; a second thread tracer drops events.
+concurrency = ['gevent']
+patch = ['subprocess']
+sigterm = true
+
+[tool.coverage.paths]
+source = ['src/dify_plugin', '*/site-packages/dify_plugin']
 
 [tool.ruff]
 preview = true
@@ -85,4 +110,5 @@ ignore-one-line-docstrings = true
     'assert',    # Assert statements used for pytest.
     'private-member-access',  # Tests may inspect private implementation details.
     'magic-value-comparison', # Magic value used in test cases.
+    'pytest-fixture-autouse', # Isolate environment and registries for every test.
 ]

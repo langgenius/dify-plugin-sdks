@@ -324,16 +324,32 @@ class PluginRegistration:
                 parent_type=Trigger,
             )
 
+            constructor_source = source
             subscription_constructor_cls_candidates = load_multi_subclasses_from_source(
                 module_name=module_source,
                 script_path=_source_to_script_path(source),
                 parent_type=TriggerSubscriptionConstructor,
             )
+            constructor = provider.subscription_constructor
+            if (
+                not subscription_constructor_cls_candidates
+                and constructor
+                and constructor.extra
+                and constructor.extra.python.source != source
+            ):
+                constructor_source = constructor.extra.python.source
+                subscription_constructor_cls_candidates = (
+                    load_multi_subclasses_from_source(
+                        module_name=_source_to_module_name(constructor_source),
+                        script_path=_source_to_script_path(constructor_source),
+                        parent_type=TriggerSubscriptionConstructor,
+                    )
+                )
 
             if len(subscription_constructor_cls_candidates) > 1:
                 msg = (
                     "Multiple TriggerSubscriptionConstructor subclasses found "
-                    f"in {source}."
+                    f"in {constructor_source}."
                     " Only a single implementation is supported."
                 )
                 raise ValueError(msg)
@@ -350,7 +366,7 @@ class PluginRegistration:
             ):
                 msg = (
                     "Trigger subscription constructor configuration declared "
-                    f"but no implementation found in {source}."
+                    f"but no implementation found in {constructor_source}."
                 )
                 raise ValueError(msg)
 

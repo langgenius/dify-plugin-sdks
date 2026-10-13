@@ -5,6 +5,7 @@ import time
 import traceback
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from threading import Thread
 
 from dify_plugin.config.config import DifyPluginEnv
@@ -12,6 +13,7 @@ from dify_plugin.core.entities.plugin.io import PluginInStream, PluginInStreamEv
 from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.__base.response_writer import ResponseWriter
 from dify_plugin.core.server.serverless.request_reader import ServerlessRequestReader
+from dify_plugin.core.server.serverless.response_writer import ServerlessResponseWriter
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.tcp.request_reader import TCPReaderWriter
 from dify_plugin.errors.model import InvokeError
@@ -91,43 +93,52 @@ class IOServer(ABC):
         """
         wrapper for _execute_request
         """
-        # wait for the task to finish
         try:
-            self._execute_request(
-                session_id,
-                data,
-                reader,
-                writer,
-                conversation_id,
-                message_id,
-                app_id,
-                endpoint_id,
-                context,
-            )
-        except Exception as e:
-            args = {"traceback": traceback.format_exc()}
-            if isinstance(e, InvokeError):
-                args["description"] = e.description
+            # wait for the task to finish
+            try:
+                execute = partial(
+                    self._execute_request,
+                    session_id,
+                    data,
+                    reader,
+                    writer,
+                    conversation_id,
+                    message_id,
+                    app_id,
+                    endpoint_id,
+                    context,
+                )
+                if isinstance(writer, ServerlessResponseWriter):
+                    writer.execute(execute)
+                else:
+                    execute()
+            except Exception as e:
+                args = {"traceback": traceback.format_exc()}
+                if isinstance(e, InvokeError):
+                    args["description"] = e.description
 
-            if isinstance(reader, (TCPReaderWriter, ServerlessRequestReader)):
-                logger.exception(
-                    "Unexpected error occurred when executing request",
-                    exc_info=e,
+                if isinstance(reader, (TCPReaderWriter, ServerlessRequestReader)):
+                    logger.exception(
+                        "Unexpected error occurred when executing request",
+                        exc_info=e,
+                    )
+
+                writer.session_message(
+                    session_id=session_id,
+                    data=writer.stream_error_object(
+                        data={
+                            "error_type": type(e).__name__,
+                            "message": str(e),
+                            "args": args,
+                        }
+                    ),
                 )
 
             writer.session_message(
-                session_id=session_id,
-                data=writer.stream_error_object(
-                    data={
-                        "error_type": type(e).__name__,
-                        "message": str(e),
-                        "args": args,
-                    }
-                ),
+                session_id=session_id, data=writer.stream_end_object()
             )
-
-        writer.session_message(session_id=session_id, data=writer.stream_end_object())
-        writer.done()
+        finally:
+            writer.done()
 
     def _heartbeat(self) -> None:
         """

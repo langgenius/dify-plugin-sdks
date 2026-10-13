@@ -120,7 +120,7 @@ class AIModel(ABC):
         Returns:
             The return value.
         """
-        provider_name = self.__class__.__module__.split(".")[-3]
+        provider_name = self.__class__.__module__.split(".")[-3:][0]
 
         for invoke_error, model_errors in self._invoke_error_mapping.items():
             if isinstance(error, tuple(model_errors)):

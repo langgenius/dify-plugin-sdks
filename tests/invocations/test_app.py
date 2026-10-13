@@ -1,78 +1,135 @@
 from collections.abc import Generator
-from concurrent.futures import ThreadPoolExecutor
-from unittest.mock import patch
+from copy import deepcopy
+
+import pytest
 
 from dify_plugin.core.entities.invocation import InvokeType
-from dify_plugin.core.runtime import Session
-from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
-from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
+from dify_plugin.invocations.app.chat import ChatAppInvocation
+from dify_plugin.invocations.app.completion import CompletionAppInvocation
+from dify_plugin.invocations.app.fetch_app import FetchAppInvocation
+from dify_plugin.invocations.app.workflow import WorkflowAppInvocation
+from tests.invocations.conftest import RecordInvocation
 
 
-def _build_session() -> Session:
-    return Session(
-        session_id="test",
-        executor=ThreadPoolExecutor(max_workers=1),
-        reader=StdioRequestReader(),
-        writer=StdioResponseWriter(),
-    )
+@pytest.mark.parametrize(
+    ("invocation_type", "extra", "default_mode"),
+    [
+        (
+            ChatAppInvocation,
+            {"query": "你好", "conversation_id": "conversation-1"},
+            "streaming",
+        ),
+        (CompletionAppInvocation, {}, "blocking"),
+        (WorkflowAppInvocation, {}, "blocking"),
+    ],
+)
+@pytest.mark.parametrize("response_mode", [None, "streaming", "blocking"])
+def test_app_request_and_response_modes(
+    record_invocation: RecordInvocation,
+    invocation_type: type[
+        ChatAppInvocation | CompletionAppInvocation | WorkflowAppInvocation
+    ],
+    extra: dict,
+    default_mode: str,
+    response_mode: str | None,
+) -> None:
+    invocation = invocation_type()
+    responses = [{"event": "message", "answer": "你好"}, {"event": "message_end"}]
+    recorded = record_invocation(invocation, responses)
+    arguments = {
+        "app_id": "app-1",
+        "inputs": {"query": {"filters": ["文档"]}},
+        "user": "user-1",
+        **extra,
+    }
+    original = deepcopy(arguments)
+    if response_mode is not None:
+        arguments["response_mode"] = response_mode
+
+    result = invocation.invoke(**arguments)
+    mode = response_mode or default_mode
+    if mode == "streaming":
+        assert isinstance(result, Generator)
+        assert not recorded.requests
+        assert list(result) == responses
+        assert recorded.yielded == 2
+    else:
+        assert result == responses[0]
+        assert recorded.yielded == 1
+
+    assert recorded.requests == [
+        (InvokeType.App, dict, original | {"response_mode": mode})
+    ]
+    assert recorded.closed
+    assert arguments["inputs"] == original["inputs"]
 
 
-def _mock_backwards_invoke(
-    invoke_type: InvokeType,
-    data_type: type[dict],
-    data: dict,
-) -> Generator[dict, None, None]:
-    _ = invoke_type
-    _ = data_type
-    yield data
+@pytest.mark.parametrize(
+    "invocation_type",
+    [ChatAppInvocation, CompletionAppInvocation, WorkflowAppInvocation],
+)
+@pytest.mark.parametrize("failure", [None, RuntimeError("application unavailable")])
+def test_blocking_app_cannot_succeed_without_a_response(
+    record_invocation: RecordInvocation,
+    invocation_type: type[
+        ChatAppInvocation | CompletionAppInvocation | WorkflowAppInvocation
+    ],
+    failure: Exception | None,
+) -> None:
+    invocation = invocation_type()
+    recorded = record_invocation(invocation, [] if failure is None else [failure])
+    arguments = {"app_id": "app-1", "inputs": {}, "response_mode": "blocking"}
+    if isinstance(invocation, ChatAppInvocation):
+        arguments["query"] = "hello"
+
+    with pytest.raises(
+        Exception, match=r"No response|application unavailable"
+    ) as caught:
+        invocation.invoke(**arguments)
+
+    if failure is not None:
+        assert caught.value is failure
+    assert recorded.closed
 
 
-def test_chat_app_invoke_should_pass_user_in_payload() -> None:
-    session = _build_session()
+@pytest.mark.parametrize("fail_after_first", [False, True])
+def test_streaming_app_close_and_remote_error(
+    record_invocation: RecordInvocation, fail_after_first: bool
+) -> None:
+    invocation = ChatAppInvocation()
+    error = RuntimeError("application stopped")
+    recorded = record_invocation(invocation, [{"answer": "first"}, error])
+    response = invocation.invoke(app_id="app", query="hello", inputs={})
+    assert isinstance(response, Generator)
+    assert next(response) == {"answer": "first"}
 
-    with patch.object(
-        session.app.chat, "_backwards_invoke", side_effect=_mock_backwards_invoke
-    ):
-        response = session.app.chat.invoke(
-            app_id="app-id",
-            query="hello",
-            inputs={},
-            response_mode="blocking",
-            conversation_id="conversation-id",
-            user="user-123",
-        )
-
-    assert response["user"] == "user-123"
-    assert response["conversation_id"] == "conversation-id"
-
-
-def test_completion_app_invoke_should_pass_user_in_payload() -> None:
-    session = _build_session()
-
-    with patch.object(
-        session.app.completion, "_backwards_invoke", side_effect=_mock_backwards_invoke
-    ):
-        response = session.app.completion.invoke(
-            app_id="app-id",
-            inputs={"foo": "bar"},
-            response_mode="blocking",
-            user="user-123",
-        )
-
-    assert response["user"] == "user-123"
+    if fail_after_first:
+        with pytest.raises(RuntimeError) as caught:
+            next(response)
+        assert caught.value is error
+    else:
+        response.close()
+    assert recorded.closed
+    assert recorded.yielded == 1
 
 
-def test_workflow_app_invoke_should_pass_user_in_payload() -> None:
-    session = _build_session()
+def test_fetch_app_records_the_requested_app(
+    record_invocation: RecordInvocation,
+) -> None:
+    invocation = FetchAppInvocation()
+    response = {"id": "app-2", "name": "中文应用"}
+    recorded = record_invocation(invocation, [response])
 
-    with patch.object(
-        session.app.workflow, "_backwards_invoke", side_effect=_mock_backwards_invoke
-    ):
-        response = session.app.workflow.invoke(
-            app_id="app-id",
-            inputs={"foo": "bar"},
-            response_mode="blocking",
-            user="user-123",
-        )
+    assert invocation.get("app-2") == response
+    assert recorded.requests == [(InvokeType.FetchApp, dict, {"app_id": "app-2"})]
+    assert recorded.closed
 
-    assert response["user"] == "user-123"
+
+def test_fetch_app_rejects_an_empty_response(
+    record_invocation: RecordInvocation,
+) -> None:
+    invocation = FetchAppInvocation()
+    record_invocation(invocation, [])
+
+    with pytest.raises(Exception, match="No response"):
+        invocation.get("missing-app")

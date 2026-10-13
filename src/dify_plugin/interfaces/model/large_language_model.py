@@ -4,6 +4,7 @@ import re
 import time
 from abc import abstractmethod
 from collections.abc import Generator, Mapping
+from contextlib import closing
 from typing import Literal
 
 from pydantic import ConfigDict, JsonValue
@@ -550,21 +551,32 @@ class LargeLanguageModel(AIModel):
                 yield first_chunk
                 yield from response
 
+            processor = self._code_block_mode_stream_processor
             if (
                 first_chunk.delta.message.content
                 and isinstance(first_chunk.delta.message.content, str)
                 and first_chunk.delta.message.content.startswith("`")
             ):
-                return self._code_block_mode_stream_processor_with_backtick(
+                processor = self._code_block_mode_stream_processor_with_backtick
+            try:
+                processed_response = processor(
                     model=model,
                     prompt_messages=prompt_messages,
                     input_generator=new_generator(),
                 )
-            return self._code_block_mode_stream_processor(
-                model=model,
-                prompt_messages=prompt_messages,
-                input_generator=new_generator(),
-            )
+            except BaseException:
+                response.close()
+                raise
+
+            def process_response() -> Generator[LLMResultChunk, None, None]:
+                with closing(response):
+                    yield first_chunk
+                    yield from processed_response
+
+            result = process_response()
+            # Activate cleanup without consuming another provider chunk.
+            next(result)
+            return result
 
         return response
 

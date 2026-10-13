@@ -19,7 +19,7 @@ def get_position_map(
         The return value.
     """
     position_file_name = str(pathlib.Path(folder_path) / file_name)
-    positions = load_yaml_file(position_file_name, ignore_error=True)
+    positions = load_yaml_file(position_file_name, ignore_error=True) or {}
     position_map = {}
     index = 0
     for name in positions:

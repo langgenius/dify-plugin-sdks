@@ -8,6 +8,7 @@ from queue import Empty, Queue
 import gevent.socket
 from flask import Flask, request
 from gevent.pywsgi import WSGIServer
+from werkzeug.serving import BaseWSGIServer, make_server
 
 from dify_plugin.core.entities.plugin.io import (
     PluginInStream,
@@ -40,22 +41,33 @@ class ServerlessRequestReader(RequestReader):
         self.threads = threads
         self.worker_connections = worker_connections
         self.max_single_connection_lifetime = max_single_connection_lifetime
-        self.request_queue = Queue[PluginInStream]()
+        self.request_queue = Queue[PluginInStream | None]()
+        self._shutdown = threading.Event()
+        self._http_server: BaseWSGIServer | None = None
 
     def _read_stream(self) -> Generator[PluginInStream, None, None]:
         """
         Read request from http server
         """
-        while True:
-            yield self.request_queue.get()
+        while (message := self.request_queue.get()) is not None:
+            yield message
+
+    def close(self) -> None:
+        super().close()
+        self.request_queue.put(None)
+        self._shutdown.set()
+        with self.lock:
+            server, self._http_server = self._http_server, None
+        if server is not None:
+            server.shutdown()
 
     def handler(self) -> tuple[Generator[str, None, None], int] | tuple[str, int]:
         try:
             queue: Queue[str | None] = Queue()
             data = request.get_json()
-            event = PluginInStreamEvent.value_of(data["event"])
+            writer = ServerlessResponseWriter(queue)
             plugin_in = PluginInStream(
-                event=event,
+                event=PluginInStreamEvent.value_of(data["event"]),
                 session_id=data["session_id"],
                 conversation_id=data.get("conversation_id"),
                 message_id=data.get("message_id"),
@@ -64,29 +76,39 @@ class ServerlessRequestReader(RequestReader):
                 data=data["data"],
                 context=data.get("context"),
                 reader=self,
-                writer=ServerlessResponseWriter(queue),
+                writer=writer,
             )
             self.request_queue.put(plugin_in)
         except Exception as e:
             return str(e), 500
 
         def generate() -> Generator[str, None, None]:
-            refresh_time = time.time()
-            while True:
-                try:
-                    response = queue.get(timeout=1)
-                except Empty:
-                    if time.time() - refresh_time > self.max_single_connection_lifetime:
-                        return
-                    continue
-
-                if response is None:
-                    return
-
+            try:
+                yield ""
                 refresh_time = time.time()
-                yield response
+                while True:
+                    try:
+                        response = queue.get(timeout=1)
+                    except Empty:
+                        if (
+                            time.time() - refresh_time
+                            > self.max_single_connection_lifetime
+                        ):
+                            return
+                        continue
 
-        return generate(), 200
+                    if response is None:
+                        return
+
+                    refresh_time = time.time()
+                    yield response
+            finally:
+                writer.close()
+
+        response = generate()
+        # Arm cleanup before Flask receives the response iterator.
+        next(response)
+        return response, 200
 
     def health(self) -> tuple[str, int]:
         return "OK", 200
@@ -106,9 +128,22 @@ class ServerlessRequestReader(RequestReader):
             )
             sys.stdout.write("* Server Worker: gevent.wsgi.WSGIServer\n")
             sys.stdout.flush()
-            server.serve_forever()
+            try:
+                with self.lock:
+                    if self._closed:
+                        return
+                    server.start()
+                self._shutdown.wait()
+            finally:
+                server.stop()
         else:
-            self.app.run(host=self.host, port=self.port, threaded=True)
+            server = make_server(self.host, self.port, self.app, threaded=True)
+            with self.lock:
+                if self._closed:
+                    server.server_close()
+                    return
+                self._http_server = server
+            server.serve_forever()
 
     def launch(self) -> None:
         """

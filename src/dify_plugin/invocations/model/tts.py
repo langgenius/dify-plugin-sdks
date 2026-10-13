@@ -1,5 +1,6 @@
 from binascii import unhexlify
 from collections.abc import Generator
+from contextlib import closing
 
 from dify_plugin.core.entities.invocation import InvokeType
 from dify_plugin.core.runtime import BackwardsInvocation
@@ -13,12 +14,14 @@ class TTSInvocation(BackwardsInvocation[TTSResult]):
         """
         Invoke tts
         """
-        for data in self._backwards_invoke(
+        response = self._backwards_invoke(
             InvokeType.TTS,
             TTSResult,
             {
                 **model_config.model_dump(),
                 "content_text": content_text,
             },
-        ):
-            yield unhexlify(data.result)
+        )
+        with closing(response):
+            for data in response:
+                yield unhexlify(data.result)

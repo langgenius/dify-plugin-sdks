@@ -1,0 +1,6 @@
+endpoints:
+  - path: /echo/<item>
+    method: POST
+    extra:
+      python:
+        source: endpoints/echo.py

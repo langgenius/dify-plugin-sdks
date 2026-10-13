@@ -16,6 +16,7 @@ def test_error_hierarchy() -> None:
 class DummyStorageInvocation(StorageInvocation):
     def __init__(self, return_values: list[dict]) -> None:
         self._return_values = return_values
+        self.requests: list[tuple[InvokeType, type[dict], dict]] = []
 
     def _backwards_invoke(
         self,
@@ -23,9 +24,7 @@ class DummyStorageInvocation(StorageInvocation):
         data_type: type[dict],
         data: dict,
     ) -> Generator[dict, None, None]:
-        _ = type
-        _ = data_type
-        _ = data
+        self.requests.append((type, data_type, data))
         yield from self._return_values
 
 
@@ -79,3 +78,36 @@ class TestStorageInvocation:
 
         storage = DummyStorageInvocation([{"data": False}])
         assert not storage.exist("test_key")
+
+
+@pytest.mark.parametrize("value", [b"", b"\x00\xff\x80", "你好".encode()])
+def test_storage_records_binary_values_and_keys(value: bytes) -> None:
+    key = "文件/状态"
+    storage = DummyStorageInvocation([{"data": "ok"}])
+    storage.set(key, value)
+    assert storage.requests == [
+        (InvokeType.Storage, dict, {"opt": "set", "key": key, "value": value.hex()})
+    ]
+
+    storage = DummyStorageInvocation([{"data": value.hex()}])
+    assert storage.get(key) == value
+    assert storage.requests == [(InvokeType.Storage, dict, {"opt": "get", "key": key})]
+
+
+@pytest.mark.parametrize(
+    ("method", "operation", "data"),
+    [("delete", "del", "ok"), ("exist", "exist", False)],
+)
+def test_storage_records_operation_and_key(
+    method: str, operation: str, data: object
+) -> None:
+    storage = DummyStorageInvocation([{"data": data}])
+    getattr(storage, method)("key")
+    assert storage.requests == [
+        (InvokeType.Storage, dict, {"opt": operation, "key": "key"})
+    ]
+
+
+def test_set_accepts_an_empty_response() -> None:
+    storage = DummyStorageInvocation([])
+    assert storage.set("key", b"value") is None

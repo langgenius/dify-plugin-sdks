@@ -294,6 +294,7 @@ class ToolProviderConfiguration(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_credentials_schema(cls, data: dict) -> dict:
+        data = dict(data)
         original_credentials_for_provider: dict[str, dict] = data.get(
             "credentials_for_provider",
             {},

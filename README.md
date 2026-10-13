@@ -35,6 +35,19 @@ just docs      # Generate schema documentation
 CI tests Python 3.12 and 3.13.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup details, integration test requirements, and contribution guidelines.
 
+### Runtime compatibility in the 0.11.0 development tree
+
+Compatibility tests use `main` at `86e81e72` as the baseline for existing callers.
+They preserve public signatures, provider override hooks, blocking LLM string results, model accounting, parameter acceptance and transport completion policies.
+Rerank continues to normalize every response batch with min/max, including scores already in `[0, 1]`.
+Embedding results retain the provider's response order, and multi-part WAV output retains its original bytes and streaming behavior.
+Datasource and agent blobs retain their existing message format; tool blobs retain their existing chunk framing.
+OAuth expiration conversion, manifest default types, regular-expression stop matching and file redirect errors also retain their established behavior.
+
+Resource cleanup covers completed, failed and cancelled calls, including TCP partial writes and Serverless shutdown.
+Existing updates to structured prompts, stop lists, blob messages and shared usage objects retain their original results.
+See the [regression map](tests/regressions.md) and [testing guide](tests/README.md) for covered behavior and validation limits.
+
 ## Production Plugin Examples
 
 See [langgenius/dify-official-plugins](https://github.com/langgenius/dify-official-plugins) for production plugin implementations published and used by Dify.

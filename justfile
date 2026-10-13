@@ -15,8 +15,16 @@ check:
     uv run ruff format --check --diff
     uv run ruff check
 
-test:
-    uv run pytest
+[positional-arguments]
+test *args:
+    uv run python -m tests "$@"
+
+coverage:
+    uv run python -m tests --cov \
+        --cov-report=json:reports/coverage.json \
+        --cov-report=xml:reports/coverage.xml \
+        --junitxml=reports/junit.xml
+    uv run python scripts/check_coverage.py reports/coverage.json
 
 build:
     uv build --no-create-gitignore --no-sources

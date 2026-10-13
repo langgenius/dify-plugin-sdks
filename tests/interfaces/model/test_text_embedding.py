@@ -1,5 +1,8 @@
 from collections.abc import Mapping
 from decimal import Decimal
+from unittest.mock import Mock
+
+import pytest
 
 from dify_plugin.entities.model import EmbeddingInputType, ModelType
 from dify_plugin.entities.model.text_embedding import (
@@ -63,7 +66,11 @@ def test_text_embedding() -> None:
     })
     instance = model_factory.get_instance(ModelType.TEXT_EMBEDDING)
     assert isinstance(instance, MockTextEmbeddingModel)
-    instance.invoke(model="test", credentials={}, texts=["test"])
+    result = instance.invoke(model="test", credentials={}, texts=["first", "second"])
+    assert result.model == "test"
+    assert len(result.embeddings) == 2
+    assert all(len(embedding) == 1536 for embedding in result.embeddings)
+    assert instance.started_at == 0
 
 
 class MockMultiModalTextEmbeddingModel(TextEmbeddingModel):
@@ -129,13 +136,43 @@ class MockMultiModalTextEmbeddingModel(TextEmbeddingModel):
         return {}
 
 
-def test_text_embedding_multimodal() -> None:
+def test_text_embedding_multimodal(monkeypatch: pytest.MonkeyPatch) -> None:
     model_factory = prepare_model_factory({
         ModelType.TEXT_EMBEDDING: MockMultiModalTextEmbeddingModel
     })
     instance = model_factory.get_instance(ModelType.TEXT_EMBEDDING)
     assert isinstance(instance, MockMultiModalTextEmbeddingModel)
-    result = instance.invoke(model="test", credentials={}, texts=["test"])
+    documents = [
+        MultiModalContent(content="test", content_type=MultiModalContentType.TEXT),
+        MultiModalContent(
+            content="https://example.com/image.png",
+            content_type=MultiModalContentType.IMAGE,
+        ),
+    ]
+    provider = Mock(wraps=instance._invoke_multimodal)
+    monkeypatch.setattr(instance, "_invoke_multimodal", provider)
+
+    result = instance.invoke_multimodal(
+        model="test",
+        credentials={},
+        documents=documents,
+        input_type=EmbeddingInputType.QUERY,
+        user="user-1",
+    )
+
     assert result.model == "test"
-    assert len(result.embeddings) == 1
-    assert len(result.embeddings[0]) == 1536
+    assert len(result.embeddings) == 2
+    assert all(len(embedding) == 1536 for embedding in result.embeddings)
+    provider.assert_called_once_with(
+        "test", {}, documents, "user-1", EmbeddingInputType.QUERY
+    )
+    assert instance.started_at == 0
+
+
+def test_embedding_without_multimodal_support_raises_not_implemented() -> None:
+    instance = MockTextEmbeddingModel([])
+
+    with pytest.raises(NotImplementedError, match="_invoke_multimodal"):
+        instance.invoke_multimodal("test", {}, [])
+
+    assert instance.started_at == 0

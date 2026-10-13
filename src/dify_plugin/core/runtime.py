@@ -396,28 +396,29 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
         data_type: type[T],
         data: dict,
     ) -> Generator[T, None, None]:
-        if not self.session:
+        session = self.session
+        if not session:
             msg = "current tool runtime does not support backwards invoke"
             raise Exception(msg)
 
-        self.session.writer.session_message(
-            session_id=self.session.session_id,
-            data=self.session.writer.stream_invoke_object(
-                data={
-                    "type": type.value,
-                    "backwards_request_id": backwards_request_id,
-                    "request": data,
-                }
-            ),
-        )
-
         def filter(data: PluginInStream) -> bool:  # ruff:ignore[builtin-variable-shadowing]
             return (
-                data.event == PluginInStreamEvent.BackwardInvocationResponse
+                data.session_id == session.session_id
+                and data.event == PluginInStreamEvent.BackwardInvocationResponse
                 and data.data.get("backwards_request_id") == backwards_request_id
             )
 
-        with self.session.reader.read(filter) as reader:
+        with session.reader.read(filter) as reader:
+            session.writer.session_message(
+                session_id=session.session_id,
+                data=session.writer.stream_invoke_object(
+                    data={
+                        "type": type.value,
+                        "backwards_request_id": backwards_request_id,
+                        "request": data,
+                    }
+                ),
+            )
             yield from self._line_converter_wrapper(
                 reader.read(timeout_for_round=1), data_type
             )

@@ -1,112 +1,99 @@
-import time
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier, Event
 
 import pytest
 
+from dify_plugin.entities.model import ModelType
 from dify_plugin.errors.model import InvokeError
 from dify_plugin.interfaces.exec.ai_model import TimingContextRaceConditionError
 from dify_plugin.interfaces.model.ai_model import AIModel
 
 
 class MockAIModel(AIModel):
+    model_type = ModelType.LLM
+
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
-        """Validate model credentials
+        del model, credentials
 
-        :param model: model name
-        :param credentials: model credentials
-        :return: None
-        """
-
+    @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
-        """Map model invoke error to unified error
-
-        :return: Invoke error mapping
-
-        Returns:
-            The return value.
-        """
         return {}
 
-    def invoke(self) -> float:
-        """Invoke model"""
-        with self.timing_context():
-            time.sleep(1)
-            return time.perf_counter() - self.started_at
 
+def test_ai_model_timing_context_rejects_overlapping_use() -> None:
+    model = MockAIModel([])
+    entered = Event()
+    release = Event()
 
-class CleanupFailingAIModel(MockAIModel):
-    reject_cleanup = False
+    def owner() -> float:
+        with model.timing_context():
+            started_at = model.started_at
+            entered.set()
+            assert release.wait(timeout=5)
+            assert model.started_at == started_at
+            return started_at
 
-    def __setattr__(self, name: str, value: object) -> None:
-        if name == "started_at" and value == 0 and self.reject_cleanup:
-            msg = "cleanup failed"
-            raise ValueError(msg)
-        super().__setattr__(name, value)
+    def contender() -> None:
+        with model.timing_context():
+            pytest.fail("An active timing context must reject a second caller")
 
-
-def test_ai_model_timing_context_with_race_condition() -> None:
-    model = MockAIModel(model_schemas=[])
-
-    concurrency = 2
-
-    def task(_: int) -> None:
-        """Task to be executed in thread pool"""
-        model.invoke()
-
-    with (
-        pytest.raises(TimingContextRaceConditionError),
-        ThreadPoolExecutor(concurrency) as pool,
-    ):
-        list(pool.map(task, range(concurrency)))
-
-
-def test_ai_model_timing_context_multiple_sequential_uses() -> None:
-    """Check if multiple sequential uses of the timing context are correct"""
-    model = MockAIModel(model_schemas=[])
-
-    time_cost = model.invoke()
-    assert time_cost > 0
-    assert time_cost < 1.5
-    time_cost = model.invoke()
-    assert time_cost > 0
-    assert time_cost < 1.5
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        running = pool.submit(owner)
+        try:
+            assert entered.wait(timeout=5)
+            rejected = pool.submit(contender)
+            with pytest.raises(TimingContextRaceConditionError):
+                rejected.result(timeout=5)
+        finally:
+            release.set()
+        assert running.result(timeout=5) > 0
 
     assert model.started_at == 0
 
 
-def test_ai_model_timing_context_resets_after_error() -> None:
-    model = MockAIModel(model_schemas=[])
+def test_ai_model_timing_context_multiple_sequential_uses(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    timestamps = iter([10.0, 25.0])
+    monkeypatch.setattr(
+        "dify_plugin.interfaces.model.ai_model.time.perf_counter",
+        lambda: next(timestamps),
+    )
+    model = MockAIModel([])
 
-    def fail() -> None:
-        raise RuntimeError
+    for expected in (10.0, 25.0):
+        with model.timing_context():
+            assert model.started_at == expected
+        assert model.started_at == 0
 
-    with pytest.raises(RuntimeError), model.timing_context():
-        fail()
 
+@pytest.mark.parametrize("error", [RuntimeError("failed"), GeneratorExit()])
+def test_ai_model_timing_context_resets_after_error(error: BaseException) -> None:
+    model = MockAIModel([])
+
+    with pytest.raises(type(error)) as exc_info, model.timing_context():
+        raise error
+
+    assert exc_info.value is error
     assert model.started_at == 0
 
 
-def test_ai_model_timing_cleanup_does_not_mask_body_error() -> None:
-    body_error = RuntimeError()
-    model = CleanupFailingAIModel(model_schemas=[])
-    model.reject_cleanup = True
+def test_ai_model_timing_context_is_independent_per_instance() -> None:
+    models = [MockAIModel([]) for _ in range(4)]
+    rendezvous = Barrier(len(models))
 
-    with pytest.raises(RuntimeError) as exc_info, model.timing_context():
-        raise body_error
+    def invoke(model: MockAIModel) -> float:
+        with model.timing_context():
+            started_at = model.started_at
+            rendezvous.wait(timeout=5)
+            assert all(other.started_at > 0 for other in models)
+            rendezvous.wait(timeout=5)
+            return started_at
 
-    assert exc_info.value is body_error
+    with ThreadPoolExecutor(max_workers=len(models)) as pool:
+        starts = list(pool.map(invoke, models))
 
-
-def test_ai_model_timing_context_check_latency() -> None:
-    concurrency = 10
-
-    def task(_: int) -> None:
-        """Check if race condition is raised"""
-        model = MockAIModel(model_schemas=[])
-        time_cost = model.invoke()
-        assert time_cost > 0
-        assert time_cost < 1.5
-
-    with ThreadPoolExecutor(concurrency) as pool:
-        list(pool.map(task, range(concurrency)))
+    assert len(starts) == len(models)
+    assert all(start > 0 for start in starts)
+    assert all(model.started_at == 0 for model in models)
