@@ -20,7 +20,7 @@ The JUnit report identifies each parameter combination.
 | Embedding batches | Provider response order, accepted vector values and batching retain existing behavior. | [test_http_embedding_rerank.py](interfaces/model/openai_compatible/test_http_embedding_rerank.py) |
 | Embedding credentials | Credential checks retain their established response acceptance. | `test_embedding_validates_credentials_over_http` in [test_http_embedding_rerank.py](interfaces/model/openai_compatible/test_http_embedding_rerank.py) |
 | Rerank results | Every batch retains min/max normalization and existing threshold and input behavior. | [test_http_embedding_rerank.py](interfaces/model/openai_compatible/test_http_embedding_rerank.py) |
-| SSE event parsing | Standard events preserve content alongside existing response encodings, raw JSON, custom delimiters and EOF behavior. | [test_http_llm.py](interfaces/model/openai_compatible/test_http_llm.py) |
+| SSE framing and compatibility | LF, CRLF and CR line endings and events with an `event:` field are supported; response encodings, raw JSON, custom delimiters, EOF and events starting with comments retain existing behavior. | [test_http_llm.py](interfaces/model/openai_compatible/test_http_llm.py) |
 | Tool schema token accounting | Integer, boolean and null enums work in fallback token estimation. | [test_model_configuration.py](interfaces/model/openai_compatible/test_model_configuration.py), [test_http_llm.py](interfaces/model/openai_compatible/test_http_llm.py) |
 | Invalid model configuration | Invalid modes report the supplied value in a configuration error. | `test_invalid_custom_model_mode_reports_a_configuration_error` in [test_model_configuration.py](interfaces/model/openai_compatible/test_model_configuration.py) |
 | Numeric model parameters | Boolean numeric values, required defaults and template overrides retain existing acceptance and values. | [test_llm_parameters.py](interfaces/model/test_llm_parameters.py) |
@@ -36,6 +36,7 @@ The JUnit report identifies each parameter combination.
 Embedding tests retain the original response ordering, including responses with out-of-order index metadata.
 Manifest reuse tests check successful reuse, repaired-input retries and observable output.
 Structured-call and shared-object regressions retain the baseline's existing input updates and resulting provider requests.
+An SSE event starting with a comment is still discarded, including its data; [#397](https://github.com/langgenius/dify-plugin-sdks/issues/397) tracks the protocol fix and its compatibility impact.
 
 Protocol evidence and test isolation limits are recorded in [README.md](README.md).
 These regressions do not establish compatibility with a running Dify deployment or external model service.

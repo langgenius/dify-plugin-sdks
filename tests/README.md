@@ -132,6 +132,7 @@ The suite pins these behaviors explicitly:
 - Shared prompts, blob metadata and Agent usage objects retain their existing update behavior.
 - Datasource and agent blob messages pass through unchanged without automatic uploads; tool blob chunks retain their empty terminal frame.
 - WAV chunks are yielded as each provider response arrives, preserving its bytes.
+- SSE framing supports LF, CRLF and CR; events beginning with a comment retain the baseline's behavior of discarding the entire event.
 - Stream EOF, backwards-invocation timeouts, serverless expiry, storage acknowledgements and TCP reconnect results retain their existing acceptance and error behavior.
 - File redirects still raise HTTP status errors, repeated request headers retain the last value, and trigger registration prioritizes the constructor exported by the provider module.
 
@@ -141,6 +142,8 @@ Tool blobs use bounded chunks and stay below that limit.
 Initialization assets with no bytes emit no chunks because the daemon requires nonempty asset data.
 Rerank does not infer whether scores are logits or normalized probabilities.
 Blocking LLM aggregation retains its existing text-only result and does not require changes in downstream text consumers.
+SSE events beginning with comments lose their data, and unknown fields or standalone `id:` events are rejected.
+[#397](https://github.com/langgenius/dify-plugin-sdks/issues/397) tracks these protocol fixes and their compatibility impact.
 
 Resource tests separately verify that completion, failures, cancellation and reader shutdown release owned resources.
 Cancelling a partial TCP write closes its socket before propagating cancellation; reconnection runs in the read loop so it cannot delay the cancelled caller.

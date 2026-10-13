@@ -700,9 +700,9 @@ def test_redirect_preserves_the_request_body(http_server: HTTPServerFactory) -> 
         ("\n", ": keepalive\n"),
         ("\n", "event: message\n"),
     ],
-    ids=["lf", "crlf", "cr", "comment", "event-type"],
+    ids=["lf", "crlf", "cr", "legacy-leading-comment", "event-type"],
 )
-def test_stream_parses_standard_sse_events(
+def test_stream_handles_sse_framing_and_legacy_leading_comments(
     http_server: HTTPServerFactory,
     http_responses: tuple[list[HTTPResponse], Event],
     newline: str,
@@ -739,6 +739,7 @@ def test_stream_parses_standard_sse_events(
         assert responses[0].raw.closed
         assert model.started_at == 0
 
+    # Preserve the baseline's discard for leading comments until #397 is addressed.
     assert "".join(chunk.delta.message.get_text_content() for chunk in chunks) == (
         "" if prefix.startswith(":") else "Answer"
     )
