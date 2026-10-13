@@ -1,18 +1,18 @@
 import socket
 import sys
 import threading
+import time
 from collections.abc import Generator
 from queue import Empty, Queue
 
 import gevent.socket
-from flask import Flask, Response, request
+from flask import Flask, request
 from gevent.pywsgi import WSGIServer
-from pydantic import TypeAdapter
 from werkzeug.serving import BaseWSGIServer, make_server
 
 from dify_plugin.core.entities.plugin.io import (
     PluginInStream,
-    PluginInStreamBase,
+    PluginInStreamEvent,
 )
 from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.serverless.response_writer import ServerlessResponseWriter
@@ -34,8 +34,6 @@ class ServerlessRequestReader(RequestReader):
         """
         super().__init__()
         self.app = Flask(__name__)
-        self.app.route("/invoke", methods=["POST"])(self.handler)
-        self.app.route("/health", methods=["GET"])(self.health)
         self.host = host
         self.port = port
         self.workers = workers
@@ -63,20 +61,20 @@ class ServerlessRequestReader(RequestReader):
         if server is not None:
             server.shutdown()
 
-    def handler(self) -> tuple[Response, int] | tuple[str, int]:
+    def handler(self) -> tuple[Generator[str, None, None], int] | tuple[str, int]:
         try:
             queue: Queue[str | None] = Queue()
-            data = TypeAdapter(PluginInStreamBase).validate_python(request.get_json())
+            data = request.get_json()
             writer = ServerlessResponseWriter(queue)
             plugin_in = PluginInStream(
-                event=data.event,
-                session_id=data.session_id,
-                conversation_id=data.conversation_id,
-                message_id=data.message_id,
-                app_id=data.app_id,
-                endpoint_id=data.endpoint_id,
-                data=data.data,
-                context=data.context,
+                event=PluginInStreamEvent.value_of(data["event"]),
+                session_id=data["session_id"],
+                conversation_id=data.get("conversation_id"),
+                message_id=data.get("message_id"),
+                app_id=data.get("app_id"),
+                endpoint_id=data.get("endpoint_id"),
+                data=data["data"],
+                context=data.get("context"),
                 reader=self,
                 writer=writer,
             )
@@ -86,43 +84,39 @@ class ServerlessRequestReader(RequestReader):
 
         def generate() -> Generator[str, None, None]:
             try:
+                yield ""
+                refresh_time = time.time()
                 while True:
                     try:
-                        response = queue.get(
-                            timeout=self.max_single_connection_lifetime
-                        )
+                        response = queue.get(timeout=1)
                     except Empty:
-                        writer.close()
-                        yield writer.session_message_text(
-                            data.session_id,
-                            writer.stream_error_object({
-                                "error_type": "TimeoutError",
-                                "message": (
-                                    "Plugin request timed out waiting for a response"
-                                ),
-                                "args": {},
-                            }),
-                        )
-                        yield writer.session_message_text(
-                            data.session_id, writer.stream_end_object()
-                        )
-                        return
+                        if (
+                            time.time() - refresh_time
+                            > self.max_single_connection_lifetime
+                        ):
+                            return
+                        continue
 
                     if response is None:
                         return
 
+                    refresh_time = time.time()
                     yield response
             finally:
                 writer.close()
 
-        response = Response(generate())
-        response.call_on_close(writer.close)
+        response = generate()
+        # Arm cleanup before Flask receives the response iterator.
+        next(response)
         return response, 200
 
     def health(self) -> tuple[str, int]:
         return "OK", 200
 
     def _run(self) -> None:
+        self.app.route("/invoke", methods=["POST"])(self.handler)
+        self.app.route("/health", methods=["GET"])(self.health)
+
         if socket.socket is gevent.socket.socket:
             server = WSGIServer((self.host, self.port), self.app)
             sys.stdout.write(

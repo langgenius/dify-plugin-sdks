@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from contextvars import copy_context
 from queue import Empty, Queue
 from threading import Lock
 
@@ -12,7 +13,7 @@ class ServerlessResponseWriter(ResponseWriter):
     Writer for a single plugin request
     """
 
-    def __init__(self, queue: Queue[str | None]) -> None:
+    def __init__(self, queue: Queue) -> None:
         self.q = queue
         self.closed = False
         self._lock = Lock()
@@ -22,7 +23,7 @@ class ServerlessResponseWriter(ResponseWriter):
         with self._lock:
             if self.closed:
                 return
-            task = self._task = Greenlet.spawn(callback)
+            task = self._task = Greenlet.spawn(copy_context().run, callback)
         try:
             task.get()
         finally:
@@ -30,7 +31,7 @@ class ServerlessResponseWriter(ResponseWriter):
                 self._task = None
             task.kill(block=False)
 
-    def write(self, data: str) -> None:
+    def write(self, data: bytes) -> None:
         with self._lock:
             if not self.closed:
                 self.q.put(data)

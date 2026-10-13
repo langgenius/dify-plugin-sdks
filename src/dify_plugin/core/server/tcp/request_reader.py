@@ -55,7 +55,12 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
 
     def launch(self) -> None:
         """Launch the connection"""
-        self._launch()
+        with self.opt_lock:
+            if self.alive:
+                self.sock.close()
+                self.alive = False
+            self._closed = False
+            self._launch()
 
     def close(self) -> None:
         """Close the connection"""
@@ -64,20 +69,21 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             self.alive = False
             self.sock.close()
 
-    def _write_to_sock(self, sock: native_socket.socket, data: bytes) -> int:
+    def _write_to_sock(self, data: bytes) -> int:
         """Write data to the socket"""
-        return sock.send(data)
+        with self.opt_lock:
+            return self.sock.send(data)
 
-    def _recv_from_sock(self, sock: native_socket.socket, size: int) -> bytes:
+    def _recv_from_sock(self, size: int) -> bytes:
         """Receive data from the socket"""
-        return sock.recv(size)
+        return self.sock.recv(size)
 
-    def _write_data(self, sock: native_socket.socket, data: str) -> None:
+    def _write_data(self, data: str) -> None:
         if native_socket.socket is gevent_socket.socket:
             data_bytes = data.encode()
             while data_bytes:
                 try:
-                    sent = self._write_to_sock(sock, data_bytes)
+                    sent = self._write_to_sock(data_bytes)
                     if sent == 0:
                         msg = "Connection is closed"
                         raise ConnectionError(msg)
@@ -87,7 +93,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                         raise
                     sleep(0)
         else:
-            sock.sendall(data.encode())
+            self.sock.sendall(data.encode())
 
     def write(self, data: str) -> None:
         with self.opt_lock:
@@ -97,7 +103,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
 
             sock = self.sock
             try:
-                self._write_data(sock, data)
+                self._write_data(data)
             except BaseException as error:
                 logger.exception("Failed to write data")
                 sock.close()
@@ -106,9 +112,9 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                 if not self._closed and not self._connecting:
                     if isinstance(error, Exception):
                         self._launch()
-                    else:
-                        # Reconnect in the reader so cancellation can finish now.
-                        self._reconnect_pending = True
+                        return
+                    # Reconnect in the reader so cancellation can finish now.
+                    self._reconnect_pending = True
                 raise
 
     def done(self) -> None:
@@ -173,12 +179,13 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
             raise
         logger.info("Sent key to %s:%s", self.host, self.port)
 
-    def _read_data(self, sock: native_socket.socket) -> bytes | None:
+    def _read_data(self) -> bytes | None:
+        sock = self.sock
         ready_to_read, _, _ = select([sock], [], [], 1)
-        if not ready_to_read:
+        if not ready_to_read or sock is not self.sock:
             return None
         try:
-            data = self._recv_from_sock(sock, 1048576)
+            data = self._recv_from_sock(1048576)
         except BlockingIOError as error:
             if native_socket.socket is not gevent_socket.socket:
                 raise
@@ -200,6 +207,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                 with self.opt_lock:
                     if not self.alive:
                         if not self._reconnect_pending:
+                            self.close()
                             return
                         self._launch()
 
@@ -208,7 +216,7 @@ class TCPReaderWriter(RequestReader, ResponseWriter):
                 buffer = b""
                 source_socket = sock
             try:
-                data = self._read_data(sock)
+                data = self._read_data()
             except Exception:
                 with self.opt_lock:
                     if self._closed:

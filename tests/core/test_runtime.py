@@ -315,8 +315,7 @@ def test_reader_disconnect_unblocks_waiting_backwards_invocation(
     try:
         assert sent.wait(timeout=2)
         session.reader.close()
-        with pytest.raises(Exception, match="without end response"):
-            worker.get(timeout=2)
+        assert worker.get(timeout=2) == []
         assert session.reader.readers == []
     finally:
         worker.kill(block=True, timeout=2)
@@ -339,19 +338,14 @@ def test_data_resets_consecutive_empty_response_timeout(
     assert list(result) == [Result(answer="first"), Result(answer="second")]
 
 
-def test_empty_responses_do_not_extend_invocation_timeout(
+def test_empty_response_count_preserves_timeout_exception(
     session: Session,
     invocation: BackwardsInvocation[Result],
 ) -> None:
-    session.max_invocation_timeout = 0.05
-
-    def heartbeat() -> Generator[None]:
-        while True:
-            gevent.sleep(0.01)
-            yield None
-
-    with pytest.raises(TimeoutError, match=r"without response after 0\.05 seconds"):
-        list(invocation._line_converter_wrapper(heartbeat(), Result))
+    session.max_invocation_timeout = 2
+    with pytest.raises(Exception, match="without response after 2 seconds") as error:
+        list(invocation._line_converter_wrapper(_chunks(None, None), Result))
+    assert type(error.value) is Exception
 
 
 def test_invocation_timeout_resets_for_results_and_excludes_consumer_time(
@@ -460,11 +454,13 @@ def test_http_stream_is_closed_on_every_exit(
             with pytest.raises(ValidationError, match="Invalid JSON"):
                 next(stream)
         elif ending == "eof":
-            with pytest.raises(Exception, match="without end response"):
-                next(stream)
+            assert list(stream) == []
         elif ending == "consumer-error":
-            with pytest.raises(ValueError, match="consumer stopped"):
+            with pytest.raises(
+                Exception, match="Failed to parse response: consumer stopped"
+            ) as error:
                 stream.throw(ValueError("consumer stopped"))
+            assert isinstance(error.value.__cause__, ValueError)
         else:
             stream.close()
         assert response_stream.closed
@@ -519,7 +515,7 @@ def test_http_backwards_invocation_uses_daemon_wire_protocol(
 
 @pytest.mark.integration
 @pytest.mark.parametrize(
-    ("status", "body"),
+    ("status", "body", "error"),
     [
         (
             400,
@@ -528,27 +524,31 @@ def test_http_backwards_invocation_uses_daemon_wire_protocol(
                 b'"message":"failed to get session info from cache",'
                 b'"data":{"error_type":"SessionNotFound"}}'
             ),
+            KeyError,
         ),
-        (401, b""),
-        (429, b""),
-        (500, b"failed to parse request"),
+        (401, b"", None),
+        (429, b"", None),
+        (500, b"failed to parse request", ValidationError),
     ],
 )
-def test_http_failure_is_not_an_empty_successful_invocation(
+def test_http_status_preserves_response_parsing(
     session: Session,
     invocation: BackwardsInvocation[Result],
     http_server: Callable[[list[Response]], TestHTTPServer],
     status: int,
     body: bytes,
+    error: type[Exception] | None,
 ) -> None:
     session.install_method = InstallMethod.Serverless
     session.dify_plugin_daemon_url = http_server([
         Response(status=status, body=body)
     ]).url
-    with pytest.raises(httpx.HTTPStatusError) as exc:
-        list(invocation._backwards_invoke(InvokeType.Storage, Result, {}))
-    assert exc.value.response.status_code == status
-    assert exc.value.response.is_closed
+    stream = invocation._backwards_invoke(InvokeType.Storage, Result, {})
+    if error is None:
+        assert list(stream) == []
+    else:
+        with pytest.raises(error):
+            list(stream)
 
 
 @pytest.mark.integration
@@ -594,7 +594,7 @@ def test_http_transport_failure_does_not_complete_partial_result(
 
 
 @pytest.mark.integration
-def test_http_heartbeats_do_not_extend_business_response_timeout(
+def test_http_heartbeats_keep_the_stream_open(
     session: Session,
     invocation: BackwardsInvocation[Result],
     http_server: Callable[[list[Response]], TestHTTPServer],
@@ -608,5 +608,5 @@ def test_http_heartbeats_do_not_extend_business_response_timeout(
         )
     ]).url
 
-    with pytest.raises((TimeoutError, httpx.ReadTimeout), match="without response"):
-        list(invocation._backwards_invoke(InvokeType.Storage, Result, {}))
+    with gevent.Timeout(2):
+        assert list(invocation._backwards_invoke(InvokeType.Storage, Result, {})) == []

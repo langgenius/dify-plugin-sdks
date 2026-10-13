@@ -31,9 +31,6 @@ class StorageInvocation(BackwardsInvocation[dict]):
             msg = f"unexpected data: {data['data']}"
             raise StorageInvocationError(msg)
 
-        msg = "no data found"
-        raise StorageInvocationError(msg)
-
     def get(self, key: str) -> bytes:
         """Get a key from persistence storage.
 

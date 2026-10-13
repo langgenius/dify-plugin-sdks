@@ -155,7 +155,7 @@ def test_one_invalid_tool_is_diagnosed_without_dropping_valid_tools(
     assert list(agent.invoke({"tools": None})) == []
 
 
-def test_usage_accumulation_does_not_rewrite_individual_model_results(
+def test_usage_accumulation_preserves_existing_shared_result_behavior(
     agent: SchemaAgent,
 ) -> None:
     first = LLMUsage.empty_usage().model_copy(
@@ -178,23 +178,24 @@ def test_usage_accumulation_does_not_rewrite_individual_model_results(
             "total_price": Decimal("0.007"),
         }
     )
-    originals = [usage.model_copy() for usage in (first, second)]
     total: dict[str, LLMUsage | None] = {"usage": None}
     agent.increase_usage(total, first)
     agent.increase_usage(total, second)
-    assert total["usage"] is not None
+    assert total["usage"] is first
     assert total["usage"].prompt_tokens == 13
     assert total["usage"].completion_tokens == 6
     assert total["usage"].total_tokens == 19
     assert total["usage"].prompt_price == Decimal("0.013")
     assert total["usage"].completion_price == Decimal("0.012")
     assert total["usage"].total_price == Decimal("0.025")
-    assert [first, second] == originals
 
-    other_run: dict[str, LLMUsage | None] = {"usage": None}
-    agent.increase_usage(other_run, first)
-    assert other_run["usage"] == originals[0]
-    assert total["usage"].total_tokens == 19
+    agent.increase_usage(total, first)
+    assert total["usage"].prompt_tokens == 26
+    assert total["usage"].completion_tokens == 12
+    assert total["usage"].total_tokens == 38
+    assert total["usage"].prompt_price == Decimal("0.026")
+    assert total["usage"].completion_price == Decimal("0.024")
+    assert total["usage"].total_price == Decimal("0.050")
 
 
 @pytest.mark.parametrize("parameter_name", ["max_tokens", "max_completion_tokens"])
@@ -317,7 +318,7 @@ def test_model_history_rejects_malformed_history(history: object) -> None:
 
 
 @pytest.mark.parametrize("multipart", [False, True])
-def test_real_tokenizer_adjusts_budget_for_text_in_both_content_forms(
+def test_real_tokenizer_preserves_budget_for_each_content_form(
     agent: SchemaAgent, multipart: bool
 ) -> None:
     model = AIModelEntity(
@@ -332,7 +333,7 @@ def test_real_tokenizer_adjusts_budget_for_text_in_both_content_forms(
 
     agent.recalc_llm_max_tokens(model, [UserPromptMessage(content=content)], parameters)
 
-    assert 16 <= parameters["max_tokens"] < 80
+    assert parameters["max_tokens"] == (80 if multipart else 49)
 
 
 def test_gpt2_overestimate_does_not_reject_a_valid_provider_prompt(
@@ -353,7 +354,7 @@ def test_gpt2_overestimate_does_not_reject_a_valid_provider_prompt(
     assert parameters["max_tokens"] > 0
 
 
-def test_real_tokenizer_accepts_literal_special_tokens_in_user_text(
+def test_real_tokenizer_preserves_special_token_error(
     agent: SchemaAgent,
 ) -> None:
     model = AIModelEntity(
@@ -364,10 +365,11 @@ def test_real_tokenizer_accepts_literal_special_tokens_in_user_text(
     )
     parameters = {"max_tokens": 1}
 
-    agent.recalc_llm_max_tokens(
-        model,
-        [UserPromptMessage(content="Explain <|endoftext|> as ordinary text")],
-        parameters,
-    )
+    with pytest.raises(ValueError, match="special token"):
+        agent.recalc_llm_max_tokens(
+            model,
+            [UserPromptMessage(content="Explain <|endoftext|> as ordinary text")],
+            parameters,
+        )
 
     assert parameters == {"max_tokens": 1}

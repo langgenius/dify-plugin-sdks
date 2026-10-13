@@ -1,9 +1,9 @@
 import base64
 import contextlib
 import uuid
-from collections.abc import Iterator, Mapping
+from collections.abc import Mapping
 from enum import Enum
-from typing import Any, Self
+from typing import Any
 
 from pydantic import (
     BaseModel,
@@ -146,33 +146,12 @@ class InvokeMessage(BaseModel):
     )
     meta: dict | None = None
 
-    def to_chunks(self) -> Iterator[Self]:
-        if not isinstance(self.message, self.BlobMessage):
-            yield self
-            return
-
-        blob = self.message.blob
-        blob_id = uuid.uuid4().hex
-        # Dify completes the file when it receives the final empty chunk.
-        for sequence, offset in enumerate(range(0, len(blob) + 8192, 8192)):
-            yield type(self)(
-                type=self.MessageType.BLOB_CHUNK,
-                message=self.BlobChunkMessage(
-                    id=blob_id,
-                    sequence=sequence,
-                    total_length=len(blob),
-                    blob=blob[offset : offset + 8192],
-                    end=offset >= len(blob),
-                ),
-                meta=self.meta,
-            )
-
     @field_validator("message", mode="before")
     @classmethod
     def decode_blob_message(cls, v: object) -> object:
         if isinstance(v, dict) and "blob" in v:
             with contextlib.suppress(Exception):
-                return {**v, "blob": base64.b64decode(v["blob"])}
+                v["blob"] = base64.b64decode(v["blob"])
         return v
 
     @field_serializer("message")

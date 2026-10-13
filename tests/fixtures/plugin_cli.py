@@ -3,7 +3,9 @@
 import json
 import signal
 import sys
+import time
 from pathlib import Path
+from types import FrameType
 from typing import Any, TextIO
 
 
@@ -42,14 +44,24 @@ def main() -> None:
     if scenario == "error-before-ready":
         emit("error", response={"error": "startup failed"})
         return
-    if scenario == "ignore-termination":
-        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    if scenario == "graceful-termination":
+        gate = Path(sys.argv[8])
+
+        def shutdown(_signal: int, _frame: FrameType | None) -> None:
+            gate.with_suffix(".started").touch()
+            while not gate.exists():
+                time.sleep(0.01)
+            gate.with_suffix(".completed").touch()
+            raise SystemExit
+
+        signal.signal(signal.SIGTERM, shutdown)
     if scenario == "never-ready":
         sys.stdin.read()
         return
     emit("plugin_ready", response={"info": "plugin loaded"})
-    if scenario == "stderr":
-        emit("info", response={"info": "x" * 200_000}, output=sys.stderr)
+    if scenario in {"stderr", "stderr-error"}:
+        event = "error" if scenario == "stderr-error" else "info"
+        emit(event, response={"info": "x" * 200_000}, output=sys.stderr)
 
     pending = []
     for line in sys.stdin:

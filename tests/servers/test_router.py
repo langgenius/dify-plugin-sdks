@@ -86,7 +86,7 @@ def test_route_validates_real_request_before_calling_handler(
         ({"credentials": []}, ValidationError),
     ],
 )
-def test_invalid_request_never_reaches_handler(
+def test_invalid_request_preserves_validation_and_type_error_fallback(
     session: Session,
     with_writer: bool,
     instance_method: bool,
@@ -94,7 +94,7 @@ def test_invalid_request_never_reaches_handler(
     error: type[Exception],
 ) -> None:
     router = Router(session.reader, session.writer if with_writer else None)
-    calls: list[ModelInvokeLLMRequest] = []
+    calls: list[object] = []
 
     def handle(_session: Session, data: ModelInvokeLLMRequest) -> None:
         calls.append(data)
@@ -108,9 +108,16 @@ def test_invalid_request_never_reaches_handler(
     else:
         router.register_route(handle, lambda _data: True)
 
-    with pytest.raises(error):
-        router.dispatch(session, llm_request(**overrides))
-    assert calls == []
+    request = llm_request(**overrides)
+    if error is TypeError:
+        assert router.dispatch(session, request) is None
+        assert calls == [request]
+        if with_writer:
+            assert session.writer.messages[0]["data"]["error_type"] == "TypeError"
+    else:
+        with pytest.raises(error):
+            router.dispatch(session, request)
+        assert calls == []
 
 
 def test_first_matching_route_wins_and_unmatched_request_has_no_result(

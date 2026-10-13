@@ -1,8 +1,10 @@
 from collections.abc import Generator, Mapping
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 from werkzeug import Request
 
 from dify_plugin.core.runtime import Session
@@ -83,7 +85,7 @@ def oauth_provider(
 
 @pytest.mark.parametrize("expires_at", [None, -1, 0, 2_000_000_000])
 @pytest.mark.parametrize("refresh", [False, True])
-def test_oauth_public_methods_preserve_credentials_and_expiry(
+def test_oauth_public_methods_keep_legacy_credentials_and_expiry(
     oauth_provider: ToolProvider | DatasourceProvider | TriggerSubscriptionConstructor,
     monkeypatch: pytest.MonkeyPatch,
     expires_at: int | None,
@@ -151,25 +153,46 @@ def test_oauth_public_methods_preserve_credentials_and_expiry(
     monkeypatch.setattr(
         oauth_provider, "_oauth_refresh_credentials", refresh_credentials
     )
-    if refresh:
-        result = oauth_provider.oauth_refresh_credentials(
-            redirect_uri, system_credentials, previous_credentials
-        )
-        assert calls == [(redirect_uri, system_credentials, previous_credentials)]
-    else:
-        result = oauth_provider.oauth_get_credentials(
-            redirect_uri, system_credentials, callback_request
-        )
-        assert calls == [(redirect_uri, system_credentials, callback_request)]
-        assert callback_request.args["code"] == "authorization-code"
-        assert callback_request.get_data() == b"body"
+    invalid_expiry = expires_at is None and not isinstance(
+        oauth_provider, TriggerSubscriptionConstructor
+    )
+    with (
+        pytest.raises(ValidationError, match="expires_at")
+        if invalid_expiry
+        else nullcontext()
+    ):
+        if refresh:
+            result = oauth_provider.oauth_refresh_credentials(
+                redirect_uri, system_credentials, previous_credentials
+            )
+        else:
+            result = oauth_provider.oauth_get_credentials(
+                redirect_uri, system_credentials, callback_request
+            )
 
-    assert isinstance(result, OAuthCredentials)
-    assert result.model_dump(mode="json") == {
-        "credentials": credentials,
-        "metadata": metadata,
-        "expires_at": -1 if expires_at is None else expires_at,
-    }
+        expected_expiry = expires_at
+        if expires_at is None or (
+            isinstance(oauth_provider, TriggerSubscriptionConstructor)
+            and not refresh
+            and expires_at == 0
+        ):
+            expected_expiry = -1
+        assert isinstance(result, OAuthCredentials)
+        assert result.model_dump(mode="json") == {
+            "credentials": credentials,
+            "metadata": metadata,
+            "expires_at": expected_expiry,
+        }
+
+    assert calls == [
+        (
+            redirect_uri,
+            system_credentials,
+            previous_credentials if refresh else callback_request,
+        )
+    ]
+    assert callback_request.args["code"] == "authorization-code"
+    assert callback_request.get_data() == b"body"
     assert previous_credentials == previous_payload
     assert source.model_dump() == source_payload
 

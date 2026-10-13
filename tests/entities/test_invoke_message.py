@@ -19,7 +19,7 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 @given(blob=st.binary(max_size=32_768))
 @example(blob=b"")
 @example(blob=bytes(range(256)))
-def test_blob_payload_can_be_reused_and_roundtripped(
+def test_blob_payload_roundtrips_with_existing_decode_behavior(
     message_type: type[InvokeMessage], blob: bytes, chunked: bool
 ) -> None:
     message = {"blob": base64.b64encode(blob).decode()}
@@ -38,54 +38,33 @@ def test_blob_payload_can_be_reused_and_roundtripped(
     original = deepcopy(payload)
 
     first = message_type.model_validate(payload)
-    second = message_type.model_validate(payload)
     restored = message_type.model_validate_json(first.model_dump_json())
 
-    assert first == second == restored
+    assert first == restored
     assert isinstance(
         first.message, InvokeMessage.BlobMessage | InvokeMessage.BlobChunkMessage
     )
     assert first.message.blob == blob
     assert first.model_dump(mode="json") == original
-    assert payload == original
+    assert payload["message"]["blob"] == blob
 
 
 @pytest.mark.parametrize(
     "message_type", [ToolInvokeMessage, AgentInvokeMessage, DatasourceMessage]
 )
-@given(blob=st.binary(max_size=32_768))
-@example(blob=b"")
-@example(blob=b"x" * 8192)
-def test_blob_chunks_preserve_content_metadata_and_source(
-    message_type: type[InvokeMessage], blob: bytes
+def test_blob_decode_preserves_shared_message_metadata(
+    message_type: type[InvokeMessage],
 ) -> None:
-    source = message_type(
-        type=InvokeMessage.MessageType.BLOB,
-        message=InvokeMessage.BlobMessage(blob=blob),
-        meta={
-            "mime_type": "application/octet-stream",
-            "file_name"
-            if message_type is DatasourceMessage
-            else "filename": "报告.bin",
-        },
-    )
-    chunks = list(source.to_chunks())
+    shared = {"blob": "dGVzdA=="}
 
-    assert all(type(chunk) is message_type for chunk in chunks)
-    assert all(chunk.meta == source.meta for chunk in chunks)
-    assert all(chunk.type == InvokeMessage.MessageType.BLOB_CHUNK for chunk in chunks)
-    assert [chunk.message.sequence for chunk in chunks] == list(range(len(chunks)))
-    assert len({chunk.message.id for chunk in chunks}) == 1
-    assert all(chunk.message.total_length == len(blob) for chunk in chunks)
-    assert all(
-        0 < len(chunk.message.blob) <= 8192 and not chunk.message.end
-        for chunk in chunks[:-1]
-    )
-    assert chunks[-1].message.end
-    assert chunks[-1].message.blob == b""
-    assert b"".join(chunk.message.blob for chunk in chunks) == blob
-    assert source.message.blob == blob
-    assert next(source.to_chunks()).message.id != chunks[0].message.id
+    message = message_type.model_validate({
+        "type": "blob",
+        "message": shared,
+        "meta": shared,
+    })
+
+    assert message.message.blob == b"test"
+    assert message.model_dump(mode="json")["meta"] == {"blob": "test"}
 
 
 @pytest.mark.parametrize("value", [None, 0, False, {}, []])

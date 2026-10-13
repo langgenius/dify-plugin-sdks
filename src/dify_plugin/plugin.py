@@ -1,8 +1,8 @@
 import base64
 import logging
+import uuid
 from collections.abc import Generator
 from contextlib import closing
-from mimetypes import guess_extension, guess_type
 from typing import Any
 
 from pydantic import RootModel
@@ -33,8 +33,7 @@ from dify_plugin.core.server.serverless.request_reader import ServerlessRequestR
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 from dify_plugin.core.server.tcp.request_reader import TCPReaderWriter
-from dify_plugin.entities.datasource import DatasourceMessage
-from dify_plugin.entities.invoke_message import InvokeMessage
+from dify_plugin.entities.tool import ToolInvokeMessage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -579,53 +578,67 @@ class Plugin(IOServer, Router):
             max_invocation_timeout=self.config.MAX_INVOCATION_TIMEOUT,
         )
         response = self.dispatch(session, data)
-        if response:
-            if isinstance(response, Generator):
-                with closing(response):
-                    for message in response:
-                        if isinstance(message, DatasourceMessage) and isinstance(
-                            message.message, InvokeMessage.BlobMessage
-                        ):
-                            # Dify's datasource consumer accepts links, not blob chunks.
-                            meta = message.meta or {}
-                            filename = meta.get("file_name") or "file"
-                            mimetype = (
-                                meta.get("mime_type")
-                                or guess_type(filename)[0]
-                                or "application/octet-stream"
-                            )
-                            uploaded = session.file.upload(
-                                filename=filename,
-                                content=message.message.blob,
-                                mimetype=mimetype,
-                            )
-                            extension = guess_extension(uploaded.mime_type) or ".bin"
-                            file_message = DatasourceMessage(
-                                type=DatasourceMessage.MessageType.IMAGE_LINK
-                                if uploaded.mime_type.startswith("image/")
-                                else DatasourceMessage.MessageType.BINARY_LINK,
-                                message=DatasourceMessage.TextMessage(
-                                    text=f"/files/datasources/{uploaded.id}{extension}"
-                                ),
-                                meta=message.meta,
-                            )
-                            chunks = (file_message,)
-                        else:
-                            chunks = (
-                                message.to_chunks()
-                                if isinstance(message, InvokeMessage)
-                                else (message,)
-                            )
-                        for chunk in chunks:
+        if not response:
+            return
+
+        if isinstance(response, Generator):
+            with closing(response):
+                for message in response:
+                    if isinstance(message, ToolInvokeMessage) and isinstance(
+                        message.message,
+                        ToolInvokeMessage.BlobMessage,
+                    ):
+                        # convert blob to file chunks
+                        id_ = uuid.uuid4().hex
+                        blob = message.message.blob
+                        message.message.blob = id_.encode("utf-8")
+                        # split the blob into chunks
+                        chunks = [blob[i : i + 8192] for i in range(0, len(blob), 8192)]
+                        for sequence, chunk in enumerate(chunks):
                             writer.session_message(
                                 session_id=session_id,
-                                data=writer.stream_object(data=chunk),
+                                data=writer.stream_object(
+                                    data=ToolInvokeMessage(
+                                        type=ToolInvokeMessage.MessageType.BLOB_CHUNK,
+                                        message=ToolInvokeMessage.BlobChunkMessage(
+                                            id=id_,
+                                            sequence=sequence,
+                                            total_length=len(blob),
+                                            blob=chunk,
+                                            end=False,
+                                        ),
+                                        meta=message.meta,
+                                    ),
+                                ),
                             )
-            else:
-                writer.session_message(
-                    session_id=session_id,
-                    data=writer.stream_object(data=response),
-                )
+
+                        # end the file stream
+                        writer.session_message(
+                            session_id=session_id,
+                            data=writer.stream_object(
+                                data=ToolInvokeMessage(
+                                    type=ToolInvokeMessage.MessageType.BLOB_CHUNK,
+                                    message=ToolInvokeMessage.BlobChunkMessage(
+                                        id=id_,
+                                        sequence=len(chunks),
+                                        total_length=len(blob),
+                                        blob=b"",
+                                        end=True,
+                                    ),
+                                    meta=message.meta,
+                                ),
+                            ),
+                        )
+                    else:
+                        writer.session_message(
+                            session_id=session_id,
+                            data=writer.stream_object(data=message),
+                        )
+        else:
+            writer.session_message(
+                session_id=session_id,
+                data=writer.stream_object(data=response),
+            )
 
     @staticmethod
     def _get_remote_install_host_and_port(config: DifyPluginEnv) -> tuple[str, int]:

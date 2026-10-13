@@ -37,21 +37,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup details, integration test requi
 
 ### Runtime compatibility in the 0.11.0 development tree
 
-The runtime fixes preserve synchronous plugin entrypoints and existing four-argument OpenAI-compatible response-handler overrides.
-Resource cleanup covers completed, failed and cancelled calls, including TCP reconnects and Serverless shutdown.
-Malformed embedding batches and incomplete model streams now raise errors instead of returning incomplete results.
-Agent token counting includes text blocks and treats literal tokenizer markers as text; its GPT-2 estimate retains the existing budget-adjustment policy.
-Rerank scores in `[0, 1]` retain their provider values for thresholding; batches containing scores outside that interval use min/max normalization.
-Raw logits wholly inside `[0, 1]` are treated as normalized values because the response carries no score-type indicator.
-Invalid rerank document indices and non-finite scores or score ranges raise errors.
+Compatibility tests use `main` at `86e81e72` as the baseline for existing callers.
+They preserve public signatures, provider override hooks, blocking LLM string results, model accounting, parameter acceptance and transport completion policies.
+Rerank continues to normalize every response batch with min/max, including scores already in `[0, 1]`.
+Embedding results retain the provider's response order, and multi-part WAV output retains its original bytes and streaming behavior.
+Datasource and agent blobs retain their existing message format; tool blobs retain their existing chunk framing.
+OAuth expiration conversion, manifest default types, regular-expression stop matching and file redirect errors also retain their established behavior.
 
-Datasource blobs use the existing Dify file-upload service and return file links accepted by current datasource consumers.
-Plugins need access to the signed upload endpoint; its file policy and the SDK's 10-second upload timeout apply.
-Tool and agent blobs continue to use chunked messages.
-Multi-part WAV output is buffered and combined into one valid WAV file.
-
-Blocking LLM aggregation preserves content arrays and replay snapshots as described in [PR #390](https://github.com/langgenius/dify-plugin-sdks/pull/390).
-Consumers needing plain text should use `message.get_text_content()`; complete replay still requires the host and daemon support tracked there.
+Resource cleanup covers completed, failed and cancelled calls, including TCP partial writes and Serverless shutdown.
+Existing updates to structured prompts, stop lists, blob messages and shared usage objects retain their original results.
 See the [regression map](tests/regressions.md) and [testing guide](tests/README.md) for covered behavior and validation limits.
 
 ## Production Plugin Examples

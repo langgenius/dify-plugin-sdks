@@ -1,10 +1,11 @@
 import json
 import socket
 import struct
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from http.client import HTTPConnection
+from queue import Queue
 from threading import Thread, current_thread
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -28,6 +29,8 @@ from tests.servers.helpers import CallbackIOServer
 @pytest.fixture
 def reader() -> Iterator[ServerlessRequestReader]:
     reader = ServerlessRequestReader(max_single_connection_lifetime=1)
+    reader.app.route("/invoke", methods=["POST"])(reader.handler)
+    reader.app.route("/health", methods=["GET"])(reader.health)
     try:
         yield reader
     finally:
@@ -40,9 +43,9 @@ def handle_request(reader: ServerlessRequestReader) -> Response:
     ):
         response, status = reader.handler()
 
-    assert isinstance(response, Response)
+    assert isinstance(response, Generator)
     assert status == 200
-    return response
+    return Response(response, status=status)
 
 
 def test_health_and_http_methods(reader: ServerlessRequestReader) -> None:
@@ -161,6 +164,45 @@ def test_launch_serves_requests_and_close_stops_the_http_thread(
                 server.server_close()
             thread.join(timeout=1)
             assert not thread.is_alive()
+
+
+def test_launch_uses_app_and_handler_replaced_after_construction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reader = ServerlessRequestReader(host="127.0.0.1", port=0)
+    reader.app = Flask("replacement")
+    reader.handler = lambda: ("custom response", 202)
+    created: Queue[tuple[WSGIServer, Thread]] = Queue()
+
+    def create_server(listener: tuple[str, int], app: Flask) -> WSGIServer:
+        server = WSGIServer(listener, app, log=None)
+        created.put((server, current_thread()))
+        return server
+
+    monkeypatch.setattr(serverless_module, "WSGIServer", create_server)
+    reader.launch()
+    server, thread = created.get(timeout=2)
+    try:
+        with gevent.Timeout(2):
+            while not server.started:
+                gevent.sleep(0.001)
+        with closing(
+            HTTPConnection("127.0.0.1", server.server_port, timeout=2)
+        ) as http:
+            http.request("POST", "/invoke")
+            response = http.getresponse()
+            assert response.status == 202
+            assert response.read() == b"custom response"
+            http.request("GET", "/health")
+            response = http.getresponse()
+            assert response.status == 200
+            assert response.read() == b"OK"
+        assert reader.request_queue.empty()
+    finally:
+        reader.close()
+        thread.join(timeout=2)
+        assert not thread.is_alive()
+        assert not server.started
 
 
 def test_invoke_preserves_metadata_and_response_frames(
@@ -299,12 +341,6 @@ def test_event_loop_delivers_http_request_and_stops_after_close(
         {"event": "unknown", "session_id": "session", "data": {}},
         {"event": "request", "session_id": "session"},
         {"event": "request", "data": {}},
-        {"event": "request", "session_id": [], "data": {}},
-        {"event": "request", "session_id": 1, "data": {}},
-        {"event": "request", "session_id": "session", "data": []},
-        {"event": "request", "session_id": "session", "data": None},
-        {"event": "request", "session_id": "session", "data": {}, "context": []},
-        {"event": "request", "session_id": "session", "data": {}, "app_id": 1},
     ],
 )
 def test_invalid_request_is_rejected_before_enqueue(
@@ -320,6 +356,31 @@ def test_invalid_request_is_rejected_before_enqueue(
         response.close()
     assert status >= 400
     assert reader.request_queue.empty()
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("session_id", []),
+        ("session_id", 1),
+        ("data", []),
+        ("data", None),
+        ("context", []),
+        ("app_id", 1),
+    ],
+)
+def test_request_fields_reach_the_router_without_additional_validation(
+    reader: ServerlessRequestReader, field: str, value: object
+) -> None:
+    payload = {"event": "request", "session_id": "session", "data": {}, field: value}
+    with reader.app.test_request_context(json=payload):
+        response, status = reader.handler()
+    try:
+        assert status == 200
+        request = reader.request_queue.get_nowait()
+        assert getattr(request, field) == value
+    finally:
+        response.close()
 
 
 @pytest.mark.parametrize(
@@ -413,7 +474,7 @@ def test_idle_timeout_resets_after_each_response(
         worker.kill()
 
 
-def test_idle_timeout_reports_partial_result_as_failure(
+def test_idle_timeout_preserves_partial_result_and_ends_silently(
     reader: ServerlessRequestReader,
 ) -> None:
     reader.max_single_connection_lifetime = 0.02
@@ -425,9 +486,8 @@ def test_idle_timeout_reports_partial_result_as_failure(
 
     messages = [json.loads(frame)["data"] for frame in response.response]
 
-    assert [message["type"] for message in messages] == ["stream", "error", "end"]
+    assert [message["type"] for message in messages] == ["stream"]
     assert messages[0]["data"] == {"text": "partial"}
-    assert messages[1]["data"]["error_type"] == "TimeoutError"
     assert plugin_in.writer.closed
     assert plugin_in.writer.q.empty()
 

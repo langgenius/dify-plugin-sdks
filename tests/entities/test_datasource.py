@@ -76,11 +76,11 @@ def test_datasource_blob_message_keeps_online_drive_remote_metadata() -> None:
     assert serialized["message"]["blob"] == base64.b64encode(b"content").decode()
 
 
-@pytest.mark.parametrize("default", [False, True])
-def test_datasource_manifest_preserves_boolean_defaults_for_crawl_requests(
+@pytest.mark.parametrize(("default", "expected"), [(False, 0.0), (True, 1.0)])
+def test_datasource_manifest_keeps_legacy_numeric_boolean_defaults(
     default: bool,
+    expected: float,
 ) -> None:
-    # Tavily and Firecrawl pass these boolean defaults to their upstream APIs.
     datasource = DatasourceEntity.model_validate({
         "identity": {
             "author": "langgenius",
@@ -100,4 +100,6 @@ def test_datasource_manifest_preserves_boolean_defaults_for_crawl_requests(
         ],
     })
 
-    assert datasource.model_dump(mode="json")["parameters"][0]["default"] is default
+    serialized = datasource.model_dump(mode="json")["parameters"][0]["default"]
+    assert type(serialized) is float
+    assert serialized == expected

@@ -185,7 +185,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         usage: LLMUsage,
     ) -> None:
         if not final_llm_usage_dict["usage"]:
-            final_llm_usage_dict["usage"] = usage.model_copy()
+            final_llm_usage_dict["usage"] = usage
         else:
             llm_usage = final_llm_usage_dict["usage"]
             llm_usage.prompt_tokens += usage.prompt_tokens
@@ -201,7 +201,8 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         prompt_messages: list[PromptMessage],
         parameters: dict,
     ) -> int | None:
-        # recalc max_tokens if sum(prompt_token + max_tokens) over model token limit
+        # recalc max_tokens if sum(prompt_token +  max_tokens) over model token limit
+
         model_context_tokens = model_entity.model_properties.get(
             ModelPropertyKey.CONTEXT_SIZE,
         )
@@ -220,10 +221,12 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         if model_context_tokens is None:
             return -1
 
+        if max_tokens is None:
+            max_tokens = 0
+
         prompt_tokens = self._get_num_tokens_by_gpt2(prompt_messages)
 
         if prompt_tokens + max_tokens > model_context_tokens:
-            # GPT-2 only estimates provider tokens; keep the provider call possible.
             max_tokens = max(model_context_tokens - prompt_tokens, 16)
 
             for parameter_rule in model_entity.parameter_rules:
@@ -251,8 +254,12 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         """
         import tiktoken  # ruff:ignore[import-outside-top-level]
 
-        text = " ".join(prompt.get_text_content() for prompt in prompt_messges)
-        return len(tiktoken.encoding_for_model("gpt2").encode_ordinary(text))
+        text = " ".join([
+            prompt.content
+            for prompt in prompt_messges
+            if isinstance(prompt.content, str)
+        ])
+        return len(tiktoken.encoding_for_model("gpt2").encode(text))
 
     def _init_prompt_tools(
         self,

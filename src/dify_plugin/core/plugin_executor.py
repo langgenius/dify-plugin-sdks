@@ -884,7 +884,6 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
             return tool_cls(
                 runtime=ToolRuntime(
                     credentials=data.credentials,
-                    credential_type=data.credential_type,
                     user_id=data.user_id,
                     session_id=session.session_id,
                 ),

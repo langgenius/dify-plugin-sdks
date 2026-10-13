@@ -75,7 +75,7 @@ class DatasourceParameter(BaseModel):
     auto_generate: ParameterAutoGenerate | None = None
     template: ParameterTemplate | None = None
     required: bool = False
-    default: float | int | str | bool | None = None
+    default: float | int | str | None = None
     min: float | int | None = None
     max: float | int | None = None
     precision: int | None = None

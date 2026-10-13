@@ -393,9 +393,10 @@ def test_polling_requires_both_provider_methods(
 @pytest.mark.parametrize(
     "error", [InvokeBadRequestError("invalid polling job"), RuntimeError("job failed")]
 )
-def test_polling_errors_preserve_sdk_errors_and_reset_timing(
+def test_polling_errors_keep_existing_mapping_and_reset_timing(
     operation: str, error: Exception, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setattr(PollingLLM, "__module__", "provider.models.llm")
     model = PollingLLM()
     cause = ValueError("original cause")
     error.__cause__ = cause
@@ -406,13 +407,10 @@ def test_polling_errors_preserve_sdk_errors_and_reset_timing(
     with pytest.raises(InvokeError) as exc_info:
         invoke(model.scenario.model, {}, payload)
 
-    if isinstance(error, InvokeError):
-        assert exc_info.value is error
-        assert exc_info.value.__cause__ is cause
-    else:
-        assert type(exc_info.value) is InvokeError
-        assert exc_info.value.__cause__ is error
-        assert "job failed" in str(exc_info.value)
+    assert type(exc_info.value) is InvokeError
+    assert str(exc_info.value) == f"[provider] Error: {error!s}"
+    assert exc_info.value.__cause__ is error
+    assert error.__cause__ is cause
     assert model.started_at == 0
 
 

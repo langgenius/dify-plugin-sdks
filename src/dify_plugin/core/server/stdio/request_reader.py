@@ -30,6 +30,7 @@ class StdioRequestReader(RequestReader):
         while not self._closed:
             data = self._read_async()
             if not data:
+                self.close()
                 return
 
             # Write new data to buffer

@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.rerank import MultiModalRerankResult, RerankResult
 from dify_plugin.entities.model.text_embedding import MultiModalContent
-from dify_plugin.errors.model import InvokeError
 from dify_plugin.interfaces.model.ai_model import AIModel
 
 
@@ -90,9 +89,6 @@ class RerankModel(AIModel):
 
         Returns:
             The return value.
-
-        Raises:
-            InvokeError: If invoking the model fails.
         """
 
         with self.timing_context():
@@ -100,8 +96,6 @@ class RerankModel(AIModel):
                 return self._invoke(
                     model, credentials, query, docs, score_threshold, top_n, user
                 )
-            except InvokeError:
-                raise
             except Exception as e:
                 raise self._transform_invoke_error(e) from e
 
@@ -128,7 +122,7 @@ class RerankModel(AIModel):
                     top_n,
                     user,
                 )
-            except (InvokeError, NotImplementedError):
+            except NotImplementedError:
                 raise
             except Exception as e:
                 raise self._transform_invoke_error(e) from e

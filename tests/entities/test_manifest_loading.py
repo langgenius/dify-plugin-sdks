@@ -1,5 +1,6 @@
 from copy import deepcopy
 from pathlib import Path
+from types import MappingProxyType
 
 import pytest
 import yaml
@@ -141,9 +142,90 @@ def test_tool_credentials_survive_revalidation_after_load_or_repair(
     assert reloaded.tools[0].identity.name == "echo"
 
 
-@pytest.mark.parametrize("default", [False, True])
-def test_agent_manifest_preserves_boolean_parameter_defaults(
-    contract_source: Path, default: bool
+@pytest.mark.parametrize("immutable_field", [None, "label", "ignored"])
+@pytest.mark.parametrize(
+    ("model", "path", "field", "result_field"),
+    [
+        (
+            ToolProviderConfiguration,
+            "provider/contract.yaml",
+            "credentials_for_provider",
+            "credentials_schema",
+        ),
+        (
+            TriggerProviderConfiguration,
+            "triggers/events.yaml",
+            "credentials_schema",
+            "subscription_schema",
+        ),
+    ],
+    ids=["tool", "trigger"],
+)
+def test_provider_credentials_keep_legacy_shared_yaml_mapping_names(
+    contract_source: Path,
+    model: type[ToolProviderConfiguration | TriggerProviderConfiguration],
+    path: str,
+    field: str,
+    result_field: str,
+    immutable_field: str | None,
+) -> None:
+    data = yaml.safe_load((contract_source / path).read_text())
+    credential = {"type": "secret-input", "label": {"en_US": "Token"}}
+    if immutable_field == "label":
+        credential["label"] = MappingProxyType(credential["label"])
+    data[field] = {"access_token": credential, "refresh_token": credential}
+    if model is TriggerProviderConfiguration:
+        data["subscription_schema"] = [credential, credential]
+    if immutable_field == "ignored":
+        data["unused"] = MappingProxyType({})
+
+    result = model.model_validate(data)
+
+    assert [item.name for item in getattr(result, result_field)] == [
+        "refresh_token",
+        "refresh_token",
+    ]
+    assert model.model_validate(data) == result
+
+
+def test_trigger_shared_yaml_anchor_keeps_legacy_revalidation_values(
+    contract_source: Path,
+) -> None:
+    data = yaml.safe_load((contract_source / "triggers/events.yaml").read_text())
+    data.update(
+        yaml.safe_load("""
+credentials_schema:
+  outer: &credential
+    type: secret-input
+    label:
+      en_US: Token
+subscription_schema:
+  - *credential
+subscription_constructor:
+  credentials_schema:
+    inner: *credential
+events: []
+""")
+    )
+
+    first = TriggerProviderConfiguration.model_validate(data)
+    second = TriggerProviderConfiguration.model_validate(data)
+
+    assert [item.name for item in first.subscription_schema] == ["outer"]
+    assert [item.name for item in second.subscription_schema] == ["inner"]
+    assert first.subscription_constructor is not None
+    assert second.subscription_constructor is not None
+    assert [
+        item.name for item in first.subscription_constructor.credentials_schema
+    ] == ["inner"]
+    assert [
+        item.name for item in second.subscription_constructor.credentials_schema
+    ] == ["inner"]
+
+
+@pytest.mark.parametrize(("default", "expected"), [(False, 0), (True, 1)])
+def test_agent_manifest_keeps_legacy_numeric_boolean_defaults(
+    contract_source: Path, default: bool, expected: int
 ) -> None:
     path = contract_source / "agents/echo.yaml"
     strategy = yaml.safe_load(path.read_text())
@@ -160,8 +242,11 @@ def test_agent_manifest_preserves_boolean_parameter_defaults(
 
     configuration = AgentStrategyProviderConfiguration.model_validate(provider)
 
-    serialized = configuration.model_dump(mode="json")
-    assert serialized["strategies"][0]["parameters"][0]["default"] is default
+    serialized = configuration.model_dump(mode="json")["strategies"][0]["parameters"][
+        0
+    ]["default"]
+    assert type(serialized) is int
+    assert serialized == expected
 
 
 def test_endpoint_manifest_can_mix_paths_mappings_and_parsed_declarations(

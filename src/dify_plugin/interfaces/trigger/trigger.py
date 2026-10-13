@@ -242,7 +242,7 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             request=request,
         )
         return OAuthCredentials(
-            expires_at=credentials.expires_at,
+            expires_at=credentials.expires_at or -1,
             credentials=credentials.credentials,
         )
 

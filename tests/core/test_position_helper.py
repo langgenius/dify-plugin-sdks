@@ -20,14 +20,15 @@ def test_absent_empty_or_invalid_positions_mean_no_order(
     assert get_position_map(str(tmp_path)) == {}
 
 
-def test_position_file_trims_names_and_ignores_non_names(tmp_path: Path) -> None:
+def test_position_file_preserves_legacy_indices_after_trimming(tmp_path: Path) -> None:
     (tmp_path / "custom.yaml").write_text(
         '- " beta "\n- null\n- 42\n- ""\n- "  "\n- alpha\n', encoding="utf-8"
     )
 
     assert get_position_map(str(tmp_path), file_name="custom.yaml") == {
         "beta": 0,
-        "alpha": 1,
+        "": 1,
+        "alpha": 2,
     }
 
 

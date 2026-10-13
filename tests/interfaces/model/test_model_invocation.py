@@ -65,11 +65,13 @@ class TTSProvider(ProviderMethods, TTSModel):
     pass
 
 
-def test_error_mapper_preserves_sdk_errors() -> None:
+def test_error_mapper_keeps_sdk_errors_in_the_existing_mapping() -> None:
     model = EmbeddingProvider([])
     error = InvokeBadRequestError("invalid input")
 
-    assert model._transform_invoke_error(error) is error
+    mapped = model._transform_invoke_error(error)
+    assert type(mapped) is InvokeError
+    assert str(mapped) == "[interfaces] Error: invalid input"
 
 
 @pytest.fixture(
@@ -160,7 +162,7 @@ def test_provider_errors_are_mapped_and_timing_is_reset(
         assert str(error) in str(exc_info.value)
 
 
-def test_sdk_errors_keep_their_type_description_and_original_cause(
+def test_sdk_errors_reach_provider_error_overrides(
     invocation: tuple[AIModel, Callable[[], object], str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -169,13 +171,17 @@ def test_sdk_errors_keep_their_type_description_and_original_cause(
     error = InvokeBadRequestError("Text-to-speech input must not be empty")
     error.__cause__ = cause
     monkeypatch.setattr(model, provider_method, Mock(side_effect=error))
+    mapped = InvokeConnectionError("provider-specific mapping")
+    transform = Mock(return_value=mapped)
+    monkeypatch.setattr(model, "_transform_invoke_error", transform)
 
-    with pytest.raises(InvokeBadRequestError) as exc_info:
+    with pytest.raises(InvokeConnectionError) as exc_info:
         invoke()
 
-    assert exc_info.value is error
-    assert exc_info.value.__cause__ is cause
-    assert str(exc_info.value) == "Text-to-speech input must not be empty"
+    transform.assert_called_once_with(error)
+    assert exc_info.value is mapped
+    assert exc_info.value.__cause__ is error
+    assert error.__cause__ is cause
     assert model.started_at == 0
 
 

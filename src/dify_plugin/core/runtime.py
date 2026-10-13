@@ -5,7 +5,6 @@ from enum import Enum
 from typing import Any
 
 import httpx
-from gevent import Timeout
 from pydantic import BaseModel, Field, TypeAdapter
 from yarl import URL
 
@@ -288,33 +287,43 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
         """
         convert string into type T
         """
-        timeout = self.session.max_invocation_timeout if self.session else 250
-        while True:
-            error = TimeoutError(
-                f"invocation exited without response after {timeout} seconds"
-            )
-            with Timeout(timeout, error):
-                for chunk in generator:
-                    if chunk is None:
-                        continue
+        empty_response_count = 0
+        # get max timeout count, each wait is 1 second, so timeout count
+        # equals timeout seconds
+        max_timeout_count = self.session.max_invocation_timeout if self.session else 250
 
-                    event = BackwardsInvocationResponseEvent(**chunk.data)
-                    if event.event == BackwardsInvocationResponseEvent.Event.End:
-                        return
-                    if event.event == BackwardsInvocationResponseEvent.Event.Error:
-                        raise Exception(event.message)
-                    if event.data is None:
-                        return
-                    try:
-                        result = data_type(**event.data)
-                    except Exception as e:
-                        msg = f"Failed to parse response: {e!s}"
-                        raise Exception(msg) from e
-                    break
-                else:
-                    msg = "invocation exited without end response"
+        for chunk in generator:
+            """
+            accept response from input stream and wait,
+            exit when consecutive empty responses exceed configured timeout value
+            """
+            if chunk is None:
+                empty_response_count += 1
+                # if consecutive empty responses exceed max timeout count, break
+                if empty_response_count >= max_timeout_count:
+                    msg = (
+                        "invocation exited without response after "
+                        f"{max_timeout_count} seconds"
+                    )
                     raise Exception(msg)
-            yield result
+                continue
+
+            event = BackwardsInvocationResponseEvent(**chunk.data)
+            if event.event == BackwardsInvocationResponseEvent.Event.End:
+                break
+
+            if event.event == BackwardsInvocationResponseEvent.Event.Error:
+                raise Exception(event.message)
+
+            if event.data is None:
+                break
+
+            empty_response_count = 0
+            try:
+                yield data_type(**event.data)
+            except Exception as e:
+                msg = f"Failed to parse response: {e!s}"
+                raise Exception(msg) from e
 
     def _http_backwards_invoke(
         self,
@@ -365,7 +374,6 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
                 ),
             ) as response,
         ):
-            response.raise_for_status()
 
             def generator() -> Generator[PluginInStreamBase, None, None]:
                 for line in response.iter_lines():

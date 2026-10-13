@@ -1,10 +1,7 @@
 import base64
 import hmac
-import json
 from collections.abc import Generator
 from copy import deepcopy
-from email import policy
-from email.parser import BytesParser
 from inspect import signature
 from io import BytesIO
 from typing import Any
@@ -27,15 +24,14 @@ from dify_plugin.core.entities.plugin.request import (
     TriggerActions,
 )
 from dify_plugin.entities import I18nObject, ParameterOption
+from dify_plugin.entities.agent import AgentInvokeMessage
 from dify_plugin.entities.datasource import DatasourceMessage
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.trigger import EventDispatch, Subscription
 from dify_plugin.interfaces.tool import Tool
-from dify_plugin.invocations.file import File, UploadFileResponse
+from dify_plugin.invocations.file import File
 from dify_plugin.plugin import Plugin
-from tests.http_server import HTTPServerFactory
-from tests.http_server import Response as HTTPResponse
 
 from .plugin_fixtures import contract_plugin, contract_source, invoke
 
@@ -285,8 +281,8 @@ CASES = [
         },
         [
             {
-                "type": "binary_link",
-                "message": {"text": "/files/datasources/uploaded.txt"},
+                "type": "blob",
+                "message": {"blob": "ZGF0YQ=="},
                 "meta": {"mime_type": "text/plain", "file_name": "example.txt"},
             },
         ],
@@ -679,18 +675,6 @@ def test_public_actions_execute_registered_plugins(
         **payload,
     })
     original = deepcopy(request)
-    if action == "invoke_online_drive_download_file":
-        mocker.patch.object(
-            File,
-            "upload",
-            return_value=UploadFileResponse(
-                id="uploaded",
-                name="example.txt",
-                size=4,
-                extension="txt",
-                mime_type="text/plain",
-            ),
-        )
     if action in MODEL_METHODS:
         model = contract_plugin.registration.get_model_instance(
             payload["provider"], ModelType(payload["model_type"])
@@ -938,88 +922,102 @@ def test_blob_chunk_boundaries_round_trip(
     assert all(len(chunk["blob"]) <= 4 * ((8192 + 2) // 3) for chunk in chunks)
 
 
-@pytest.mark.integration
-@pytest.mark.parametrize("kind", ["drive", "document"])
+def test_tool_blob_subclasses_keep_the_base_chunk_contract(
+    contract_plugin: Plugin, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class TaggedMessage(ToolInvokeMessage):
+        source: str
+
+    def provider(*_args: object, **_kwargs: object) -> Generator[ToolInvokeMessage]:
+        yield TaggedMessage(
+            type=ToolInvokeMessage.MessageType.BLOB,
+            message=ToolInvokeMessage.BlobMessage(blob=b"custom"),
+            source="custom-tool",
+        )
+
+    plugin_cls = contract_plugin.registration.get_tool_cls("contract", "echo")
+    monkeypatch.setattr(plugin_cls, "_invoke", provider)
+
+    messages = invoke(contract_plugin, request_for("invoke_tool"))
+
+    assert len(messages) == 2
+    assert all(message["type"] == "stream" for message in messages)
+    assert all(
+        set(message["data"]) == {"type", "message", "meta"} for message in messages
+    )
+    assert all(message["data"]["type"] == "blob_chunk" for message in messages)
+    assert base64.b64decode(messages[0]["data"]["message"]["blob"]) == b"custom"
+    assert not messages[1]["data"]["message"]["blob"]
+    assert messages[1]["data"]["message"]["end"] is True
+
+
+def test_repeated_tool_blob_keeps_existing_id_replacement(
+    contract_plugin: Plugin, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = ToolInvokeMessage(
+        type=ToolInvokeMessage.MessageType.BLOB,
+        message=ToolInvokeMessage.BlobMessage(blob=b"payload"),
+    )
+
+    def provider(*_args: object, **_kwargs: object) -> Generator[ToolInvokeMessage]:
+        yield original
+        yield original
+
+    plugin_cls = contract_plugin.registration.get_tool_cls("contract", "echo")
+    monkeypatch.setattr(plugin_cls, "_invoke", provider)
+
+    messages = invoke(contract_plugin, request_for("invoke_tool"))
+
+    assert len(messages) == 4
+    chunks = [message["data"]["message"] for message in messages]
+    assert base64.b64decode(chunks[0]["blob"]) == b"payload"
+    assert base64.b64decode(chunks[2]["blob"]) == chunks[0]["id"].encode()
+    assert [chunk["total_length"] for chunk in chunks] == [7, 7, 32, 32]
+    assert [chunk["end"] for chunk in chunks] == [False, True, False, True]
+    assert original.message.blob == chunks[2]["id"].encode()
+
+
+@pytest.mark.parametrize("kind", ["drive", "document", "agent"])
 @pytest.mark.parametrize(
-    ("size", "metadata", "filename", "mimetype", "suffix", "message_type"),
+    ("size", "metadata"),
     [
-        (0, None, "file", "application/octet-stream", ".bin", "binary_link"),
-        (
-            4,
-            {"file_name": "result.txt"},
-            "result.txt",
-            "text/plain",
-            ".txt",
-            "binary_link",
-        ),
-        (
-            4 * 1024 * 1024,
-            {"file_name": "result.bin", "mime_type": "application/octet-stream"},
-            "result.bin",
-            "application/octet-stream",
-            ".bin",
-            "binary_link",
-        ),
-        (
-            4,
-            {"file_name": "image.png", "mime_type": "image/png", "source": "original"},
-            "image.png",
-            "image/png",
-            ".png",
-            "image_link",
-        ),
+        (0, None),
+        (4, {"file_name": "result.txt"}),
+        (4 * 1024 * 1024, {"mime_type": "application/octet-stream"}),
+        (4, {"file_name": "image.png", "mime_type": "image/png"}),
     ],
-    ids=["empty", "inferred-mime", "large", "image"],
+    ids=["empty", "named", "large", "image"],
 )
-def test_datasource_files_use_the_existing_upload_and_link_contract(
+def test_datasource_and_agent_blobs_preserve_wire_format_without_uploads(
     contract_plugin: Plugin,
-    http_server: HTTPServerFactory,
-    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
     kind: str,
     size: int,
     metadata: dict | None,
-    filename: str,
-    mimetype: str,
-    suffix: str,
-    message_type: str,
 ) -> None:
     content = bytes(range(256)) * (size // 256) + bytes(range(size % 256))
-    file_id = "b8789ac3-20dc-48a4-950e-d4139d857a02"
-    server = http_server([
-        HTTPResponse(
-            status=201,
-            body=json.dumps({
-                "id": file_id,
-                "name": filename,
-                "size": size,
-                "extension": suffix,
-                "mime_type": mimetype,
-            }).encode(),
-        )
-    ])
-    monkeypatch.setattr(
-        File,
-        "_backwards_invoke",
-        lambda *_args, **_kwargs: iter([
-            {"url": server.url + "/files/upload/for-plugin"}
-        ]),
-    )
-    original = DatasourceMessage(
-        type=DatasourceMessage.MessageType.BLOB,
-        message=DatasourceMessage.BlobMessage(blob=content),
+    upload = mocker.patch.object(File, "upload")
+    message_type = AgentInvokeMessage if kind == "agent" else DatasourceMessage
+    original = message_type(
+        type=message_type.MessageType.BLOB,
+        message=message_type.BlobMessage(blob=content),
         meta=metadata,
     )
-    expected_original = original.model_copy(deep=True)
+    expected = original.model_dump(mode="json")
+    finalized = []
 
-    def provider(*_args: object, **_kwargs: object) -> Generator[DatasourceMessage]:
-        yield original
+    def provider(*_args: object, **_kwargs: object) -> Generator:
+        try:
+            yield original
+        finally:
+            finalized.append(True)
 
     if kind == "drive":
         plugin_cls = contract_plugin.registration.get_online_drive_datasource_cls(
             "drive", "echo"
         )
         method, action = "_download_file", "invoke_online_drive_download_file"
-    else:
+    elif kind == "document":
         plugin_cls = contract_plugin.registration.get_online_document_datasource_cls(
             "documents", "echo"
         )
@@ -1027,70 +1025,20 @@ def test_datasource_files_use_the_existing_upload_and_link_contract(
             "_get_content",
             "invoke_online_document_datasource_get_page_content",
         )
-    monkeypatch.setattr(plugin_cls, method, provider)
+    else:
+        plugin_cls = contract_plugin.registration.get_agent_strategy_cls(
+            "contract_agents", "echo"
+        )
+        method, action = "_invoke", "invoke_agent_strategy"
+    mocker.patch.object(plugin_cls, method, provider)
 
     messages = invoke(contract_plugin, request_for(action))
 
-    assert messages == [
-        {
-            "type": "stream",
-            "data": {
-                "type": message_type,
-                "message": {"text": f"/files/datasources/{file_id}{suffix}"},
-                "meta": metadata,
-            },
-        }
-    ]
-    assert original == expected_original
-    assert len(server.requests) == 1
-    request = server.requests[0]
-    multipart = BytesParser(policy=policy.default).parsebytes(
-        f"Content-Type: {request.headers['Content-Type']}\r\n\r\n".encode()
-        + request.body
-    )
-    parts = list(multipart.iter_parts())
-    assert len(parts) == 1
-    assert parts[0].get_filename() == filename
-    assert parts[0].get_content_type() == mimetype
-    assert parts[0].get_payload(decode=True) == content
-
-
-@pytest.mark.integration
-def test_datasource_upload_failure_closes_provider_and_reports_error(
-    contract_plugin: Plugin,
-    http_server: HTTPServerFactory,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    server = http_server([HTTPResponse(status=403, body=b"upload denied")])
-    monkeypatch.setattr(
-        File,
-        "_backwards_invoke",
-        lambda *_args, **_kwargs: iter([{"url": server.url + "/upload"}]),
-    )
-    closed = []
-
-    def provider(*_args: object, **_kwargs: object) -> Generator[DatasourceMessage]:
-        try:
-            yield DatasourceMessage(
-                type=DatasourceMessage.MessageType.BLOB,
-                message=DatasourceMessage.BlobMessage(blob=b"file contents"),
-            )
-            pytest.fail("A failed upload must stop consuming datasource output")
-        finally:
-            closed.append(True)
-
-    plugin_cls = contract_plugin.registration.get_online_drive_datasource_cls(
-        "drive", "echo"
-    )
-    monkeypatch.setattr(plugin_cls, "_download_file", provider)
-
-    messages = invoke(contract_plugin, request_for("invoke_online_drive_download_file"))
-
-    assert [message["type"] for message in messages] == ["error"]
-    assert "403" in messages[0]["data"]["message"]
-    assert "upload denied" in messages[0]["data"]["message"]
-    assert closed == [True]
-    assert len(server.requests) == 1
+    assert messages == [{"type": "stream", "data": expected}]
+    assert messages[0]["data"]["type"] == "blob"
+    assert base64.b64decode(messages[0]["data"]["message"]["blob"]) == content
+    upload.assert_not_called()
+    assert finalized == [True]
 
 
 def test_partial_tool_stream_preserves_data_then_reports_failure(
@@ -1181,7 +1129,7 @@ def test_endpoint_stream_emits_headers_before_utf8_and_binary_chunks(
 
 
 @pytest.mark.parametrize("credential_type", ["api-key", "oauth2", "unauthorized"])
-def test_dynamic_tool_options_receive_credentials_and_identity(
+def test_dynamic_tool_options_preserve_runtime_credential_type_and_identity(
     contract_plugin: Plugin, monkeypatch: pytest.MonkeyPatch, credential_type: str
 ) -> None:
     runtimes = []
@@ -1211,7 +1159,7 @@ def test_dynamic_tool_options_receive_credentials_and_identity(
     assert messages[0]["type"] == "stream"
     assert_contains(
         messages[0]["data"],
-        {"options": [{"value": credential_type, "label": {"en_US": "event"}}]},
+        {"options": [{"value": "api-key", "label": {"en_US": "event"}}]},
     )
     assert len(runtimes) == 1
     assert runtimes[0].credentials == CREDENTIALS

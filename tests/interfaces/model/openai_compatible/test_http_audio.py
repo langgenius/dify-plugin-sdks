@@ -36,7 +36,7 @@ def wav_audio(frames: bytes, rate: int = 24_000) -> bytes:
 
 
 @pytest.mark.parametrize("count", [1, 2])
-def test_tts_returns_one_complete_wav_for_all_sentences(
+def test_tts_preserves_provider_wav_bytes_for_each_sentence(
     http_server: HTTPServerFactory,
     count: int,
 ) -> None:
@@ -62,9 +62,7 @@ def test_tts_returns_one_complete_wav_for_all_sentences(
         )
     )
 
-    with wave.open(BytesIO(result), "rb") as decoded:
-        assert decoded.getnframes() == 8 * count
-        assert decoded.readframes(decoded.getnframes()) == b"".join(frames)
+    assert result == b"".join(audio)
     assert [request.path for request in server.requests] == ["/v1/audio/speech"] * count
     assert all(
         request.headers["Authorization"] == "Bearer key" for request in server.requests
@@ -82,7 +80,7 @@ def test_tts_returns_one_complete_wav_for_all_sentences(
 
 
 @pytest.mark.parametrize("failure", ["format", "truncated", "invalid"])
-def test_tts_rejects_invalid_wav_segments_before_emitting_audio(
+def test_tts_streams_each_provider_segment_without_reencoding(
     http_server: HTTPServerFactory,
     failure: str,
 ) -> None:
@@ -94,16 +92,19 @@ def test_tts_rejects_invalid_wav_segments_before_emitting_audio(
     }[failure]
     server = http_server([Response(body=valid), Response(body=second)])
     model = OAICompatText2SpeechModel([])
-    with pytest.raises(InvokeError):
-        next(
-            model.invoke(
-                "model",
-                "tenant",
-                {"endpoint_url": server.url, "word_limit": 4, "audio_type": "wav"},
-                "One.Two.",
-                "alloy",
-            )
-        )
+    stream = model.invoke(
+        "model",
+        "tenant",
+        {"endpoint_url": server.url, "word_limit": 4, "audio_type": "wav"},
+        "One.Two.",
+        "alloy",
+    )
+    try:
+        assert next(stream) == valid
+        assert len(server.requests) == 1
+        assert b"".join(stream) == second
+    finally:
+        stream.close()
     assert model.started_at == 0
 
 

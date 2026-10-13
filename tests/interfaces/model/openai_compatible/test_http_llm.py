@@ -56,6 +56,28 @@ class LegacyResponseLLM(OAICompatLargeLanguageModel):
             model, credentials, response, prompt_messages
         )
 
+    def _create_final_llm_result_chunk(
+        self,
+        index: int,
+        message: AssistantPromptMessage,
+        finish_reason: str | None,
+        usage: dict | None,
+        model: str,
+        prompt_messages: list[PromptMessage],
+        credentials: dict,
+        full_content: str,
+    ) -> LLMResultChunk:
+        return super()._create_final_llm_result_chunk(
+            index,
+            message,
+            finish_reason,
+            usage,
+            model,
+            prompt_messages,
+            credentials,
+            full_content,
+        )
+
 
 @pytest.fixture
 def structured_model() -> OAICompatLargeLanguageModel:
@@ -214,14 +236,11 @@ def test_invoke_sends_json_and_reads_non_stream_response(
         assert payload["prompt"] == content
 
 
-@pytest.mark.parametrize(
-    ("mode", "expected_prompt_tokens"), [("chat", 37), ("completion", 8)]
-)
-def test_non_stream_usage_estimates_the_prompt_and_answer(
+@pytest.mark.parametrize("mode", ["chat", "completion"])
+def test_non_stream_usage_keeps_existing_fallback_estimates(
     http_server: HTTPServerFactory,
     monkeypatch: pytest.MonkeyPatch,
     mode: str,
-    expected_prompt_tokens: int,
 ) -> None:
     choice = (
         {"message": {"content": "Answer"}} if mode == "chat" else {"text": "Answer"}
@@ -244,8 +263,8 @@ def test_non_stream_usage_estimates_the_prompt_and_answer(
 
     usage = chunks[-1].delta.usage
     assert usage is not None
-    assert usage.prompt_tokens == expected_prompt_tokens
-    assert usage.completion_tokens == 6
+    assert usage.prompt_tokens == 285
+    assert usage.completion_tokens == 215
     assert model.started_at == 0
 
 
@@ -277,28 +296,33 @@ def test_non_stream_tool_calls_preserve_arguments_and_request_schema(
 
     model = OAICompatLargeLanguageModel([])
     monkeypatch.setattr(model, "_get_num_tokens_by_gpt2", len)
-    chunks = list(
-        model.invoke(
-            "model",
-            {
-                "mode": "chat",
-                "endpoint_url": server.url,
-                "function_calling_type": calling_type,
-            },
-            [UserPromptMessage(content="Weather?")],
-            tools=[tool],
-            stream=False,
-        )
+    invocation = model.invoke(
+        "model",
+        {
+            "mode": "chat",
+            "endpoint_url": server.url,
+            "function_calling_type": calling_type,
+        },
+        [UserPromptMessage(content="Weather?")],
+        tools=[tool],
+        stream=False,
     )
-
-    call = chunks[-1].delta.message.tool_calls[0]
-    assert chunks[-1].delta.message.content is None
-    assert call.function.name == "weather"
-    assert json.loads(call.function.arguments) == {"city": "北京"}
-    usage = chunks[-1].delta.usage
-    assert usage is not None
-    expected_tokens = 67 if calling_type == "tool_call" else 61
-    assert usage.completion_tokens == (0 if reported_usage else expected_tokens)
+    if include_content and reported_usage:
+        chunks = list(invocation)
+        call = chunks[-1].delta.message.tool_calls[0]
+        assert chunks[-1].delta.message.content is None
+        assert call.function.name == "weather"
+        assert json.loads(call.function.arguments) == {"city": "北京"}
+        usage = chunks[-1].delta.usage
+        assert usage is not None
+        assert (usage.prompt_tokens, usage.completion_tokens) == (0, 0)
+    else:
+        with pytest.raises(InvokeError) as exc_info:
+            list(invocation)
+        assert isinstance(
+            exc_info.value.__cause__, KeyError if not include_content else ValueError
+        )
+    assert model.started_at == 0
     payload = json.loads(server.requests[0].body)
     if calling_type == "tool_call":
         assert payload["tools"] == [{"type": "function", "function": tool.model_dump()}]
@@ -400,16 +424,19 @@ def test_stream_errors_after_content_do_not_report_success(
     assert model.started_at == 0
 
 
-def test_complete_http_response_without_model_end_is_a_failure(
+@pytest.mark.parametrize("ending", [b"", b"\n\n", b"\n\ndata:   [DONE]\n\n"])
+def test_complete_http_response_keeps_eof_and_done_acceptance(
     http_server: HTTPServerFactory,
+    ending: bytes,
 ) -> None:
     server = http_server([
         Response(
             chunks=(
                 (
                     b'data: {"choices":[{"delta":{"content":"partial"},'
-                    b'"finish_reason":null}]}\n\n'
-                ),
+                    b'"finish_reason":null}]}'
+                )
+                + ending,
             )
         )
     ])
@@ -421,15 +448,19 @@ def test_complete_http_response_without_model_end_is_a_failure(
     )
 
     assert next(stream).delta.message.content == "partial"
-    with pytest.raises(InvokeError, match="without a completion signal"):
-        next(stream)
+    terminal = next(stream)
+    assert terminal.delta.message == AssistantPromptMessage(content="")
+    assert terminal.delta.finish_reason is None
+    assert terminal.delta.usage is not None
+    assert list(stream) == []
     assert model.started_at == 0
 
 
 @pytest.mark.parametrize("stream", [False, True])
 @pytest.mark.parametrize("calling_type", ["tool_call", "function_call", "no_call"])
-def test_missing_usage_counts_only_tool_definitions_sent_to_provider(
+def test_missing_usage_keeps_estimates_and_provider_response_overrides(
     http_server: HTTPServerFactory,
+    monkeypatch: pytest.MonkeyPatch,
     stream: bool,
     calling_type: str,
 ) -> None:
@@ -447,6 +478,7 @@ def test_missing_usage_counts_only_tool_definitions_sent_to_provider(
     )
     server = http_server([response])
     model = LegacyResponseLLM([])
+    monkeypatch.setattr(model, "_get_num_tokens_by_gpt2", len)
     prompts = [UserPromptMessage(content="Question")]
     tools = [
         PromptMessageTool(
@@ -462,9 +494,7 @@ def test_missing_usage_counts_only_tool_definitions_sent_to_provider(
         "input_price": "1",
         "unit": "0.001",
     }
-    expected = model.get_num_tokens(
-        "model", credentials, prompts, tools if calling_type != "no_call" else None
-    )
+    expected = 18 if stream else 285
 
     chunks = list(
         model.invoke("model", credentials, prompts, tools=tools, stream=stream)
@@ -709,12 +739,116 @@ def test_stream_parses_standard_sse_events(
         assert responses[0].raw.closed
         assert model.started_at == 0
 
+    assert "".join(chunk.delta.message.get_text_content() for chunk in chunks) == (
+        "" if prefix.startswith(":") else "Answer"
+    )
+    assert chunks[-1].delta.finish_reason == (
+        None if prefix.startswith(":") else "stop"
+    )
+    assert chunks[-1].delta.usage is not None
+    assert chunks[-1].delta.usage.total_tokens == 3
+
+
+@pytest.mark.parametrize("charset", ["utf-8", "gbk", "utf-16"])
+def test_stream_preserves_explicit_response_charset(
+    http_server: HTTPServerFactory, charset: str
+) -> None:
+    body = (
+        'data: {"choices":[{"delta":{"content":"回答"},"finish_reason":"stop"}]}'
+        '\n\ndata: {"choices":[],"usage":{"prompt_tokens":1,"completion_tokens":2}}'
+        "\n\ndata: [DONE]\n\n"
+    ).encode(charset)
+    server = http_server([
+        Response(
+            headers={"Content-Type": f"text/event-stream; charset={charset}"},
+            chunks=tuple(body[index : index + 1] for index in range(len(body))),
+        )
+    ])
+    model = OAICompatLargeLanguageModel([])
+
+    chunks = list(
+        model.invoke(
+            "model",
+            {"mode": "chat", "endpoint_url": server.url},
+            [UserPromptMessage(content="Question")],
+        )
+    )
+
+    assert "".join(chunk.delta.message.get_text_content() for chunk in chunks) == "回答"
+    assert chunks[-1].delta.usage is not None
+    assert chunks[-1].delta.usage.total_tokens == 3
+    assert model.started_at == 0
+
+
+@pytest.mark.parametrize("delimiter", ["\n\n", "|"])
+@pytest.mark.parametrize("prefix", ["", "data: "])
+def test_stream_preserves_raw_and_single_prefix_multiline_json(
+    http_server: HTTPServerFactory, delimiter: str, prefix: str
+) -> None:
+    payload = {
+        "choices": [{"delta": {"content": "Answer"}, "finish_reason": "stop"}],
+        "usage": {"prompt_tokens": 1, "completion_tokens": 2},
+    }
+    body = prefix + json.dumps(payload, indent=2) + delimiter + "[DONE]" + delimiter
+    server = http_server([Response(body=body.encode())])
+    model = OAICompatLargeLanguageModel([])
+
+    chunks = list(
+        model.invoke(
+            "model",
+            {
+                "mode": "chat",
+                "endpoint_url": server.url,
+                "stream_mode_delimiter": delimiter,
+            },
+            [UserPromptMessage(content="Question")],
+        )
+    )
+
     assert (
         "".join(chunk.delta.message.get_text_content() for chunk in chunks) == "Answer"
     )
     assert chunks[-1].delta.finish_reason == "stop"
     assert chunks[-1].delta.usage is not None
     assert chunks[-1].delta.usage.total_tokens == 3
+    assert model.started_at == 0
+
+
+@pytest.mark.parametrize("delimiter", ["\n\n", "|"])
+@pytest.mark.parametrize(
+    "raw",
+    ["not json", "0", "false", '"text"', "[1]", 'not json\ndata: {"choices":[]}'],
+)
+def test_stream_keeps_errors_for_raw_nonobject_frames(
+    http_server: HTTPServerFactory,
+    http_responses: tuple[list[HTTPResponse], Event],
+    delimiter: str,
+    raw: str,
+) -> None:
+    responses, _ready = http_responses
+    body = (
+        'data: {"choices":[{"delta":{"content":"partial"}}]}'
+        + delimiter
+        + raw
+        + delimiter
+    ).encode()
+    server = http_server([Response(body=body)])
+    model = OAICompatLargeLanguageModel([])
+    stream = model.invoke(
+        "model",
+        {
+            "mode": "chat",
+            "endpoint_url": server.url,
+            "stream_mode_delimiter": delimiter,
+        },
+        [UserPromptMessage(content="Question")],
+    )
+
+    assert next(stream).delta.message.content == "partial"
+    with pytest.raises(InvokeError, match="Invalid JSON"):
+        next(stream)
+    assert responses[0].raw.closed
+    assert model.started_at == 0
 
 
 def test_completion_stream_handles_empty_text_and_partial_usage(

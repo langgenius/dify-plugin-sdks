@@ -43,9 +43,12 @@ def tool() -> Generator[ParameterTool]:
         signal.signal(signal.SIGINT, original_sigint)
 
 
-@pytest.mark.parametrize("default", [False, True])
+@pytest.mark.parametrize(("default", "expected_default"), [(False, 0), (True, 1)])
 def test_public_invoke_converts_files_and_selectors_without_fetching(
-    tool: ParameterTool, monkeypatch: pytest.MonkeyPatch, default: bool
+    tool: ParameterTool,
+    monkeypatch: pytest.MonkeyPatch,
+    default: bool,
+    expected_default: int,
 ) -> None:
     def reject_download(_file: File) -> bytes:
         pytest.fail("parameter conversion downloaded a file")
@@ -99,12 +102,11 @@ def test_public_invoke_converts_files_and_selectors_without_fetching(
     assert [item.model_dump() for item in received["files"]] == expected["files"]
     assert isinstance(received["tool"], ToolSelector)
     assert received["tool"].tool_configuration == {"prefix": "hello"}
-    assert (
-        received["tool"].model_dump(mode="json")["tool_parameters"]["enabled"][
-            "default"
-        ]
-        is default
-    )
+    serialized = received["tool"].model_dump(mode="json")["tool_parameters"]["enabled"][
+        "default"
+    ]
+    assert type(serialized) is int
+    assert serialized == expected_default
     assert all(isinstance(item, ToolSelector) for item in received["tools"])
     assert len(received["tools"]) == 2
     assert received["ordinary"] == expected["ordinary"]

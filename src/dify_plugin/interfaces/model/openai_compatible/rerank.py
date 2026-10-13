@@ -1,4 +1,3 @@
-import math
 from json import dumps
 
 from requests import HTTPError, post
@@ -16,7 +15,12 @@ from dify_plugin.interfaces.model.rerank_model import RerankModel
 
 
 class OAICompatRerankModel(RerankModel):
-    """Invoke Jina rerank APIs, normalizing unbounded scores from llama.cpp."""
+    """
+    rerank model API is compatible with Jina rerank model API. So copy the
+    JinaRerankModel class code here.
+    we need enhance for llama.cpp , which return raw score, not normalize score
+    0~1.  It seems Dify need it
+    """
 
     def _invoke(
         self,
@@ -46,7 +50,6 @@ class OAICompatRerankModel(RerankModel):
         Raises:
             CredentialsValidateFailedError: If credentials validation fails.
             InvokeServerUnavailableError: If model invocation fails.
-            ValueError: If the response contains invalid document indices or scores.
         """
         del user
         if len(docs) == 0:
@@ -88,27 +91,12 @@ class OAICompatRerankModel(RerankModel):
         results = response.json()
         rerank_documents = []
         scores = [result["relevance_score"] for result in results["results"]]
-        if any(
-            isinstance(score, bool)
-            or not isinstance(score, int | float)
-            or not math.isfinite(score)
-            for score in scores
-        ):
-            msg = "Rerank scores must be finite numbers."
-            raise ValueError(msg)
-        min_score = min(scores, default=0.0)
-        max_score = max(scores, default=0.0)
-        normalize_scores = min_score < 0 or max_score > 1
+        min_score = min(scores)
+        max_score = max(scores)
         score_range = max_score - min_score if max_score != min_score else 1.0
-        if not math.isfinite(score_range):
-            msg = "Rerank score range must be finite."
-            raise ValueError(msg)
 
         for result in results["results"]:
             index = result["index"]
-            if type(index) is not int or not 0 <= index < len(docs):
-                msg = "Rerank response contains an invalid document index."
-                raise ValueError(msg)
             text = docs[index]
             document = result.get("document", {})
             if document:
@@ -117,9 +105,7 @@ class OAICompatRerankModel(RerankModel):
                 elif isinstance(document, str):
                     text = document
 
-            normalized_score = result["relevance_score"]
-            if normalize_scores:
-                normalized_score = (normalized_score - min_score) / score_range
+            normalized_score = (result["relevance_score"] - min_score) / score_range
             rerank_document = RerankDocument(
                 index=index,
                 text=text,

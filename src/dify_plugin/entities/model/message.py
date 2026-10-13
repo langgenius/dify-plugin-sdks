@@ -241,7 +241,7 @@ class AssistantPromptMessage(PromptMessage):
         Returns:
             The return value.
         """
-        return super().is_empty() and not self.tool_calls and self.opaque_body is None
+        return not (not super().is_empty() and not self.tool_calls)
 
 
 class SystemPromptMessage(PromptMessage):
@@ -270,7 +270,7 @@ class ToolPromptMessage(PromptMessage):
         Returns:
             The return value.
         """
-        return super().is_empty() and not self.tool_call_id
+        return not (not super().is_empty() and not self.tool_call_id)
 
 
 PROMPT_MESSAGE_TYPES_BY_ROLE: dict[str, type[PromptMessage]] = {

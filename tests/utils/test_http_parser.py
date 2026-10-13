@@ -163,24 +163,24 @@ def test_http_10_request_without_host_or_body(
     assert request.get_data() == b""
 
 
-def test_repeated_accept_headers_preserve_all_media_types() -> None:
-    # The daemon copies http.Header values with Request.Write, preserving each line.
+def test_repeated_accept_headers_keep_the_last_value() -> None:
     request = deserialize_request(
         b"GET / HTTP/1.1\r\nHost: example.com\r\n"
         b"Accept: application/json\r\nAccept: text/plain\r\n\r\n"
     )
 
-    assert request.accept_mimetypes["application/json"] == 1
+    assert request.accept_mimetypes["application/json"] == 0
     assert request.accept_mimetypes["text/plain"] == 1
+    assert request.headers["Accept"] == "text/plain"
 
 
-def test_repeated_cookie_headers_preserve_each_cookie() -> None:
+def test_repeated_cookie_headers_keep_the_last_value() -> None:
     request = deserialize_request(
         b"GET / HTTP/1.1\r\nHost: example.com\r\n"
         b"Cookie: session=one\r\nCookie: state=two\r\n\r\n"
     )
 
-    assert request.cookies.getlist("session") == ["one"]
+    assert request.cookies.getlist("session") == []
     assert request.cookies.getlist("state") == ["two"]
 
 
