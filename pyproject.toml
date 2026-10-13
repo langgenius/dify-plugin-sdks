@@ -41,7 +41,6 @@ dev = [
     'pytest-cov',
     "pytest-httpserver>=1.2.0",
     'pytest-mock',
-    "pytest-socket>=0.8.1",
     "pytest-timeout>=2.4.0",
     'ruff',
     "trustme>=1.2.1",
@@ -54,7 +53,7 @@ default-groups = ['dev']
 [tool.pytest]
 minversion = '9.0'
 testpaths = ['tests']
-addopts = ['--strict-config', '--strict-markers', '--allow-hosts=127.0.0.1,::1']
+addopts = ['--strict-config', '--strict-markers']
 # pytest-timeout registers a string ini value, even with pytest's native TOML config.
 timeout = '60'
 xfail_strict = true

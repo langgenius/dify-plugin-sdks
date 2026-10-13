@@ -36,7 +36,7 @@ source .venv/bin/activate
 The repository uses [`uv`](https://docs.astral.sh/uv/) for dependency and
 virtual environment management. The default development environment includes
 `pytest`, `pytest-cov`, `pytest-mock`, `pytest-httpserver`, `pytest-timeout`,
-`pytest-socket`, `hypothesis`, `trustme`, `ruff`, `ty`, and
+`hypothesis`, `trustme`, `ruff`, `ty`, and
 [`prek`](https://prek.j178.dev/).
 
 ### Git Hooks
