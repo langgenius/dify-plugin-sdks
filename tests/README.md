@@ -36,8 +36,9 @@ Do not treat passing coverage thresholds as a passing test suite.
 | [pytest-timeout](https://pypi.org/project/pytest-timeout/) | Bounds each test, including setup and teardown, to 60 seconds using signals on Linux. |
 | [pytest-socket](https://pypi.org/project/pytest-socket/) | Rejects external socket connections in the pytest process; only `127.0.0.1` and `::1` are allowed. |
 | [Hypothesis](https://hypothesis.readthedocs.io/en/latest/reference/integrations.html) | Generates binary payloads and UTF-8 SSE fragmentation patterns, preserving explicit empty and chunk-boundary examples. |
+| [trustme](https://trustme.readthedocs.io/) | Generates temporary CA and localhost certificates for HTTPS tests without checked-in keys. |
 
-The existing `pytest-mock` and `pytest-cov` integrations remain useful for local collaborators and coverage reporting.
+The existing `pytest-mock` provides scoped mocks, and `pytest-cov` handles coverage collection, subprocess merging and report generation.
 RESPX and pytest-httpx were considered, but request mocks would not exercise the socket, TLS, streaming, and cancellation cases these fixtures own.
 pytest-subprocess would replace the real pipes and child lifetimes that the process tests verify.
 pytest-xdist would duplicate session fixtures in each worker and require separate validation of subprocess coverage and shared gevent state; it is not enabled.
@@ -52,7 +53,10 @@ The socket guard does not sandbox child processes; process fixtures run the loca
 ## Coverage gates
 
 `just coverage` merges parent and subprocess data and writes `reports/junit.xml`, `reports/coverage.json`, and `reports/coverage.xml`.
-It generates the coverage reports after test failures and still exits unsuccessfully if tests or coverage gates fail.
+Ordinary test failures still produce coverage reports; the command exits unsuccessfully if tests or coverage gates fail.
+Pytest-cov manages the default `.coverage` database and intermediate `.coverage.*` files.
+Hypothesis keeps its default `.hypothesis/` cache so later runs can replay generated examples.
+These generated paths are ignored; `.coveragerc` remains trackable.
 [The gate](../scripts/check_coverage.py) evaluates statement and branch totals separately, without rounding a failing result up to the threshold.
 
 | Scope | Lines | Branches |
@@ -65,6 +69,8 @@ Coverage traces gevent and starts automatically in subprocesses.
 SDK `threading` workers are patched greenlets; enabling both the `thread` and `gevent` tracers loses executed events in this runtime.
 The wheel fixture checks that coverage is active in each plugin process when the parent collects coverage.
 Installed package paths are mapped back to `src/dify_plugin` before merging.
+SIGTERM capture retains measurements when process fixtures terminate their child processes.
+Subprocess tracing enables parallel collection automatically; report formatting uses the library defaults.
 Review missing branches alongside the behavior assertions; a percentage alone does not verify a protocol contract.
 
 ## Test map
@@ -131,8 +137,9 @@ When TTS splits WAV output, the SDK validates and combines PCM frames into one W
 The server uses the suite's patched threads; its documented `thread_target` extension sets a 10 ms shutdown poll instead of the default 500 ms.
 Teardown wakes delayed response bodies before stopping the server and checks recorded server errors.
 It can emit real HTTP chunks, delayed bodies, error statuses, and HTTPS responses.
-The certificates in `fixtures/certs/` and their private key are public test data for localhost only.
-The private-key hook excludes only this fixture key.
+The session CA and generated localhost certificates live in memory, following the HTTP server's [HTTPS fixture guidance](https://pytest-httpserver.readthedocs.io/en/latest/howto.html#running-an-https-server).
+Python's server TLS API and the `SSL_CERT_FILE` test require paths; trustme creates temporary PEM files for those calls and deletes them on context exit, including failures.
+No certificate or private key is checked in, and the private-key hook needs no exception.
 Tests clear inherited proxy and CA settings and use an empty netrc; individual configuration tests set their own environment.
 
 [The wheel fixture](integration/conftest.py) builds the working tree, installs it into a temporary package directory, and compares every package file with the source tree.

@@ -4,7 +4,7 @@ The SDK fixes the defects below, with regression tests covering public results, 
 The tests run normally, without `xfail`, skips or reduced coverage thresholds.
 
 Run `just test` for the full suite or pass a test file to run one group.
-`just coverage` also writes JUnit and coverage reports when tests fail, then returns a failing exit status.
+Ordinary test failures still produce JUnit and coverage reports through `just coverage`, which exits unsuccessfully.
 The JUnit report identifies each parameter combination.
 
 | Area | Corrected behavior | Regression tests |
