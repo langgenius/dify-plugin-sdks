@@ -12,6 +12,8 @@ from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 from dify_plugin.entities.model.llm import (
     LLMModelConfig,
     LLMResult,
+    LLMResultChunk,
+    LLMResultChunkDelta,
     LLMResultWithStructuredOutput,
     LLMUsage,
 )
@@ -20,11 +22,34 @@ from dify_plugin.entities.model.message import (
     TextPromptMessageContent,
     UserPromptMessage,
 )
+from dify_plugin.invocations.model.llm import merge_llm_result_chunk
 
 # Import HTTP after the SDK applies its gevent patch.
 # isort: split
 
 import httpx
+
+
+def test_merge_preserves_plain_text_block_boundaries() -> None:
+    blocks = [
+        TextPromptMessageContent(data="hello"),
+        TextPromptMessageContent(data="<think>hidden</think>answer"),
+    ]
+    result = LLMResult(
+        model="test-model",
+        message=AssistantPromptMessage(content=""),
+        usage=LLMUsage.empty_usage(),
+    )
+    chunk = LLMResultChunk(
+        model="test-model",
+        delta=LLMResultChunkDelta(
+            index=0, message=AssistantPromptMessage(content=blocks)
+        ),
+    )
+
+    merge_llm_result_chunk(result, chunk)
+
+    assert result.message.content == blocks
 
 
 @pytest.mark.parametrize("stream", [True, False])
