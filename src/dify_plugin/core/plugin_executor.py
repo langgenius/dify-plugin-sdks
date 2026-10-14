@@ -1,4 +1,5 @@
 import binascii
+import logging
 import tempfile
 from collections.abc import Generator, Iterable, Mapping
 from typing import TYPE_CHECKING, Any
@@ -90,6 +91,8 @@ if TYPE_CHECKING:
     from dify_plugin.interfaces.datasource import DatasourceProvider
     from dify_plugin.interfaces.endpoint import Endpoint
     from dify_plugin.interfaces.tool import Tool
+
+logger = logging.getLogger(__name__)
 
 _EBML_MAX_ID_WIDTH = 4
 _EBML_MAX_SIZE_WIDTH = 8
@@ -684,15 +687,19 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
         request = deserialize_request(bytes_data)
 
         try:
-            # dispatch request
             endpoint, values = self.registration.dispatch_endpoint_request(request)
-            # construct response
-            endpoint_instance: Endpoint = endpoint(session)
-            response = endpoint_instance.invoke(request, values, data.settings)
-        except ValueError as e:
-            response = Response(str(e), status=404)
-        except Exception as e:
-            response = Response(f"Internal Server Error: {e!s}", status=500)
+        except ValueError:
+            response = Response("Not Found", status=404)
+        except Exception:
+            logger.exception("Failed to dispatch endpoint")
+            response = Response("Internal Server Error", status=500)
+        else:
+            try:
+                endpoint_instance: Endpoint = endpoint(session)
+                response = endpoint_instance.invoke(request, values, data.settings)
+            except Exception:
+                logger.exception("Failed to invoke endpoint")
+                response = Response("Internal Server Error", status=500)
 
         with response:
             # check if response is a generator

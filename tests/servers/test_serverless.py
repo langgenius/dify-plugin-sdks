@@ -398,15 +398,23 @@ def test_invalid_http_body_is_rejected(
     assert reader.request_queue.empty()
 
 
-def test_enqueue_error_returns_failure(reader: ServerlessRequestReader) -> None:
+def test_enqueue_error_logs_details_and_returns_generic_failure(
+    reader: ServerlessRequestReader, caplog: pytest.LogCaptureFixture
+) -> None:
+    error = RuntimeError("cannot open /private/example with token=test-secret")
     with patch.object(reader, "request_queue") as queue:
-        queue.put.side_effect = RuntimeError("enqueue failed")
+        queue.put.side_effect = error
         response = reader.app.test_client().post(
             "/invoke", json={"event": "request", "session_id": "session", "data": {}}
         )
 
     assert response.status_code == 500
-    assert b"enqueue failed" in response.data
+    assert response.data == b"Internal Server Error"
+    assert "test-secret" not in str(response.headers)
+    assert str(error) in caplog.text
+    assert any(
+        record.exc_info and record.exc_info[1] is error for record in caplog.records
+    )
 
 
 def test_done_finishes_once_and_discards_late_writes(
