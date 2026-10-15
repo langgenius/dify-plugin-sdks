@@ -65,6 +65,13 @@ Constrain your SDK dependency to the minor version you have tested while allowin
 For example, `dify-plugin~=0.10.2` allows patches in the 0.10 series.
 Review and test a new minor release before updating the constraint.
 
+## Agent Token Estimates
+
+In SDK 0.11.0 (unreleased), agent token estimates include text blocks as well as string content and treat special-token spellings such as `<|endoftext|>` as ordinary text.
+Message metadata and non-text payloads are excluded.
+Counting previously ignored text can reduce the output budget in strategies that call `recalc_llm_max_tokens`, including Function Calling and ReAct.
+The GPT-2 estimate remains approximate: budget adjustment retains a minimum of 16 output tokens and lets the provider decide whether the prompt fits.
+
 ## Manifest Version Reference
 
 The SDK dependency version and your plugin's top-level `version` in `manifest.yaml` are separate from these compatibility fields:
