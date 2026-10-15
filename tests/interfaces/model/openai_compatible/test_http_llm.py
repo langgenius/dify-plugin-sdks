@@ -333,8 +333,14 @@ def test_non_stream_tool_calls_preserve_arguments_and_request_schema(
 @pytest.mark.parametrize(
     ("delimiter", "configured"), [("\n\n", "\n\n"), ("\n", r"\n"), ("|", "|")]
 )
+@pytest.mark.parametrize(
+    "content_type", ["text/event-stream", "application/octet-stream"]
+)
 def test_stream_decodes_fragmented_utf8_and_configured_delimiters(
-    http_server: HTTPServerFactory, delimiter: str, configured: str
+    http_server: HTTPServerFactory,
+    delimiter: str,
+    configured: str,
+    content_type: str,
 ) -> None:
     events = [
         ": keepalive",
@@ -348,7 +354,7 @@ def test_stream_decodes_fragmented_utf8_and_configured_delimiters(
     body = (delimiter.join(events) + delimiter).encode()
     server = http_server([
         Response(
-            headers={"Content-Type": "text/event-stream"},
+            headers={"Content-Type": content_type},
             chunks=tuple(body[index : index + 1] for index in range(len(body))),
         )
     ])
@@ -826,7 +832,16 @@ def test_stream_preserves_raw_and_single_prefix_multiline_json(
 @pytest.mark.parametrize("delimiter", ["\n\n", "|"])
 @pytest.mark.parametrize(
     "raw",
-    ["not json", "0", "false", '"text"', "[1]", '{"broken":'],
+    [
+        "not json",
+        "0",
+        "false",
+        '"text"',
+        "[1]",
+        '{"broken":',
+        '{"choices":\n\n}',
+        "[\n\n1\n\n]",
+    ],
 )
 def test_stream_keeps_errors_for_raw_nonobject_frames(
     http_server: HTTPServerFactory,

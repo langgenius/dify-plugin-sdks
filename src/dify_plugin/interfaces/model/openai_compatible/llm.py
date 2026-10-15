@@ -767,8 +767,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     ]
                     if not data_lines:
                         if is_sse or any(
-                            field in {"", "event", "id", "retry"}
-                            for field, _, _ in fields
+                            field in {"event", "id", "retry"}
+                            or (not field and separator == ":")
+                            for field, separator, _ in fields
                         ):
                             continue
                         raise InvokeError(msg) from error
