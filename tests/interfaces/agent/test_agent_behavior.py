@@ -18,6 +18,7 @@ from dify_plugin.entities.model import (
 from dify_plugin.entities.model.llm import LLMUsage
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    ImagePromptMessageContent,
     PromptMessage,
     PromptMessageTool,
     TextPromptMessageContent,
@@ -318,7 +319,7 @@ def test_model_history_rejects_malformed_history(history: object) -> None:
 
 
 @pytest.mark.parametrize("multipart", [False, True])
-def test_real_tokenizer_preserves_budget_for_each_content_form(
+def test_real_tokenizer_uses_the_same_budget_for_each_content_form(
     agent: SchemaAgent, multipart: bool
 ) -> None:
     model = AIModelEntity(
@@ -333,7 +334,44 @@ def test_real_tokenizer_preserves_budget_for_each_content_form(
 
     agent.recalc_llm_max_tokens(model, [UserPromptMessage(content=content)], parameters)
 
-    assert parameters["max_tokens"] == (80 if multipart else 49)
+    assert parameters["max_tokens"] == 49
+
+
+def test_token_estimate_counts_mixed_text_and_excludes_metadata_and_media(
+    agent: SchemaAgent,
+) -> None:
+    image = ImagePromptMessageContent(
+        format="png",
+        mime_type="image/png",
+        url="https://example.com/image.png",
+        base64_data="ignored " * 50,
+        opaque_body={"text": "ignored " * 50},
+    )
+    prompts = [
+        UserPromptMessage(
+            name="ignored " * 50,
+            content=[
+                TextPromptMessageContent(data="Hel", opaque_body={"text": "ignored"}),
+                image,
+                TextPromptMessageContent(data="lo"),
+            ],
+        ),
+        AssistantPromptMessage(content=None),
+        UserPromptMessage(content=[image]),
+        ToolPromptMessage(tool_call_id="ignored " * 50, content="world"),
+    ]
+    original = deepcopy(prompts)
+
+    assert agent._get_num_tokens_by_gpt2(prompts) == 2
+    assert prompts == original
+    assert (
+        agent._get_num_tokens_by_gpt2([
+            UserPromptMessage(content=[image]),
+            AssistantPromptMessage(content=None),
+            UserPromptMessage(content=""),
+        ])
+        == 0
+    )
 
 
 def test_gpt2_overestimate_does_not_reject_a_valid_provider_prompt(
@@ -354,8 +392,10 @@ def test_gpt2_overestimate_does_not_reject_a_valid_provider_prompt(
     assert parameters["max_tokens"] > 0
 
 
-def test_real_tokenizer_preserves_special_token_error(
+@pytest.mark.parametrize("multipart", [False, True])
+def test_real_tokenizer_counts_special_token_spellings_as_text(
     agent: SchemaAgent,
+    multipart: bool,
 ) -> None:
     model = AIModelEntity(
         model="test",
@@ -363,13 +403,10 @@ def test_real_tokenizer_preserves_special_token_error(
         model_properties={ModelPropertyKey.CONTEXT_SIZE: 100},
         parameter_rules=[ParameterRule(name="max_tokens", use_template="max_tokens")],
     )
-    parameters = {"max_tokens": 1}
+    parameters = {"max_tokens": 100}
+    text = "Explain <|endoftext|> as ordinary text"
+    content = [TextPromptMessageContent(data=text)] if multipart else text
 
-    with pytest.raises(ValueError, match="special token"):
-        agent.recalc_llm_max_tokens(
-            model,
-            [UserPromptMessage(content="Explain <|endoftext|> as ordinary text")],
-            parameters,
-        )
+    agent.recalc_llm_max_tokens(model, [UserPromptMessage(content=content)], parameters)
 
-    assert parameters == {"max_tokens": 1}
+    assert parameters == {"max_tokens": 88}
