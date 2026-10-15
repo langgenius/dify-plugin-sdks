@@ -39,6 +39,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup details, integration test requi
 
 See [langgenius/dify-official-plugins](https://github.com/langgenius/dify-official-plugins) for production plugin implementations published and used by Dify.
 
+## OpenAI-Compatible Embeddings
+
+Starting in SDK 0.11.0 (unreleased), `OAICompatEmbeddingModel` validates each response batch before sending the next request.
+Each input must have one nonempty vector of finite numbers, with consistent dimensions across all batches.
+Responses with `index` fields must cover every input in that batch exactly once using integer indices starting at zero; the SDK restores input order.
+Responses without indices retain response order.
+Malformed responses, including mixed index metadata, numeric strings, and booleans, raise an SDK invocation error.
+This applies to plugins using the shared implementation, including GiteeAI and SiliconFlow.
+
 ## LLM Polling Support
 
 Since SDK 0.9.0, model plugins can declare the `polling` feature and implement `_start_polling()` and `_check_polling()` to handle long-running provider jobs through separate requests.

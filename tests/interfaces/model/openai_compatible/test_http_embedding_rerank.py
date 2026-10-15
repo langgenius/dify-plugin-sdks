@@ -3,6 +3,8 @@ import math
 from decimal import Decimal
 
 import pytest
+import requests
+from pytest_mock import MockerFixture
 
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import (
@@ -41,8 +43,11 @@ def embedding(monkeypatch: pytest.MonkeyPatch) -> OAICompatEmbeddingModel:
 
 
 def test_embedding_batches_truncates_and_accumulates_usage(
-    http_server: HTTPServerFactory, embedding: OAICompatEmbeddingModel
+    http_server: HTTPServerFactory,
+    embedding: OAICompatEmbeddingModel,
+    mocker: MockerFixture,
 ) -> None:
+    close = mocker.spy(requests.Response, "close")
     server = http_server([
         Response(
             body=b'{"data":[{"embedding":[1,2]},{"embedding":[3,4]}],"usage":{"total_tokens":5}}'
@@ -66,13 +71,15 @@ def test_embedding_batches_truncates_and_accumulates_usage(
     assert result.usage.total_price == Decimal("0.14")
     assert result.usage.latency >= 0
     assert embedding.started_at == 0
-    requests = server.requests
-    assert [request.path for request in requests] == [
+    assert close.call_count == 2
+    assert [request.path for request in server.requests] == [
         "/v1/embeddings",
         "/v1/embeddings",
     ]
-    assert all(request.headers["Authorization"] == "Bearer key" for request in requests)
-    payloads = [json.loads(request.body) for request in requests]
+    assert all(
+        request.headers["Authorization"] == "Bearer key" for request in server.requests
+    )
+    payloads = [json.loads(request.body) for request in server.requests]
     assert [payload["input"] for payload in payloads] == [["abcde", "你好"], [""]]
     assert all(payload["model"] == "upstream-model" for payload in payloads)
     assert all(payload["encoding_format"] == "float" for payload in payloads)
@@ -100,7 +107,9 @@ def test_embedding_failure_stops_later_batches(
     http_server: HTTPServerFactory,
     embedding: OAICompatEmbeddingModel,
     response: Response,
+    mocker: MockerFixture,
 ) -> None:
+    close = mocker.spy(requests.Response, "close")
     server = http_server([
         response,
         Response(body=b'{"data":[{"embedding":[5,6]}],"usage":{"total_tokens":1}}'),
@@ -113,10 +122,11 @@ def test_embedding_failure_stops_later_batches(
     finally:
         assert len(server.requests) == 1
         assert embedding.started_at == 0
+        assert close.call_count == 1
 
 
 @pytest.mark.parametrize("reordered", [False, True])
-def test_embedding_preserves_provider_vector_order(
+def test_embedding_restores_input_order_for_each_indexed_batch(
     http_server: HTTPServerFactory,
     embedding: OAICompatEmbeddingModel,
     reordered: bool,
@@ -137,8 +147,7 @@ def test_embedding_preserves_provider_vector_order(
         "model", {"endpoint_url": server.url}, ["one", "two", "three"]
     )
 
-    expected = [[3, 4], [1, 2]] if reordered else [[1, 2], [3, 4]]
-    assert result.embeddings == [*expected, [5, 6]]
+    assert result.embeddings == [[1, 2], [3, 4], [5, 6]]
     assert result.usage.total_tokens == 3
     assert [json.loads(request.body)["input"] for request in server.requests] == [
         ["one", "two"],
@@ -148,52 +157,127 @@ def test_embedding_preserves_provider_vector_order(
 
 
 @pytest.mark.parametrize(
-    ("data_json", "expected"),
+    "data_json",
     [
-        ("[]", []),
-        ('[{"index":0,"embedding":[1,2]}]', [[1, 2]]),
-        (
-            '[{"index":0,"embedding":[1,2]},{"index":0,"embedding":[3,4]}]',
-            [[1, 2], [3, 4]],
-        ),
-        (
-            '[{"index":0,"embedding":[1,2]},{"index":2,"embedding":[3,4]}]',
-            [[1, 2], [3, 4]],
-        ),
-        ('[{"index":0,"embedding":[]},{"index":1,"embedding":[3,4]}]', [[], [3, 4]]),
-        (
-            '[{"index":0,"embedding":[1e400,1]},{"index":1,"embedding":[3,4]}]',
-            [[float("inf"), 1], [3, 4]],
-        ),
-        ('[{"index":true,"embedding":[true,"2.5"]}]', [[1, 2.5]]),
+        "null",
+        "{}",
+        "[]",
+        '[{"embedding":[1,2]}]',
+        '[{"embedding":[1,2]},{"embedding":[3,4]},{"embedding":[5,6]}]',
+        '[null,{"embedding":[3,4]}]',
+        '[{},{"embedding":[3,4]}]',
+        '[{"index":0,"embedding":[1,2]},{"embedding":[3,4]}]',
     ],
     ids=[
+        "null-data",
+        "object-data",
         "empty-batch",
         "missing-vector",
-        "duplicate-index",
-        "out-of-range-index",
-        "empty-vector",
-        "non-finite-vector",
-        "coercible-vector",
+        "extra-vector",
+        "null-row",
+        "missing-embedding",
+        "mixed-indices",
     ],
 )
-def test_embedding_keeps_existing_response_acceptance(
+def test_embedding_rejects_malformed_batches_before_the_next_request(
     http_server: HTTPServerFactory,
     embedding: OAICompatEmbeddingModel,
     data_json: str,
-    expected: list[list[float]],
+    mocker: MockerFixture,
 ) -> None:
+    close = mocker.spy(requests.Response, "close")
     server = http_server([
         Response(body=f'{{"data":{data_json},"usage":{{"total_tokens":2}}}}'.encode()),
         Response(body=b'{"data":[{"embedding":[5,6]}],"usage":{"total_tokens":1}}'),
     ])
 
-    result = embedding.invoke(
-        "model", {"endpoint_url": server.url}, ["one", "two", "three"]
-    )
-    assert result.embeddings == [*expected, [5, 6]]
-    assert result.usage.total_tokens == 3
+    with pytest.raises(InvokeError):
+        embedding.invoke("model", {"endpoint_url": server.url}, ["one", "two", "three"])
+    assert len(server.requests) == 1
+    assert close.call_count == 1
+    assert embedding.started_at == 0
+
+
+@pytest.mark.parametrize("index", [None, True, "1", 1.0, 1.5, -1, 0, 2, {}])
+def test_embedding_rejects_invalid_indices(
+    http_server: HTTPServerFactory,
+    embedding: OAICompatEmbeddingModel,
+    index: object,
+) -> None:
+    server = http_server([
+        Response(
+            body=json.dumps({
+                "data": [
+                    {"index": 0, "embedding": [1, 2]},
+                    {"index": index, "embedding": [3, 4]},
+                ],
+                "usage": {"total_tokens": 2},
+            }).encode()
+        )
+    ])
+    with pytest.raises(InvokeError, match="indices"):
+        embedding.invoke("model", {"endpoint_url": server.url}, ["one", "two", "three"])
+    assert len(server.requests) == 1
+
+
+@pytest.mark.parametrize(
+    "vector",
+    [
+        None,
+        {},
+        "3,4",
+        [],
+        [3],
+        [3, 4, 5],
+        [True, 4],
+        ["3", 4],
+        [None, 4],
+        [float("nan"), 4],
+        [float("inf"), 4],
+        [float("-inf"), 4],
+    ],
+)
+def test_embedding_rejects_invalid_vectors(
+    http_server: HTTPServerFactory,
+    embedding: OAICompatEmbeddingModel,
+    vector: object,
+) -> None:
+    server = http_server([
+        Response(
+            body=json.dumps({
+                "data": [{"embedding": [1, 2]}, {"embedding": vector}],
+                "usage": {"total_tokens": 2},
+            }).encode()
+        )
+    ])
+    with pytest.raises(InvokeError, match="vector"):
+        embedding.invoke("model", {"endpoint_url": server.url}, ["one", "two", "three"])
+    assert len(server.requests) == 1
+
+
+def test_embedding_rejects_dimension_changes_between_batches(
+    http_server: HTTPServerFactory,
+    embedding: OAICompatEmbeddingModel,
+    mocker: MockerFixture,
+) -> None:
+    close = mocker.spy(requests.Response, "close")
+    server = http_server([
+        Response(
+            body=b'{"data":[{"embedding":[1,2]},{"embedding":[3,4]}],"usage":{"total_tokens":2}}'
+        ),
+        Response(
+            body=b'{"data":[{"embedding":[5]},{"embedding":[6]}],"usage":{"total_tokens":2}}'
+        ),
+        Response(body=b'{"data":[{"embedding":[7,8]}],"usage":{"total_tokens":1}}'),
+    ])
+    with pytest.raises(InvokeError, match="dimension"):
+        embedding.invoke(
+            "model",
+            {"endpoint_url": server.url},
+            ["one", "two", "three", "four", "five"],
+        )
     assert len(server.requests) == 2
+    assert close.call_count == 2
     assert embedding.started_at == 0
 
 
