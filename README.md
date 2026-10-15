@@ -48,6 +48,12 @@ Both methods return `LLMPollingResult` with one of three states:
 - `succeeded`: return the final LLM `result`.
 - `failed`: return a terminal `error`.
 
+## OpenAI-Compatible Streaming
+
+In SDK 0.11.0 (unreleased), `OAICompatLargeLanguageModel` preserves SSE data alongside comments and unknown fields.
+Responses marked `text/event-stream` ignore events without data; invalid JSON in `data` fields still raises an invocation error.
+The compatibility parser also accepts raw JSON objects, custom delimiters, explicit response charsets, and final payloads without a blank-line terminator.
+
 ## Version Management
 
 SDK versions use `MAJOR.MINOR.PATCH`:

@@ -737,9 +737,17 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 if delimiter == "\n\n"
                 else response.iter_lines(decode_unicode=True, delimiter=delimiter)
             )
+            is_sse = (
+                response.headers
+                .get("Content-Type", "")
+                .partition(";")[0]
+                .strip()
+                .lower()
+                == "text/event-stream"
+            )
             for raw_chunk in events:
                 chunk = raw_chunk.strip()
-                if not chunk or chunk.startswith(":"):
+                if not chunk:
                     continue
                 decoded_chunk = chunk.removeprefix("data:").lstrip()
                 if decoded_chunk == "[DONE]":  # Some provider returns "data: [DONE]"
@@ -751,21 +759,21 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     )
                 except ValidationError as error:
                     msg = "Invalid JSON in the model response stream"
-                    lines = chunk.split("\n")
-                    if any(
-                        not line.startswith(("data:", "event:", "id:", "retry:", ":"))
-                        for line in lines
-                    ):
-                        raise InvokeError(msg) from error
+                    fields = [line.partition(":") for line in chunk.split("\n")]
                     data_lines = [
-                        line.removeprefix("data:").lstrip()
-                        for line in lines
-                        if line.startswith("data:")
+                        value.removeprefix(" ")
+                        for field, _, value in fields
+                        if field == "data"
                     ]
                     if not data_lines:
+                        if is_sse or any(
+                            field in {"", "event", "id", "retry"}
+                            for field, _, _ in fields
+                        ):
+                            continue
                         raise InvokeError(msg) from error
                     decoded_data = "\n".join(data_lines)
-                    if decoded_data == "[DONE]":
+                    if decoded_data.strip() == "[DONE]":
                         break
                     try:
                         chunk_json = TypeAdapter(dict[str, Any]).validate_json(

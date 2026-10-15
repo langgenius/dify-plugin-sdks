@@ -699,10 +699,12 @@ def test_redirect_preserves_the_request_body(http_server: HTTPServerFactory) -> 
         ("\r", ""),
         ("\n", ": keepalive\n"),
         ("\n", "event: message\n"),
+        ("\n", "vendor: ignored\n"),
+        ("\n", "unknown field without a colon\n"),
     ],
-    ids=["lf", "crlf", "cr", "legacy-leading-comment", "event-type"],
+    ids=["lf", "crlf", "cr", "leading-comment", "event-type", "unknown", "bare-field"],
 )
-def test_stream_handles_sse_framing_and_legacy_leading_comments(
+def test_stream_preserves_data_among_sse_comments_and_ignored_fields(
     http_server: HTTPServerFactory,
     http_responses: tuple[list[HTTPResponse], Event],
     newline: str,
@@ -710,13 +712,22 @@ def test_stream_handles_sse_framing_and_legacy_leading_comments(
 ) -> None:
     responses, _ready = http_responses
     events = [
+        "id: 1",
+        "retry: 1000",
+        "vendor: ignored",
+        "unknown field without a colon",
         prefix
-        + 'data: {"choices":[{"delta":{"content":"Answer"},"finish_reason":"stop"}]}',
-        'data: {"choices":[],"usage":{"prompt_tokens":1,"completion_tokens":2}}',
-        "data: [DONE]",
+        + 'data: {"choices":[{"delta":{"content":"Answer"},"finish_reason":"stop"}]}'
+        + "\n: trailing comment\nvendor: ignored",
+        (
+            ': keepalive\ndata: {"choices":[],"usage":'
+            '{"prompt_tokens":1,"completion_tokens":2}}'
+        ),
+        ": keepalive\nvendor: ignored\ndata: [DONE]",
+        "data: invalid-after-done",
         "",
     ]
-    body = (newline * 2).join(events).encode()
+    body = "\n\n".join(events).replace("\n", newline).encode()
     server = http_server([
         Response(
             headers={"Content-Type": "text/event-stream"},
@@ -739,13 +750,10 @@ def test_stream_handles_sse_framing_and_legacy_leading_comments(
         assert responses[0].raw.closed
         assert model.started_at == 0
 
-    # Preserve the baseline's discard for leading comments until #397 is addressed.
-    assert "".join(chunk.delta.message.get_text_content() for chunk in chunks) == (
-        "" if prefix.startswith(":") else "Answer"
+    assert (
+        "".join(chunk.delta.message.get_text_content() for chunk in chunks) == "Answer"
     )
-    assert chunks[-1].delta.finish_reason == (
-        None if prefix.startswith(":") else "stop"
-    )
+    assert chunks[-1].delta.finish_reason == "stop"
     assert chunks[-1].delta.usage is not None
     assert chunks[-1].delta.usage.total_tokens == 3
 
@@ -818,7 +826,7 @@ def test_stream_preserves_raw_and_single_prefix_multiline_json(
 @pytest.mark.parametrize("delimiter", ["\n\n", "|"])
 @pytest.mark.parametrize(
     "raw",
-    ["not json", "0", "false", '"text"', "[1]", 'not json\ndata: {"choices":[]}'],
+    ["not json", "0", "false", '"text"', "[1]", '{"broken":'],
 )
 def test_stream_keeps_errors_for_raw_nonobject_frames(
     http_server: HTTPServerFactory,
