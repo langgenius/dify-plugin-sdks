@@ -1,6 +1,5 @@
 import inspect
 import logging
-import re
 import time
 from abc import abstractmethod
 from collections.abc import Generator, Mapping
@@ -141,8 +140,13 @@ class LargeLanguageModel(AIModel):
     ############################################################
 
     def enforce_stop_tokens(self, text: str, stop: list[str]) -> str:
-        """Cut off the text as soon as any stop words occur."""
-        return re.split("|".join(stop), text, maxsplit=1)[0]
+        """Cut off text at the earliest literal stop sequence."""
+        stop_at = len(text)
+        for token in stop:
+            position = text.find(token)
+            if 0 <= position < stop_at:
+                stop_at = position
+        return text[:stop_at]
 
     def get_parameter_rules(self, model: str, credentials: dict) -> list[ParameterRule]:
         """Get parameter rules
