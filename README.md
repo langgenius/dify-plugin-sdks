@@ -107,6 +107,13 @@ Minimum versions apply to the listed features.
 | Pending | 0.11.0 (unreleased) | Tool parameter `reset_on_change` declarations; requires plugin daemon 0.6.11 or later and the pending [Dify integration](https://github.com/langgenius/dify/pull/43040). |
 | Pending | 0.11.0 (unreleased) | Optional `OnlineDriveFile.remote_metadata`; requires plugin daemon 0.6.11 or later, with Dify browse and change-detection support still pending. |
 
+## Literal Stop Sequences
+
+Starting in SDK 0.11.0 (unreleased), `LargeLanguageModel.enforce_stop_tokens` stops at the earliest literal sequence, including punctuation and backslashes.
+An empty stop list or no matching sequence returns the full input.
+Callers that used regex patterns must supply literal stop strings: for example, replace `r"\."` with `"."` to stop at a period.
+An empty string inside the stop list still matches at the start of the input.
+
 ## License
 
 [Apache License 2.0](LICENSE).
