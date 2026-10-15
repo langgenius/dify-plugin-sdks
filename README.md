@@ -52,7 +52,9 @@ Both methods return `LLMPollingResult` with one of three states:
 
 In SDK 0.11.0 (unreleased), `OAICompatLargeLanguageModel` preserves SSE data alongside comments and unknown fields.
 Responses marked `text/event-stream` ignore events without data; invalid JSON in `data` fields still raises an invocation error.
-The compatibility parser also accepts raw JSON objects, custom delimiters, explicit response charsets, and final payloads without a blank-line terminator.
+The parser handles LF, CRLF, and CR line endings within events, including with custom delimiters.
+Raw JSON objects, single-prefix multiline JSON, and final payloads without a blank-line terminator remain supported.
+Explicit response charsets are respected; responses without a charset default to UTF-8.
 
 ## Version Management
 

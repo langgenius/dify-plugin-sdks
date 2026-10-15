@@ -698,33 +698,42 @@ def test_redirect_preserves_the_request_body(http_server: HTTPServerFactory) -> 
 
 
 @pytest.mark.parametrize(
-    ("newline", "prefix"),
+    ("newline", "delimiter", "configured"),
     [
-        ("\n", ""),
-        ("\r\n", ""),
-        ("\r", ""),
-        ("\n", ": keepalive\n"),
-        ("\n", "event: message\n"),
-        ("\n", "vendor: ignored\n"),
-        ("\n", "unknown field without a colon\n"),
+        ("\n", "\n\n", r"\n\n"),
+        ("\r\n", "\r\n\r\n", r"\n\n"),
+        ("\r", "\r\r", r"\n\n"),
+        ("\r\n", "\r\n\r\n", r"\r\n\r\n"),
+        ("\r", "\r\r", r"\r\r"),
+        ("\r", "|", "|"),
     ],
-    ids=["lf", "crlf", "cr", "leading-comment", "event-type", "unknown", "bare-field"],
+    ids=["lf", "crlf", "cr", "custom-crlf", "custom-cr", "custom-pipe"],
+)
+@pytest.mark.parametrize(
+    "prefix",
+    ["", ": keepalive\n", "event: message\n", "vendor: ignored\n", "bare field\n"],
+    ids=["data", "comment", "event-type", "unknown", "bare-field"],
 )
 def test_stream_preserves_data_among_sse_comments_and_ignored_fields(
     http_server: HTTPServerFactory,
     http_responses: tuple[list[HTTPResponse], Event],
     newline: str,
+    delimiter: str,
+    configured: str,
     prefix: str,
 ) -> None:
     responses, _ready = http_responses
+    content = "Answer\u0085\u2028\u2029"
+    payload = json.dumps(
+        {"choices": [{"delta": {"content": content}, "finish_reason": "stop"}]},
+        ensure_ascii=False,
+    )
     events = [
         "id: 1",
         "retry: 1000",
         "vendor: ignored",
         "unknown field without a colon",
-        prefix
-        + 'data: {"choices":[{"delta":{"content":"Answer"},"finish_reason":"stop"}]}'
-        + "\n: trailing comment\nvendor: ignored",
+        prefix + f"data: {payload}\n: trailing comment\nvendor: ignored",
         (
             ': keepalive\ndata: {"choices":[],"usage":'
             '{"prompt_tokens":1,"completion_tokens":2}}'
@@ -733,7 +742,7 @@ def test_stream_preserves_data_among_sse_comments_and_ignored_fields(
         "data: invalid-after-done",
         "",
     ]
-    body = "\n\n".join(events).replace("\n", newline).encode()
+    body = delimiter.join(event.replace("\n", newline) for event in events).encode()
     server = http_server([
         Response(
             headers={"Content-Type": "text/event-stream"},
@@ -748,7 +757,11 @@ def test_stream_preserves_data_among_sse_comments_and_ignored_fields(
         chunks = list(
             model.invoke(
                 "model",
-                {"mode": "chat", "endpoint_url": server.url},
+                {
+                    "mode": "chat",
+                    "endpoint_url": server.url,
+                    "stream_mode_delimiter": configured,
+                },
                 [UserPromptMessage(content="Question")],
             )
         )
@@ -757,25 +770,42 @@ def test_stream_preserves_data_among_sse_comments_and_ignored_fields(
         assert model.started_at == 0
 
     assert (
-        "".join(chunk.delta.message.get_text_content() for chunk in chunks) == "Answer"
+        "".join(chunk.delta.message.get_text_content() for chunk in chunks) == content
     )
     assert chunks[-1].delta.finish_reason == "stop"
     assert chunks[-1].delta.usage is not None
     assert chunks[-1].delta.usage.total_tokens == 3
 
 
-@pytest.mark.parametrize("charset", ["utf-8", "gbk", "utf-16"])
-def test_stream_preserves_explicit_response_charset(
-    http_server: HTTPServerFactory, charset: str
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize(
+    ("charset", "content"),
+    [
+        ("utf-8", "回答"),
+        ("gbk", "回答"),
+        ("utf-16", "回答"),
+        ("ISO-8859-1", "café"),
+        ("iso-8859-1", "café"),
+    ],
+)
+def test_invoke_preserves_explicit_response_charset(
+    http_server: HTTPServerFactory, charset: str, content: str, stream: bool
 ) -> None:
-    body = (
-        'data: {"choices":[{"delta":{"content":"回答"},"finish_reason":"stop"}]}'
-        '\n\ndata: {"choices":[],"usage":{"prompt_tokens":1,"completion_tokens":2}}'
-        "\n\ndata: [DONE]\n\n"
-    ).encode(charset)
+    message_key = "delta" if stream else "message"
+    payload = json.dumps(
+        {
+            "choices": [{message_key: {"content": content}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 2},
+        },
+        ensure_ascii=False,
+    )
+    body = (f"data: {payload}\n\ndata: [DONE]\n\n" if stream else payload).encode(
+        charset
+    )
+    media_type = "text/event-stream" if stream else "application/json"
     server = http_server([
         Response(
-            headers={"Content-Type": f"text/event-stream; charset={charset}"},
+            headers={"Content-Type": f"{media_type}; charset={charset}"},
             chunks=tuple(body[index : index + 1] for index in range(len(body))),
         )
     ])
@@ -786,10 +816,13 @@ def test_stream_preserves_explicit_response_charset(
             "model",
             {"mode": "chat", "endpoint_url": server.url},
             [UserPromptMessage(content="Question")],
+            stream=stream,
         )
     )
 
-    assert "".join(chunk.delta.message.get_text_content() for chunk in chunks) == "回答"
+    assert (
+        "".join(chunk.delta.message.get_text_content() for chunk in chunks) == content
+    )
     assert chunks[-1].delta.usage is not None
     assert chunks[-1].delta.usage.total_tokens == 3
     assert model.started_at == 0

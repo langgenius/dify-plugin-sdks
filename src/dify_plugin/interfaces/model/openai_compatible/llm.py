@@ -7,6 +7,7 @@ import uuid
 from collections.abc import Generator, Mapping
 from contextlib import suppress
 from decimal import Decimal
+from email.message import Message
 from http import HTTPStatus
 from io import IncrementalNewlineDecoder
 from typing import Any, cast
@@ -54,7 +55,13 @@ EMPTY_STRING = ""
 _plugin_config = DifyPluginEnv()
 
 
-def _iter_sse_events(response: requests.Response) -> Generator[str]:
+def _iter_stream_events(response: requests.Response, delimiter: str) -> Generator[str]:
+    """Yield complete events with LF line endings."""
+    if delimiter != "\n\n":
+        for event in response.iter_lines(decode_unicode=True, delimiter=delimiter):
+            yield event.replace("\r\n", "\n").replace("\r", "\n")
+        return
+
     encoding = response.encoding or "utf-8"
     if codecs.lookup(encoding).name == "utf-8":
         encoding = "utf-8-sig"
@@ -68,6 +75,50 @@ def _iter_sse_events(response: requests.Response) -> Generator[str]:
         yield from events
     pending += decoder.decode(b"", final=True)
     yield from pending.split("\n\n")
+
+
+def _iter_stream_json(
+    response: requests.Response, delimiter: str
+) -> Generator[dict[str, Any]]:
+    """Decode SSE or raw JSON events until EOF or [DONE]."""
+    is_sse = (
+        response.headers.get("Content-Type", "").partition(";")[0].strip().lower()
+        == "text/event-stream"
+    )
+    json_object = TypeAdapter(dict[str, Any])
+    for raw_event in _iter_stream_events(response, delimiter):
+        event = raw_event.strip()
+        if not event:
+            continue
+        payload = event.removeprefix("data:").lstrip()
+        if payload == "[DONE]":
+            return
+
+        # Preserve raw JSON and single-prefix multiline JSON before parsing SSE fields.
+        try:
+            chunk = json_object.validate_json(payload)
+        except ValidationError as error:
+            msg = "Invalid JSON in the model response stream"
+            fields = [line.partition(":") for line in event.split("\n")]
+            data_lines = [
+                value.removeprefix(" ") for field, _, value in fields if field == "data"
+            ]
+            if not data_lines:
+                if is_sse or any(
+                    field in {"event", "id", "retry"}
+                    or (not field and separator == ":")
+                    for field, separator, _ in fields
+                ):
+                    continue
+                raise InvokeError(msg) from error
+            payload = "\n".join(data_lines)
+            if payload.strip() == "[DONE]":
+                return
+            try:
+                chunk = json_object.validate_json(payload)
+            except ValidationError as data_error:
+                raise InvokeError(msg) from data_error
+        yield chunk
 
 
 def _gen_tool_call_id() -> str:
@@ -628,7 +679,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         )
 
         if response.encoding is None or response.encoding == "ISO-8859-1":
-            response.encoding = "utf-8"
+            content_type = Message()
+            content_type["Content-Type"] = response.headers.get("Content-Type", "")
+            response.encoding = content_type.get_content_charset() or "utf-8"
 
         if response.status_code != HTTPStatus.OK:
             with response:
@@ -732,56 +785,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             # delimiter for stream response, need unicode_escape
             delimiter = credentials.get("stream_mode_delimiter", "\n\n")
             delimiter = codecs.decode(delimiter, "unicode_escape")
-            events = (
-                _iter_sse_events(response)
-                if delimiter == "\n\n"
-                else response.iter_lines(decode_unicode=True, delimiter=delimiter)
-            )
-            is_sse = (
-                response.headers
-                .get("Content-Type", "")
-                .partition(";")[0]
-                .strip()
-                .lower()
-                == "text/event-stream"
-            )
-            for raw_chunk in events:
-                chunk = raw_chunk.strip()
-                if not chunk:
-                    continue
-                decoded_chunk = chunk.removeprefix("data:").lstrip()
-                if decoded_chunk == "[DONE]":  # Some provider returns "data: [DONE]"
-                    break
-
-                try:
-                    chunk_json: dict = TypeAdapter(dict[str, Any]).validate_json(
-                        decoded_chunk,
-                    )
-                except ValidationError as error:
-                    msg = "Invalid JSON in the model response stream"
-                    fields = [line.partition(":") for line in chunk.split("\n")]
-                    data_lines = [
-                        value.removeprefix(" ")
-                        for field, _, value in fields
-                        if field == "data"
-                    ]
-                    if not data_lines:
-                        if is_sse or any(
-                            field in {"event", "id", "retry"}
-                            or (not field and separator == ":")
-                            for field, separator, _ in fields
-                        ):
-                            continue
-                        raise InvokeError(msg) from error
-                    decoded_data = "\n".join(data_lines)
-                    if decoded_data.strip() == "[DONE]":
-                        break
-                    try:
-                        chunk_json = TypeAdapter(dict[str, Any]).validate_json(
-                            decoded_data,
-                        )
-                    except ValidationError as data_error:
-                        raise InvokeError(msg) from data_error
+            for chunk_json in _iter_stream_json(response, delimiter):
                 # handle the error here. for issue #11629
                 if chunk_json.get("error"):
                     raise InvokeError(str(chunk_json["error"]))
