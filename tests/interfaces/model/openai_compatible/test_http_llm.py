@@ -382,6 +382,106 @@ def test_stream_decodes_fragmented_utf8_and_configured_delimiters(
     assert model.started_at == 0
 
 
+@pytest.mark.parametrize(
+    ("delimiter", "configured"),
+    [("\n\n", r"\n\n"), ("\n\n", r"\n"), ("\r\n\r\n", r"\r\n\r\n")],
+)
+@pytest.mark.parametrize("charset", ["utf-8", "utf-8-sig"])
+@pytest.mark.parametrize("bom_count", [1, 2])
+def test_stream_ignores_only_the_initial_bom(
+    http_server: HTTPServerFactory,
+    http_responses: tuple[list[HTTPResponse], Event],
+    delimiter: str,
+    configured: str,
+    charset: str,
+    bom_count: int,
+) -> None:
+    responses, _ready = http_responses
+    events = [
+        'data: {"choices":[{"delta":{"content":"prefix-\ufeff"}}]}',
+        '\ufeffdata: {"choices":[{"delta":{"content":"ignored"}}]}',
+        (
+            'data: {"choices":[{"delta":{"content":"suffix"},"finish_reason":"stop"}],'
+            '"usage":{"prompt_tokens":2,"completion_tokens":3}}'
+        ),
+        "data: [DONE]",
+        "data: invalid-after-done",
+        "",
+    ]
+    body = ("\ufeff" * bom_count + delimiter.join(events)).encode()
+    server = http_server([
+        Response(
+            headers={"Content-Type": f"text/event-stream; charset={charset}"},
+            chunks=tuple(body[index : index + 1] for index in range(len(body))),
+        )
+    ])
+    model = OAICompatLargeLanguageModel([])
+
+    chunks = list(
+        model.invoke(
+            "model",
+            {
+                "mode": "chat",
+                "endpoint_url": server.url,
+                "stream_mode_delimiter": configured,
+            },
+            [UserPromptMessage(content="Question")],
+        )
+    )
+
+    expected = "prefix-\ufeffsuffix" if bom_count == 1 else "suffix"
+    assert (
+        "".join(chunk.delta.message.get_text_content() for chunk in chunks) == expected
+    )
+    assert chunks[-1].delta.finish_reason == "stop"
+    assert chunks[-1].delta.usage is not None
+    assert chunks[-1].delta.usage.total_tokens == 5
+    assert responses[0].raw.closed
+    assert model.started_at == 0
+
+
+@pytest.mark.parametrize(
+    ("delimiter", "configured"),
+    [("\n\n", r"\n\n"), ("\n\n", r"\n"), ("\r\n\r\n", r"\r\n\r\n")],
+)
+def test_stream_propagates_an_error_after_the_initial_bom(
+    http_server: HTTPServerFactory,
+    http_responses: tuple[list[HTTPResponse], Event],
+    delimiter: str,
+    configured: str,
+) -> None:
+    responses, _ready = http_responses
+    body = (
+        '\ufeffdata: {"error":{"message":"upstream failed"}}'
+        + delimiter
+        + "data: [DONE]"
+        + delimiter
+    ).encode()
+    server = http_server([
+        Response(
+            headers={"Content-Type": "text/event-stream"},
+            chunks=tuple(body[index : index + 1] for index in range(len(body))),
+        )
+    ])
+    model = OAICompatLargeLanguageModel([])
+
+    with pytest.raises(InvokeError, match="upstream failed"):
+        list(
+            model.invoke(
+                "model",
+                {
+                    "mode": "chat",
+                    "endpoint_url": server.url,
+                    "stream_mode_delimiter": configured,
+                },
+                [UserPromptMessage(content="Question")],
+            )
+        )
+
+    assert responses[0].raw.closed
+    assert model.started_at == 0
+
+
 @pytest.mark.parametrize("stream", [False, True])
 @pytest.mark.parametrize("status", [401, 429, 503])
 def test_http_errors_reach_public_invoke_and_clear_timing(

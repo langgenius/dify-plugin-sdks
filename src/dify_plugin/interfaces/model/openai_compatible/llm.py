@@ -57,13 +57,21 @@ _plugin_config = DifyPluginEnv()
 
 def _iter_stream_events(response: requests.Response, delimiter: str) -> Generator[str]:
     """Yield complete events with LF line endings."""
+    encoding = response.encoding or "utf-8"
+    strip_bom = codecs.lookup(encoding).name == "utf-8"
     if delimiter != "\n\n":
-        for event in response.iter_lines(decode_unicode=True, delimiter=delimiter):
+        for index, raw_event in enumerate(
+            response.iter_lines(decode_unicode=True, delimiter=delimiter)
+        ):
+            event = (
+                raw_event.removeprefix("\ufeff")
+                if strip_bom and index == 0
+                else raw_event
+            )
             yield event.replace("\r\n", "\n").replace("\r", "\n")
         return
 
-    encoding = response.encoding or "utf-8"
-    if codecs.lookup(encoding).name == "utf-8":
+    if strip_bom:
         encoding = "utf-8-sig"
     decoder = IncrementalNewlineDecoder(
         codecs.getincrementaldecoder(encoding)("replace"), translate=True
