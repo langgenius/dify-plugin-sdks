@@ -333,8 +333,14 @@ def test_non_stream_tool_calls_preserve_arguments_and_request_schema(
 @pytest.mark.parametrize(
     ("delimiter", "configured"), [("\n\n", "\n\n"), ("\n", r"\n"), ("|", "|")]
 )
+@pytest.mark.parametrize(
+    "content_type", ["text/event-stream", "application/octet-stream"]
+)
 def test_stream_decodes_fragmented_utf8_and_configured_delimiters(
-    http_server: HTTPServerFactory, delimiter: str, configured: str
+    http_server: HTTPServerFactory,
+    delimiter: str,
+    configured: str,
+    content_type: str,
 ) -> None:
     events = [
         ": keepalive",
@@ -348,7 +354,7 @@ def test_stream_decodes_fragmented_utf8_and_configured_delimiters(
     body = (delimiter.join(events) + delimiter).encode()
     server = http_server([
         Response(
-            headers={"Content-Type": "text/event-stream"},
+            headers={"Content-Type": content_type},
             chunks=tuple(body[index : index + 1] for index in range(len(body))),
         )
     ])
@@ -373,6 +379,106 @@ def test_stream_decodes_fragmented_utf8_and_configured_delimiters(
     assert chunks[-1].delta.finish_reason == "stop"
     assert chunks[-1].delta.usage is not None
     assert chunks[-1].delta.usage.total_tokens == 2
+    assert model.started_at == 0
+
+
+@pytest.mark.parametrize(
+    ("delimiter", "configured"),
+    [("\n\n", r"\n\n"), ("\n\n", r"\n"), ("\r\n\r\n", r"\r\n\r\n")],
+)
+@pytest.mark.parametrize("charset", ["utf-8", "utf-8-sig"])
+@pytest.mark.parametrize("bom_count", [1, 2])
+def test_stream_ignores_only_the_initial_bom(
+    http_server: HTTPServerFactory,
+    http_responses: tuple[list[HTTPResponse], Event],
+    delimiter: str,
+    configured: str,
+    charset: str,
+    bom_count: int,
+) -> None:
+    responses, _ready = http_responses
+    events = [
+        'data: {"choices":[{"delta":{"content":"prefix-\ufeff"}}]}',
+        '\ufeffdata: {"choices":[{"delta":{"content":"ignored"}}]}',
+        (
+            'data: {"choices":[{"delta":{"content":"suffix"},"finish_reason":"stop"}],'
+            '"usage":{"prompt_tokens":2,"completion_tokens":3}}'
+        ),
+        "data: [DONE]",
+        "data: invalid-after-done",
+        "",
+    ]
+    body = ("\ufeff" * bom_count + delimiter.join(events)).encode()
+    server = http_server([
+        Response(
+            headers={"Content-Type": f"text/event-stream; charset={charset}"},
+            chunks=tuple(body[index : index + 1] for index in range(len(body))),
+        )
+    ])
+    model = OAICompatLargeLanguageModel([])
+
+    chunks = list(
+        model.invoke(
+            "model",
+            {
+                "mode": "chat",
+                "endpoint_url": server.url,
+                "stream_mode_delimiter": configured,
+            },
+            [UserPromptMessage(content="Question")],
+        )
+    )
+
+    expected = "prefix-\ufeffsuffix" if bom_count == 1 else "suffix"
+    assert (
+        "".join(chunk.delta.message.get_text_content() for chunk in chunks) == expected
+    )
+    assert chunks[-1].delta.finish_reason == "stop"
+    assert chunks[-1].delta.usage is not None
+    assert chunks[-1].delta.usage.total_tokens == 5
+    assert responses[0].raw.closed
+    assert model.started_at == 0
+
+
+@pytest.mark.parametrize(
+    ("delimiter", "configured"),
+    [("\n\n", r"\n\n"), ("\n\n", r"\n"), ("\r\n\r\n", r"\r\n\r\n")],
+)
+def test_stream_propagates_an_error_after_the_initial_bom(
+    http_server: HTTPServerFactory,
+    http_responses: tuple[list[HTTPResponse], Event],
+    delimiter: str,
+    configured: str,
+) -> None:
+    responses, _ready = http_responses
+    body = (
+        '\ufeffdata: {"error":{"message":"upstream failed"}}'
+        + delimiter
+        + "data: [DONE]"
+        + delimiter
+    ).encode()
+    server = http_server([
+        Response(
+            headers={"Content-Type": "text/event-stream"},
+            chunks=tuple(body[index : index + 1] for index in range(len(body))),
+        )
+    ])
+    model = OAICompatLargeLanguageModel([])
+
+    with pytest.raises(InvokeError, match="upstream failed"):
+        list(
+            model.invoke(
+                "model",
+                {
+                    "mode": "chat",
+                    "endpoint_url": server.url,
+                    "stream_mode_delimiter": configured,
+                },
+                [UserPromptMessage(content="Question")],
+            )
+        )
+
+    assert responses[0].raw.closed
     assert model.started_at == 0
 
 
@@ -692,31 +798,51 @@ def test_redirect_preserves_the_request_body(http_server: HTTPServerFactory) -> 
 
 
 @pytest.mark.parametrize(
-    ("newline", "prefix"),
+    ("newline", "delimiter", "configured"),
     [
-        ("\n", ""),
-        ("\r\n", ""),
-        ("\r", ""),
-        ("\n", ": keepalive\n"),
-        ("\n", "event: message\n"),
+        ("\n", "\n\n", r"\n\n"),
+        ("\r\n", "\r\n\r\n", r"\n\n"),
+        ("\r", "\r\r", r"\n\n"),
+        ("\r\n", "\r\n\r\n", r"\r\n\r\n"),
+        ("\r", "\r\r", r"\r\r"),
+        ("\r", "|", "|"),
     ],
-    ids=["lf", "crlf", "cr", "legacy-leading-comment", "event-type"],
+    ids=["lf", "crlf", "cr", "custom-crlf", "custom-cr", "custom-pipe"],
 )
-def test_stream_handles_sse_framing_and_legacy_leading_comments(
+@pytest.mark.parametrize(
+    "prefix",
+    ["", ": keepalive\n", "event: message\n", "vendor: ignored\n", "bare field\n"],
+    ids=["data", "comment", "event-type", "unknown", "bare-field"],
+)
+def test_stream_preserves_data_among_sse_comments_and_ignored_fields(
     http_server: HTTPServerFactory,
     http_responses: tuple[list[HTTPResponse], Event],
     newline: str,
+    delimiter: str,
+    configured: str,
     prefix: str,
 ) -> None:
     responses, _ready = http_responses
+    content = "Answer\u0085\u2028\u2029"
+    payload = json.dumps(
+        {"choices": [{"delta": {"content": content}, "finish_reason": "stop"}]},
+        ensure_ascii=False,
+    )
     events = [
-        prefix
-        + 'data: {"choices":[{"delta":{"content":"Answer"},"finish_reason":"stop"}]}',
-        'data: {"choices":[],"usage":{"prompt_tokens":1,"completion_tokens":2}}',
-        "data: [DONE]",
+        "id: 1",
+        "retry: 1000",
+        "vendor: ignored",
+        "unknown field without a colon",
+        prefix + f"data: {payload}\n: trailing comment\nvendor: ignored",
+        (
+            ': keepalive\ndata: {"choices":[],"usage":'
+            '{"prompt_tokens":1,"completion_tokens":2}}'
+        ),
+        ": keepalive\nvendor: ignored\ndata: [DONE]",
+        "data: invalid-after-done",
         "",
     ]
-    body = (newline * 2).join(events).encode()
+    body = delimiter.join(event.replace("\n", newline) for event in events).encode()
     server = http_server([
         Response(
             headers={"Content-Type": "text/event-stream"},
@@ -731,7 +857,11 @@ def test_stream_handles_sse_framing_and_legacy_leading_comments(
         chunks = list(
             model.invoke(
                 "model",
-                {"mode": "chat", "endpoint_url": server.url},
+                {
+                    "mode": "chat",
+                    "endpoint_url": server.url,
+                    "stream_mode_delimiter": configured,
+                },
                 [UserPromptMessage(content="Question")],
             )
         )
@@ -739,29 +869,43 @@ def test_stream_handles_sse_framing_and_legacy_leading_comments(
         assert responses[0].raw.closed
         assert model.started_at == 0
 
-    # Preserve the baseline's discard for leading comments until #397 is addressed.
-    assert "".join(chunk.delta.message.get_text_content() for chunk in chunks) == (
-        "" if prefix.startswith(":") else "Answer"
+    assert (
+        "".join(chunk.delta.message.get_text_content() for chunk in chunks) == content
     )
-    assert chunks[-1].delta.finish_reason == (
-        None if prefix.startswith(":") else "stop"
-    )
+    assert chunks[-1].delta.finish_reason == "stop"
     assert chunks[-1].delta.usage is not None
     assert chunks[-1].delta.usage.total_tokens == 3
 
 
-@pytest.mark.parametrize("charset", ["utf-8", "gbk", "utf-16"])
-def test_stream_preserves_explicit_response_charset(
-    http_server: HTTPServerFactory, charset: str
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize(
+    ("charset", "content"),
+    [
+        ("utf-8", "回答"),
+        ("gbk", "回答"),
+        ("utf-16", "回答"),
+        ("ISO-8859-1", "café"),
+        ("iso-8859-1", "café"),
+    ],
+)
+def test_invoke_preserves_explicit_response_charset(
+    http_server: HTTPServerFactory, charset: str, content: str, stream: bool
 ) -> None:
-    body = (
-        'data: {"choices":[{"delta":{"content":"回答"},"finish_reason":"stop"}]}'
-        '\n\ndata: {"choices":[],"usage":{"prompt_tokens":1,"completion_tokens":2}}'
-        "\n\ndata: [DONE]\n\n"
-    ).encode(charset)
+    message_key = "delta" if stream else "message"
+    payload = json.dumps(
+        {
+            "choices": [{message_key: {"content": content}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 2},
+        },
+        ensure_ascii=False,
+    )
+    body = (f"data: {payload}\n\ndata: [DONE]\n\n" if stream else payload).encode(
+        charset
+    )
+    media_type = "text/event-stream" if stream else "application/json"
     server = http_server([
         Response(
-            headers={"Content-Type": f"text/event-stream; charset={charset}"},
+            headers={"Content-Type": f"{media_type}; charset={charset}"},
             chunks=tuple(body[index : index + 1] for index in range(len(body))),
         )
     ])
@@ -772,10 +916,13 @@ def test_stream_preserves_explicit_response_charset(
             "model",
             {"mode": "chat", "endpoint_url": server.url},
             [UserPromptMessage(content="Question")],
+            stream=stream,
         )
     )
 
-    assert "".join(chunk.delta.message.get_text_content() for chunk in chunks) == "回答"
+    assert (
+        "".join(chunk.delta.message.get_text_content() for chunk in chunks) == content
+    )
     assert chunks[-1].delta.usage is not None
     assert chunks[-1].delta.usage.total_tokens == 3
     assert model.started_at == 0
@@ -818,7 +965,16 @@ def test_stream_preserves_raw_and_single_prefix_multiline_json(
 @pytest.mark.parametrize("delimiter", ["\n\n", "|"])
 @pytest.mark.parametrize(
     "raw",
-    ["not json", "0", "false", '"text"', "[1]", 'not json\ndata: {"choices":[]}'],
+    [
+        "not json",
+        "0",
+        "false",
+        '"text"',
+        "[1]",
+        '{"broken":',
+        '{"choices":\n\n}',
+        "[\n\n1\n\n]",
+    ],
 )
 def test_stream_keeps_errors_for_raw_nonobject_frames(
     http_server: HTTPServerFactory,
