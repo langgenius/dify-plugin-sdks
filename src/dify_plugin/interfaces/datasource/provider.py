@@ -4,6 +4,7 @@ from typing import Any
 from werkzeug import Request
 
 from dify_plugin.entities.datasource import DatasourceOAuthCredentials
+from dify_plugin.entities.oauth import OAuthRevokeResult
 from dify_plugin.protocol.oauth import OAuthCredentials
 
 
@@ -11,6 +12,22 @@ class DatasourceProvider:
     """
     A provider for a datasource
     """
+
+    def oauth_revoke_credentials(
+        self,
+        system_credentials: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+    ) -> OAuthRevokeResult:
+        return self._oauth_revoke_credentials(system_credentials, credentials)
+
+    def _oauth_revoke_credentials(
+        self,
+        system_credentials: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+    ) -> OAuthRevokeResult:
+        """Revoke credentials; raise NotImplementedError when not implemented."""
+        msg = "Please implement `_oauth_revoke_credentials` to revoke OAuth credentials"
+        raise NotImplementedError(msg)
 
     def validate_credentials(self, credentials: Mapping[str, Any]) -> None:
         return self._validate_credentials(credentials)

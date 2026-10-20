@@ -1,10 +1,23 @@
 from collections.abc import Mapping, Sequence
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictBool
 
 from dify_plugin.core.documentation.schema_doc import docs
+from dify_plugin.entities.credential import AuthReasonCode
 from dify_plugin.entities.provider_config import ProviderConfig
+
+
+class OAuthRevokeResult(BaseModel):
+    """Remote revocation outcome, independent of local connection deletion.
+
+    A null reason_code means no more specific reason; retryable allows a later
+    attempt but does not cause the SDK to retry automatically.
+    """
+
+    status: Literal["revoked", "unsupported", "temporarily_unavailable", "failed"]
+    reason_code: AuthReasonCode | None
+    retryable: StrictBool
 
 
 @docs(

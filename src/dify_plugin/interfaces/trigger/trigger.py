@@ -5,7 +5,11 @@ from typing import Any, final
 from werkzeug import Request
 
 from dify_plugin.entities import ParameterOption
-from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
+from dify_plugin.entities.oauth import (
+    OAuthCredentials,
+    OAuthRevokeResult,
+    TriggerOAuthCredentials,
+)
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import (
     EventDispatch,
@@ -289,6 +293,22 @@ class TriggerSubscriptionConstructor(ABC, OAuthProviderProtocol):
             "The trigger you are using does not support OAuth, please "
             "implement `_oauth_refresh_credentials` method"
         )
+        raise NotImplementedError(msg)
+
+    def oauth_revoke_credentials(
+        self,
+        system_credentials: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+    ) -> OAuthRevokeResult:
+        return self._oauth_revoke_credentials(system_credentials, credentials)
+
+    def _oauth_revoke_credentials(
+        self,
+        system_credentials: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+    ) -> OAuthRevokeResult:
+        """Revoke credentials; raise NotImplementedError when not implemented."""
+        msg = "Please implement `_oauth_revoke_credentials` to revoke OAuth credentials"
         raise NotImplementedError(msg)
 
     def create_subscription(

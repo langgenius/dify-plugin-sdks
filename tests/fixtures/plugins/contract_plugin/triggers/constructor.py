@@ -5,7 +5,11 @@ from urllib.parse import urlencode
 from werkzeug import Request
 
 from dify_plugin.entities import I18nObject, ParameterOption
-from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
+from dify_plugin.entities.oauth import (
+    OAuthCredentials,
+    OAuthRevokeResult,
+    TriggerOAuthCredentials,
+)
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import Subscription, UnsubscribeResult
 from dify_plugin.interfaces.trigger import TriggerSubscriptionConstructor
@@ -46,6 +50,14 @@ class ContractConstructor(TriggerSubscriptionConstructor):
         return OAuthCredentials(
             credentials={**credentials, "access_token": "refreshed"}
         )
+
+    def _oauth_revoke_credentials(
+        self,
+        system_credentials: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+    ) -> OAuthRevokeResult:
+        del system_credentials, credentials
+        return OAuthRevokeResult(status="revoked", reason_code=None, retryable=False)
 
     def _create_subscription(
         self,

@@ -168,6 +168,16 @@ CASES = [
         ],
     ),
     (
+        "oauth",
+        "revoke_credentials",
+        {
+            "provider": "events",
+            "system_credentials": {"client_id": "client"},
+            "credentials": {"access_token": "token", "refresh_token": "refresh"},
+        },
+        [{"status": "revoked", "reason_code": None, "retryable": False}],
+    ),
+    (
         "datasource",
         "validate_datasource_credentials",
         {"provider": "website"},
@@ -600,6 +610,7 @@ TRIGGER_METHODS = {
     "get_authorization_url": "_oauth_get_authorization_url",
     "get_credentials": "_oauth_get_credentials",
     "refresh_credentials": "_oauth_refresh_credentials",
+    "revoke_credentials": "_oauth_revoke_credentials",
     "invoke_trigger_event": "_on_event",
     "validate_trigger_credentials": "_validate_api_key",
     "dispatch_trigger_event": "_dispatch_event",
