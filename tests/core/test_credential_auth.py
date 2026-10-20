@@ -21,9 +21,7 @@ CHECK_RESULTS = [
         reason_code="provider_timeout",
         retryable=True,
     ),
-    CredentialCheckResult(
-        status="unsupported", reason_code="unsupported", retryable=False
-    ),
+    CredentialCheckResult(status="unsupported", reason_code=None, retryable=False),
 ]
 
 
@@ -136,15 +134,13 @@ def test_invalid_check_request_does_not_call_provider(
     [
         None,
         OAuthRevokeResult(status="revoked", reason_code=None, retryable=False),
-        OAuthRevokeResult(
-            status="unsupported", reason_code="unsupported", retryable=False
-        ),
+        OAuthRevokeResult(status="unsupported", reason_code=None, retryable=False),
         OAuthRevokeResult(
             status="temporarily_unavailable",
             reason_code="provider_rate_limited",
             retryable=True,
         ),
-        OAuthRevokeResult(status="failed", reason_code="plugin_error", retryable=False),
+        OAuthRevokeResult(status="failed", reason_code=None, retryable=False),
     ],
 )
 def test_revoke_dispatch_and_missing_implementation(
