@@ -92,7 +92,7 @@ def test_done_stops_reading_and_closes_response(
     def events() -> Iterator[bytes]:
         yield _choice({"reasoning_content": "A"}, "stop")
         yield ZERO_USAGE
-        yield b"data: [DONE]\n\n"
+        yield b": heartbeat\nvendor: ignored\ndata: [DONE]\n\n"
         pytest.fail("The response must not be read after [DONE]")
 
     response = _response(events())
@@ -290,15 +290,14 @@ def test_stream_decoding_is_independent_of_byte_boundaries(
     newline: str,
 ) -> None:
     payload = {"choices": [{"delta": {"content": content}, "finish_reason": "stop"}]}
-    data_lines = "\n".join(
+    data_lines = "\n: heartbeat\nvendor: ignored\n".join(
         f"data: {line}"
         for line in json.dumps(payload, ensure_ascii=False, indent=2).split("\n")
     )
     body = (
         (
-            f"\ufeffevent: message\nid: 1\n: heartbeat\n{data_lines}\n\n"
-            + ZERO_USAGE.decode()
-            + "data: [DONE]\n\n"
+            f"\ufeff: heartbeat\nevent: message\nid: 1\n{data_lines}\n\n"
+            "id: 2\n\n" + ZERO_USAGE.decode() + "data: [DONE]\n\n"
         )
         .replace("\n", newline)
         .encode()

@@ -3,10 +3,16 @@ from typing import Any, Protocol
 
 from werkzeug import Request
 
-from dify_plugin.entities.oauth import OAuthCredentials
+from dify_plugin.entities.oauth import OAuthCredentials, OAuthRevokeResult
 
 
 class OAuthProviderProtocol(Protocol):
+    def oauth_revoke_credentials(
+        self,
+        system_credentials: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+    ) -> OAuthRevokeResult: ...
+
     def oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
     ) -> str:

@@ -168,6 +168,16 @@ CASES = [
         ],
     ),
     (
+        "oauth",
+        "revoke_credentials",
+        {
+            "provider": "events",
+            "system_credentials": {"client_id": "client"},
+            "credentials": {"access_token": "token", "refresh_token": "refresh"},
+        },
+        [{"status": "revoked", "reason_code": None, "retryable": False}],
+    ),
+    (
         "datasource",
         "validate_datasource_credentials",
         {"provider": "website"},
@@ -600,6 +610,7 @@ TRIGGER_METHODS = {
     "get_authorization_url": "_oauth_get_authorization_url",
     "get_credentials": "_oauth_get_credentials",
     "refresh_credentials": "_oauth_refresh_credentials",
+    "revoke_credentials": "_oauth_revoke_credentials",
     "invoke_trigger_event": "_on_event",
     "validate_trigger_credentials": "_validate_api_key",
     "dispatch_trigger_event": "_dispatch_event",
@@ -1088,9 +1099,7 @@ def test_endpoint_missing_path_or_method_returns_http_404(
     assert len(messages) == 1
     assert messages[0]["type"] == "stream"
     assert messages[0]["data"]["status"] == 404
-    assert b"Failed to dispatch endpoint request" in bytes.fromhex(
-        messages[0]["data"]["result"]
-    )
+    assert bytes.fromhex(messages[0]["data"]["result"]) == b"Not Found"
 
 
 def test_endpoint_exception_returns_http_500(contract_plugin: Plugin) -> None:
@@ -1099,7 +1108,72 @@ def test_endpoint_exception_returns_http_500(contract_plugin: Plugin) -> None:
     assert len(messages) == 1
     assert messages[0]["type"] == "stream"
     assert messages[0]["data"]["status"] == 500
-    assert b"Internal Server Error" in bytes.fromhex(messages[0]["data"]["result"])
+    assert bytes.fromhex(messages[0]["data"]["result"]) == b"Internal Server Error"
+
+
+@pytest.mark.parametrize("stage", ["dispatch", "constructor", "invoke"])
+@pytest.mark.parametrize("error_type", [ValueError, RuntimeError])
+def test_endpoint_exception_hides_details_and_logs_internal_failures(
+    contract_plugin: Plugin,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    stage: str,
+    error_type: type[Exception],
+) -> None:
+    error = error_type("cannot open /private/example with token=test-secret")
+
+    def fail(*args: object) -> None:
+        del args
+        raise error
+
+    endpoint_cls = next(contract_plugin.registration.endpoints.iter_rules()).endpoint
+    if stage == "dispatch":
+        monkeypatch.setattr(
+            contract_plugin.registration, "dispatch_endpoint_request", fail
+        )
+    else:
+        monkeypatch.setattr(
+            endpoint_cls, "__init__" if stage == "constructor" else "_invoke", fail
+        )
+
+    messages = invoke(contract_plugin, request_for("invoke_endpoint"))
+
+    assert len(messages) == 1
+    assert messages[0]["type"] == "stream"
+    response = messages[0]["data"]
+    if stage == "dispatch" and error_type is ValueError:
+        assert response["status"] == 404
+        assert bytes.fromhex(response["result"]) == b"Not Found"
+    else:
+        assert response["status"] == 500
+        assert bytes.fromhex(response["result"]) == b"Internal Server Error"
+        assert str(error) in caplog.text
+        assert any(
+            record.exc_info and record.exc_info[1] is error for record in caplog.records
+        )
+    assert "test-secret" not in str(response["headers"])
+
+
+@pytest.mark.parametrize("status", [400, 500])
+def test_endpoint_preserves_explicit_plugin_error_response(
+    contract_plugin: Plugin, monkeypatch: pytest.MonkeyPatch, status: int
+) -> None:
+    endpoint_cls = next(contract_plugin.registration.endpoints.iter_rules()).endpoint
+    monkeypatch.setattr(
+        endpoint_cls,
+        "_invoke",
+        lambda *_args: Response(
+            "plugin error", status=status, headers={"X-Error": "plugin"}
+        ),
+    )
+
+    messages = invoke(contract_plugin, request_for("invoke_endpoint"))
+
+    assert len(messages) == 1
+    response = messages[0]["data"]
+    assert response["status"] == status
+    assert bytes.fromhex(response["result"]) == b"plugin error"
+    assert response["headers"]["X-Error"] == "plugin"
 
 
 def test_endpoint_stream_emits_headers_before_utf8_and_binary_chunks(

@@ -7,8 +7,9 @@ from werkzeug import Request
 
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities import ParameterOption
+from dify_plugin.entities.credential import CredentialCheckResult
 from dify_plugin.entities.invoke_message import InvokeMessage
-from dify_plugin.entities.oauth import ToolOAuthCredentials
+from dify_plugin.entities.oauth import OAuthRevokeResult, ToolOAuthCredentials
 from dify_plugin.entities.provider_config import LogMetadata
 from dify_plugin.entities.tool import (
     ToolInvokeMessage,
@@ -292,14 +293,37 @@ class ToolLike[T: InvokeMessage](ABC):
 
 
 class ToolProvider:
-    def validate_credentials(self, credentials: dict) -> None:
+    def validate_credentials(self, credentials: dict) -> CredentialCheckResult | None:
         return self._validate_credentials(credentials)
 
-    def _validate_credentials(self, credentials: dict) -> None:
+    def _validate_credentials(self, credentials: dict) -> CredentialCheckResult | None:
+        """Return a detailed result, or None for legacy validation success.
+
+        Detailed requests serialize the result, treating None as valid. Legacy
+        requests return success for valid results and raise
+        ToolProviderCredentialValidationError for other statuses. Exceptions
+        raised by this hook retain their types in either format.
+        """
         msg = (
             "The tool you are using does not support credentials validation, "
             "please implement `_validate_credentials` method"
         )
+        raise NotImplementedError(msg)
+
+    def oauth_revoke_credentials(
+        self,
+        system_credentials: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+    ) -> OAuthRevokeResult:
+        return self._oauth_revoke_credentials(system_credentials, credentials)
+
+    def _oauth_revoke_credentials(
+        self,
+        system_credentials: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+    ) -> OAuthRevokeResult:
+        """Revoke credentials; raise NotImplementedError when not implemented."""
+        msg = "Please implement `_oauth_revoke_credentials` to revoke OAuth credentials"
         raise NotImplementedError(msg)
 
     def oauth_get_authorization_url(

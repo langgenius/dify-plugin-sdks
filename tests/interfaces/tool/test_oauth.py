@@ -198,7 +198,13 @@ def test_oauth_public_methods_keep_legacy_credentials_and_expiry(
 
 
 @pytest.mark.parametrize(
-    "method", ["get_authorization_url", "get_credentials", "refresh_credentials"]
+    "method",
+    [
+        "get_authorization_url",
+        "get_credentials",
+        "refresh_credentials",
+        "revoke_credentials",
+    ],
 )
 def test_oauth_provider_errors_reach_the_caller(
     oauth_provider: ToolProvider | DatasourceProvider | TriggerSubscriptionConstructor,
@@ -217,7 +223,16 @@ def test_oauth_provider_errors_reach_the_caller(
         args.append(Request.from_values())
     elif method == "refresh_credentials":
         args.append({"refresh_token": "expired"})
+    elif method == "revoke_credentials":
+        args = [{}, {"access_token": "token"}]
 
     with pytest.raises(ToolProviderOAuthError) as caught:
         getattr(oauth_provider, f"oauth_{method}")(*args)
     assert caught.value is error
+
+
+def test_oauth_revocation_requires_implementation(
+    oauth_provider: ToolProvider | DatasourceProvider | TriggerSubscriptionConstructor,
+) -> None:
+    with pytest.raises(NotImplementedError, match="_oauth_revoke_credentials"):
+        oauth_provider.oauth_revoke_credentials({}, {"access_token": "token"})

@@ -192,7 +192,6 @@ def test_serverless_constructor_passes_worker_configuration(
             "max_single_connection_lifetime": 30,
         }
         assert plugin.default_response_writer is None
-        assert len(plugin.routes) == 37
     finally:
         plugin.close()
         plugin.executer.shutdown(wait=True)

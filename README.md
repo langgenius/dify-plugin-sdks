@@ -39,6 +39,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup details, integration test requi
 
 See [langgenius/dify-official-plugins](https://github.com/langgenius/dify-official-plugins) for production plugin implementations published and used by Dify.
 
+## OpenAI-Compatible Embeddings
+
+Starting in SDK 0.11.0 (unreleased), `OAICompatEmbeddingModel` validates each response batch before sending the next request.
+Each input must have one nonempty vector of finite numbers, with consistent dimensions across all batches.
+Responses with `index` fields must cover every input in that batch exactly once using integer indices starting at zero; the SDK restores input order.
+Responses without indices retain response order.
+Malformed responses, including mixed index metadata, numeric strings, and booleans, raise an SDK invocation error.
+This applies to plugins using the shared implementation, including GiteeAI and SiliconFlow.
+
 ## LLM Polling Support
 
 Since SDK 0.9.0, model plugins can declare the `polling` feature and implement `_start_polling()` and `_check_polling()` to handle long-running provider jobs through separate requests.
@@ -47,6 +56,15 @@ Both methods return `LLMPollingResult` with one of three states:
 - `running`: return `plugin_state` for the next check.
 - `succeeded`: return the final LLM `result`.
 - `failed`: return a terminal `error`.
+
+## OpenAI-Compatible Streaming
+
+In SDK 0.11.0 (unreleased), `OAICompatLargeLanguageModel` preserves SSE data alongside comments and unknown fields.
+Responses marked `text/event-stream` ignore events without data; invalid JSON in `data` fields still raises an invocation error.
+The parser handles LF, CRLF, and CR line endings within events, including with custom delimiters.
+A single leading UTF-8 BOM is ignored for both default and custom delimiters.
+Raw JSON objects, single-prefix multiline JSON, and final payloads without a blank-line terminator remain supported.
+Explicit response charsets are respected; responses without a charset default to UTF-8.
 
 ## Version Management
 
@@ -64,6 +82,18 @@ Review the [release notes](https://github.com/langgenius/dify-plugin-sdks/releas
 Constrain your SDK dependency to the minor version you have tested while allowing patch updates.
 For example, `dify-plugin~=0.10.2` allows patches in the 0.10 series.
 Review and test a new minor release before updating the constraint.
+
+### HTTP Error Responses in SDK 0.11.0 (unreleased)
+
+SDK-generated Serverless and Endpoint failures return HTTP 500 with the body `Internal Server Error`.
+The original exception and traceback are logged on the plugin server.
+Endpoint route failures return HTTP 404 with `Not Found`; exceptions from plugin construction or invocation, including `ValueError`, return HTTP 500.
+Explicit HTTP responses returned by a plugin retain their status, headers, and body.
+Update clients that parse exception text or treat a plugin's `ValueError` as a 404.
+
+Protecting errors raised during Endpoint streaming also requires the [daemon HTTP error fix](https://github.com/langgenius/dify-plugin-daemon/issues/834) on every daemon node.
+With that fix, a stream that fails after headers are sent is interrupted, so clients must handle response-body read errors.
+Upgrade the daemon first, then rebuild and deploy plugins with the updated SDK.
 
 ## Agent Token Estimates
 

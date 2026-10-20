@@ -474,6 +474,14 @@ class Plugin(IOServer, Router):
         )
 
         self.register_route(
+            self.plugin_executer.revoke_oauth_credentials,
+            lambda data: (
+                data.get("type") == PluginInvokeType.OAuth.value
+                and data.get("action") == OAuthActions.RevokeCredentials.value
+            ),
+        )
+
+        self.register_route(
             self.plugin_executer.datasource_online_drive_browse_files,
             lambda data: (
                 data.get("type") == PluginInvokeType.Datasource.value

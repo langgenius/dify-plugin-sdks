@@ -1,3 +1,4 @@
+import logging
 import socket
 import sys
 import threading
@@ -16,6 +17,8 @@ from dify_plugin.core.entities.plugin.io import (
 )
 from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.serverless.response_writer import ServerlessResponseWriter
+
+logger = logging.getLogger(__name__)
 
 
 class ServerlessRequestReader(RequestReader):
@@ -79,8 +82,9 @@ class ServerlessRequestReader(RequestReader):
                 writer=writer,
             )
             self.request_queue.put(plugin_in)
-        except Exception as e:
-            return str(e), 500
+        except Exception:
+            logger.exception("Failed to accept serverless request")
+            return "Internal Server Error", 500
 
         def generate() -> Generator[str, None, None]:
             try:

@@ -1,4 +1,5 @@
 import binascii
+import logging
 import tempfile
 from collections.abc import Generator, Iterable, Mapping
 from typing import TYPE_CHECKING, Any
@@ -35,6 +36,7 @@ from dify_plugin.core.entities.plugin.request import (
     OAuthGetAuthorizationUrlRequest,
     OAuthGetCredentialsRequest,
     OAuthRefreshCredentialsRequest,
+    OAuthRevokeCredentialsRequest,
     ToolGetRuntimeParametersRequest,
     ToolInvokeRequest,
     ToolValidateCredentialsRequest,
@@ -56,6 +58,7 @@ from dify_plugin.core.session_context import use_current_session
 from dify_plugin.core.utils.http_parser import deserialize_request, serialize_response
 from dify_plugin.entities import ParameterOption
 from dify_plugin.entities.agent import AgentRuntime
+from dify_plugin.entities.credential import CredentialCheckResult
 from dify_plugin.entities.datasource import (
     DatasourceRuntime,
 )
@@ -68,6 +71,7 @@ from dify_plugin.entities.trigger import (
     UnsubscribeResult,
     Variables,
 )
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.model.ai_model import AIModel
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
@@ -90,6 +94,8 @@ if TYPE_CHECKING:
     from dify_plugin.interfaces.datasource import DatasourceProvider
     from dify_plugin.interfaces.endpoint import Endpoint
     from dify_plugin.interfaces.tool import Tool
+
+logger = logging.getLogger(__name__)
 
 _EBML_MAX_ID_WIDTH = 4
 _EBML_MAX_SIZE_WIDTH = 8
@@ -165,7 +171,7 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
         self,
         session: Session,
         data: ToolValidateCredentialsRequest,
-    ) -> dict[str, bool]:
+    ) -> dict[str, Any]:
         del session
         provider_instance = self.registration.get_tool_provider_cls(data.provider)
         if provider_instance is None:
@@ -173,8 +179,18 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
             raise ValueError(msg)
 
         provider_instance = provider_instance()
-        provider_instance.validate_credentials(data.credentials)
+        result = provider_instance.validate_credentials(data.credentials)
+        if data.result_format == "detailed":
+            if result is None:
+                result = CredentialCheckResult(
+                    status="valid", reason_code=None, retryable=False
+                )
+            return result.model_dump(mode="json")
 
+        if result is not None and result.status != "valid":
+            raise ToolProviderCredentialValidationError(
+                result.reason_code or result.status
+            )
         return {"result": True}
 
     def invoke_tool(
@@ -684,15 +700,19 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
         request = deserialize_request(bytes_data)
 
         try:
-            # dispatch request
             endpoint, values = self.registration.dispatch_endpoint_request(request)
-            # construct response
-            endpoint_instance: Endpoint = endpoint(session)
-            response = endpoint_instance.invoke(request, values, data.settings)
-        except ValueError as e:
-            response = Response(str(e), status=404)
-        except Exception as e:
-            response = Response(f"Internal Server Error: {e!s}", status=500)
+        except ValueError:
+            response = Response("Not Found", status=404)
+        except Exception:
+            logger.exception("Failed to dispatch endpoint")
+            response = Response("Internal Server Error", status=500)
+        else:
+            try:
+                endpoint_instance: Endpoint = endpoint(session)
+                response = endpoint_instance.invoke(request, values, data.settings)
+            except Exception:
+                logger.exception("Failed to invoke endpoint")
+                response = Response("Internal Server Error", status=500)
 
         with response:
             # check if response is a generator
@@ -811,6 +831,20 @@ class PluginExecutor:  # ruff:ignore[too-many-public-methods]
             "credentials": credentials.credentials,
             "expires_at": credentials.expires_at,
         }
+
+    def revoke_oauth_credentials(
+        self,
+        session: Session,
+        data: OAuthRevokeCredentialsRequest,
+    ) -> dict[str, Any]:
+        provider_instance = self._get_oauth_provider_instance(
+            session=session, provider=data.provider
+        )
+        result = provider_instance.oauth_revoke_credentials(
+            system_credentials=data.system_credentials,
+            credentials=data.credentials,
+        )
+        return result.model_dump(mode="json")
 
     def validate_datasource_credentials(
         self,

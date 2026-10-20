@@ -1,8 +1,15 @@
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    field_validator,
+    model_validator,
+)
 
 from dify_plugin.entities.datasource import (
     GetOnlineDocumentPageContentRequest,
@@ -77,6 +84,7 @@ class OAuthActions(StrEnum):
     GetAuthorizationUrl = "get_authorization_url"
     GetCredentials = "get_credentials"
     RefreshCredentials = "refresh_credentials"
+    RevokeCredentials = "revoke_credentials"
 
 
 class DatasourceActions(StrEnum):
@@ -137,6 +145,15 @@ class ToolValidateCredentialsRequest(PluginAccessRequest):
     action: ToolActions = ToolActions.ValidateCredentials
     provider: str
     credentials: dict
+    credential_type: Literal["api_key", "oauth2"] | None = None
+    result_format: Literal["detailed"] | None = None
+
+    @model_validator(mode="after")
+    def require_detailed_credential_type(self) -> Self:
+        if self.result_format == "detailed" and self.credential_type is None:
+            msg = "credential_type is required for detailed credential checks"
+            raise ValueError(msg)
+        return self
 
 
 class ToolGetRuntimeParametersRequest(PluginAccessRequest):
@@ -324,6 +341,14 @@ class OAuthRefreshCredentialsRequest(PluginAccessRequest):
     provider: str
     redirect_uri: str
     system_credentials: Mapping[str, Any]
+    credentials: Mapping[str, Any]
+
+
+class OAuthRevokeCredentialsRequest(PluginAccessRequest):
+    type: PluginInvokeType = PluginInvokeType.OAuth
+    action: OAuthActions = OAuthActions.RevokeCredentials
+    provider: str
+    system_credentials: Mapping[str, Any] = Field(default_factory=dict)
     credentials: Mapping[str, Any]
 
 
