@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 from enum import Enum
 
 from packaging.version import InvalidVersion, Version
@@ -230,7 +230,7 @@ class PluginConfiguration(BaseModel):
     icon: str
     icon_dark: str | None = Field(None, description="The dark mode icon of the plugin")
     label: I18nObject
-    created_at: datetime.datetime
+    created_at: dt.datetime
     resource: PluginResourceRequirements
     plugins: Plugins
     meta: Meta

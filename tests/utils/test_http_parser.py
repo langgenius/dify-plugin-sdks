@@ -107,3 +107,93 @@ def test_rejects_newlines_in_header_names(newline: str) -> None:
     response.headers[name] = "value"
     with pytest.raises(ValueError, match="header"):
         serialize_response(response)
+
+
+@pytest.mark.parametrize(
+    ("raw_request", "message"),
+    [
+        pytest.param(b"", "Empty HTTP request", id="empty"),
+        pytest.param(b"GET /", "request line", id="missing-protocol"),
+        pytest.param(
+            b"GET / HTTP/2.0\r\nHost: example.com\r\n\r\n",
+            "protocol",
+            id="unsupported-protocol",
+        ),
+        pytest.param(
+            b"GET /unsafe\tpath HTTP/1.1\r\nHost: example.com\r\n\r\n",
+            "request target",
+            id="control-in-target",
+        ),
+        pytest.param(
+            b"POST / HTTP/1.1\r\nHost: example.com\r\nContent-Length: -1\r\n\r\n",
+            "Content-Length",
+            id="negative-content-length",
+        ),
+        pytest.param(
+            b"POST / HTTP/1.1\r\nHost: example.com\r\n"
+            b"Content-Length: 1\r\nContent-Length: 2\r\n\r\nx",
+            "Content-Length",
+            id="conflicting-content-lengths",
+        ),
+    ],
+)
+def test_invalid_http_envelope_raises_value_error(
+    raw_request: bytes, message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        deserialize_request(raw_request)
+
+
+@pytest.mark.parametrize("separator", [b"\r\n", b"\n"])
+@pytest.mark.parametrize("terminate_headers", [False, True])
+def test_http_10_request_without_host_or_body(
+    separator: bytes, terminate_headers: bool
+) -> None:
+    raw_request = separator.join((b"GET /health HTTP/1.0", b"Accept: text/plain"))
+    if terminate_headers:
+        raw_request += separator * 2
+
+    request = deserialize_request(raw_request)
+
+    assert request.method == "GET"
+    assert request.path == "/health"
+    assert request.environ["SERVER_PROTOCOL"] == "HTTP/1.0"
+    assert request.host == "localhost"
+    assert request.headers["Accept"] == "text/plain"
+    assert request.get_data() == b""
+
+
+def test_repeated_accept_headers_keep_the_last_value() -> None:
+    request = deserialize_request(
+        b"GET / HTTP/1.1\r\nHost: example.com\r\n"
+        b"Accept: application/json\r\nAccept: text/plain\r\n\r\n"
+    )
+
+    assert request.accept_mimetypes["application/json"] == 0
+    assert request.accept_mimetypes["text/plain"] == 1
+    assert request.headers["Accept"] == "text/plain"
+
+
+def test_repeated_cookie_headers_keep_the_last_value() -> None:
+    request = deserialize_request(
+        b"GET / HTTP/1.1\r\nHost: example.com\r\n"
+        b"Cookie: session=one\r\nCookie: state=two\r\n\r\n"
+    )
+
+    assert request.cookies.getlist("session") == []
+    assert request.cookies.getlist("state") == ["two"]
+
+
+def test_response_preserves_repeated_cookies_and_replaces_body_framing() -> None:
+    response = Response(b"\x00\xff", content_type="application/octet-stream")
+    response.headers.add("Set-Cookie", "session=one; HttpOnly")
+    response.headers.add("Set-Cookie", "state=two; SameSite=Lax")
+    response.headers["Content-Length"] = "99"
+    response.headers["Transfer-Encoding"] = "chunked"
+
+    assert serialize_response(response) == (
+        b"HTTP/1.1 200 \r\nContent-Type: application/octet-stream\r\n"
+        b"Set-Cookie: session=one; HttpOnly\r\n"
+        b"Set-Cookie: state=two; SameSite=Lax\r\n"
+        b"Content-Length: 2\r\n\r\n\x00\xff"
+    )

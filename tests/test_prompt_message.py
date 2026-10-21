@@ -1,11 +1,20 @@
 import pytest
+from pydantic import JsonValue, ValidationError
 
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    AudioPromptMessageContent,
+    DeveloperPromptMessage,
+    DocumentPromptMessageContent,
     ImagePromptMessageContent,
+    MultiModalPromptMessageContent,
+    PromptMessage,
     PromptMessageRole,
+    SystemPromptMessage,
     TextPromptMessageContent,
+    ToolPromptMessage,
     UserPromptMessage,
+    VideoPromptMessageContent,
     ensure_prompt_message,
 )
 
@@ -74,3 +83,163 @@ def test_ensure_prompt_message_uses_role_specific_class() -> None:
 def test_ensure_prompt_message_rejects_non_mapping() -> None:
     with pytest.raises(TypeError, match="PromptMessage or a Mapping"):
         ensure_prompt_message("assistant")
+
+
+@pytest.mark.parametrize(
+    ("role", "message_type"),
+    [
+        ("system", SystemPromptMessage),
+        ("developer", DeveloperPromptMessage),
+        ("user", UserPromptMessage),
+        ("assistant", AssistantPromptMessage),
+        ("tool", ToolPromptMessage),
+    ],
+)
+def test_prompt_roles_survive_wire_roundtrip(
+    role: str, message_type: type[PromptMessage]
+) -> None:
+    payload = {"role": role, "content": "message", "name": "sender"}
+    if role == "tool":
+        payload["tool_call_id"] = "call-1"
+
+    message = ensure_prompt_message(payload)
+
+    assert type(message) is message_type
+    assert message.model_dump(mode="json", include=set(payload)) == payload
+    assert ensure_prompt_message(message.model_dump(mode="json")) == message
+
+
+@pytest.mark.parametrize(
+    ("media_type", "content_type"),
+    [
+        ("image", ImagePromptMessageContent),
+        ("audio", AudioPromptMessageContent),
+        ("video", VideoPromptMessageContent),
+        ("document", DocumentPromptMessageContent),
+    ],
+)
+def test_multimodal_messages_preserve_media_and_extract_only_text(
+    media_type: str, content_type: type[MultiModalPromptMessageContent]
+) -> None:
+    payload = {
+        "type": media_type,
+        "format": "binary",
+        "mime_type": "application/octet-stream",
+        "base64_data": "AP8=",
+        "filename": "asset.bin",
+        "opaque_body": {"provider_id": "media-1"},
+    }
+    message = UserPromptMessage(
+        content=(
+            {"type": "text", "data": "before "},
+            payload,
+            TextPromptMessageContent(data="after"),
+        )
+    )
+
+    assert isinstance(message.content, list)
+    media = message.content[1]
+    assert isinstance(media, content_type)
+    assert media.data == "data:application/octet-stream;base64,AP8="
+    assert media.filename == "asset.bin"
+    assert media.opaque_body == {"provider_id": "media-1"}
+    assert message.get_text_content() == "before after"
+    assert UserPromptMessage.model_validate_json(message.model_dump_json()) == message
+    media.url = "https://example.com/asset.bin"
+    assert media.data == "https://example.com/asset.bin"
+
+
+@pytest.mark.parametrize("content", [None, "", "hello", []])
+def test_plain_prompt_content_presence(content: str | list | None) -> None:
+    message = UserPromptMessage(content=content)
+
+    assert message.is_empty() is (not content)
+    assert message.get_text_content() == (content or "")
+
+
+@pytest.mark.parametrize(
+    ("has_content", "has_tool_call", "expected"),
+    [
+        (False, False, True),
+        (False, True, False),
+        (True, False, False),
+        (True, True, False),
+    ],
+)
+def test_assistant_message_with_content_or_tool_calls_is_not_empty(
+    has_content: bool, has_tool_call: bool, expected: bool
+) -> None:
+    tool_call = {
+        "id": "call-1",
+        "type": "function",
+        "function": {"name": "weather", "arguments": "{}"},
+    }
+    message = AssistantPromptMessage(
+        content="hello" if has_content else None,
+        tool_calls=[tool_call] if has_tool_call else [],
+    )
+
+    assert message.is_empty() is expected
+
+
+@pytest.mark.parametrize("snapshot", [None, {}, [], "", 0, False, {"signature": "s"}])
+def test_assistant_with_opaque_body_is_not_empty(snapshot: JsonValue) -> None:
+    message = AssistantPromptMessage(opaque_body=snapshot)
+
+    assert message.is_empty() is (snapshot is None)
+
+
+@pytest.mark.parametrize(
+    ("has_content", "has_call_id", "expected"),
+    [
+        (False, False, True),
+        (False, True, True),
+        (True, False, False),
+        (True, True, True),
+    ],
+)
+def test_tool_message_keeps_legacy_empty_result(
+    has_content: bool, has_call_id: bool, expected: bool
+) -> None:
+    message = ToolPromptMessage(
+        content="result" if has_content else None,
+        tool_call_id="call-1" if has_call_id else "",
+    )
+
+    assert message.is_empty() is expected
+
+
+@pytest.mark.parametrize(
+    ("call_id", "expected"), [(None, ""), (123, "123"), ("call-1", "call-1")]
+)
+def test_partial_tool_calls_normalize_missing_strings(
+    call_id: str | int | None, expected: str
+) -> None:
+    message = ensure_prompt_message({
+        "role": "assistant",
+        "tool_calls": [
+            {
+                "id": call_id,
+                "type": None,
+                "function": {"name": None, "arguments": None},
+            }
+        ],
+    })
+
+    assert isinstance(message, AssistantPromptMessage)
+    assert message.tool_calls[0].model_dump() == {
+        "id": expected,
+        "type": "",
+        "function": {"name": "", "arguments": ""},
+    }
+
+
+@pytest.mark.parametrize("content", [[{"type": "unknown"}], [{"type": "text"}]])
+def test_invalid_content_is_rejected_before_provider_use(content: list[dict]) -> None:
+    with pytest.raises(ValidationError):
+        UserPromptMessage(content=content)
+
+
+def test_non_mapping_content_is_rejected() -> None:
+    with pytest.raises(TypeError, match="invalid prompt message content"):
+        UserPromptMessage(content=[42])

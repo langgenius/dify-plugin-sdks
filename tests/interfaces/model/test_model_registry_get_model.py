@@ -1,6 +1,6 @@
-import time
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import ModelType
@@ -19,11 +19,6 @@ class MockModelProvider(ModelProvider):
 
 
 class MockModel(AIModel):
-    def invoke(self) -> float:
-        with self.timing_context():
-            time.sleep(1)
-            return 0.0
-
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         return {}
@@ -80,16 +75,22 @@ def test_model_provider_get_model_instance_get_multiple_instances() -> None:
 
     assert result1 is not result3
     assert result2 is not result3
-    assert result2 is not result3
 
 
-def test_model_provider_get_model_instance_multithread() -> None:
+def test_model_provider_instances_are_independent_during_concurrent_use() -> None:
     model_factory = prepare_model_factory({ModelType.LLM: MockModel})
+    rendezvous = Barrier(4)
 
-    def task(_: int) -> None:
+    def task(_: int) -> MockModel:
         model = model_factory.get_instance(ModelType.LLM)
         assert isinstance(model, MockModel)
-        model.invoke()
+        with model.timing_context():
+            rendezvous.wait(timeout=5)
+            assert model.started_at > 0
+        return model
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        executor.map(task, range(10))
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        models = list(executor.map(task, range(4)))
+
+    assert len({id(model) for model in models}) == 4
+    assert all(model.started_at == 0 for model in models)

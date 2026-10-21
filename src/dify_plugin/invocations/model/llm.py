@@ -34,7 +34,7 @@ def merge_llm_result_chunk(result: LLMResult, chunk: LLMResultChunk) -> None:
                 else []
             )
         result.message.content.extend(content)
-    if len(chunk.delta.message.tool_calls) > 0:
+    if chunk.delta.message.tool_calls:
         result.message.tool_calls = chunk.delta.message.tool_calls
     if chunk.delta.message.opaque_body is not None:
         result.message.opaque_body = chunk.delta.message.opaque_body

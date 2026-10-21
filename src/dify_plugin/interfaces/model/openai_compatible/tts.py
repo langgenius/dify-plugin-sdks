@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from contextlib import closing
 from http import HTTPStatus
 
 import requests
@@ -79,21 +80,19 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
             }
 
             # Make POST request
-            response = requests.post(
+            with requests.post(
                 endpoint_url,
                 headers=headers,
                 json=payload,
                 stream=True,
                 timeout=(10, 300),
-            )
+            ) as response:
+                if response.status_code != HTTPStatus.OK:
+                    raise InvokeBadRequestError(response.text)
 
-            if response.status_code != HTTPStatus.OK:
-                raise InvokeBadRequestError(response.text)
-
-            # Stream the audio data
-            for chunk in response.iter_content(chunk_size=4096):
-                if chunk:
-                    yield chunk
+                for chunk in response.iter_content(chunk_size=4096):
+                    if chunk:
+                        yield chunk
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -111,7 +110,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
             voice = self._get_model_default_voice(model, credentials)
 
             # Test with a simple text
-            next(
+            with closing(
                 self._invoke(
                     model=model,
                     tenant_id="validate",
@@ -119,7 +118,8 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
                     content_text="Test.",
                     voice=voice,
                 )
-            )
+            ) as stream:
+                next(stream)
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex)) from ex
 

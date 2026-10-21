@@ -1,0 +1,30 @@
+identity:
+  author: sdk_tests
+  name: documents
+  label:
+    en_US: documents
+  description:
+    en_US: Local datasource provider.
+  icon: icon.svg
+provider_type: online_document
+credentials_schema:
+  - name: api_key
+    type: secret-input
+    label:
+      en_US: API key
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      label:
+        en_US: Client ID
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        en_US: Access token
+datasources:
+  - datasources/documents_echo.yaml
+extra:
+  python:
+    source: datasources/provider.py

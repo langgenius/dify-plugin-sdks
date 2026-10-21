@@ -1,0 +1,40 @@
+identity:
+  author: sdk_tests
+  name: events
+  label:
+    en_US: Events
+  description:
+    en_US: Local trigger provider.
+  icon: icon.svg
+subscription_schema:
+  - name: external_id
+    type: text-input
+    label:
+      en_US: External ID
+subscription_constructor:
+  parameters:
+    - name: event
+      type: dynamic-select
+      label:
+        en_US: Event
+  credentials_schema:
+    - name: api_key
+      type: secret-input
+      label:
+        en_US: API key
+  oauth_schema:
+    client_schema:
+      - name: client_id
+        type: secret-input
+        label:
+          en_US: Client ID
+    credentials_schema:
+      - name: access_token
+        type: secret-input
+        label:
+          en_US: Access token
+events:
+  - triggers/echo.yaml
+extra:
+  python:
+    source: triggers/dispatch.py

@@ -38,7 +38,6 @@ class SchemaDocumentationGenerator:
         self._processed_types: set[type] = set()
         self._field_descriptions: dict[tuple[type, str], str] = {}
         self._schema_descriptions: dict[type, str] = {}
-        self._processed_field_types: set[type] = set()
         self._type_to_schema: dict[type, object] = {}
         self._type_blocks: dict[type, int] = {}
         self._blocks: list[list] = []
@@ -186,14 +185,14 @@ class SchemaDocumentationGenerator:
         # First pass: collect all field descriptions
         for schema in schemas:
             cls = schema.cls
-            if not issubclass(cls, BaseModel):
-                continue
-
             # Store schema description
             if cls not in self._schema_descriptions or len(schema.description) > len(
                 self._schema_descriptions[cls],
             ):
                 self._schema_descriptions[cls] = schema.description
+
+            if not issubclass(cls, BaseModel):
+                continue
 
             # Store field descriptions
             outside_reference_fields = (
@@ -380,12 +379,6 @@ class SchemaDocumentationGenerator:
                 field_type = field_info.annotation
                 if field_type is None:
                     continue
-
-                # Skip if we've already processed this field type
-                if isinstance(field_type, type) and issubclass(field_type, BaseModel):
-                    if field_type in self._processed_field_types:
-                        continue
-                    self._processed_field_types.add(field_type)
 
                 # Skip if we've already processed this field
                 field_key = (field_type, field_name)

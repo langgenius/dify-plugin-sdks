@@ -237,6 +237,7 @@ class ProviderEntity(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_models(cls, values: dict[str, object]) -> dict[str, object]:
+        values = dict(values)
         value = values.get("models", {})
         if not isinstance(value, dict):
             msg = "models should be a glob path list"

@@ -2,6 +2,7 @@ import base64
 import logging
 import uuid
 from collections.abc import Generator
+from contextlib import closing
 from typing import Any
 
 from pydantic import RootModel
@@ -181,16 +182,16 @@ class Plugin(IOServer, Router):
             )
 
         for file in self.registration.files:
-            # divide the file into chunks
-            chunks = [file.data[i : i + 8192] for i in range(0, len(file.data), 8192)]
-            for sequence, chunk in enumerate(chunks):
+            for offset in range(0, len(file.data), 8192):
                 tcp_stream.write(
                     InitializeMessage(
                         type=InitializeMessage.Type.ASSET_CHUNK,
                         data=InitializeMessage.AssetChunk(
                             filename=file.filename,
-                            data=base64.b64encode(chunk).decode(),
-                            end=sequence == len(chunks) - 1,
+                            data=base64.b64encode(
+                                file.data[offset : offset + 8192]
+                            ).decode(),
+                            end=offset + 8192 >= len(file.data),
                         ).model_dump(),
                     ).model_dump_json()
                     + "\n\n",
@@ -258,6 +259,14 @@ class Plugin(IOServer, Router):
             lambda data: (
                 data.get("type") == PluginInvokeType.Tool.value
                 and data.get("action") == ToolActions.ValidateCredentials.value
+            ),
+        )
+
+        self.register_route(
+            self.plugin_executer.get_tool_runtime_parameters,
+            lambda data: (
+                data.get("type") == PluginInvokeType.Tool.value
+                and data.get("action") == ToolActions.GetToolRuntimeParameters.value
             ),
         )
 
@@ -465,6 +474,14 @@ class Plugin(IOServer, Router):
         )
 
         self.register_route(
+            self.plugin_executer.revoke_oauth_credentials,
+            lambda data: (
+                data.get("type") == PluginInvokeType.OAuth.value
+                and data.get("action") == OAuthActions.RevokeCredentials.value
+            ),
+        )
+
+        self.register_route(
             self.plugin_executer.datasource_online_drive_browse_files,
             lambda data: (
                 data.get("type") == PluginInvokeType.Datasource.value
@@ -569,8 +586,11 @@ class Plugin(IOServer, Router):
             max_invocation_timeout=self.config.MAX_INVOCATION_TIMEOUT,
         )
         response = self.dispatch(session, data)
-        if response:
-            if isinstance(response, Generator):
+        if not response:
+            return
+
+        if isinstance(response, Generator):
+            with closing(response):
                 for message in response:
                     if isinstance(message, ToolInvokeMessage) and isinstance(
                         message.message,
@@ -622,11 +642,11 @@ class Plugin(IOServer, Router):
                             session_id=session_id,
                             data=writer.stream_object(data=message),
                         )
-            else:
-                writer.session_message(
-                    session_id=session_id,
-                    data=writer.stream_object(data=response),
-                )
+        else:
+            writer.session_message(
+                session_id=session_id,
+                data=writer.stream_object(data=response),
+            )
 
     @staticmethod
     def _get_remote_install_host_and_port(config: DifyPluginEnv) -> tuple[str, int]:

@@ -4,6 +4,8 @@ from unittest.mock import MagicMock
 
 import pytest
 import requests
+from hypothesis import given
+from hypothesis import strategies as st
 
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.entities.model.message import UserPromptMessage
@@ -90,7 +92,7 @@ def test_done_stops_reading_and_closes_response(
     def events() -> Iterator[bytes]:
         yield _choice({"reasoning_content": "A"}, "stop")
         yield ZERO_USAGE
-        yield b"data: [DONE]\n\n"
+        yield b": heartbeat\nvendor: ignored\ndata: [DONE]\n\n"
         pytest.fail("The response must not be read after [DONE]")
 
     response = _response(events())
@@ -274,4 +276,45 @@ def test_stream_merges_partial_usage_without_losing_counts(
     assert (usage.prompt_tokens, usage.completion_tokens) == (prompt_tokens, 0)
     assert usage.total_tokens == prompt_tokens
     assert chunks[-1].delta.finish_reason == "stop"
+    response.close.assert_called_once()
+
+
+@given(
+    content=st.text(alphabet=st.characters(exclude_categories=("Cs",)), max_size=100),
+    sizes=st.lists(st.integers(min_value=1, max_value=32), min_size=1, max_size=20),
+    newline=st.sampled_from(["\n", "\r\n", "\r"]),
+)
+def test_stream_decoding_is_independent_of_byte_boundaries(
+    content: str,
+    sizes: list[int],
+    newline: str,
+) -> None:
+    payload = {"choices": [{"delta": {"content": content}, "finish_reason": "stop"}]}
+    data_lines = "\n: heartbeat\nvendor: ignored\n".join(
+        f"data: {line}"
+        for line in json.dumps(payload, ensure_ascii=False, indent=2).split("\n")
+    )
+    body = (
+        (
+            f"\ufeff: heartbeat\nevent: message\nid: 1\n{data_lines}\n\n"
+            "id: 2\n\n" + ZERO_USAGE.decode() + "data: [DONE]\n\n"
+        )
+        .replace("\n", newline)
+        .encode()
+    )
+    fragments = []
+    offset = 0
+    for size in sizes:
+        fragments.append(body[offset : offset + size])
+        offset += size
+    fragments.append(body[offset:])
+    response = _response(fragments)
+    model = OAICompatLargeLanguageModel([])
+
+    with model.timing_context():
+        chunks = list(_stream(model, response))
+
+    assert "".join(chunk.delta.message.content for chunk in chunks) == content
+    assert chunks[-1].delta.finish_reason == "stop"
+    assert chunks[-1].delta.usage.total_tokens == 0
     response.close.assert_called_once()
