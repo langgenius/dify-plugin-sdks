@@ -64,6 +64,7 @@ Empty objects, arrays, strings, zero, and false are valid snapshots; trailing ch
 String chunks are concatenated, while nonempty content arrays retain their blocks and metadata in order, including when mixed with strings.
 Use `message.get_text_content()` when a consumer needs plain text, and retain the complete message when replaying a tool turn.
 `AssistantPromptMessage.is_empty()` treats tool calls and any non-`None` snapshot as content.
+`ToolPromptMessage.is_empty()` treats a tool call ID as content, including when the tool result is empty.
 The invoking Agent/plugin, provider, daemon, and host must all preserve these fields for replay across tool turns.
 
 ## OpenAI-Compatible Streaming

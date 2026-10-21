@@ -270,7 +270,7 @@ class ToolPromptMessage(PromptMessage):
         Returns:
             The return value.
         """
-        return not (not super().is_empty() and not self.tool_call_id)
+        return super().is_empty() and not self.tool_call_id
 
 
 PROMPT_MESSAGE_TYPES_BY_ROLE: dict[str, type[PromptMessage]] = {

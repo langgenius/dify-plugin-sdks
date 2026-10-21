@@ -193,12 +193,12 @@ def test_assistant_with_opaque_body_is_not_empty(snapshot: JsonValue) -> None:
     ("has_content", "has_call_id", "expected"),
     [
         (False, False, True),
-        (False, True, True),
+        (False, True, False),
         (True, False, False),
-        (True, True, True),
+        (True, True, False),
     ],
 )
-def test_tool_message_keeps_legacy_empty_result(
+def test_tool_message_with_content_or_call_id_is_not_empty(
     has_content: bool, has_call_id: bool, expected: bool
 ) -> None:
     message = ToolPromptMessage(
