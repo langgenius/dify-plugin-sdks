@@ -140,13 +140,7 @@ def test_llm_preserves_result_and_request(
             tool_calls=llm_response["delta"]["message"]["tool_calls"],
             opaque_body=llm_response["delta"]["message"]["opaque_body"],
         )
-        assert result.usage == LLMUsage(**{
-            **llm_response["delta"]["usage"],
-            "prompt_unit_price": "0.0",
-            "prompt_price_unit": "0.0",
-            "completion_unit_price": "0.0",
-            "completion_price_unit": "0.0",
-        })
+        assert result.usage == LLMUsage(**llm_response["delta"]["usage"])
         assert result.model == "requested-model"
         assert result.system_fingerprint is None
         if isinstance(result, LLMResultWithStructuredOutput):
@@ -159,15 +153,36 @@ def test_llm_preserves_result_and_request(
 
 
 @pytest.mark.parametrize("structured", [False, True])
-def test_llm_joins_text_chunks_and_keeps_terminal_usage(
-    record_invocation: RecordInvocation, llm_response: dict, structured: bool
+@pytest.mark.parametrize("together", [False, True])
+@pytest.mark.parametrize("zero_usage", [False, True])
+def test_llm_collects_complete_calls_and_keeps_terminal_usage(
+    record_invocation: RecordInvocation,
+    llm_response: dict,
+    structured: bool,
+    together: bool,
+    zero_usage: bool,
 ) -> None:
     invocation = LLMStructuredOutputInvocation() if structured else LLMInvocation()
+    earlier_call = {
+        "id": "call-0",
+        "type": "function",
+        "function": {
+            "name": "search",
+            "arguments": (
+                r'{"query":"\u6587\u6863", "amount":1e+3, "id":9007199254740993}'
+            ),
+        },
+    }
+    expected_calls = [earlier_call, llm_response["delta"]["message"]["tool_calls"][0]]
     first = {
         "model": "model",
         "delta": {
             "index": 0,
-            "message": {"role": "assistant", "content": "first "},
+            "message": {
+                "role": "assistant",
+                "content": "first ",
+                "tool_calls": [] if together else [earlier_call],
+            },
             "usage": {
                 **llm_response["delta"]["usage"],
                 "prompt_tokens": 2,
@@ -179,6 +194,10 @@ def test_llm_joins_text_chunks_and_keeps_terminal_usage(
     }
     terminal = deepcopy(llm_response)
     terminal["delta"]["message"]["content"] = "last"
+    if together:
+        terminal["delta"]["message"]["tool_calls"] = expected_calls
+    if zero_usage:
+        terminal["delta"]["usage"] = LLMUsage.empty_usage().model_dump(mode="json")
     terminal["structured_output"] = {"answer": "first last"}
     recorded = record_invocation(
         invocation,
@@ -207,14 +226,8 @@ def test_llm_joins_text_chunks_and_keeps_terminal_usage(
 
     assert isinstance(result, LLMResult)
     assert result.message.content == "first last"
-    assert result.usage.prompt_tokens == 7
-    assert result.usage.completion_tokens == 3
-    assert result.usage.total_tokens == 10
-    assert (
-        result.usage.total_price
-        == LLMUsage(**llm_response["delta"]["usage"]).total_price
-    )
-    assert result.message.tool_calls[0].id == "call-1"
+    assert result.usage == LLMUsage(**terminal["delta"]["usage"])
+    assert [call.model_dump() for call in result.message.tool_calls] == expected_calls
     assert recorded.requests[0][2]["tools"] is None
     assert recorded.requests[0][2]["stop"] is None
     assert recorded.closed
