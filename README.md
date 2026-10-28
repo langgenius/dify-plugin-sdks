@@ -78,6 +78,8 @@ The parser handles LF, CRLF, and CR line endings within events, including with c
 A single leading UTF-8 BOM is ignored for both default and custom delimiters.
 Raw JSON objects, single-prefix multiline JSON, and final payloads without a blank-line terminator remain supported.
 Explicit response charsets are respected; responses without a charset default to UTF-8.
+Streams must include a non-null `finish_reason` for the selected choice or a `[DONE]` event.
+EOF without either raises an invocation error instead of returning a successful final chunk with partial text or tool calls.
 
 ## Version Management
 

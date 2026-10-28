@@ -88,12 +88,13 @@ def _iter_stream_events(response: requests.Response, delimiter: str) -> Generato
 def _iter_stream_json(
     response: requests.Response, delimiter: str
 ) -> Generator[dict[str, Any]]:
-    """Decode SSE or raw JSON events until EOF or [DONE]."""
+    """Decode SSE or raw JSON events, requiring finish_reason or [DONE]."""
     is_sse = (
         response.headers.get("Content-Type", "").partition(";")[0].strip().lower()
         == "text/event-stream"
     )
     json_object = TypeAdapter(dict[str, Any])
+    has_finish_reason = False
     for raw_event in _iter_stream_events(response, delimiter):
         event = raw_event.strip()
         if not event:
@@ -127,6 +128,13 @@ def _iter_stream_json(
             except ValidationError as data_error:
                 raise InvokeError(msg) from data_error
         yield chunk
+        choices = chunk.get("choices")
+        if choices and choices[0].get("finish_reason") is not None:
+            has_finish_reason = True
+
+    if not has_finish_reason:
+        msg = "Stream ended before the model finished"
+        raise InvokeError(msg)
 
 
 def _gen_tool_call_id() -> str:
@@ -780,7 +788,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         :return: llm response chunk generator
 
         Raises:
-            InvokeError: If the provider sends an error or invalid JSON.
+            InvokeError: If the response contains errors, invalid JSON, or ends early.
         """
         chunk_index = 0
         full_assistant_content = ""

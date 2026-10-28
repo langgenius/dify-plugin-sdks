@@ -530,35 +530,120 @@ def test_stream_errors_after_content_do_not_report_success(
     assert model.started_at == 0
 
 
-@pytest.mark.parametrize("ending", [b"", b"\n\n", b"\n\ndata:   [DONE]\n\n"])
-def test_complete_http_response_keeps_eof_and_done_acceptance(
+@pytest.mark.parametrize("mode", ["chat", "completion"])
+@pytest.mark.parametrize(
+    ("finish_reason", "ending"),
+    [
+        ("stop", ""),
+        ("length", "\n\n"),
+        (None, "\n\ndata:   [DONE]\n\n"),
+        (None, "\n\nevent: message\ndata: [DONE]\n\n"),
+        ("stop", "\n\ndata: [DONE]\n\n"),
+    ],
+)
+def test_stream_accepts_finish_reason_or_done(
     http_server: HTTPServerFactory,
-    ending: bytes,
+    mode: str,
+    finish_reason: str | None,
+    ending: str,
 ) -> None:
+    choice = {"delta": {"content": "Answer"}} if mode == "chat" else {"text": "Answer"}
+    payload = {"choices": [{**choice, "finish_reason": finish_reason}]}
     server = http_server([
-        Response(
-            chunks=(
-                (
-                    b'data: {"choices":[{"delta":{"content":"partial"},'
-                    b'"finish_reason":null}]}'
-                )
-                + ending,
-            )
-        )
+        Response(chunks=(f"data: {json.dumps(payload)}{ending}".encode(),))
     ])
     model = OAICompatLargeLanguageModel([])
     stream = model.invoke(
         "model",
-        {"mode": "chat", "endpoint_url": server.url},
+        {"mode": mode, "endpoint_url": server.url},
         [UserPromptMessage(content="Question")],
     )
 
-    assert next(stream).delta.message.content == "partial"
+    assert next(stream).delta.message.content == "Answer"
     terminal = next(stream)
     assert terminal.delta.message == AssistantPromptMessage(content="")
-    assert terminal.delta.finish_reason is None
+    assert terminal.delta.finish_reason == finish_reason
     assert terminal.delta.usage is not None
     assert list(stream) == []
+    assert model.started_at == 0
+
+
+@pytest.mark.parametrize(
+    ("choice", "expected_content"),
+    [
+        (None, ""),
+        ({"delta": {"role": "assistant"}}, ""),
+        ({"delta": {"content": "partial"}, "finish_reason": None}, "partial"),
+        ({"delta": {"reasoning_content": "partial"}}, "<think>\npartial"),
+        (
+            {
+                "delta": {
+                    "tool_calls": [
+                        {
+                            "index": 0,
+                            "id": "call-1",
+                            "type": "function",
+                            "function": {"name": "search", "arguments": '{"query":'},
+                        }
+                    ]
+                }
+            },
+            "",
+        ),
+        ({"text": "partial"}, "partial"),
+    ],
+    ids=["empty", "role", "content", "reasoning", "tool", "completion"],
+)
+@pytest.mark.parametrize(
+    "ending",
+    [
+        "",
+        "\n\n",
+        (
+            '\n\ndata: {"choices":[],"usage":'
+            '{"prompt_tokens":1,"completion_tokens":2}}\n\n'
+        ),
+    ],
+    ids=["no-delimiter", "delimiter", "usage"],
+)
+def test_stream_rejects_eof_without_completion_signal(
+    http_server: HTTPServerFactory,
+    http_responses: tuple[list[HTTPResponse], Event],
+    choice: dict | None,
+    expected_content: str,
+    ending: str,
+) -> None:
+    responses, _ready = http_responses
+    body = f"data: {json.dumps({'choices': [choice]})}" if choice is not None else ""
+    server = http_server([
+        Response(
+            headers={"Content-Type": "text/event-stream"},
+            chunks=((body + ending).encode(),),
+        )
+    ])
+    model = OAICompatLargeLanguageModel([])
+    chunks: list[LLMResultChunk] = []
+
+    with pytest.raises(InvokeError, match="Stream ended before the model finished"):
+        chunks.extend(
+            model.invoke(
+                "model",
+                {
+                    "mode": "completion" if choice and "text" in choice else "chat",
+                    "endpoint_url": server.url,
+                    "function_calling_type": "tool_call",
+                },
+                [UserPromptMessage(content="Question")],
+            )
+        )
+
+    assert "".join(chunk.delta.message.get_text_content() for chunk in chunks) == (
+        expected_content
+    )
+    assert all(chunk.delta.usage is None for chunk in chunks)
+    assert all(chunk.delta.finish_reason is None for chunk in chunks)
+    assert not any(chunk.delta.message.tool_calls for chunk in chunks)
+    assert responses[0].raw.closed
     assert model.started_at == 0
 
 
