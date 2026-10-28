@@ -79,7 +79,12 @@ class LLMUsage(ModelUsage):
 
 
 class LLMResultChunkDelta(BaseModel):
-    """Model class for llm result chunk delta."""
+    """Stream content with complete tool calls and cumulative usage snapshots.
+
+    Providers assemble tool arguments before emitting each call exactly once.
+    Call IDs must be nonempty and unique within the model response.
+    The last non-None usage is the total for that response, not an increment.
+    """
 
     index: int
     message: AssistantPromptMessage

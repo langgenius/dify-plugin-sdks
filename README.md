@@ -57,6 +57,19 @@ Both methods return `LLMPollingResult` with one of three states:
 - `succeeded`: return the final LLM `result`.
 - `failed`: return a terminal `error`.
 
+## Blocking LLM Replay
+
+In SDK 0.11.0 (unreleased), blocking `session.model.llm.invoke` and `session.model.llm_structured_output.invoke` calls preserve the last non-`None` `opaque_body` snapshot.
+Empty objects, arrays, strings, zero, and false are valid snapshots; trailing chunks without a snapshot do not erase them.
+String chunks are concatenated, while nonempty content arrays retain their blocks and metadata in order, including when mixed with strings.
+Providers must assemble complete tool calls before emitting them, once per call, with nonempty IDs unique within the response.
+Calls may arrive in separate batches or together; collectors preserve their order and the original argument strings, and reject missing or duplicate IDs.
+Each usage update is a cumulative snapshot for the current model response; collectors retain the last non-`None` snapshot, including zero values, and Agents add usage across model responses.
+Use `message.get_text_content()` when a consumer needs plain text, and retain the complete message when replaying a tool turn.
+`AssistantPromptMessage.is_empty()` treats tool calls and any non-`None` snapshot as content.
+`ToolPromptMessage.is_empty()` treats a tool call ID as content, including when the tool result is empty.
+The invoking Agent/plugin, provider, daemon, and host must all preserve these fields for replay across tool turns.
+
 ## OpenAI-Compatible Streaming
 
 In SDK 0.11.0 (unreleased), `OAICompatLargeLanguageModel` preserves SSE data alongside comments and unknown fields.

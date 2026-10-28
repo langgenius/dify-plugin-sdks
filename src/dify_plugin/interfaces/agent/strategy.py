@@ -185,7 +185,7 @@ class AgentStrategy(ToolLike[AgentInvokeMessage]):
         usage: LLMUsage,
     ) -> None:
         if not final_llm_usage_dict["usage"]:
-            final_llm_usage_dict["usage"] = usage
+            final_llm_usage_dict["usage"] = usage.model_copy()
         else:
             llm_usage = final_llm_usage_dict["usage"]
             llm_usage.prompt_tokens += usage.prompt_tokens

@@ -14,26 +14,42 @@ from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
     PromptMessageTool,
+    TextPromptMessageContent,
 )
 
 
 def merge_llm_result_chunk(result: LLMResult, chunk: LLMResultChunk) -> None:
-    content = chunk.delta.message.content
-    # Keep blocking results compatible with callers that expect a string.
-    if isinstance(content, str):
-        result.message.content = cast("str", result.message.content) + content
-    if chunk.delta.message.tool_calls:
-        result.message.tool_calls = chunk.delta.message.tool_calls
-    if chunk.delta.usage:
-        result.usage.prompt_tokens += chunk.delta.usage.prompt_tokens
-        result.usage.completion_tokens += chunk.delta.usage.completion_tokens
-        result.usage.total_tokens += chunk.delta.usage.total_tokens
+    """Append complete tool calls and retain the latest usage and replay snapshots."""
+    call_ids = {call.id for call in result.message.tool_calls}
+    for call in chunk.delta.message.tool_calls:
+        if not call.id:
+            msg = "Complete tool calls must have a nonempty ID."
+            raise ValueError(msg)
+        if call.id in call_ids:
+            msg = f"Duplicate tool call ID: {call.id}"
+            raise ValueError(msg)
+        call_ids.add(call.id)
 
-        result.usage.completion_price = chunk.delta.usage.completion_price
-        result.usage.prompt_price = chunk.delta.usage.prompt_price
-        result.usage.total_price = chunk.delta.usage.total_price
-        result.usage.currency = chunk.delta.usage.currency
-        result.usage.latency = chunk.delta.usage.latency
+    content = chunk.delta.message.content
+    if isinstance(content, str):
+        if isinstance(result.message.content, list):
+            if content:
+                result.message.content.append(TextPromptMessageContent(data=content))
+        else:
+            result.message.content = (result.message.content or "") + content
+    elif isinstance(content, list) and content:
+        if not isinstance(result.message.content, list):
+            result.message.content = (
+                [TextPromptMessageContent(data=result.message.content)]
+                if result.message.content
+                else []
+            )
+        result.message.content.extend(content)
+    result.message.tool_calls.extend(chunk.delta.message.tool_calls)
+    if chunk.delta.message.opaque_body is not None:
+        result.message.opaque_body = chunk.delta.message.opaque_body
+    if chunk.delta.usage is not None:
+        result.usage = chunk.delta.usage.model_copy()
 
 
 class LLMInvocation(BackwardsInvocation[LLMResultChunk]):
