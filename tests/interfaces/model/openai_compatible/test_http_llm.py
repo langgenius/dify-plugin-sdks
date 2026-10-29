@@ -14,9 +14,14 @@ from dify_plugin.entities.model import ParameterRule, ParameterType
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    AudioPromptMessageContent,
+    DocumentPromptMessageContent,
+    ImagePromptMessageContent,
     PromptMessage,
     PromptMessageTool,
+    TextPromptMessageContent,
     UserPromptMessage,
+    VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.openai_compatible import llm
@@ -170,6 +175,106 @@ def test_invalid_structured_schema_fails_before_sending_a_request(
         )
     assert server.requests == []
     assert structured_model.started_at == 0
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize(
+    ("content", "expected_prompt"),
+    [
+        ("plain text", "plain text"),
+        ("", ""),
+        (None, None),
+        ([], ""),
+        (
+            [
+                TextPromptMessageContent(data="你好😀 "),
+                TextPromptMessageContent(data=""),
+                TextPromptMessageContent(data="<|endoftext|>"),
+            ],
+            "你好😀 <|endoftext|>",
+        ),
+    ],
+)
+def test_completion_sends_text_content_as_one_prompt(
+    http_server: HTTPServerFactory,
+    content: str | list[TextPromptMessageContent] | None,
+    expected_prompt: str | None,
+    stream: bool,
+) -> None:
+    payload = json.dumps({
+        "choices": [{"text": "Answer", "finish_reason": "stop"}],
+        "usage": {"prompt_tokens": 4, "completion_tokens": 2},
+    })
+    body = f"data: {payload}\n\ndata: [DONE]\n\n" if stream else payload
+    server = http_server([Response(body=body.encode())])
+    message = UserPromptMessage(content=content)
+    model = OAICompatLargeLanguageModel([])
+
+    chunks = list(
+        model.invoke(
+            "model",
+            {"mode": "completion", "endpoint_url": server.url},
+            [message],
+            stream=stream,
+        )
+    )
+
+    assert server.requests[0].path == "/completions"
+    assert json.loads(server.requests[0].body)["prompt"] == expected_prompt
+    assert (
+        "".join(chunk.delta.message.get_text_content() for chunk in chunks) == "Answer"
+    )
+    assert message.content == content
+    assert model.started_at == 0
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("mixed", [False, True])
+@pytest.mark.parametrize(
+    "content_type",
+    [
+        ImagePromptMessageContent,
+        AudioPromptMessageContent,
+        VideoPromptMessageContent,
+        DocumentPromptMessageContent,
+    ],
+)
+def test_completion_rejects_media_before_sending_a_request(
+    http_server: HTTPServerFactory,
+    content_type: type[
+        ImagePromptMessageContent
+        | AudioPromptMessageContent
+        | VideoPromptMessageContent
+        | DocumentPromptMessageContent
+    ],
+    mixed: bool,
+    stream: bool,
+) -> None:
+    media = content_type(
+        url="https://example.com/attachment",
+        format="bin",
+        mime_type="application/octet-stream",
+    )
+    content = (
+        [TextPromptMessageContent(data="Describe this."), media] if mixed else [media]
+    )
+    message = UserPromptMessage(content=content)
+    server = http_server([])
+    model = OAICompatLargeLanguageModel([])
+
+    with pytest.raises(InvokeError, match="Completion mode only supports text input"):
+        list(
+            model.invoke(
+                "model",
+                {"mode": "completion", "endpoint_url": server.url},
+                [message],
+                stream=stream,
+            )
+        )
+
+    assert server.requests == []
+    assert message.content == content
+    assert model.started_at == 0
 
 
 @pytest.mark.parametrize("mode", ["chat", "completion"])

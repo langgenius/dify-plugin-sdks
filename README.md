@@ -70,6 +70,13 @@ Use `message.get_text_content()` when a consumer needs plain text, and retain th
 `ToolPromptMessage.is_empty()` treats a tool call ID as content, including when the tool result is empty.
 The invoking Agent/plugin, provider, daemon, and host must all preserve these fields for replay across tool turns.
 
+## OpenAI-Compatible Completion Input
+
+In SDK 0.11.0 (unreleased), the shared `OAICompatLargeLanguageModel` completion mode accepts text from the first prompt message.
+Text content blocks are concatenated in order into one prompt string, including empty lists as an empty string.
+Image, audio, video, or document blocks in that prompt raise an SDK invocation error before sending a request, including when mixed with text.
+For multimodal input, use chat mode with a model that supports the input modality and message role.
+
 ## OpenAI-Compatible Streaming
 
 In SDK 0.11.0 (unreleased), `OAICompatLargeLanguageModel` preserves SSE data alongside comments and unknown fields.

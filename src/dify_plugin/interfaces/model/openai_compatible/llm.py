@@ -650,7 +650,20 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             ]
         elif completion_type is LLMMode.COMPLETION:
             endpoint_url = self._join_endpoint_url(endpoint_url, "completions")
-            data["prompt"] = prompt_messages[0].content
+            prompt = prompt_messages[0]
+            if isinstance(prompt.content, list):
+                if any(
+                    part.type != PromptMessageContentType.TEXT
+                    for part in prompt.content
+                ):
+                    msg = (
+                        "Completion mode only supports text input. "
+                        "Use a compatible chat model for multimodal input."
+                    )
+                    raise ValueError(msg)
+                data["prompt"] = prompt.get_text_content()
+            else:
+                data["prompt"] = prompt.content
         else:
             msg = "Unsupported completion type for model configuration."
             raise ValueError(msg)
