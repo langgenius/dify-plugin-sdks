@@ -77,6 +77,18 @@ Text content blocks are concatenated in order into one prompt string, including 
 Image, audio, video, or document blocks in that prompt raise an SDK invocation error before sending a request, including when mixed with text.
 For multimodal input, use chat mode with a model that supports the input modality and message role.
 
+## OpenAI-Compatible Usage Estimates
+
+In SDK 0.11.0 (unreleased), streaming and non-streaming responses estimate missing usage fields with the same counters.
+Provider counts, including zero, take precedence; a missing or null count is estimated independently.
+Completion counts the text sent from the first prompt message, while chat counts the complete message history and the tool definitions sent with the request.
+Output estimates include text and tool calls, including responses with no text content.
+These local estimates use the SDK tokenizer and pricing configuration; they do not represent the provider's billing record.
+The public `get_num_tokens()` budget for completion also counts only the first prompt message and any supplied tool definitions.
+
+Provider overrides of `_handle_generate_response()`, `_handle_generate_stream_response()`, and `_create_final_llm_result_chunk()` must accept and forward the optional `tools` parameter in SDK 0.11.0.
+Overrides of `_num_tokens_from_string()` must follow the SDK signature `(text, tools=None)`; the method does not take a model name.
+
 ## OpenAI-Compatible Streaming
 
 In SDK 0.11.0 (unreleased), `OAICompatLargeLanguageModel` preserves SSE data alongside comments and unknown fields.
