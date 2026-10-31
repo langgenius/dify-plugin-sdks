@@ -687,7 +687,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     for tool in tools
                 ]
             elif function_calling_type == "tool_call":
-                data["tool_choice"] = "auto"
+                data.setdefault("tool_choice", "auto")
 
                 formatted_tools.extend(
                     PromptMessageFunction(function=tool).model_dump() for tool in tools

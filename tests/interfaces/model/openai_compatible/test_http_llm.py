@@ -862,6 +862,39 @@ def test_missing_usage_counts_sent_tools_through_provider_hooks(
         assert "functions" not in payload
 
 
+def test_tool_definitions_preserve_an_explicit_tool_choice(
+    http_server: HTTPServerFactory,
+) -> None:
+    server = http_server([
+        Response(
+            body=b'{"choices":[{"message":{"content":"Answer"}}],'
+            b'"usage":{"prompt_tokens":0,"completion_tokens":0}}'
+        )
+    ])
+    model = OAICompatLargeLanguageModel([])
+    with model.timing_context():
+        model._generate(
+            "model",
+            {
+                "mode": "chat",
+                "endpoint_url": server.url,
+                "function_calling_type": "tool_call",
+            },
+            [UserPromptMessage(content="Search")],
+            {"tool_choice": "required"},
+            tools=[
+                PromptMessageTool(
+                    name="search", description="Search", parameters={"type": "object"}
+                )
+            ],
+            stream=False,
+        )
+
+    payload = json.loads(server.requests[0].body)
+    assert payload["tool_choice"] == "required"
+    assert payload["tools"][0]["function"]["name"] == "search"
+
+
 @pytest.mark.parametrize(
     ("mode", "stream"), [("chat", False), ("completion", False), ("chat", True)]
 )
