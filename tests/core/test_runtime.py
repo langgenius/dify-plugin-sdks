@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 
 import gevent
-import httpx
+import httpx2
 import pytest
 from gevent.event import Event
 from pydantic import BaseModel, ValidationError
@@ -13,6 +13,7 @@ from dify_plugin.config.config import InstallMethod
 from dify_plugin.core.entities.invocation import InvokeType
 from dify_plugin.core.entities.plugin.io import PluginInStream, PluginInStreamEvent
 from dify_plugin.core.runtime import BackwardsInvocation, Session
+from dify_plugin.core.utils.http import client as http_client
 from tests.http_server import Response, TestHTTPServer
 from tests.servers.helpers import MemoryRequestReader, RecordingResponseWriter
 
@@ -103,7 +104,7 @@ def _chunks(*chunks: PluginInStream | None) -> Generator[PluginInStream | None]:
     yield from chunks
 
 
-class ResponseStream(httpx.SyncByteStream):
+class ResponseStream(httpx2.SyncByteStream):
     def __init__(self, chunks: tuple[bytes, ...]) -> None:
         self.chunks = chunks
         self.closed = False
@@ -119,15 +120,15 @@ def _http_client(
     session: Session,
     monkeypatch: pytest.MonkeyPatch,
     *chunks: bytes,
-) -> tuple[httpx.Client, ResponseStream]:
+) -> tuple[httpx2.Client, ResponseStream]:
     session.install_method = InstallMethod.Serverless
     stream = ResponseStream(chunks)
-    client = httpx.Client(
-        transport=httpx.MockTransport(
-            lambda _request: httpx.Response(200, stream=stream)
+    client = httpx2.Client(
+        transport=httpx2.MockTransport(
+            lambda _request: httpx2.Response(200, stream=stream)
         )
     )
-    monkeypatch.setattr("dify_plugin.core.runtime.httpx.Client", lambda: client)
+    monkeypatch.setattr("dify_plugin.core.runtime.http.client", lambda: client)
     return client, stream
 
 
@@ -563,10 +564,11 @@ def test_http_read_timeout_releases_response(
     session.dify_plugin_daemon_url = http_server([
         Response(body=_wire(_response(session, event="end")), delay=2)
     ]).url
-    responses: list[httpx.Response] = []
-    client = httpx.Client(event_hooks={"response": [responses.append]})
-    monkeypatch.setattr("dify_plugin.core.runtime.httpx.Client", lambda: client)
-    with gevent.Timeout(3), pytest.raises(httpx.ReadTimeout):
+    responses: list[httpx2.Response] = []
+    client = http_client()
+    client.event_hooks["response"].append(responses.append)
+    monkeypatch.setattr("dify_plugin.core.runtime.http.client", lambda: client)
+    with gevent.Timeout(3), pytest.raises(httpx2.ReadTimeout):
         list(invocation._backwards_invoke(InvokeType.Storage, Result, {}))
     assert len(responses) == 1
     assert responses[0].is_closed
@@ -589,7 +591,7 @@ def test_http_transport_failure_does_not_complete_partial_result(
         invocation._backwards_invoke(InvokeType.Storage, Result, {})
     ) as stream:
         assert next(stream) == Result(answer="partial")
-        with pytest.raises(httpx.RemoteProtocolError, match="complete message body"):
+        with pytest.raises(httpx2.RemoteProtocolError, match="complete message body"):
             next(stream)
 
 

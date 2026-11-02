@@ -1,13 +1,11 @@
 from urllib.parse import urljoin
 
-import requests
+import httpx2
 
 from dify_plugin.errors.model import (
-    InvokeAuthorizationError,
     InvokeBadRequestError,
     InvokeConnectionError,
     InvokeError,
-    InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
 
@@ -27,24 +25,19 @@ class _CommonOaiApiCompat:
         :return: Invoke error mapping
         """
         return {
-            InvokeAuthorizationError: [
-                requests.exceptions.InvalidHeader,  # Missing or Invalid API Key
-            ],
             InvokeBadRequestError: [
-                requests.exceptions.HTTPError,  # Invalid Endpoint URL or model name
-                # Misconfigured request or other API error
-                requests.exceptions.InvalidURL,
-            ],
-            InvokeRateLimitError: [
-                # Too many requests sent in a short period of time
-                requests.exceptions.RetryError,
-            ],
-            InvokeServerUnavailableError: [
-                requests.exceptions.ConnectionError,  # Engine Overloaded
-                requests.exceptions.HTTPError,  # Server Error
+                httpx2.InvalidURL,
+                httpx2.UnsupportedProtocol,
+                httpx2.LocalProtocolError,
+                httpx2.HTTPStatusError,
             ],
             InvokeConnectionError: [
-                requests.exceptions.ConnectTimeout,  # Timeout
-                requests.exceptions.ReadTimeout,  # Timeout
+                httpx2.TimeoutException,
+                httpx2.NetworkError,
+                httpx2.ProxyError,
+            ],
+            InvokeServerUnavailableError: [
+                httpx2.RemoteProtocolError,
+                httpx2.DecodingError,
             ],
         }

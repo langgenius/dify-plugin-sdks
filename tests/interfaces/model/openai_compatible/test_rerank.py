@@ -38,7 +38,7 @@ def test_invoke_only_sends_authorization_with_api_key(
     response.json.return_value = {"results": [{"index": 0, "relevance_score": 1.0}]}
 
     with patch(
-        "dify_plugin.interfaces.model.openai_compatible.rerank.post",
+        "httpx2.Client.send",
         return_value=response,
     ) as post:
         OAICompatRerankModel([]).invoke(
@@ -48,4 +48,7 @@ def test_invoke_only_sends_authorization_with_api_key(
             docs=["document"],
         )
 
-    assert post.call_args.kwargs["headers"] == expected_headers
+    for key, value in expected_headers.items():
+        assert post.call_args.args[0].headers[key] == value
+    if "Authorization" not in expected_headers:
+        assert "Authorization" not in post.call_args.args[0].headers

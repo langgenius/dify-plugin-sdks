@@ -1,9 +1,8 @@
 import json
-from io import BytesIO
 from unittest.mock import patch
 
+import httpx2
 import pytest
-import requests
 
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.entities.model.message import (
@@ -37,9 +36,7 @@ def _stream(
         *("data: " + json.dumps(frame) for frame in frames),
         "data: [DONE]",
     ])
-    response = requests.Response()
-    response.encoding = "utf-8"
-    response.raw = BytesIO((data + "\n\n").encode())
+    response = httpx2.Response(200, content=(data + "\n\n").encode())
     with llm.timing_context():
         return list(
             llm._handle_generate_stream_response(
@@ -218,11 +215,10 @@ def test_stream_missing_usage_counts_all_prompt_messages_and_text_parts(
 
 
 def test_stream_completion_usage_estimates_the_sent_prompt() -> None:
-    response = requests.Response()
-    response.encoding = "utf-8"
-    response.raw = BytesIO(
-        b'data: {"choices": [{"text": "Answer", "finish_reason": "stop"}]}\n\n'
-        b"data: [DONE]\n\n"
+    response = httpx2.Response(
+        200,
+        content=b'data: {"choices": [{"text": "Answer", "finish_reason": "stop"}]}\n\n'
+        b"data: [DONE]\n\n",
     )
     llm = OAICompatLargeLanguageModel([])
     with (

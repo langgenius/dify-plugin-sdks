@@ -2,8 +2,8 @@ import json
 from collections.abc import Generator, Iterable, Iterator
 from unittest.mock import MagicMock
 
+import httpx2
 import pytest
-import requests
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -41,18 +41,14 @@ def llm(monkeypatch: pytest.MonkeyPatch) -> Generator[OAICompatLargeLanguageMode
         yield model
 
 
-def _response(events: Iterable[bytes]) -> requests.Response:
-    response = requests.Response()
-    response.status_code = 200
-    response.encoding = "utf-8"
-    response.raw = MagicMock()
-    response.raw.stream.return_value = iter(events)
+def _response(events: Iterable[bytes]) -> httpx2.Response:
+    response = httpx2.Response(200, content=iter(events))
     response.close = MagicMock(wraps=response.close)
     return response
 
 
 def _stream(
-    llm: OAICompatLargeLanguageModel, response: requests.Response
+    llm: OAICompatLargeLanguageModel, response: httpx2.Response
 ) -> Generator[LLMResultChunk]:
     return llm._handle_generate_stream_response(
         model="model",
@@ -83,7 +79,7 @@ def test_stream_preserves_finish_reason_after_heartbeats(
     assert chunks[-1].delta.finish_reason == finish_reason
     assert chunks[-1].delta.usage is not None
     assert chunks[-1].delta.usage.total_tokens == 0
-    response.close.assert_called_once()
+    assert response.is_closed
 
 
 def test_done_stops_reading_and_closes_response(
@@ -105,7 +101,7 @@ def test_done_stops_reading_and_closes_response(
     assert chunks[-1].delta.finish_reason == "stop"
     assert chunks[-1].delta.usage is not None
     assert chunks[-1].delta.usage.total_tokens == 0
-    response.close.assert_called_once()
+    assert response.is_closed
 
 
 def test_stream_closes_response_at_eof(llm: OAICompatLargeLanguageModel) -> None:
@@ -121,7 +117,7 @@ def test_stream_closes_response_at_eof(llm: OAICompatLargeLanguageModel) -> None
     )
     assert chunks[-1].delta.finish_reason == "length"
     assert chunks[-1].delta.usage is not None
-    response.close.assert_called_once()
+    assert response.is_closed
 
 
 def test_stream_closes_response_when_cancelled(
@@ -133,7 +129,7 @@ def test_stream_closes_response_when_cancelled(
     assert next(stream).delta.message.content == "<think>\nA"
     stream.close()
 
-    response.close.assert_called_once()
+    assert response.is_closed
 
 
 def test_stream_closes_response_when_delimiter_is_invalid(
@@ -151,7 +147,7 @@ def test_stream_closes_response_when_delimiter_is_invalid(
             )
         )
 
-    response.close.assert_called_once()
+    assert response.is_closed
 
 
 @pytest.mark.parametrize("stream", [False, True])
@@ -162,30 +158,33 @@ def test_generate_closes_http_error_response(
 ) -> None:
     response = _response([b"upstream unavailable"])
     response.status_code = 503
-    monkeypatch.setattr(requests, "post", lambda *_args, **_kwargs: response)
+    monkeypatch.setattr(httpx2.Client, "send", lambda *_args, **_kwargs: response)
 
-    with pytest.raises(InvokeError, match="503: upstream unavailable"):
-        llm._generate(
+    with pytest.raises(InvokeError, match="503: upstream unavailable"):  # ruff: ignore[pytest-raises-with-multiple-statements]
+        result = llm._generate(
             "model",
             {"mode": "chat", "endpoint_url": "https://example.com/v1"},
             [UserPromptMessage(content="Question")],
             {},
             stream=stream,
         )
+        if stream:
+            list(result)
 
-    response.close.assert_called_once()
+    assert response.is_closed
 
 
 def test_generate_closes_non_stream_response(
     llm: OAICompatLargeLanguageModel, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    response = _response([
-        json.dumps({
+    response = httpx2.Response(
+        200,
+        content=json.dumps({
             "choices": [{"message": {"content": "Answer"}}],
             "usage": {"prompt_tokens": 0, "completion_tokens": 0},
-        }).encode()
-    ])
-    monkeypatch.setattr(requests, "post", lambda *_args, **_kwargs: response)
+        }).encode(),
+    )
+    monkeypatch.setattr(httpx2.Client, "send", lambda *_args, **_kwargs: response)
 
     result = llm._generate(
         "model",
@@ -197,7 +196,7 @@ def test_generate_closes_non_stream_response(
 
     assert result.message.content == "Answer"
     assert result.usage.total_tokens == 0
-    response.close.assert_called_once()
+    assert response.is_closed
 
 
 @pytest.mark.parametrize(
@@ -226,7 +225,7 @@ def test_stream_error_does_not_yield_success(
     assert len(chunks) == 1
     assert chunks[0].delta.message.content == "<think>\nA"
     assert all(chunk.delta.usage is None for chunk in chunks)
-    response.close.assert_called_once()
+    assert response.is_closed
 
 
 def test_stream_closes_response_on_read_error(
@@ -235,17 +234,17 @@ def test_stream_closes_response_on_read_error(
     def events() -> Iterator[bytes]:
         yield _choice({"reasoning_content": "A"})
         message = "stream disconnected"
-        raise requests.ConnectionError(message)
+        raise httpx2.ReadError(message)
 
     response = _response(events())
     chunks: list[LLMResultChunk] = []
 
-    with pytest.raises(requests.ConnectionError, match="stream disconnected"):
+    with pytest.raises(httpx2.ReadError, match="stream disconnected"):
         chunks.extend(_stream(llm, response))
 
     assert len(chunks) == 1
     assert chunks[0].delta.usage is None
-    response.close.assert_called_once()
+    assert response.is_closed
 
 
 @pytest.mark.parametrize("prompt_tokens", [0, 3])
@@ -276,7 +275,7 @@ def test_stream_merges_partial_usage_without_losing_counts(
     assert (usage.prompt_tokens, usage.completion_tokens) == (prompt_tokens, 0)
     assert usage.total_tokens == prompt_tokens
     assert chunks[-1].delta.finish_reason == "stop"
-    response.close.assert_called_once()
+    assert response.is_closed
 
 
 @given(
@@ -317,4 +316,4 @@ def test_stream_decoding_is_independent_of_byte_boundaries(
     assert "".join(chunk.delta.message.content for chunk in chunks) == content
     assert chunks[-1].delta.finish_reason == "stop"
     assert chunks[-1].delta.usage.total_tokens == 0
-    response.close.assert_called_once()
+    assert response.is_closed

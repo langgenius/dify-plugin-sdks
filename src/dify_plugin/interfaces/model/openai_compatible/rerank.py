@@ -1,8 +1,7 @@
-from json import dumps
-
-from requests import HTTPError, post
+import httpx2
 from yarl import URL
 
+from dify_plugin.core.utils import http
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import AIModelEntity, FetchFrom, ModelType
 from dify_plugin.entities.model.rerank import RerankDocument, RerankResult
@@ -81,11 +80,16 @@ class OAICompatRerankModel(RerankModel):
         }
 
         try:
-            response = post(
-                str(URL(url) / "rerank"), headers=headers, data=dumps(data), timeout=60
-            )
+            with http.client() as client:
+                response = client.post(
+                    str(URL(url) / "rerank"),
+                    headers=http.headers(headers),
+                    json=data,
+                    timeout=60,
+                    follow_redirects=True,
+                )
             response.raise_for_status()
-        except HTTPError as e:
+        except httpx2.HTTPStatusError as e:
             raise InvokeServerUnavailableError(str(e)) from e
 
         results = response.json()

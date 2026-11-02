@@ -13,6 +13,8 @@ GATES = (
     (
         "HTTP",
         (
+            "src/dify_plugin/core/utils/http.py",
+            "src/dify_plugin/core/utils/http_transport.py",
             "src/dify_plugin/interfaces/model/openai_compatible/",
             "src/dify_plugin/file/",
             "src/dify_plugin/invocations/file.py",

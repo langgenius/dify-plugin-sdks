@@ -5,17 +5,17 @@ import json
 import logging
 import uuid
 from collections.abc import Generator, Mapping
-from contextlib import suppress
+from contextlib import closing, contextmanager
 from decimal import Decimal
-from email.message import Message
 from http import HTTPStatus
 from io import IncrementalNewlineDecoder
 from typing import Any, cast
 
-import requests
+import httpx2
 from pydantic import TypeAdapter, ValidationError
 
 from dify_plugin.config.config import DifyPluginEnv
+from dify_plugin.core.utils import http
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -56,38 +56,26 @@ EMPTY_STRING = ""
 _plugin_config = DifyPluginEnv()
 
 
-def _iter_stream_events(response: requests.Response, delimiter: str) -> Generator[str]:
-    """Yield complete events with LF line endings."""
-    encoding = response.encoding or "utf-8"
-    strip_bom = codecs.lookup(encoding).name == "utf-8"
-    if delimiter != "\n\n":
-        for index, raw_event in enumerate(
-            response.iter_lines(decode_unicode=True, delimiter=delimiter)
-        ):
-            event = (
-                raw_event.removeprefix("\ufeff")
-                if strip_bom and index == 0
-                else raw_event
-            )
-            yield event.replace("\r\n", "\n").replace("\r", "\n")
-        return
-
-    if strip_bom:
-        encoding = "utf-8-sig"
-    decoder = IncrementalNewlineDecoder(
-        codecs.getincrementaldecoder(encoding)("replace"), translate=True
-    )
+def _iter_stream_events(response: httpx2.Response, delimiter: str) -> Generator[str]:
+    """Frame provider events after HTTPX2 decompresses and decodes the body."""
+    decoder = IncrementalNewlineDecoder(None, translate=delimiter == "\n\n")
     pending = ""
-    for data in response.iter_content(chunk_size=512):
-        pending += decoder.decode(data)
-        *events, pending = pending.split("\n\n")
-        yield from events
-    pending += decoder.decode(b"", final=True)
-    yield from pending.split("\n\n")
+    delimiter = delimiter or "\n"
+    for index, text in enumerate(response.iter_text()):
+        if index == 0 and codecs.lookup(response.encoding).name == "utf-8":
+            pending += decoder.decode(text.removeprefix("\ufeff"))
+        else:
+            pending += decoder.decode(text)
+        *events, pending = pending.split(delimiter)
+        for event in events:
+            yield event.replace("\r\n", "\n").replace("\r", "\n")
+    pending += decoder.decode("", final=True)
+    for event in pending.split(delimiter):
+        yield event.replace("\r\n", "\n").replace("\r", "\n")
 
 
 def _iter_stream_json(
-    response: requests.Response, delimiter: str
+    response: httpx2.Response, delimiter: str
 ) -> Generator[dict[str, Any]]:
     """Decode SSE or raw JSON events, requiring finish_reason or [DONE]."""
     is_sse = (
@@ -203,7 +191,7 @@ def _increase_tool_call(
 
 
 def _validate_credentials_response(
-    response: requests.Response,
+    response: httpx2.Response,
     stream: bool,
     completion_type: LLMMode,
 ) -> None:
@@ -218,7 +206,7 @@ def _validate_credentials_response(
         return
 
     try:
-        json_result = response.json()
+        json_result = json.loads(response.text.removeprefix("\ufeff"))
     except json.JSONDecodeError:
         msg = (
             "Credentials validation failed: JSON decode error, "
@@ -308,11 +296,12 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             )
         return self._num_tokens_from_messages(prompt_messages, tools, credentials)
 
+    @contextmanager
     def _request_credentials_validation(
         self,
         model: str,
         credentials: dict,
-    ) -> tuple[requests.Response, bool, LLMMode]:
+    ) -> Generator[tuple[httpx2.Response, bool, LLMMode]]:
         headers = {"Content-Type": "application/json"}
         extra_headers = credentials.get("extra_headers")
         if extra_headers is not None:
@@ -341,68 +330,41 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             msg = "Unsupported completion type for model configuration."
             raise ValueError(msg)
 
-        stream_mode_auth = credentials.get("stream_mode_auth", "not_use")
-        if stream_mode_auth == "use":
-            stream_validate_max_tokens = (
+        stream = credentials.get("stream_mode_auth", "not_use") == "use"
+        if stream:
+            data["max_tokens"] = (
                 credentials.get("validate_credentials_max_tokens") or 10
             )
-            data["max_tokens"] = stream_validate_max_tokens
             data["stream"] = True
-            response = requests.post(
+        with (
+            http.client() as client,
+            client.stream(
+                "POST",
                 endpoint_url,
-                headers=headers,
+                headers=http.headers(headers),
                 json=data,
-                timeout=(10, 300),
-                stream=True,
-            )
-            return response, True, completion_type
-
-        response = requests.post(
-            endpoint_url,
-            headers=headers,
-            json=data,
-            timeout=(10, 300),
-        )
-        return response, False, completion_type
+                timeout=httpx2.Timeout(300, connect=10, write=10),
+                follow_redirects=True,
+            ) as response,
+        ):
+            if not stream or response.status_code != HTTPStatus.OK:
+                response.read()
+            yield response, stream, completion_type
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        """Validate model credentials using requests to ensure compatibility with
-        all providers following OpenAI's API standard.
-
-        :param model: model name
-        :param credentials: model credentials
-        :return:
-
-        Raises:
-            CredentialsValidateFailedError: If credentials validation fails.
-        """
+        """Validate credentials while owning the client and streaming response."""
         try:
-            response, stream, completion_type = self._request_credentials_validation(
-                model,
-                credentials,
-            )
+            with self._request_credentials_validation(model, credentials) as (
+                response,
+                stream,
+                completion_type,
+            ):
+                _validate_credentials_response(response, stream, completion_type)
         except CredentialsValidateFailedError:
             raise
         except Exception as ex:
             msg = f"An error occurred during credentials validation: {ex!s}"
             raise CredentialsValidateFailedError(msg) from ex
-
-        try:
-            _validate_credentials_response(response, stream, completion_type)
-        except CredentialsValidateFailedError:
-            raise
-        except Exception as ex:
-            if response:
-                msg = (
-                    "An error occurred during credentials validation: "
-                    f"{ex!s}, response body {response.text}"
-                )
-                raise CredentialsValidateFailedError(msg) from ex
-            msg = f"An error occurred during credentials validation: {ex!s}"
-            raise CredentialsValidateFailedError(msg) from ex
-        finally:
-            with suppress(Exception):
-                response.close()
 
     def get_customizable_model_schema(
         self,
@@ -561,9 +523,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         return entity
 
-    # validate_credentials method has been rewritten to use the requests
-    # library for compatibility with all providers
-    # following OpenAI's API standard.
     def _generate(
         self,
         model: str,
@@ -590,7 +549,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             The return value.
 
         Raises:
-            InvokeError: If model invocation fails.
             ValueError: If input values are invalid.
         """
         headers = {
@@ -704,24 +662,17 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if function_calling_type not in {"tool_call", "function_call"}:
             tools = None
 
-        response = requests.post(
-            endpoint_url,
-            headers=headers,
-            data=json.dumps(data, ensure_ascii=False, allow_nan=False).encode(
-                "utf-8",
-                "backslashreplace",
-            ),
-            timeout=(10, _plugin_config.MAX_REQUEST_TIMEOUT),
-            stream=stream,
+        body = json.dumps(data, ensure_ascii=False, allow_nan=False).encode(
+            "utf-8", "backslashreplace"
+        )
+        request_headers = http.headers(headers)
+        timeout = httpx2.Timeout(
+            _plugin_config.MAX_REQUEST_TIMEOUT, connect=10, write=10
         )
 
-        if response.encoding is None or response.encoding == "ISO-8859-1":
-            content_type = Message()
-            content_type["Content-Type"] = response.headers.get("Content-Type", "")
-            response.encoding = content_type.get_content_charset() or "utf-8"
-
-        if response.status_code != HTTPStatus.OK:
-            with response:
+        def check_response(response: httpx2.Response) -> None:
+            if response.status_code != HTTPStatus.OK:
+                response.read()
                 msg = (
                     "API request failed with status code "
                     f"{response.status_code}: {response.text}"
@@ -729,22 +680,38 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 raise InvokeError(msg)
 
         if stream:
-            return self._handle_generate_stream_response(
-                model,
-                credentials,
-                response,
-                prompt_messages,
-                tools=tools,
-            )
 
-        with response:
-            return self._handle_generate_response(
-                model,
-                credentials,
-                response,
-                prompt_messages,
-                tools=tools,
+            def generate() -> Generator:
+                with (
+                    http.client() as client,
+                    client.stream(
+                        "POST",
+                        endpoint_url,
+                        headers=request_headers,
+                        content=body,
+                        timeout=timeout,
+                        follow_redirects=True,
+                    ) as response,
+                ):
+                    check_response(response)
+                    yield from self._handle_generate_stream_response(
+                        model, credentials, response, prompt_messages, tools=tools
+                    )
+
+            return generate()
+
+        with http.client() as client:
+            response = client.post(
+                endpoint_url,
+                headers=request_headers,
+                content=body,
+                timeout=timeout,
+                follow_redirects=True,
             )
+        check_response(response)
+        return self._handle_generate_response(
+            model, credentials, response, prompt_messages, tools=tools
+        )
 
     def _get_response_usage(
         self,
@@ -816,7 +783,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         self,
         model: str,
         credentials: dict,
-        response: requests.Response,
+        response: httpx2.Response,
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> Generator:
@@ -838,7 +805,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         finish_reason = None
         usage = None
         is_reasoning_started = False
-        with response:
+        with closing(response):
             # delimiter for stream response, need unicode_escape
             delimiter = credentials.get("stream_mode_delimiter", "\n\n")
             delimiter = codecs.decode(delimiter, "unicode_escape")
@@ -991,11 +958,11 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         self,
         model: str,
         credentials: dict,
-        response: requests.Response,
+        response: httpx2.Response,
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> LLMResult:
-        response_json: dict = response.json()
+        response_json: dict = json.loads(response.text.removeprefix("\ufeff"))
 
         completion_type = LLMMode.value_of(credentials["mode"])
 

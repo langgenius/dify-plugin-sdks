@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 import pytest
 import trustme
 
@@ -36,8 +36,10 @@ def test_failed_download_can_be_retried_without_caching_the_error(
     ])
     file = File(url=server.url + "/file", type=FileType.IMAGE)
 
-    with pytest.raises(httpx.HTTPStatusError) as exc:
+    with pytest.raises(httpx2.HTTPStatusError) as exc:
         _ = file.blob
+    assert isinstance(exc.value.response, httpx2.Response)
+    assert isinstance(exc.value.request, httpx2.Request)
     assert exc.value.response.status_code == status
     assert file.blob == b"recovered"
     assert len(server.requests) == 2
@@ -49,14 +51,14 @@ def test_download_explains_unsupported_url_configuration(url: str) -> None:
 
     with pytest.raises(ValueError, match="FILES_URL") as exc:
         _ = file.blob
-    assert isinstance(exc.value.__cause__, httpx.UnsupportedProtocol)
+    assert isinstance(exc.value.__cause__, httpx2.UnsupportedProtocol)
 
 
 def test_download_rejects_a_truncated_body(http_server: HTTPServerFactory) -> None:
     server = http_server([Response(headers={"Content-Length": "20"}, body=b"short")])
     file = File(url=server.url + "/file", type=FileType.AUDIO)
 
-    with pytest.raises(httpx.RemoteProtocolError):
+    with pytest.raises(httpx2.RemoteProtocolError):
         _ = file.blob
 
 
@@ -70,7 +72,7 @@ def test_download_preserves_redirect_error_without_following_location(
     ])
     file = File(url=server.url + "/redirect/start", type=FileType.DOCUMENT)
 
-    with pytest.raises(httpx.HTTPStatusError) as exc:
+    with pytest.raises(httpx2.HTTPStatusError) as exc:
         _ = file.blob
     assert exc.value.response.status_code == 302
     assert [request.path for request in server.requests] == ["/redirect/start"]
@@ -83,7 +85,7 @@ def test_download_honors_configured_read_timeout(
     monkeypatch.setattr(file_module, "_plugin_config", DifyPluginEnv(HTTPX_TIMEOUT=1))
     file = File(url=server.url + "/file", type=FileType.VIDEO)
 
-    with pytest.raises(httpx.ReadTimeout):
+    with pytest.raises(httpx2.ReadTimeout):
         _ = file.blob
 
 
@@ -105,7 +107,7 @@ def test_download_rejects_untrusted_tls(http_server: HTTPServerFactory) -> None:
         url=server.url.replace("127.0.0.1", "localhost"), type=FileType.DOCUMENT
     )
 
-    with pytest.raises(httpx.ConnectError, match="CERTIFICATE_VERIFY_FAILED"):
+    with pytest.raises(httpx2.ConnectError, match="CERTIFICATE_VERIFY_FAILED"):
         _ = file.blob
     assert server.requests == []
 
@@ -131,6 +133,6 @@ def test_download_honors_custom_ca_and_verifies_hostname(
             assert file.blob == b"secure"
             assert len(server.requests) == 1
         else:
-            with pytest.raises(httpx.ConnectError, match="CERTIFICATE_VERIFY_FAILED"):
+            with pytest.raises(httpx2.ConnectError, match="CERTIFICATE_VERIFY_FAILED"):
                 _ = file.blob
             assert server.requests == []
