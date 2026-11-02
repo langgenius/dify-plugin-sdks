@@ -14,6 +14,7 @@ from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     TextPromptMessageContent,
 )
+from dify_plugin.invocations.model.llm import merge_llm_result_chunk
 from tests.interfaces.model.utils import StubLLM
 
 
@@ -148,3 +149,46 @@ def test_structured_result_conversion_preserves_parsed_output() -> None:
     assert restored.delta.usage == expected.usage
     assert restored.system_fingerprint == expected.system_fingerprint
     assert restored.model == expected.model
+
+
+@pytest.mark.parametrize(
+    ("existing_ids", "incoming_ids"),
+    [
+        ([], [""]),
+        (["kept"], ["valid", ""]),
+        ([], ["same", "same"]),
+        (["kept"], ["valid", "kept"]),
+    ],
+)
+def test_collecting_invalid_tool_call_ids_leaves_result_unchanged(
+    existing_ids: list[str], incoming_ids: list[str]
+) -> None:
+    def message(ids: list[str]) -> AssistantPromptMessage:
+        return AssistantPromptMessage(
+            content="text",
+            opaque_body={"state": ids},
+            tool_calls=[
+                AssistantPromptMessage.ToolCall(
+                    id=call_id,
+                    type="function",
+                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                        name="lookup", arguments="{}"
+                    ),
+                )
+                for call_id in ids
+            ],
+        )
+
+    result = LLMResult(
+        model="model", message=message(existing_ids), usage=LLMUsage.empty_usage()
+    )
+    original = result.model_copy(deep=True)
+    chunk = LLMResultChunk(
+        model="model",
+        delta=LLMResultChunkDelta(index=1, message=message(incoming_ids)),
+    )
+
+    with pytest.raises(ValueError, match="tool call"):
+        merge_llm_result_chunk(result, chunk)
+
+    assert result == original

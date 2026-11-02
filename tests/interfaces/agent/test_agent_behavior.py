@@ -156,7 +156,7 @@ def test_one_invalid_tool_is_diagnosed_without_dropping_valid_tools(
     assert list(agent.invoke({"tools": None})) == []
 
 
-def test_usage_accumulation_preserves_existing_shared_result_behavior(
+def test_usage_accumulation_preserves_each_response_snapshot(
     agent: SchemaAgent,
 ) -> None:
     first = LLMUsage.empty_usage().model_copy(
@@ -179,10 +179,15 @@ def test_usage_accumulation_preserves_existing_shared_result_behavior(
             "total_price": Decimal("0.007"),
         }
     )
+    original_first = first.model_copy()
+    original_second = second.model_copy()
     total: dict[str, LLMUsage | None] = {"usage": None}
     agent.increase_usage(total, first)
     agent.increase_usage(total, second)
-    assert total["usage"] is first
+    assert total["usage"] is not first
+    assert first == original_first
+    assert second == original_second
+    assert total["usage"] is not None
     assert total["usage"].prompt_tokens == 13
     assert total["usage"].completion_tokens == 6
     assert total["usage"].total_tokens == 19
@@ -191,12 +196,14 @@ def test_usage_accumulation_preserves_existing_shared_result_behavior(
     assert total["usage"].total_price == Decimal("0.025")
 
     agent.increase_usage(total, first)
-    assert total["usage"].prompt_tokens == 26
-    assert total["usage"].completion_tokens == 12
-    assert total["usage"].total_tokens == 38
-    assert total["usage"].prompt_price == Decimal("0.026")
-    assert total["usage"].completion_price == Decimal("0.024")
-    assert total["usage"].total_price == Decimal("0.050")
+    assert total["usage"].prompt_tokens == 23
+    assert total["usage"].completion_tokens == 10
+    assert total["usage"].total_tokens == 33
+    assert total["usage"].prompt_price == Decimal("0.023")
+    assert total["usage"].completion_price == Decimal("0.020")
+    assert total["usage"].total_price == Decimal("0.043")
+    assert first == original_first
+    assert second == original_second
 
 
 @pytest.mark.parametrize("parameter_name", ["max_tokens", "max_completion_tokens"])

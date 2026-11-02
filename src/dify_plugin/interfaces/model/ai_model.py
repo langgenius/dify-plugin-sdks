@@ -386,21 +386,23 @@ class AIModel(ABC):
             The return value.
         """
 
-        # ENHANCEMENT:
-        # to avoid performance issue, do not calculate the number of tokens
-        # for too long text
-        # only to promise text length is less than TOKEN_ESTIMATION_TEXT_LIMIT
-        if len(text) >= TOKEN_ESTIMATION_TEXT_LIMIT:
-            return len(text)
-
-        # check if gevent is patched to main thread
         import tiktoken  # ruff:ignore[import-outside-top-level]
+
+        def count_tokens() -> int:
+            encoding = tiktoken.encoding_for_model("gpt2")
+            # shortcut: chunk boundaries affect token merges; revisit for exact counts.
+            return sum(
+                len(
+                    encoding.encode_ordinary(
+                        text[offset : offset + TOKEN_ESTIMATION_TEXT_LIMIT]
+                    )
+                )
+                for offset in range(0, len(text), TOKEN_ESTIMATION_TEXT_LIMIT)
+            )
 
         if socket.socket is gevent.socket.socket:
             # using gevent real thread to avoid blocking main thread
-            result = threadpool.spawn(
-                lambda: len(tiktoken.encoding_for_model("gpt2").encode_ordinary(text))
-            )
+            result = threadpool.spawn(count_tokens)
             return result.get(block=True) or 0
 
-        return len(tiktoken.encoding_for_model("gpt2").encode_ordinary(text))
+        return count_tokens()

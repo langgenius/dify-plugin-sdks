@@ -57,6 +57,44 @@ Both methods return `LLMPollingResult` with one of three states:
 - `succeeded`: return the final LLM `result`.
 - `failed`: return a terminal `error`.
 
+## Blocking LLM Replay
+
+In SDK 0.11.0 (unreleased), blocking `session.model.llm.invoke` and `session.model.llm_structured_output.invoke` calls preserve the last non-`None` `opaque_body` snapshot.
+Empty objects, arrays, strings, zero, and false are valid snapshots; trailing chunks without a snapshot do not erase them.
+String chunks are concatenated, while nonempty content arrays retain their blocks and metadata in order, including when mixed with strings.
+Providers must assemble complete tool calls before emitting them, once per call, with nonempty IDs unique within the response.
+Calls may arrive in separate batches or together; collectors preserve their order and the original argument strings, and reject missing or duplicate IDs.
+Each usage update is a cumulative snapshot for the current model response; collectors retain the last non-`None` snapshot, including zero values, and Agents add usage across model responses.
+Use `message.get_text_content()` when a consumer needs plain text, and retain the complete message when replaying a tool turn.
+`AssistantPromptMessage.is_empty()` treats tool calls and any non-`None` snapshot as content.
+`ToolPromptMessage.is_empty()` treats a tool call ID as content, including when the tool result is empty.
+The invoking Agent/plugin, provider, daemon, and host must all preserve these fields for replay across tool turns.
+
+## OpenAI-Compatible Completion Input
+
+In SDK 0.11.0 (unreleased), the shared `OAICompatLargeLanguageModel` completion mode accepts text from the first prompt message.
+Text content blocks are concatenated in order into one prompt string, including empty lists as an empty string.
+Image, audio, video, or document blocks in that prompt raise an SDK invocation error before sending a request, including when mixed with text.
+For multimodal input, use chat mode with a model that supports the input modality and message role.
+
+## OpenAI-Compatible Usage Estimates
+
+In SDK 0.11.0 (unreleased), streaming and non-streaming responses estimate missing usage fields with the same counters.
+Provider counts, including zero, take precedence; a missing or null count is estimated independently.
+Completion counts the text sent from the first prompt message, while chat counts the complete message history and the tool definitions sent with the request.
+Output estimates include text and tool calls, including responses with no text content.
+Tool parameter estimates include the complete JSON schema, including optional and nested fields.
+Long inputs use tokenizer chunks of at most 100,000 characters instead of switching to character counts; this shared estimator also serves embedding input budgets.
+Token merges across chunk boundaries remain approximate.
+Embedding inputs that exceed the configured context are shortened to a measured text prefix within the estimated token budget.
+Non-streaming chat replies use an empty string for absent or null text so the daemon can decode the result.
+Replies without a content field must contain a parsed tool call; an unrecognized tool entry does not make an empty reply valid.
+These local estimates use the SDK tokenizer and pricing configuration; they do not represent the provider's billing record.
+The public `get_num_tokens()` budget for completion also counts only the first prompt message and any supplied tool definitions.
+
+Provider overrides of `_handle_generate_response()`, `_handle_generate_stream_response()`, and `_create_final_llm_result_chunk()` must accept and forward the optional `tools` parameter in SDK 0.11.0.
+Overrides of `_num_tokens_from_string()` must follow the SDK signature `(text, tools=None)`; the method does not take a model name.
+
 ## OpenAI-Compatible Streaming
 
 In SDK 0.11.0 (unreleased), `OAICompatLargeLanguageModel` preserves SSE data alongside comments and unknown fields.
@@ -65,6 +103,8 @@ The parser handles LF, CRLF, and CR line endings within events, including with c
 A single leading UTF-8 BOM is ignored for both default and custom delimiters.
 Raw JSON objects, single-prefix multiline JSON, and final payloads without a blank-line terminator remain supported.
 Explicit response charsets are respected; responses without a charset default to UTF-8.
+Streams must include a non-empty `finish_reason` for the selected choice or a `[DONE]` event.
+EOF without either raises an invocation error instead of returning a successful final chunk with partial text or tool calls.
 
 ## Version Management
 
