@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 def http_responses(monkeypatch: pytest.MonkeyPatch) -> tuple[list[Response], Event]:
     responses = []
     ready = Event()
-    post = llm.requests.post
+    post = llm.http.post
 
     def observe_response(url: str, **kwargs: object) -> Response:
         response = post(url, **kwargs)
@@ -23,5 +23,5 @@ def http_responses(monkeypatch: pytest.MonkeyPatch) -> tuple[list[Response], Eve
         ready.set()
         return response
 
-    monkeypatch.setattr(llm.requests, "post", observe_response)
+    monkeypatch.setattr(llm.http, "post", observe_response)
     return responses, ready

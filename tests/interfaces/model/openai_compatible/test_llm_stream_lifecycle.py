@@ -7,6 +7,7 @@ import requests
 from hypothesis import given
 from hypothesis import strategies as st
 
+from dify_plugin.core.utils import http
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.entities.model.message import UserPromptMessage
 from dify_plugin.errors.model import InvokeError
@@ -162,7 +163,7 @@ def test_generate_closes_http_error_response(
 ) -> None:
     response = _response([b"upstream unavailable"])
     response.status_code = 503
-    monkeypatch.setattr(requests, "post", lambda *_args, **_kwargs: response)
+    monkeypatch.setattr(http, "post", lambda *_args, **_kwargs: response)
 
     with pytest.raises(InvokeError, match="503: upstream unavailable"):
         llm._generate(
@@ -185,7 +186,7 @@ def test_generate_closes_non_stream_response(
             "usage": {"prompt_tokens": 0, "completion_tokens": 0},
         }).encode()
     ])
-    monkeypatch.setattr(requests, "post", lambda *_args, **_kwargs: response)
+    monkeypatch.setattr(http, "post", lambda *_args, **_kwargs: response)
 
     result = llm._generate(
         "model",

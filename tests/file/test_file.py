@@ -38,6 +38,8 @@ def test_failed_download_can_be_retried_without_caching_the_error(
 
     with pytest.raises(httpx.HTTPStatusError) as exc:
         _ = file.blob
+    assert isinstance(exc.value.response, httpx.Response)
+    assert isinstance(exc.value.request, httpx.Request)
     assert exc.value.response.status_code == status
     assert file.blob == b"recovered"
     assert len(server.requests) == 2

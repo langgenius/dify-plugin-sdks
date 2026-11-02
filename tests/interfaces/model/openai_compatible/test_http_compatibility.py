@@ -104,6 +104,25 @@ def test_provider_preserves_netrc_authentication(
     assert server.requests[0].headers["Authorization"] == f"Basic {expected}"
 
 
+def test_provider_preserves_latin1_header_values(
+    http_server: HTTPServerFactory,
+) -> None:
+    server = http_server([Response(headers={"X-Location": "café"}, body=b"{}")])
+    response, _stream, _mode = (
+        OAICompatLargeLanguageModel([])._request_credentials_validation(
+            "model",
+            {
+                "endpoint_url": server.url,
+                "mode": "chat",
+                "extra_headers": {"X-Location": "café"},
+            },
+        )
+    )
+    with response:
+        assert response.headers["X-Location"] == "café"
+    assert server.requests[0].headers["X-Location"] == "café"
+
+
 def test_provider_honors_no_proxy_ip_networks(
     http_server: HTTPServerFactory, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -119,6 +138,23 @@ def test_provider_honors_no_proxy_ip_networks(
     response.close()
     assert len(server.requests) == 1
     assert not proxy.requests
+
+
+def test_provider_preserves_proxy_authentication(
+    http_server: HTTPServerFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    proxy = http_server([Response(body=b"{}")])
+    monkeypatch.setenv("HTTP_PROXY", proxy.url.replace("://", "://caf%C3%A9:secret@"))
+    response, _stream, _mode = (
+        OAICompatLargeLanguageModel([])._request_credentials_validation(
+            "model", {"endpoint_url": "http://provider.invalid", "mode": "chat"}
+        )
+    )
+    response.close()
+    assert proxy.requests[0].path == "http://provider.invalid/chat/completions"
+    assert proxy.requests[0].headers["Proxy-Authorization"] == (
+        "Basic " + base64.b64encode("café:secret".encode("latin-1")).decode()
+    )
 
 
 @pytest.mark.parametrize("bundle", ["REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"])

@@ -13,6 +13,7 @@ from dify_plugin.config.config import InstallMethod
 from dify_plugin.core.entities.invocation import InvokeType
 from dify_plugin.core.entities.plugin.io import PluginInStream, PluginInStreamEvent
 from dify_plugin.core.runtime import BackwardsInvocation, Session
+from dify_plugin.core.utils.http import httpx_client
 from tests.http_server import Response, TestHTTPServer
 from tests.servers.helpers import MemoryRequestReader, RecordingResponseWriter
 
@@ -127,7 +128,7 @@ def _http_client(
             lambda _request: httpx.Response(200, stream=stream)
         )
     )
-    monkeypatch.setattr("dify_plugin.core.runtime.httpx.Client", lambda: client)
+    monkeypatch.setattr("dify_plugin.core.runtime.httpx_client", lambda: client)
     return client, stream
 
 
@@ -564,8 +565,9 @@ def test_http_read_timeout_releases_response(
         Response(body=_wire(_response(session, event="end")), delay=2)
     ]).url
     responses: list[httpx.Response] = []
-    client = httpx.Client(event_hooks={"response": [responses.append]})
-    monkeypatch.setattr("dify_plugin.core.runtime.httpx.Client", lambda: client)
+    client = httpx_client()
+    client.event_hooks["response"].append(responses.append)
+    monkeypatch.setattr("dify_plugin.core.runtime.httpx_client", lambda: client)
     with gevent.Timeout(3), pytest.raises(httpx.ReadTimeout):
         list(invocation._backwards_invoke(InvokeType.Storage, Result, {}))
     assert len(responses) == 1

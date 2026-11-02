@@ -38,7 +38,7 @@ def test_invoke_only_sends_authorization_with_api_key(
     response.json.return_value = {"results": [{"index": 0, "relevance_score": 1.0}]}
 
     with patch(
-        "dify_plugin.interfaces.model.openai_compatible.rerank.post",
+        "dify_plugin.interfaces.model.openai_compatible.rerank.http.post",
         return_value=response,
     ) as post:
         OAICompatRerankModel([]).invoke(

@@ -16,6 +16,7 @@ import requests
 from pydantic import TypeAdapter, ValidationError
 
 from dify_plugin.config.config import DifyPluginEnv
+from dify_plugin.core.utils import http
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -348,7 +349,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             )
             data["max_tokens"] = stream_validate_max_tokens
             data["stream"] = True
-            response = requests.post(
+            response = http.post(
                 endpoint_url,
                 headers=headers,
                 json=data,
@@ -357,7 +358,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             )
             return response, True, completion_type
 
-        response = requests.post(
+        response = http.post(
             endpoint_url,
             headers=headers,
             json=data,
@@ -366,8 +367,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         return response, False, completion_type
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        """Validate model credentials using requests to ensure compatibility with
-        all providers following OpenAI's API standard.
+        """Validate model credentials against the provider's OpenAI-compatible API.
 
         :param model: model name
         :param credentials: model credentials
@@ -561,9 +561,6 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
         return entity
 
-    # validate_credentials method has been rewritten to use the requests
-    # library for compatibility with all providers
-    # following OpenAI's API standard.
     def _generate(
         self,
         model: str,
@@ -704,7 +701,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if function_calling_type not in {"tool_call", "function_call"}:
             tools = None
 
-        response = requests.post(
+        response = http.post(
             endpoint_url,
             headers=headers,
             data=json.dumps(data, ensure_ascii=False, allow_nan=False).encode(

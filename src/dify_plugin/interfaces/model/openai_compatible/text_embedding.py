@@ -8,6 +8,7 @@ from operator import itemgetter
 
 import requests
 
+from dify_plugin.core.utils import http
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -169,7 +170,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             }
 
             # Make the request to the OpenAI API
-            response = requests.post(
+            response = http.post(
                 endpoint_url,
                 headers=headers,
                 data=json.dumps(payload),
@@ -235,7 +236,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             "input": ["ping"],
             "model": credentials.get("endpoint_model_name", model),
         }
-        return requests.post(
+        return http.post(
             url=endpoint_url,
             headers=headers,
             data=json.dumps(payload),

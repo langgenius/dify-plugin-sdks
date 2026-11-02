@@ -2,8 +2,7 @@ from collections.abc import Generator
 from contextlib import closing
 from http import HTTPStatus
 
-import requests
-
+from dify_plugin.core.utils import http
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -80,7 +79,7 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
             }
 
             # Make POST request
-            with requests.post(
+            with http.post(
                 endpoint_url,
                 headers=headers,
                 json=payload,

@@ -60,7 +60,7 @@ def test_validate_credentials_passes_extra_headers(
     }
 
     with patch(
-        "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
+        "dify_plugin.interfaces.model.openai_compatible.llm.http.post",
         return_value=response,
     ) as post:
         OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
@@ -156,7 +156,7 @@ def test_generate_serializes_images_in_all_message_roles(
     response = MagicMock(status_code=HTTPStatus.OK)
     with (
         patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
+            "dify_plugin.interfaces.model.openai_compatible.llm.http.post",
             return_value=response,
         ) as post,
         patch.object(llm, "_handle_generate_response"),
@@ -285,9 +285,7 @@ def test_unsupported_non_user_content_is_rejected_before_sending_request(
     llm = OAICompatLargeLanguageModel([])
 
     with (
-        patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post"
-        ) as post,
+        patch("dify_plugin.interfaces.model.openai_compatible.llm.http.post") as post,
         pytest.raises(InvokeError),
     ):
         list(llm.invoke("model", credentials, [message], {}, stream=False))
@@ -356,7 +354,7 @@ def test_generate_encodes_request_json_as_utf8() -> None:
     llm = OAICompatLargeLanguageModel([])
 
     with patch(
-        "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
+        "dify_plugin.interfaces.model.openai_compatible.llm.http.post",
         return_value=response,
     ) as post:
         llm._generate(
@@ -375,7 +373,7 @@ def test_generate_encodes_request_json_as_utf8() -> None:
 
     with (
         patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
+            "dify_plugin.interfaces.model.openai_compatible.llm.http.post",
         ) as invalid_post,
         pytest.raises(
             ValueError,
@@ -404,7 +402,7 @@ def test_validate_credentials_rejects_non_mapping_extra_headers(
 
     with (
         patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
+            "dify_plugin.interfaces.model.openai_compatible.llm.http.post",
         ) as post,
         pytest.raises(CredentialsValidateFailedError),
     ):

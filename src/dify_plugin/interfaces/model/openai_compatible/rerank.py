@@ -1,8 +1,9 @@
 from json import dumps
 
-from requests import HTTPError, post
+from requests import HTTPError
 from yarl import URL
 
+from dify_plugin.core.utils import http
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import AIModelEntity, FetchFrom, ModelType
 from dify_plugin.entities.model.rerank import RerankDocument, RerankResult
@@ -81,7 +82,7 @@ class OAICompatRerankModel(RerankModel):
         }
 
         try:
-            response = post(
+            response = http.post(
                 str(URL(url) / "rerank"), headers=headers, data=dumps(data), timeout=60
             )
             response.raise_for_status()

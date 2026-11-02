@@ -1,11 +1,11 @@
 from enum import StrEnum
 from http import HTTPStatus
 
-import requests
 from pydantic import BaseModel, model_validator
 
 from dify_plugin.core.entities.invocation import InvokeType
 from dify_plugin.core.runtime import BackwardsInvocation
+from dify_plugin.core.utils import http
 
 
 class UploadFileResponse(BaseModel):
@@ -83,7 +83,7 @@ class File(BackwardsInvocation[dict]):
                 msg = "upload file failed, could not get signed url"
                 raise Exception(msg)
 
-            upload_response = requests.post(
+            upload_response = http.post(
                 url,
                 files={"file": (filename, content, mimetype)},
                 timeout=10,

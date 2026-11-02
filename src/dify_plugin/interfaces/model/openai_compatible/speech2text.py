@@ -2,8 +2,7 @@ import pathlib
 from http import HTTPStatus
 from typing import IO
 
-import requests
-
+from dify_plugin.core.utils import http
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeBadRequestError,
@@ -50,7 +49,7 @@ class OAICompatSpeech2TextModel(_CommonOaiApiCompat, Speech2TextModel):
 
         payload = {"model": credentials.get("endpoint_model_name", model)}
         files = [("file", file)]
-        response = requests.post(
+        response = http.post(
             endpoint_url,
             headers=headers,
             data=payload,
