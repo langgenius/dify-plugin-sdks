@@ -135,6 +135,12 @@ Protecting errors raised during Endpoint streaming also requires the [daemon HTT
 With that fix, a stream that fails after headers are sent is interrupted, so clients must handle response-body read errors.
 Upgrade the daemon first, then rebuild and deploy plugins with the updated SDK.
 
+### Request Interruption in SDK 0.11.0 (unreleased)
+
+Plugin requests interrupted by an uncaught `gevent.Timeout` or `GreenletExit` send session `error` and `end` frames while the response transport remains writable.
+The error preserves its original type, message, and traceback.
+Closing a Serverless response cancels active work and releases the worker.
+
 ## Agent Token Estimates
 
 In SDK 0.11.0 (unreleased), agent token estimates include text blocks as well as string content and treat special-token spellings such as `<|endoftext|>` as ordinary text.
