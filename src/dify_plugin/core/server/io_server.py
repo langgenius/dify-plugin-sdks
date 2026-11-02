@@ -8,6 +8,8 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from threading import Thread
 
+from gevent import GreenletExit, Timeout
+
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.entities.plugin.io import PluginInStream, PluginInStreamEvent
 from dify_plugin.core.server.__base.request_reader import RequestReader
@@ -112,7 +114,7 @@ class IOServer(ABC):
                     writer.execute(execute)
                 else:
                     execute()
-            except Exception as e:
+            except (Exception, GreenletExit, Timeout) as e:
                 args = {"traceback": traceback.format_exc()}
                 if isinstance(e, InvokeError):
                     args["description"] = e.description

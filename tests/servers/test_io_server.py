@@ -1,4 +1,6 @@
+import json
 import threading
+import traceback
 from collections.abc import Callable, Generator, Iterator
 from contextvars import ContextVar
 from queue import Queue
@@ -126,16 +128,23 @@ def test_serverless_execution_preserves_ambient_context(
 @pytest.mark.parametrize("serverless", [False, True])
 @pytest.mark.parametrize(
     "error",
-    [RuntimeError("boom"), InvokeAuthorizationError("invalid credentials")],
+    [
+        RuntimeError("boom"),
+        InvokeAuthorizationError("invalid credentials"),
+        gevent.Timeout(None),
+        gevent.GreenletExit("cancelled"),
+    ],
 )
 def test_execution_error_preserves_type_message_traceback_and_description(
     server: CallbackIOServer,
     after_chunk: bool,
     serverless: bool,
-    error: Exception,
+    error: BaseException,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    writer = RecordingResponseWriter()
+    writer = (
+        ServerlessResponseWriter(Queue()) if serverless else RecordingResponseWriter()
+    )
     reader = ServerlessRequestReader() if serverless else server.request_reader
 
     def execute(
@@ -151,11 +160,19 @@ def test_execution_error_preserves_type_message_traceback_and_description(
 
     server.handler = execute
     try:
-        server._execute_request_in_thread("session-1", {}, reader, writer)
+        server.executer.submit(
+            server._execute_request_in_thread, "session-1", {}, reader, writer
+        ).result(timeout=2)
     finally:
         reader.close()
 
-    messages = writer.messages
+    if isinstance(writer, ServerlessResponseWriter):
+        messages = [json.loads(frame) for frame in iter(writer.q.get_nowait, None)]
+        assert writer.q.empty()
+        assert writer.closed
+    else:
+        messages = writer.messages
+        assert writer.done_count == 1
     assert [frame["event"] for frame in messages] == ["session"] * len(messages)
     assert [frame["session_id"] for frame in messages] == ["session-1"] * len(messages)
     assert [frame["data"]["type"] for frame in messages] == (
@@ -165,15 +182,72 @@ def test_execution_error_preserves_type_message_traceback_and_description(
     assert error_data["error_type"] == type(error).__name__
     assert error_data["message"] == str(error)
     assert "Traceback (most recent call last)" in error_data["args"]["traceback"]
-    assert f"{type(error).__name__}: {error}" in error_data["args"]["traceback"]
+    assert traceback.format_exception_only(error)[-1] in error_data["args"]["traceback"]
     if isinstance(error, InvokeAuthorizationError):
         assert error_data["args"]["description"] == "invalid credentials"
     assert messages[-1]["data"]["data"] == {}
-    assert writer.done_count == 1
     if serverless:
         assert any(
             record.exc_info and record.exc_info[1] is error for record in caplog.records
         )
+
+
+@pytest.mark.parametrize("serverless", [False, True])
+@pytest.mark.parametrize("cancellation", ["timeout", "kill"])
+def test_interruption_finishes_request_and_releases_worker(
+    serverless: bool, cancellation: str
+) -> None:
+    reader = MemoryRequestReader()
+    server = CallbackIOServer(DifyPluginEnv(MAX_WORKER=1), reader, None)
+    writer = (
+        ServerlessResponseWriter(Queue()) if serverless else RecordingResponseWriter()
+    )
+    entered: Queue = Queue()
+    finalized = threading.Event()
+
+    def execute(*_args: object) -> None:
+        try:
+            if cancellation == "timeout":
+                with gevent.Timeout(0.01):
+                    gevent.sleep(60)
+            else:
+                entered.put(gevent.getcurrent())
+                gevent.sleep(60)
+        finally:
+            finalized.set()
+
+    server.handler = execute
+    try:
+        future = server.executer.submit(
+            server._execute_request_in_thread, "interrupted", {}, reader, writer
+        )
+        if cancellation == "kill":
+            entered.get(timeout=2).kill(block=False)
+        future.result(timeout=2)
+        assert finalized.is_set()
+
+        if isinstance(writer, ServerlessResponseWriter):
+            messages = [json.loads(frame) for frame in iter(writer.q.get_nowait, None)]
+            assert writer.q.empty()
+            assert writer.closed
+        else:
+            messages = writer.messages
+            assert writer.done_count == 1
+        assert [frame["data"]["type"] for frame in messages] == ["error", "end"]
+        assert messages[0]["data"]["data"]["error_type"] == (
+            "Timeout" if cancellation == "timeout" else "GreenletExit"
+        )
+
+        server.handler = lambda *_args: None
+        next_writer = RecordingResponseWriter()
+        server.executer.submit(
+            server._execute_request_in_thread, "next", {}, reader, next_writer
+        ).result(timeout=2)
+        assert [frame["data"]["type"] for frame in next_writer.messages] == ["end"]
+        assert next_writer.done_count == 1
+    finally:
+        server.close()
+        server.executer.shutdown(wait=True)
 
 
 @pytest.mark.parametrize("execution_fails", [False, True])
