@@ -1,6 +1,7 @@
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier, Event
+from types import SimpleNamespace
 
 import pytest
 
@@ -57,8 +58,8 @@ def test_ai_model_timing_context_multiple_sequential_uses(
 ) -> None:
     timestamps = iter([10.0, 25.0])
     monkeypatch.setattr(
-        "dify_plugin.interfaces.model.ai_model.time.perf_counter",
-        lambda: next(timestamps),
+        "dify_plugin.interfaces.model.ai_model.time",
+        SimpleNamespace(perf_counter=lambda: next(timestamps)),
     )
     model = MockAIModel([])
 

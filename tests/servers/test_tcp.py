@@ -2,6 +2,7 @@ import errno
 import json
 import signal
 from collections.abc import Generator
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import gevent
@@ -352,7 +353,9 @@ def test_tcp_close_during_reconnect_delay_stops_retry(
 ) -> None:
     reader, peer = connected
     peer.close()
-    monkeypatch.setattr(tcp_module.time, "sleep", lambda _delay: reader.close())
+    monkeypatch.setattr(
+        tcp_module, "time", SimpleNamespace(sleep=lambda _delay: reader.close())
+    )
 
     assert list(reader._read_stream()) == []
 

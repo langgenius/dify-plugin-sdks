@@ -9,8 +9,8 @@ dependencies = [
     'gevent>=26.9.0',
     'h11>=0.16.0',
     'httpx>=0.28.1',
-    'pydantic_settings>=2.15.0',
-    'pydantic>=2.14.1',
+    'pydantic_settings>=2.16.2',
+    'pydantic>=2.14.2',
     'pyyaml>=6.0.3',
     'requests>=2.34.2',
     'socksio>=1.0.0',
@@ -30,12 +30,12 @@ homepage = 'https://github.com/langgenius/dify-plugin-sdks'
 issues = 'https://github.com/langgenius/dify-plugin-sdks/issues'
 
 [build-system]
-requires = ['uv_build~=0.13.0']
+requires = ['uv_build~=0.13.6']
 build-backend = 'uv_build'
 
 [dependency-groups]
 dev = [
-    "hypothesis>=6.169.0",
+    "hypothesis>=6.170.14",
     'prek',
     'pytest',
     'pytest-cov',
@@ -77,7 +77,7 @@ source = ['src/dify_plugin', '*/site-packages/dify_plugin']
 
 [tool.ruff]
 preview = true
-required-version = '>=0.15.22'
+required-version = '>=0.17.3'
 
 [tool.ruff.lint]
 select = ['ALL']
