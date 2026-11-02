@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import gevent.socket
 import pytest
 import requests
+import tiktoken
 from gevent.threadpool import ThreadPool
 
 from dify_plugin.entities.model.message import (
@@ -319,8 +320,9 @@ def test_num_tokens_counts_non_user_text_parts_like_plain_text(
 
 
 @pytest.mark.parametrize("use_threadpool", [False, True])
+@pytest.mark.parametrize("repetitions", [1, 5000])
 def test_num_tokens_treats_special_token_spelling_as_text(
-    use_threadpool: bool, monkeypatch: pytest.MonkeyPatch
+    use_threadpool: bool, repetitions: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(
         ai_model,
@@ -329,7 +331,8 @@ def test_num_tokens_treats_special_token_spelling_as_text(
     )
     pool = ThreadPool(1)
     monkeypatch.setattr(ai_model, "threadpool", pool, raising=False)
-    content = [TextPromptMessageContent(data="Explain the <|endoftext|> token.")]
+    text = "Explain the <|endoftext|> token. " * repetitions
+    content = [TextPromptMessageContent(data=text)]
     messages = [
         SystemPromptMessage(content=content),
         AssistantPromptMessage(content=content),
@@ -340,7 +343,12 @@ def test_num_tokens_treats_special_token_spelling_as_text(
         credentials = {"function_calling_type": "tool_call"}
         count = model.get_num_tokens("model", credentials, messages)
         empty = [message.model_copy(update={"content": ""}) for message in messages]
-        assert count > model.get_num_tokens("model", credentials, empty)
+        expected = len(tiktoken.encoding_for_model("gpt2").encode_ordinary(text)) * len(
+            messages
+        )
+        assert count - model.get_num_tokens(
+            "model", credentials, empty
+        ) == pytest.approx(expected, rel=0.001)
     finally:
         pool.kill()
 

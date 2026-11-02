@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 import pytest
+import tiktoken
 
 from dify_plugin.entities.model import ModelFeature, ModelPropertyKey
 from dify_plugin.entities.model.message import (
@@ -145,16 +146,21 @@ def test_embedding_token_estimates_preserve_input_order_and_empty_texts() -> Non
     assert model.get_num_tokens("model", {}, ["Hello", "", "Hello world"]) == [1, 0, 2]
 
 
-def test_large_prompts_have_positive_nondecreasing_token_estimates() -> None:
+@pytest.mark.parametrize("pattern", ["hello world ", "你好😀 <|endoftext|> "])
+@pytest.mark.parametrize("size", [99_999, 100_001, 210_003])
+def test_large_text_estimates_track_the_tokenizer(pattern: str, size: int) -> None:
+    text = (pattern * (size // len(pattern) + 1))[:size]
+    expected = len(tiktoken.encoding_for_model("gpt2").encode_ordinary(text))
     model = OAICompatLargeLanguageModel([])
+    count = model.get_num_tokens(
+        "model", {"mode": "completion"}, [UserPromptMessage(content=text)]
+    )
 
-    counts = [
-        model.get_num_tokens("model", {}, [UserPromptMessage(content="a" * size)])
-        for size in (100_000, 200_000)
+    assert count == pytest.approx(expected, rel=0.001)
+    assert OAICompatEmbeddingModel([]).get_num_tokens("model", {}, [text, ""]) == [
+        count,
+        0,
     ]
-
-    assert all(type(count) is int and count > 0 for count in counts)
-    assert counts[1] >= counts[0]
 
 
 @pytest.mark.parametrize(
@@ -183,6 +189,22 @@ def test_token_budget_accepts_json_schema_enum_values(parameter: dict) -> None:
     assert model.get_num_tokens("model", {}, prompts, [tool]) > model.get_num_tokens(
         "model", {}, prompts
     )
+
+
+def test_token_budget_counts_nested_schema_content() -> None:
+    model = OAICompatLargeLanguageModel([])
+    prompts = [UserPromptMessage(content="Configure the input")]
+    tool = PromptMessageTool(
+        name="configure",
+        description="Configure the input",
+        parameters={"allOf": [{"type": "object"}]},
+    )
+    baseline = model.get_num_tokens("model", {}, prompts, [tool])
+    tool.parameters["allOf"][0]["description"] = (
+        "A detailed explanation of the input. " * 100
+    )
+
+    assert model.get_num_tokens("model", {}, prompts, [tool]) > baseline + 100
 
 
 def test_invalid_custom_model_mode_reports_a_configuration_error() -> None:

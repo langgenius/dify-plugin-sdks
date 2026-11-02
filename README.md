@@ -83,6 +83,12 @@ In SDK 0.11.0 (unreleased), streaming and non-streaming responses estimate missi
 Provider counts, including zero, take precedence; a missing or null count is estimated independently.
 Completion counts the text sent from the first prompt message, while chat counts the complete message history and the tool definitions sent with the request.
 Output estimates include text and tool calls, including responses with no text content.
+Tool parameter estimates include the complete JSON schema, including optional and nested fields.
+Long inputs use tokenizer chunks of at most 100,000 characters instead of switching to character counts; this shared estimator also serves embedding input budgets.
+Token merges across chunk boundaries remain approximate.
+Embedding inputs that exceed the configured context are shortened to a measured text prefix within the estimated token budget.
+Non-streaming chat replies use an empty string for absent or null text so the daemon can decode the result.
+Replies without a content field must contain a parsed tool call; an unrecognized tool entry does not make an empty reply valid.
 These local estimates use the SDK tokenizer and pricing configuration; they do not represent the provider's billing record.
 The public `get_num_tokens()` budget for completion also counts only the first prompt message and any supplied tool definitions.
 
@@ -97,7 +103,7 @@ The parser handles LF, CRLF, and CR line endings within events, including with c
 A single leading UTF-8 BOM is ignored for both default and custom delimiters.
 Raw JSON objects, single-prefix multiline JSON, and final payloads without a blank-line terminator remain supported.
 Explicit response charsets are respected; responses without a charset default to UTF-8.
-Streams must include a non-null `finish_reason` for the selected choice or a `[DONE]` event.
+Streams must include a non-empty `finish_reason` for the selected choice or a `[DONE]` event.
 EOF without either raises an invocation error instead of returning a successful final chunk with partial text or tool calls.
 
 ## Version Management
