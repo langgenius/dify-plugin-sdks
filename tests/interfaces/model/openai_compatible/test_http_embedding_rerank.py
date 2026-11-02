@@ -143,7 +143,7 @@ def test_embedding_sends_a_prefix_within_the_estimated_context(
         ),
         ("覚醒foo!", 1, "覚醒"),
         (
-            "a\n" * 254 + "\n😀覚醒" + "hello world " * 8300,
+            "a\n" * 254 + "\n😀覚醒" + "hello world " * 8291,
             512,
             "a\n" * 254 + "\n😀覚醒",
         ),
