@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import gevent
 import pytest
+import tiktoken
 from gevent.event import Event
 
 from dify_plugin.entities import I18nObject
@@ -491,6 +492,64 @@ def test_non_stream_tool_calls_preserve_arguments_and_request_schema(
         assert payload["tools"] == [{"type": "function", "function": tool.model_dump()}]
     else:
         assert payload["functions"] == [tool.model_dump()]
+
+
+@pytest.mark.parametrize(
+    "invalid_call",
+    [
+        {},
+        {"function": None},
+        {"function": {}},
+        {"function": []},
+        {"function": ""},
+        {"function": False},
+        {"function": 0},
+    ],
+)
+@pytest.mark.parametrize("include_valid_call", [False, True])
+def test_non_stream_missing_content_requires_a_parsed_tool_call(
+    http_server: HTTPServerFactory,
+    http_responses: tuple[list[HTTPResponse], Event],
+    invalid_call: dict,
+    include_valid_call: bool,
+) -> None:
+    responses, _ready = http_responses
+    valid_call = {
+        "id": "call-1",
+        "type": "function",
+        "function": {"name": "weather", "arguments": '{"city":"Paris"}'},
+    }
+    calls = [invalid_call, valid_call] if include_valid_call else [invalid_call]
+    server = http_server([
+        Response(
+            body=json.dumps({"choices": [{"message": {"tool_calls": calls}}]}).encode()
+        )
+    ])
+    model = OAICompatLargeLanguageModel([])
+    invocation = model.invoke(
+        "model",
+        {
+            "mode": "chat",
+            "endpoint_url": server.url,
+            "function_calling_type": "tool_call",
+        },
+        [UserPromptMessage(content="Weather?")],
+        stream=False,
+    )
+
+    if include_valid_call:
+        chunks = list(invocation)
+        assert isinstance(chunks[-1].delta.message.content, str)
+        assert not chunks[-1].delta.message.content
+        assert [call.model_dump() for call in chunks[-1].delta.message.tool_calls] == [
+            valid_call
+        ]
+    else:
+        with pytest.raises(InvokeError, match="neither content nor tool calls"):
+            list(invocation)
+
+    assert responses[0].raw.closed
+    assert model.started_at == 0
 
 
 @pytest.mark.parametrize(
@@ -1404,3 +1463,69 @@ def test_missing_usage_can_estimate_tool_schemas(
     payload = json.loads(server.requests[0].body)
     assert payload["tools"] == [{"type": "function", "function": tool.model_dump()}]
     assert model.started_at == 0
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("calling_type", ["tool_call", "function_call"])
+def test_large_tool_schemas_keep_token_and_price_estimates_consistent(
+    http_server: HTTPServerFactory, stream: bool, calling_type: str
+) -> None:
+    choice = (
+        {"delta": {"content": "Answer"}, "finish_reason": "stop"}
+        if stream
+        else {"message": {"content": "Answer"}}
+    )
+    body = json.dumps({"choices": [choice], "usage": {"completion_tokens": 0}})
+    if stream:
+        body = f"data: {body}\n\ndata: [DONE]\n\n"
+    server = http_server([Response(body=body.encode()) for _ in range(2)])
+    model = OAICompatLargeLanguageModel([])
+    credentials = {
+        "mode": "chat",
+        "endpoint_url": server.url,
+        "function_calling_type": calling_type,
+        "input_price": "2",
+        "unit": "0.001",
+    }
+    prompts = [UserPromptMessage(content="Configure the input")]
+    tool = PromptMessageTool(
+        name="configure", description="Configure the input", parameters={}
+    )
+    encoding = tiktoken.encoding_for_model("gpt2")
+    overhead = model.get_num_tokens("model", credentials, prompts, [tool]) - len(
+        encoding.encode_ordinary("{}")
+    )
+
+    for field_count in (310, 311):
+        tool.parameters = {
+            "type": "object",
+            "properties": {
+                f"field_{index}": {
+                    "type": "string",
+                    "description": "A detailed optional input. " * 10,
+                }
+                for index in range(field_count)
+            },
+        }
+        serialized_schema = json.dumps(tool.parameters, ensure_ascii=False)
+        assert (len(serialized_schema) < 100_000) == (field_count == 310)
+        expected = overhead + len(encoding.encode_ordinary(serialized_schema))
+        budget = model.get_num_tokens("model", credentials, prompts, [tool])
+        assert budget == pytest.approx(expected, rel=0.001)
+
+        chunks = list(
+            model.invoke("model", credentials, prompts, tools=[tool], stream=stream)
+        )
+        usage = chunks[-1].delta.usage
+        assert usage is not None
+        assert usage.prompt_tokens == budget
+        assert usage.completion_tokens == 0
+        assert usage.prompt_price == Decimal(budget) * Decimal("0.002")
+        payload = json.loads(server.requests[-1].body)
+        request_tool = (
+            payload["tools"][0]["function"]
+            if calling_type == "tool_call"
+            else payload["functions"][0]
+        )
+        assert request_tool["parameters"] == tool.parameters
+        assert model.started_at == 0

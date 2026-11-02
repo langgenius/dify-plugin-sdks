@@ -1003,38 +1003,36 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         message_id = response_json.get("id")
 
         response_content = ""
-        tool_calls = None
+        tool_calls = []
         function_calling_type = credentials.get("function_calling_type", "no_call")
         if completion_type is LLMMode.CHAT:
             response_message = output.get("message", {})
-            response_content = response_message.get("content")
-            if response_content is None:
-                response_content = ""
-            if function_calling_type == "tool_call":
-                tool_calls = output.get("message", {}).get("tool_calls")
-            elif function_calling_type == "function_call":
-                tool_calls = output.get("message", {}).get("function_call")
+            if function_calling_type == "tool_call" and (
+                response_tool_calls := response_message.get("tool_calls")
+            ):
+                tool_calls = self._extract_response_tool_calls(response_tool_calls)
+            elif function_calling_type == "function_call" and (
+                response_function_call := response_message.get("function_call")
+            ):
+                tool_call = self._extract_response_function_call(response_function_call)
+                if tool_call is not None:
+                    tool_calls = [tool_call]
+
             if "content" not in response_message and not tool_calls:
                 msg = "Model response has neither content nor tool calls"
                 raise InvokeError(msg)
+
+            response_content = response_message.get("content")
+            if response_content is None:
+                response_content = ""
 
         elif completion_type is LLMMode.COMPLETION:
             response_content = output["text"]
 
         assistant_message = AssistantPromptMessage(
             content=response_content,
-            tool_calls=[],
+            tool_calls=tool_calls,
         )
-
-        if tool_calls:
-            if function_calling_type == "tool_call":
-                assistant_message.tool_calls = self._extract_response_tool_calls(
-                    tool_calls,
-                )
-            elif function_calling_type == "function_call":
-                assistant_message.tool_calls = [
-                    self._extract_response_function_call(tool_calls),
-                ]
 
         # transform response
         return LLMResult(
