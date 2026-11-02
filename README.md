@@ -39,7 +39,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup details, integration test requi
 
 See [langgenius/dify-official-plugins](https://github.com/langgenius/dify-official-plugins) for production plugin implementations published and used by Dify.
 
-## HTTPX2 Migration (SDK 0.11.0, unreleased)
+## HTTPX2 Migration (SDK 0.12.0, planned)
+
+The HTTPX2 migration and [removal of gevent](https://github.com/langgenius/dify-plugin-sdks/issues/340) target SDK 0.12.0.
+SDK 0.11.0 retains the existing HTTP clients and gevent runtime.
 
 SDK model requests, file uploads and downloads, and serverless callbacks use synchronous `httpx2.Client` instances.
 HTTPX2 is the package name; this change does not force the HTTP/2 wire protocol.
