@@ -20,7 +20,7 @@ from dify_plugin.interfaces.model.openai_compatible.tts import OAICompatText2Spe
 from tests.http_server import HTTPServerFactory, Response
 
 if TYPE_CHECKING:
-    from requests import Response as HTTPResponse
+    from httpx2 import Response as HTTPResponse
 
 pytestmark = pytest.mark.integration
 
@@ -132,7 +132,7 @@ def test_tts_early_close_releases_the_http_response(
     assert next(stream) == b"first"
     stream.close()
 
-    assert responses[0].raw.closed
+    assert responses[0].is_closed
     assert model.started_at == 0
 
 
@@ -152,7 +152,7 @@ def test_tts_greenlet_cancellation_releases_the_http_response(
         worker.kill(timeout=2)
 
     assert worker.ready()
-    assert responses[0].raw.closed
+    assert responses[0].is_closed
     assert model.started_at == 0
 
 
@@ -173,7 +173,7 @@ def test_tts_truncated_response_reports_error_and_closes_response(
         chunks.extend(stream)
 
     assert (b"a" * 4096).startswith(b"".join(chunks))
-    assert responses[0].raw.closed
+    assert responses[0].is_closed
     assert model.started_at == 0
 
 
@@ -191,7 +191,7 @@ def test_tts_credential_validation_closes_the_sample_stream(
 
     model.validate_credentials("model", credentials)
 
-    assert responses[0].raw.closed
+    assert responses[0].is_closed
     assert list(stream) == []
     assert json.loads(server.requests[0].body)["voice"] == "voice-1"
 
@@ -213,7 +213,7 @@ def test_tts_http_failure_closes_the_response(
         with pytest.raises(InvokeError, match="invalid API key"):
             list(model.invoke("model", "tenant", credentials, "Hello", "alloy"))
 
-    assert responses[0].raw.closed
+    assert responses[0].is_closed
     assert model.started_at == 0
 
 

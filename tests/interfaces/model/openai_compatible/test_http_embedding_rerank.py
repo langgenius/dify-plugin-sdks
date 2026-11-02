@@ -2,8 +2,8 @@ import json
 import math
 from decimal import Decimal
 
+import httpx2
 import pytest
-import requests
 from pytest_mock import MockerFixture
 
 from dify_plugin.entities import I18nObject
@@ -47,7 +47,7 @@ def test_embedding_batches_truncates_and_accumulates_usage(
     embedding: OAICompatEmbeddingModel,
     mocker: MockerFixture,
 ) -> None:
-    close = mocker.spy(requests.Response, "close")
+    close = mocker.spy(httpx2.Response, "close")
     server = http_server([
         Response(
             body=b'{"data":[{"embedding":[1,2]},{"embedding":[3,4]}],"usage":{"total_tokens":5}}'
@@ -109,7 +109,7 @@ def test_embedding_failure_stops_later_batches(
     response: Response,
     mocker: MockerFixture,
 ) -> None:
-    close = mocker.spy(requests.Response, "close")
+    close = mocker.spy(httpx2.Response, "close")
     server = http_server([
         response,
         Response(body=b'{"data":[{"embedding":[5,6]}],"usage":{"total_tokens":1}}'),
@@ -185,7 +185,7 @@ def test_embedding_rejects_malformed_batches_before_the_next_request(
     data_json: str,
     mocker: MockerFixture,
 ) -> None:
-    close = mocker.spy(requests.Response, "close")
+    close = mocker.spy(httpx2.Response, "close")
     server = http_server([
         Response(body=f'{{"data":{data_json},"usage":{{"total_tokens":2}}}}'.encode()),
         Response(body=b'{"data":[{"embedding":[5,6]}],"usage":{"total_tokens":1}}'),
@@ -260,7 +260,7 @@ def test_embedding_rejects_dimension_changes_between_batches(
     embedding: OAICompatEmbeddingModel,
     mocker: MockerFixture,
 ) -> None:
-    close = mocker.spy(requests.Response, "close")
+    close = mocker.spy(httpx2.Response, "close")
     server = http_server([
         Response(
             body=b'{"data":[{"embedding":[1,2]},{"embedding":[3,4]}],"usage":{"total_tokens":2}}'

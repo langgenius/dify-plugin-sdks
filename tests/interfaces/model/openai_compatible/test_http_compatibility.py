@@ -10,12 +10,12 @@ from pathlib import Path
 from threading import Event
 
 import gevent
+import httpx2
 import pytest
-import requests
 import trustme
 
 from dify_plugin.entities.model.message import UserPromptMessage
-from dify_plugin.errors.model import InvokeServerUnavailableError
+from dify_plugin.errors.model import InvokeConnectionError
 from dify_plugin.interfaces.model.openai_compatible import llm
 from dify_plugin.interfaces.model.openai_compatible.llm import (
     OAICompatLargeLanguageModel,
@@ -45,15 +45,12 @@ def test_provider_response_retains_redirect_cookies_and_request_metadata(
             body=gzip.compress(b'{"object":"chat.completion"}'),
         ),
     ])
-    response, stream, _mode = (
-        OAICompatLargeLanguageModel([])._request_credentials_validation(
-            "model", {"endpoint_url": server.url, "mode": "chat", "api_key": "key"}
-        )
-    )
-    with response:
-        assert isinstance(response, requests.Response)
+    with OAICompatLargeLanguageModel([])._request_credentials_validation(
+        "model", {"endpoint_url": server.url, "mode": "chat", "api_key": "key"}
+    ) as (response, stream, _mode):
+        assert isinstance(response, httpx2.Response)
         assert not stream
-        assert response.ok
+        assert response.is_success
         assert response.json() == {"object": "chat.completion"}
         assert response.url == server.url + "/next?signature=a%2Fb"
         assert response.cookies["result"] == "two"
@@ -77,12 +74,10 @@ def test_provider_redirect_does_not_forward_credentials_to_another_origin(
     origin = http_server([
         Response(status=307, headers={"Location": destination.url + "/completion"})
     ])
-    response, _stream, _mode = (
-        OAICompatLargeLanguageModel([])._request_credentials_validation(
-            "model", {"endpoint_url": origin.url, "mode": "chat", "api_key": "secret"}
-        )
-    )
-    response.close()
+    with OAICompatLargeLanguageModel([])._request_credentials_validation(
+        "model", {"endpoint_url": origin.url, "mode": "chat", "api_key": "secret"}
+    ) as (response, _stream, _mode):
+        assert response.is_closed
     assert origin.requests[0].headers["Authorization"] == "Bearer secret"
     assert "Authorization" not in destination.requests[0].headers
 
@@ -94,12 +89,10 @@ def test_provider_preserves_netrc_authentication(
     netrc = tmp_path / "netrc"
     netrc.write_text("machine 127.0.0.1 login account password password\n")
     monkeypatch.setenv("NETRC", str(netrc))
-    response, _stream, _mode = (
-        OAICompatLargeLanguageModel([])._request_credentials_validation(
-            "model", {"endpoint_url": server.url, "mode": "chat", "api_key": "key"}
-        )
-    )
-    response.close()
+    with OAICompatLargeLanguageModel([])._request_credentials_validation(
+        "model", {"endpoint_url": server.url, "mode": "chat", "api_key": "key"}
+    ) as (response, _stream, _mode):
+        assert response.is_closed
     expected = base64.b64encode(b"account:password").decode()
     assert server.requests[0].headers["Authorization"] == f"Basic {expected}"
 
@@ -108,17 +101,14 @@ def test_provider_preserves_latin1_header_values(
     http_server: HTTPServerFactory,
 ) -> None:
     server = http_server([Response(headers={"X-Location": "café"}, body=b"{}")])
-    response, _stream, _mode = (
-        OAICompatLargeLanguageModel([])._request_credentials_validation(
-            "model",
-            {
-                "endpoint_url": server.url,
-                "mode": "chat",
-                "extra_headers": {"X-Location": "café"},
-            },
-        )
-    )
-    with response:
+    with OAICompatLargeLanguageModel([])._request_credentials_validation(
+        "model",
+        {
+            "endpoint_url": server.url,
+            "mode": "chat",
+            "extra_headers": {"X-Location": "café"},
+        },
+    ) as (response, _stream, _mode):
         assert response.headers["X-Location"] == "café"
     assert server.requests[0].headers["X-Location"] == "café"
 
@@ -130,12 +120,10 @@ def test_provider_honors_no_proxy_ip_networks(
     proxy = http_server([])
     monkeypatch.setenv("HTTP_PROXY", proxy.url)
     monkeypatch.setenv("NO_PROXY", "127.0.0.0/8")
-    response, _stream, _mode = (
-        OAICompatLargeLanguageModel([])._request_credentials_validation(
-            "model", {"endpoint_url": server.url, "mode": "chat"}
-        )
-    )
-    response.close()
+    with OAICompatLargeLanguageModel([])._request_credentials_validation(
+        "model", {"endpoint_url": server.url, "mode": "chat"}
+    ) as (response, _stream, _mode):
+        assert response.is_closed
     assert len(server.requests) == 1
     assert not proxy.requests
 
@@ -145,19 +133,19 @@ def test_provider_preserves_proxy_authentication(
 ) -> None:
     proxy = http_server([Response(body=b"{}")])
     monkeypatch.setenv("HTTP_PROXY", proxy.url.replace("://", "://caf%C3%A9:secret@"))
-    response, _stream, _mode = (
-        OAICompatLargeLanguageModel([])._request_credentials_validation(
-            "model", {"endpoint_url": "http://provider.invalid", "mode": "chat"}
-        )
-    )
-    response.close()
+    with OAICompatLargeLanguageModel([])._request_credentials_validation(
+        "model", {"endpoint_url": "http://provider.invalid", "mode": "chat"}
+    ) as (response, _stream, _mode):
+        assert response.is_closed
     assert proxy.requests[0].path == "http://provider.invalid/chat/completions"
     assert proxy.requests[0].headers["Proxy-Authorization"] == (
-        "Basic " + base64.b64encode("café:secret".encode("latin-1")).decode()
+        "Basic " + base64.b64encode("café:secret".encode()).decode()
     )
 
 
-@pytest.mark.parametrize("bundle", ["REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"])
+@pytest.mark.parametrize(
+    "bundle", ["SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"]
+)
 @pytest.mark.parametrize("matching_hostname", [True, False])
 def test_provider_preserves_ca_configuration_and_hostname_verification(
     http_server: HTTPServerFactory,
@@ -178,52 +166,33 @@ def test_provider_preserves_ca_configuration_and_hostname_verification(
             monkeypatch.setenv("CURL_CA_BUNDLE", "/missing/fallback-ca.pem")
         model = OAICompatLargeLanguageModel([])
         if matching_hostname:
-            response, _stream, _mode = model._request_credentials_validation(
+            with model._request_credentials_validation(
                 "model", {"endpoint_url": url, "mode": "chat"}
-            )
-            response.close()
+            ) as (response, _stream, _mode):
+                assert response.is_success
             assert len(server.requests) == 1
         else:
-            with pytest.raises(requests.exceptions.SSLError):
+            with (
+                pytest.raises(httpx2.ConnectError),
                 model._request_credentials_validation(
                     "model", {"endpoint_url": url, "mode": "chat"}
-                )
+                ),
+            ):
+                pass
             assert not server.requests
 
 
-def test_provider_does_not_expand_trust_from_httpx_certificate_configuration(
-    http_server: HTTPServerFactory,
-    monkeypatch: pytest.MonkeyPatch,
-    tls_ca: trustme.CA,
-) -> None:
-    server = http_server([Response(body=b"{}")], tls=True)
-    with tls_ca.cert_pem.tempfile() as cert:
-        monkeypatch.setenv("SSL_CERT_FILE", cert)
-        with pytest.raises(requests.exceptions.SSLError):
-            OAICompatLargeLanguageModel([])._request_credentials_validation(
-                "model",
-                {
-                    "endpoint_url": server.url.replace("127.0.0.1", "localhost"),
-                    "mode": "chat",
-                },
-            )
-    assert not server.requests
-
-
-def test_provider_error_response_retains_requests_status_semantics(
+def test_provider_error_response_has_native_status_semantics(
     http_server: HTTPServerFactory,
 ) -> None:
     server = http_server([Response(status=429, body="稍后重试".encode())])
-    response, _stream, _mode = (
-        OAICompatLargeLanguageModel([])._request_credentials_validation(
-            "model", {"endpoint_url": server.url, "mode": "chat"}
-        )
-    )
-    with response:
-        assert not response
+    with OAICompatLargeLanguageModel([])._request_credentials_validation(
+        "model", {"endpoint_url": server.url, "mode": "chat"}
+    ) as (response, _stream, _mode):
+        assert response.is_error
         response.encoding = "utf-8"
         assert response.text == "稍后重试"
-        with pytest.raises(requests.HTTPError) as error:
+        with pytest.raises(httpx2.HTTPStatusError) as error:
             response.raise_for_status()
         assert error.value.response is response
         assert error.value.request is response.request
@@ -255,7 +224,9 @@ def test_transcription_reads_from_the_current_file_position(
     }
     assert parts["file"].get_payload(decode=True) == b"audio payload"
     assert parts["file"].get_filename() == ("recording.wav" if named else "file")
-    assert "Content-Type" not in parts["file"]
+    assert parts["file"]["Content-Type"] == (
+        "audio/x-wav" if named else "application/octet-stream"
+    )
 
 
 class GzipEventResponse(Response):
@@ -299,7 +270,7 @@ def test_stream_timeout_preserves_the_public_model_error_category(
         "_plugin_config",
         llm._plugin_config.model_copy(update={"MAX_REQUEST_TIMEOUT": 0.05}),
     )
-    with pytest.raises(InvokeServerUnavailableError):
+    with pytest.raises(InvokeConnectionError):
         list(
             OAICompatLargeLanguageModel([]).invoke(
                 "model",

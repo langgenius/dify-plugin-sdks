@@ -1,12 +1,11 @@
 import json
 from http import HTTPStatus
-from io import BytesIO
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import gevent.socket
+import httpx2
 import pytest
-import requests
 from gevent.threadpool import ThreadPool
 
 from dify_plugin.entities.model.message import (
@@ -43,9 +42,7 @@ def test_validate_credentials_passes_extra_headers(
     stream: bool,
     max_tokens: int,
 ) -> None:
-    response = MagicMock(status_code=HTTPStatus.OK)
-    response.json.return_value = {"object": "chat.completion"}
-    response.close.side_effect = RuntimeError("close failed")
+    response = httpx2.Response(200, json={"object": "chat.completion"})
     api_key = str(123)
     credentials = {
         "api_key": api_key,
@@ -60,19 +57,22 @@ def test_validate_credentials_passes_extra_headers(
     }
 
     with patch(
-        "dify_plugin.interfaces.model.openai_compatible.llm.http.post",
+        "httpx2.Client.send",
         return_value=response,
     ) as post:
         OAICompatLargeLanguageModel([]).validate_credentials("model", credentials)
 
-    assert post.call_args.kwargs["headers"] == {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/custom+json",
-        "X-Api-Key": str(789),
-    }
-    assert post.call_args.kwargs.get("stream", False) is stream
-    assert post.call_args.kwargs["json"]["max_tokens"] == max_tokens
-    response.close.assert_called_once()
+    request = (
+        post.call_args.args[0]
+        if post.call_args.args
+        else post.call_args.kwargs["request"]
+    )
+    assert request.headers["Authorization"] == f"Bearer {api_key}"
+    assert request.headers["Content-Type"] == "application/custom+json"
+    assert request.headers["X-Api-Key"] == str(789)
+    assert json.loads(request.content).get("stream", False) is stream
+    assert json.loads(request.content)["max_tokens"] == max_tokens
+    assert response.is_closed
 
 
 @pytest.mark.parametrize(
@@ -156,13 +156,13 @@ def test_generate_serializes_images_in_all_message_roles(
     response = MagicMock(status_code=HTTPStatus.OK)
     with (
         patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.http.post",
+            "httpx2.Client.send",
             return_value=response,
         ) as post,
         patch.object(llm, "_handle_generate_response"),
         patch.object(llm, "_handle_generate_stream_response"),
     ):
-        llm._generate(
+        result = llm._generate(
             "model",
             {
                 "endpoint_url": "https://example.com/v1",
@@ -173,6 +173,8 @@ def test_generate_serializes_images_in_all_message_roles(
             {},
             stream=stream,
         )
+        if stream:
+            list(result)
 
     expected_content = [
         {
@@ -191,9 +193,13 @@ def test_generate_serializes_images_in_all_message_roles(
         if function_calling_type == "tool_call"
         else {"role": "function", "name": "call-1"}
     )
-    request = post.call_args.kwargs
-    assert request["stream"] is stream
-    assert json.loads(request["data"]) == {
+    request = (
+        post.call_args.args[0]
+        if post.call_args.args
+        else post.call_args.kwargs["request"]
+    )
+    assert post.call_args.kwargs.get("stream", False) is stream
+    assert json.loads(request.content) == {
         "model": "model",
         "stream": stream,
         "messages": [
@@ -285,7 +291,7 @@ def test_unsupported_non_user_content_is_rejected_before_sending_request(
     llm = OAICompatLargeLanguageModel([])
 
     with (
-        patch("dify_plugin.interfaces.model.openai_compatible.llm.http.post") as post,
+        patch("httpx2.Client.send") as post,
         pytest.raises(InvokeError),
     ):
         list(llm.invoke("model", credentials, [message], {}, stream=False))
@@ -350,11 +356,17 @@ def test_generate_encodes_request_json_as_utf8() -> None:
         "extra_headers": {"Content-Type": "application/custom+json"},
         "mode": "chat",
     }
-    response = MagicMock(status_code=HTTPStatus.OK, encoding=None)
+    response = httpx2.Response(
+        200,
+        json={
+            "choices": [{"message": {"content": "Answer"}}],
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0},
+        },
+    )
     llm = OAICompatLargeLanguageModel([])
 
     with patch(
-        "dify_plugin.interfaces.model.openai_compatible.llm.http.post",
+        "httpx2.Client.send",
         return_value=response,
     ) as post:
         llm._generate(
@@ -362,18 +374,22 @@ def test_generate_encodes_request_json_as_utf8() -> None:
             credentials,
             [UserPromptMessage(content=content)],
             {},
+            stream=False,
         )
 
-    request = post.call_args.kwargs
-    assert "json" not in request
-    assert "你好😀".encode() in request["data"]
-    assert b"\\ud800" in request["data"]
-    assert json.loads(request["data"])["messages"][0]["content"] == content
-    assert request["headers"]["Content-Type"] == "application/custom+json"
+    request = (
+        post.call_args.args[0]
+        if post.call_args.args
+        else post.call_args.kwargs["request"]
+    )
+    assert "你好😀".encode() in request.content
+    assert b"\\ud800" in request.content
+    assert json.loads(request.content)["messages"][0]["content"] == content
+    assert request.headers["Content-Type"] == "application/custom+json"
 
     with (
         patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.http.post",
+            "httpx2.Client.send",
         ) as invalid_post,
         pytest.raises(
             ValueError,
@@ -402,7 +418,7 @@ def test_validate_credentials_rejects_non_mapping_extra_headers(
 
     with (
         patch(
-            "dify_plugin.interfaces.model.openai_compatible.llm.http.post",
+            "httpx2.Client.send",
         ) as post,
         pytest.raises(CredentialsValidateFailedError),
     ):
@@ -536,9 +552,7 @@ def test_stream_reasoning_is_closed_at_end(
     expected_finish_reason: str | None,
     expected_usage: dict | None,
 ) -> None:
-    response = requests.Response()
-    response.encoding = "utf-8"
-    response.raw = BytesIO(("\n\n".join(lines) + "\n\n").encode())
+    response = httpx2.Response(200, content=("\n\n".join(lines) + "\n\n").encode())
     llm = OAICompatLargeLanguageModel([])
     results = list(
         llm._handle_generate_stream_response(

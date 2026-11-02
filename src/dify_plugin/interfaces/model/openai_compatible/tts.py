@@ -2,6 +2,8 @@ from collections.abc import Generator
 from contextlib import closing
 from http import HTTPStatus
 
+import httpx2
+
 from dify_plugin.core.utils import http
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import (
@@ -79,17 +81,22 @@ class OAICompatText2SpeechModel(_CommonOaiApiCompat, TTSModel):
             }
 
             # Make POST request
-            with http.post(
-                endpoint_url,
-                headers=headers,
-                json=payload,
-                stream=True,
-                timeout=(10, 300),
-            ) as response:
+            with (
+                http.client() as client,
+                client.stream(
+                    "POST",
+                    endpoint_url,
+                    headers=http.headers(headers),
+                    json=payload,
+                    timeout=httpx2.Timeout(300, connect=10, write=10),
+                    follow_redirects=True,
+                ) as response,
+            ):
                 if response.status_code != HTTPStatus.OK:
+                    response.read()
                     raise InvokeBadRequestError(response.text)
 
-                for chunk in response.iter_content(chunk_size=4096):
+                for chunk in response.iter_bytes():
                     if chunk:
                         yield chunk
 

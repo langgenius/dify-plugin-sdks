@@ -83,11 +83,13 @@ class File(BackwardsInvocation[dict]):
                 msg = "upload file failed, could not get signed url"
                 raise Exception(msg)
 
-            upload_response = http.post(
-                url,
-                files={"file": (filename, content, mimetype)},
-                timeout=10,
-            )
+            with http.client() as client:
+                upload_response = client.post(
+                    url,
+                    files={"file": (filename, content, mimetype)},
+                    timeout=10,
+                    follow_redirects=True,
+                )
             if upload_response.status_code != HTTPStatus.CREATED:
                 msg = (
                     "upload file failed, status code: "

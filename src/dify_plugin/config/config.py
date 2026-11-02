@@ -62,7 +62,9 @@ class DifyPluginEnv(BaseSettings):
         default="http://localhost:5002", description="backwards invocation address"
     )
 
-    HTTPX_TIMEOUT: int = Field(default=5, description="HTTPX timeout in seconds")
+    HTTPX_TIMEOUT: int = Field(
+        default=5, description="File download timeout in seconds"
+    )
 
     model_config = SettingsConfigDict(
         # read from dotenv format config file

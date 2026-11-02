@@ -1,3 +1,7 @@
+import gzip
+import json
+import ssl
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from io import BytesIO
@@ -5,10 +9,8 @@ from pathlib import Path
 from socket import socket
 
 import gevent
-import httpx
 import httpx2
 import pytest
-import requests
 from gevent.event import Event
 from werkzeug.wrappers import Request as ServerRequest
 from werkzeug.wrappers import Response as ServerResponse
@@ -16,8 +18,10 @@ from werkzeug.wrappers import Response as ServerResponse
 from dify_plugin.config.config import InstallMethod
 from dify_plugin.core.entities.invocation import InvokeType
 from dify_plugin.core.runtime import BackwardsInvocation, Session
+from dify_plugin.core.server.io_server import IOServer
 from dify_plugin.core.utils import http
 from dify_plugin.entities.model.message import UserPromptMessage
+from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.file.entities import FileType
 from dify_plugin.file.file import File
 from dify_plugin.interfaces.model.openai_compatible.llm import (
@@ -57,11 +61,6 @@ def test_every_sdk_http_operation_uses_httpx2(
     monkeypatch: pytest.MonkeyPatch,
     clients: list[httpx2.Client],
 ) -> None:
-    def unexpected_transport(*_args: object, **_kwargs: object) -> None:
-        pytest.fail("The SDK sent a request through an old HTTP transport")
-
-    monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", unexpected_transport)
-    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", unexpected_transport)
     server = http_server([
         Response(
             body=b'{"choices":[{"message":{"content":"answer"}}],"usage":{"prompt_tokens":0,"completion_tokens":0}}'
@@ -165,16 +164,21 @@ def test_provider_stream_owns_its_client_until_consumed_or_closed(
     elif outcome in {"timeout", "cancel"}:
         response = Response(chunks=(b"delayed",), delay=5)
     server = http_server([response])
-    with http.post(
-        server.url, stream=True, timeout=(1, 0.05 if outcome == "timeout" else 2)
-    ) as result:
+    with (
+        http.client() as client,
+        client.stream(
+            "POST",
+            server.url,
+            timeout=httpx2.Timeout(0.05 if outcome == "timeout" else 2, connect=1),
+        ) as result,
+    ):
         assert not clients[0].is_closed
         if outcome == "cancel":
             started = Event()
 
             def consume() -> None:
                 started.set()
-                list(result.iter_content(4))
+                list(result.iter_bytes(4))
 
             worker = gevent.spawn(consume)
             assert started.wait(timeout=1)
@@ -182,17 +186,17 @@ def test_provider_stream_owns_its_client_until_consumed_or_closed(
             assert worker.ready()
         elif outcome in {"truncated", "invalid_gzip", "timeout"}:
             error = {
-                "truncated": requests.exceptions.ChunkedEncodingError,
-                "invalid_gzip": requests.exceptions.ContentDecodingError,
-                "timeout": requests.exceptions.ConnectionError,
+                "truncated": httpx2.RemoteProtocolError,
+                "invalid_gzip": httpx2.DecodingError,
+                "timeout": httpx2.ReadTimeout,
             }[outcome]
             with pytest.raises(error):
-                list(result.iter_content(4))
+                list(result.iter_bytes(4))
         elif outcome == "early_close":
-            with closing(result.iter_content(4)) as stream:
+            with closing(result.iter_bytes(4)) as stream:
                 assert next(stream) == b"firs"
         else:
-            assert b"".join(result.iter_content(4)) == b"firstsecond"
+            assert b"".join(result.iter_bytes(4)) == b"firstsecond"
     assert clients[0].is_closed
 
 
@@ -213,10 +217,13 @@ def test_cancelling_before_response_headers_closes_the_client(
 
         def invoke() -> None:
             if kind == "provider":
-                with http.post(server.url_for("/"), stream=True, timeout=2):
+                with (
+                    http.client() as client,
+                    client.stream("POST", server.url_for("/"), timeout=2),
+                ):
                     pass
             else:
-                with http.httpx_client() as client:
+                with http.client() as client:
                     client.get(server.url_for("/"))
 
         worker = gevent.spawn(invoke)
@@ -230,61 +237,131 @@ def test_cancelling_before_response_headers_closes_the_client(
             worker.kill(timeout=1)
 
 
-def test_raw_response_retains_undecoded_reads(
+def test_raw_response_retains_compressed_bytes(
     http_server: HTTPServerFactory, clients: list[httpx2.Client]
 ) -> None:
-    server = http_server([Response(chunks=(b"one", b"two"))])
-    with http.post(server.url, stream=True, timeout=2) as response:
-        assert response.raw.read(2) == b"on"
-        assert response.raw.read(2) == b"et"
-        assert response.raw.read() == b"wo"
+    body = gzip.compress(b"one two")
+    server = http_server([Response(headers={"Content-Encoding": "gzip"}, body=body)])
+    with http.client() as client, client.stream("GET", server.url) as response:
+        assert b"".join(response.iter_raw()) == body
     assert clients[0].is_closed
 
 
 @pytest.mark.parametrize("use_proxy", [False, True])
-def test_connection_failure_preserves_its_exception_type_and_releases_client(
-    clients: list[httpx2.Client], use_proxy: bool
+def test_connection_failure_carries_the_request_and_releases_client(
+    clients: list[httpx2.Client], use_proxy: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     with socket() as unused:
         unused.bind(("127.0.0.1", 0))
         url = f"http://127.0.0.1:{unused.getsockname()[1]}"
-        error_type = (
-            requests.exceptions.ProxyError if use_proxy else requests.ConnectionError
-        )
-        with pytest.raises(error_type) as error:
-            http.post(
-                "http://provider.invalid" if use_proxy else url,
-                proxies={"http": url} if use_proxy else {},
-                timeout=1,
-            )
+        if use_proxy:
+            monkeypatch.setenv("HTTP_PROXY", url)
+        with pytest.raises(httpx2.ConnectError) as error, http.client() as client:
+            client.get("http://provider.invalid" if use_proxy else url, timeout=1)
         assert error.value.request is not None
     assert len(clients) == 1
     assert clients[0].is_closed
 
 
-def test_invalid_proxy_configuration_preserves_the_url_error() -> None:
-    with pytest.raises(requests.exceptions.InvalidURL):
-        http.post(
-            "http://provider.invalid",
-            proxies={"http": "unknown://proxy.invalid"},
-            timeout=1,
-        )
+def test_invalid_proxy_configuration_is_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HTTP_PROXY", "unknown://proxy.invalid")
+    with pytest.raises(ValueError, match="Unknown scheme"):
+        http.client()
 
 
-def test_invalid_proxy_environment_preserves_the_httpx_url_error(
+def test_ipv6_network_in_no_proxy_does_not_break_client_configuration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("NO_PROXY", "fc00::/7")
-    with pytest.raises(httpx.InvalidURL):
-        http.httpx_client()
+    with http.client() as client:
+        assert isinstance(client, httpx2.Client)
 
 
-def test_invalid_certificate_bundle_preserves_the_ssl_error(
-    http_server: HTTPServerFactory, tmp_path: Path
+def test_invalid_certificate_bundle_is_rejected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    server = http_server([], tls=True)
     bundle = tmp_path / "invalid.pem"
     bundle.write_text("not a certificate")
-    with pytest.raises(requests.exceptions.SSLError):
-        http.post(server.url, verify=str(bundle), timeout=1)
+    monkeypatch.setenv("SSL_CERT_FILE", str(bundle))
+    with pytest.raises(ssl.SSLError):
+        http.client()
+
+
+@pytest.mark.parametrize("operation", ["invoke", "validate"])
+@pytest.mark.parametrize("suffix", [" ", "\t", " \t"])
+def test_header_whitespace_does_not_break_provider_calls(
+    http_server: HTTPServerFactory, operation: str, suffix: str
+) -> None:
+    server = http_server([
+        Response(
+            body=b'{"object":"chat.completion","choices":[{"message":{"content":"ok"}}],"usage":{"prompt_tokens":0,"completion_tokens":0}}'
+        )
+    ])
+    credentials = {
+        "endpoint_url": server.url,
+        "mode": "chat",
+        "api_key": "synthetic-key" + suffix,
+    }
+    model = OAICompatLargeLanguageModel([])
+    if operation == "validate":
+        model.validate_credentials("model", credentials)
+    else:
+        chunks = list(model.invoke("model", credentials, [], stream=False))
+        assert chunks[0].delta.message.content == "ok"
+    assert server.requests[0].headers["Authorization"] == "Bearer synthetic-key"
+
+
+@pytest.mark.parametrize("operation", ["invoke", "validate"])
+@pytest.mark.parametrize("field", ["api_key", "extra_header", "header_name"])
+@pytest.mark.parametrize("invalid", ["\r\nInjected: yes", "\x00", "\u4e2d"])
+def test_invalid_headers_never_expose_credentials_in_errors_or_wire_output(
+    http_server: HTTPServerFactory,
+    operation: str,
+    field: str,
+    invalid: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    secret = "synthetic-key-do-not-log"  # ruff: ignore[hardcoded-password-string]
+    server = http_server([])
+    credentials = {"endpoint_url": server.url, "mode": "chat"}
+    if field == "api_key":
+        credentials["api_key"] = secret + invalid
+    elif field == "extra_header":
+        credentials["extra_headers"] = {"X-Secret": secret + invalid}
+    else:
+        credentials["extra_headers"] = {secret + invalid: "value"}
+    model = OAICompatLargeLanguageModel([])
+
+    def invoke() -> None:
+        if operation == "validate":
+            model.validate_credentials("model", credentials)
+        else:
+            list(model.invoke("model", credentials, [], stream=False))
+
+    with pytest.raises((InvokeError, CredentialsValidateFailedError)) as caught:
+        invoke()
+    assert secret not in str(caught.value)
+    assert secret not in "".join(traceback.format_exception(caught.value))
+    writer = RecordingResponseWriter()
+
+    class Dispatch(IOServer):
+        def _execute_request(self, *_args: object) -> None:
+            invoke()
+
+    # Exercise the real serialization boundary without starting a server.
+    dispatch = object.__new__(Dispatch)
+    dispatch._execute_request_in_thread("headers", {}, None, writer)
+    assert secret not in json.dumps(writer.messages)
+    assert secret not in caplog.text
     assert not server.requests
+
+
+def test_empty_file_get_has_no_transfer_encoding(
+    http_server: HTTPServerFactory,
+) -> None:
+    server = http_server([Response(body=b"download")])
+    assert File(url=server.url, type=FileType.DOCUMENT).blob == b"download"
+    assert "Transfer-Encoding" not in server.requests[0].headers
+    assert server.requests[0].body == b""

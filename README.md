@@ -39,6 +39,48 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup details, integration test requi
 
 See [langgenius/dify-official-plugins](https://github.com/langgenius/dify-official-plugins) for production plugin implementations published and used by Dify.
 
+## HTTPX2 Migration (SDK 0.11.0, unreleased)
+
+SDK model requests, file uploads and downloads, and serverless callbacks use synchronous `httpx2.Client` instances.
+HTTPX2 is the package name; this change does not force the HTTP/2 wire protocol.
+The SDK uses native HTTPX2 request, response, streaming, and exception types.
+Plugins that override the shared model implementation must update and test their integration before upgrading.
+
+| Previous integration | HTTPX2 integration |
+| --- | --- |
+| `requests.Response` or `httpx.Response` | `httpx2.Response` |
+| `response.iter_content(...)` | `response.iter_bytes(...)` for decoded bytes, or `response.iter_raw(...)` for compressed bytes |
+| `response.iter_lines(decode_unicode=True)` | `response.iter_lines()`, which yields text |
+| `response.ok` or response truthiness | `response.is_success`, `response.is_error`, or an explicit status check |
+| `requests` / `httpx` exceptions | `httpx2` exceptions, including `HTTPStatusError`, `ConnectError`, and `TimeoutException` |
+| `with response:` | Own the response with `with client.stream(...) as response:` |
+
+The LLM `_request_credentials_validation()` override is now a context manager yielding `(response, stream, completion_type)`.
+Use `with super()._request_credentials_validation(model, credentials) as (...)` when extending it.
+The client stays open until streaming finishes or the generator is closed; buffered responses can be inspected after the client closes.
+Use `json.loads(response.text)` when a provider's JSON explicitly declares a non-UTF-8 charset; native `response.json()` parses JSON bytes.
+Model and upload redirects remain enabled, and cross-origin redirects remove the Authorization header.
+File downloads retain their explicit redirect errors.
+
+All SDK clients share the same proxy and certificate configuration:
+
+- `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, and `NO_PROXY` use HTTPX2's environment routing, including IP networks.
+- SOCKS4 and SOCKS5 resolve target names locally; SOCKS4a and SOCKS5h resolve them through the proxy.
+  Set the `socks5h://` scheme when migrating an old HTTPX configuration that relied on remote DNS with `socks5://`.
+  Proxy credentials remain in the proxy handshake, and target Host and TLS names remain the original hostname.
+- System certificate trust is the default.
+  `SSL_CERT_FILE` and `SSL_CERT_DIR` configure trust for both HTTPS targets and HTTPS proxies.
+  `REQUESTS_CA_BUNDLE`, then `CURL_CA_BUNDLE`, remain fallback certificate files when `SSL_CERT_FILE` is unset.
+- An explicitly configured `NETRC` file enables HTTPX2 `NetRCAuth`, which may replace a supplied Authorization header for a matching host.
+  Automatic discovery of `~/.netrc` is no longer enabled.
+- Timeouts follow HTTPX2's connect, read, write, and pool phases.
+  The write timeout limits each blocked write; it is not a cumulative upload deadline or a total request deadline.
+  TLS handshake timeouts map to `InvokeConnectionError`; HTTP protocol and decoding failures map to `InvokeServerUnavailableError`.
+
+The SDK no longer declares Requests, urllib3, or old HTTPX as direct dependencies.
+`tiktoken` still installs Requests and urllib3 for its own uncached tokenizer resource downloads.
+Plugins that create their own HTTP clients must declare and migrate those dependencies themselves; the SDK does not replace third-party imports globally.
+
 ## OpenAI-Compatible Embeddings
 
 Starting in SDK 0.11.0 (unreleased), `OAICompatEmbeddingModel` validates each response batch before sending the next request.

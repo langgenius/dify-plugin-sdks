@@ -2,6 +2,8 @@ import pathlib
 from http import HTTPStatus
 from typing import IO
 
+import httpx2
+
 from dify_plugin.core.utils import http
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -48,14 +50,21 @@ class OAICompatSpeech2TextModel(_CommonOaiApiCompat, Speech2TextModel):
         )
 
         payload = {"model": credentials.get("endpoint_model_name", model)}
-        files = [("file", file)]
-        response = http.post(
-            endpoint_url,
-            headers=headers,
-            data=payload,
-            files=files,
-            timeout=(10, 300),
+        filename = getattr(file, "name", None)
+        filename = (
+            pathlib.Path(filename).name
+            if isinstance(filename, str) and not filename.startswith("<")
+            else "file"
         )
+        with http.client() as client:
+            response = client.post(
+                endpoint_url,
+                headers=http.headers(headers),
+                data=payload,
+                files={"file": (filename, file.read())},
+                timeout=httpx2.Timeout(300, connect=10, write=10),
+                follow_redirects=True,
+            )
 
         if response.status_code != HTTPStatus.OK:
             raise InvokeBadRequestError(response.text)

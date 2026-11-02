@@ -17,7 +17,7 @@ from dify_plugin.core.entities.plugin.io import (
 from dify_plugin.core.server.__base.request_reader import RequestReader
 from dify_plugin.core.server.__base.response_writer import ResponseWriter
 from dify_plugin.core.server.tcp.request_reader import TCPReaderWriter
-from dify_plugin.core.utils.http import httpx_client
+from dify_plugin.core.utils import http
 
 FULL_DUPLEX_INSTALL_METHODS = frozenset({InstallMethod.Local, InstallMethod.Remote})
 
@@ -360,11 +360,11 @@ class BackwardsInvocation[T: BaseModel | dict | str]:
         )
 
         with (
-            httpx_client() as client,
+            http.client() as client,
             client.stream(
                 method="POST",
                 url=str(url),
-                headers=headers,
+                headers=http.headers(headers),
                 content=payload,
                 timeout=(
                     self.session.max_invocation_timeout,  # connection timeout

@@ -1,12 +1,11 @@
 import json
 import math
 import time
-from contextlib import suppress
 from decimal import Decimal
 from http import HTTPStatus
 from operator import itemgetter
 
-import requests
+import httpx2
 
 from dify_plugin.core.utils import http
 from dify_plugin.entities import I18nObject
@@ -72,7 +71,7 @@ def _validate_embedding_batch(
     return vectors
 
 
-def _validate_credentials_response(response: requests.Response) -> None:
+def _validate_credentials_response(response: httpx2.Response) -> None:
     if response.status_code != HTTPStatus.OK:
         msg = f"Credentials validation failed with status code {response.status_code}"
         raise CredentialsValidateFailedError(msg)
@@ -169,24 +168,20 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
                 **extra_model_kwargs,
             }
 
-            # Make the request to the OpenAI API
-            response = http.post(
-                endpoint_url,
-                headers=headers,
-                data=json.dumps(payload),
-                timeout=(10, 300),
-            )
-
-            try:
-                response.raise_for_status()
-                response_data = response.json()
-                embeddings_batch = _validate_embedding_batch(
-                    response_data["data"], len(payload["input"]), dimension
+            with http.client() as client:
+                response = client.post(
+                    endpoint_url,
+                    headers=http.headers(headers),
+                    json=payload,
+                    timeout=httpx2.Timeout(300, connect=10, write=10),
+                    follow_redirects=True,
                 )
-                embedding_used_tokens = response_data["usage"]["total_tokens"]
-            finally:
-                with suppress(Exception):
-                    response.close()
+            response.raise_for_status()
+            response_data = response.json()
+            embeddings_batch = _validate_embedding_batch(
+                response_data["data"], len(payload["input"]), dimension
+            )
+            embedding_used_tokens = response_data["usage"]["total_tokens"]
 
             dimension = len(embeddings_batch[0])
             used_tokens += embedding_used_tokens
@@ -223,7 +218,7 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         self,
         model: str,
         credentials: dict,
-    ) -> requests.Response:
+    ) -> httpx2.Response:
         headers = {"Content-Type": "application/json"}
         if api_key := credentials.get("api_key"):
             headers["Authorization"] = f"Bearer {api_key}"
@@ -236,12 +231,14 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             "input": ["ping"],
             "model": credentials.get("endpoint_model_name", model),
         }
-        return http.post(
-            url=endpoint_url,
-            headers=headers,
-            data=json.dumps(payload),
-            timeout=(10, 300),
-        )
+        with http.client() as client:
+            return client.post(
+                endpoint_url,
+                headers=http.headers(headers),
+                json=payload,
+                timeout=httpx2.Timeout(300, connect=10, write=10),
+                follow_redirects=True,
+            )
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -270,9 +267,6 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
             raise
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex)) from ex
-        finally:
-            with suppress(Exception):
-                response.close()
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict

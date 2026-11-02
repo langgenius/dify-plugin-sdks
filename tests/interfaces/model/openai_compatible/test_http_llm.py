@@ -31,7 +31,7 @@ from dify_plugin.interfaces.model.openai_compatible.llm import (
 from tests.http_server import HTTPServerFactory, Response
 
 if TYPE_CHECKING:
-    from requests import Response as HTTPResponse
+    from httpx2 import Response as HTTPResponse
 
 pytestmark = pytest.mark.integration
 
@@ -593,7 +593,7 @@ def test_stream_ignores_only_the_initial_bom(
     assert chunks[-1].delta.finish_reason == "stop"
     assert chunks[-1].delta.usage is not None
     assert chunks[-1].delta.usage.total_tokens == 5
-    assert responses[0].raw.closed
+    assert responses[0].is_closed
     assert model.started_at == 0
 
 
@@ -635,7 +635,7 @@ def test_stream_propagates_an_error_after_the_initial_bom(
             )
         )
 
-    assert responses[0].raw.closed
+    assert responses[0].is_closed
     assert model.started_at == 0
 
 
@@ -800,7 +800,7 @@ def test_stream_rejects_eof_without_completion_signal(
     assert all(chunk.delta.usage is None for chunk in chunks)
     assert all(chunk.delta.finish_reason is None for chunk in chunks)
     assert not any(chunk.delta.message.tool_calls for chunk in chunks)
-    assert responses[0].raw.closed
+    assert responses[0].is_closed
     assert model.started_at == 0
 
 
@@ -965,7 +965,7 @@ def test_stream_early_close_releases_the_http_response(
     assert next(stream).delta.message.content == "partial"
     stream.close()
 
-    assert responses[0].raw.closed
+    assert responses[0].is_closed
     assert model.started_at == 0
 
 
@@ -989,7 +989,7 @@ def test_stream_greenlet_cancellation_releases_the_http_response(
         worker.kill(timeout=2)
 
     assert worker.ready()
-    assert responses[0].raw.closed
+    assert responses[0].is_closed
     assert model.started_at == 0
 
 
@@ -1016,7 +1016,7 @@ def test_stream_read_timeout_closes_the_response_and_clears_timing(
             )
         )
 
-    assert responses[0].raw.closed
+    assert responses[0].is_closed
     assert model.started_at == 0
 
 
@@ -1141,7 +1141,7 @@ def test_stream_preserves_data_among_sse_comments_and_ignored_fields(
             )
         )
     finally:
-        assert responses[0].raw.closed
+        assert responses[0].is_closed
         assert model.started_at == 0
 
     assert (
@@ -1279,7 +1279,7 @@ def test_stream_keeps_errors_for_raw_nonobject_frames(
     assert next(stream).delta.message.content == "partial"
     with pytest.raises(InvokeError, match="Invalid JSON"):
         next(stream)
-    assert responses[0].raw.closed
+    assert responses[0].is_closed
     assert model.started_at == 0
 
 

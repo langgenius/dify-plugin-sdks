@@ -1,8 +1,8 @@
-import httpx
+import httpx2
 from pydantic import BaseModel
 
 from dify_plugin.config.config import DifyPluginEnv
-from dify_plugin.core.utils.http import httpx_client
+from dify_plugin.core.utils import http
 from dify_plugin.file.constants import DIFY_FILE_IDENTITY
 from dify_plugin.file.entities import FileType
 
@@ -36,13 +36,13 @@ class File(BaseModel):
         """
         if self._blob is None:
             try:
-                with httpx_client() as client:
+                with http.client() as client:
                     response = client.get(
                         self.url, timeout=_plugin_config.HTTPX_TIMEOUT
                     )
                     response.raise_for_status()
                     self._blob = response.content
-            except httpx.UnsupportedProtocol as e:
+            except httpx2.UnsupportedProtocol as e:
                 msg = (
                     f"Invalid file URL '{self.url}': {e}. "
                     "Ensure the `FILES_URL` environment variable is set in "
