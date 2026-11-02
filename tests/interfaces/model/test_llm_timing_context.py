@@ -1,6 +1,7 @@
 from collections.abc import Generator, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
+from types import SimpleNamespace
 
 import pytest
 
@@ -65,10 +66,9 @@ def test_llm_timing_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     timestamps = iter([10.0, 12.5])
-    monkeypatch.setattr(
-        "dify_plugin.interfaces.model.ai_model.time.perf_counter",
-        lambda: next(timestamps),
-    )
+    clock = SimpleNamespace(perf_counter=lambda: next(timestamps))
+    monkeypatch.setattr("dify_plugin.interfaces.model.ai_model.time", clock)
+    monkeypatch.setattr("dify_plugin.interfaces.model.large_language_model.time", clock)
     model = MockLLM([])
     chunks = list(model.invoke(model="test", credentials={}, prompt_messages=[]))
 
