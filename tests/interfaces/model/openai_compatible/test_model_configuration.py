@@ -185,6 +185,22 @@ def test_token_budget_accepts_json_schema_enum_values(parameter: dict) -> None:
     )
 
 
+def test_token_budget_counts_nested_schema_content() -> None:
+    model = OAICompatLargeLanguageModel([])
+    prompts = [UserPromptMessage(content="Configure the input")]
+    tool = PromptMessageTool(
+        name="configure",
+        description="Configure the input",
+        parameters={"allOf": [{"type": "object"}]},
+    )
+    baseline = model.get_num_tokens("model", {}, prompts, [tool])
+    tool.parameters["allOf"][0]["description"] = (
+        "A detailed explanation of the input. " * 100
+    )
+
+    assert model.get_num_tokens("model", {}, prompts, [tool]) > baseline + 100
+
+
 def test_invalid_custom_model_mode_reports_a_configuration_error() -> None:
     with pytest.raises(ValueError, match="invalid-mode"):
         OAICompatLargeLanguageModel([]).get_model_schema(

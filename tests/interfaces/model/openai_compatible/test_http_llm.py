@@ -29,6 +29,7 @@ from dify_plugin.interfaces.model.openai_compatible.llm import (
     OAICompatLargeLanguageModel,
 )
 from tests.http_server import HTTPServerFactory, Response
+from tests.servers.helpers import RecordingResponseWriter
 
 if TYPE_CHECKING:
     from requests import Response as HTTPResponse
@@ -469,7 +470,12 @@ def test_non_stream_tool_calls_preserve_arguments_and_request_schema(
     )
     chunks = list(invocation)
     call = chunks[-1].delta.message.tool_calls[0]
-    assert chunks[-1].delta.message.content is None
+    writer = RecordingResponseWriter()
+    writer.session_message("session-1", writer.stream_object(chunks[-1]))
+    wire_message = writer.messages[0]["data"]["data"]["delta"]["message"]
+    assert isinstance(wire_message["content"], str)
+    assert not wire_message["content"]
+    assert wire_message["tool_calls"][0]["function"] == function
     assert call.function.name == "weather"
     assert json.loads(call.function.arguments) == {"city": "北京"}
     usage = chunks[-1].delta.usage
@@ -694,6 +700,7 @@ def test_stream_errors_after_content_do_not_report_success(
         ("stop", ""),
         ("length", "\n\n"),
         (None, "\n\ndata:   [DONE]\n\n"),
+        ("", "\n\ndata: [DONE]\n\n"),
         (None, "\n\nevent: message\ndata: [DONE]\n\n"),
         ("stop", "\n\ndata: [DONE]\n\n"),
     ],
@@ -719,7 +726,7 @@ def test_stream_accepts_finish_reason_or_done(
     assert next(stream).delta.message.content == "Answer"
     terminal = next(stream)
     assert terminal.delta.message == AssistantPromptMessage(content="")
-    assert terminal.delta.finish_reason == finish_reason
+    assert terminal.delta.finish_reason == (finish_reason or None)
     assert terminal.delta.usage is not None
     assert list(stream) == []
     assert model.started_at == 0
@@ -731,6 +738,7 @@ def test_stream_accepts_finish_reason_or_done(
         (None, ""),
         ({"delta": {"role": "assistant"}}, ""),
         ({"delta": {"content": "partial"}, "finish_reason": None}, "partial"),
+        ({"delta": {"content": "partial"}, "finish_reason": ""}, "partial"),
         ({"delta": {"reasoning_content": "partial"}}, "<think>\npartial"),
         (
             {
@@ -748,8 +756,18 @@ def test_stream_accepts_finish_reason_or_done(
             "",
         ),
         ({"text": "partial"}, "partial"),
+        ({"text": "partial", "finish_reason": ""}, "partial"),
     ],
-    ids=["empty", "role", "content", "reasoning", "tool", "completion"],
+    ids=[
+        "empty",
+        "role",
+        "content",
+        "empty-chat-finish",
+        "reasoning",
+        "tool",
+        "completion",
+        "empty-completion-finish",
+    ],
 )
 @pytest.mark.parametrize(
     "ending",
@@ -842,7 +860,7 @@ def test_missing_usage_counts_sent_tools_through_provider_hooks(
         "input_price": "1",
         "unit": "0.001",
     }
-    expected = 18 if calling_type == "no_call" else 79 + len(tools[0].description)
+    expected = 18 if calling_type == "no_call" else 87 + len(tools[0].description)
 
     chunks = list(
         model.invoke("model", credentials, prompts, tools=tools, stream=stream)
@@ -1287,7 +1305,7 @@ def test_completion_stream_handles_empty_text_and_partial_usage(
     http_server: HTTPServerFactory,
 ) -> None:
     frames = [
-        {"choices": [{"text": ""}]},
+        {"choices": [{"text": "", "finish_reason": ""}]},
         {"choices": [{"text": "An"}]},
         {"choices": [{"text": ""}]},
         {"choices": [{"text": "swer"}]},
@@ -1295,6 +1313,7 @@ def test_completion_stream_handles_empty_text_and_partial_usage(
             "choices": [{"text": "", "finish_reason": "length"}],
             "usage": {"prompt_tokens": 0},
         },
+        {"choices": [{"text": "", "finish_reason": ""}]},
     ]
     body = "".join(f"data: {json.dumps(frame)}\n\n" for frame in frames)
     server = http_server([Response(body=(body + "data: [DONE]\n\n").encode())])
@@ -1323,8 +1342,24 @@ def test_completion_stream_handles_empty_text_and_partial_usage(
 
 
 @pytest.mark.parametrize("stream", [False, True])
-def test_missing_usage_can_estimate_tools_with_integer_enum_parameters(
-    http_server: HTTPServerFactory, stream: bool
+@pytest.mark.parametrize(
+    "parameters",
+    [
+        {},
+        {"properties": {}},
+        {"type": ["object"]},
+        {"type": "object", "properties": {"allowed": True, "denied": False}},
+        {"allOf": [{"type": "object"}]},
+        {
+            "type": "object",
+            "properties": {"attempts": {"type": "integer", "enum": [1, 2]}},
+            "required": ["attempts"],
+        },
+    ],
+    ids=["empty", "implicit-type", "type-array", "boolean-schema", "all-of", "enum"],
+)
+def test_missing_usage_can_estimate_tool_schemas(
+    http_server: HTTPServerFactory, stream: bool, parameters: dict
 ) -> None:
     response = (
         Response(
@@ -1340,22 +1375,21 @@ def test_missing_usage_can_estimate_tools_with_integer_enum_parameters(
     tool = PromptMessageTool(
         name="configure",
         description="Choose the number of attempts",
-        parameters={
-            "type": "object",
-            "properties": {"attempts": {"type": "integer", "enum": [1, 2]}},
-            "required": ["attempts"],
-        },
+        parameters=parameters,
     )
+    credentials = {
+        "mode": "chat",
+        "endpoint_url": server.url,
+        "function_calling_type": "tool_call",
+    }
+    prompts = [UserPromptMessage(content="Configure two attempts")]
+    token_budget = model.get_num_tokens("model", credentials, prompts, [tool])
 
     chunks = list(
         model.invoke(
             "model",
-            {
-                "mode": "chat",
-                "endpoint_url": server.url,
-                "function_calling_type": "tool_call",
-            },
-            [UserPromptMessage(content="Configure two attempts")],
+            credentials,
+            prompts,
             tools=[tool],
             stream=stream,
         )
@@ -1365,7 +1399,8 @@ def test_missing_usage_can_estimate_tools_with_integer_enum_parameters(
         "".join(chunk.delta.message.get_text_content() for chunk in chunks) == "Answer"
     )
     assert chunks[-1].delta.usage is not None
-    assert chunks[-1].delta.usage.prompt_tokens > 0
+    assert chunks[-1].delta.usage.prompt_tokens == token_budget > 0
+    assert chunks[-1].delta.usage.completion_tokens == 1
     payload = json.loads(server.requests[0].body)
     assert payload["tools"] == [{"type": "function", "function": tool.model_dump()}]
     assert model.started_at == 0

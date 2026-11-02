@@ -130,7 +130,7 @@ def _iter_stream_json(
                 raise InvokeError(msg) from data_error
         yield chunk
         choices = chunk.get("choices")
-        if choices and choices[0].get("finish_reason") is not None:
+        if choices and choices[0].get("finish_reason"):
             has_finish_reason = True
 
     if not has_finish_reason:
@@ -856,7 +856,7 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                     continue
 
                 choice = chunk_json["choices"][0]
-                if choice.get("finish_reason") is not None:
+                if choice.get("finish_reason"):
                     finish_reason = choice["finish_reason"]
                 chunk_index += 1
 
@@ -1008,6 +1008,8 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if completion_type is LLMMode.CHAT:
             response_message = output.get("message", {})
             response_content = response_message.get("content")
+            if response_content is None:
+                response_content = ""
             if function_calling_type == "tool_call":
                 tool_calls = output.get("message", {}).get("tool_calls")
             elif function_calling_type == "function_call":
@@ -1263,43 +1265,9 @@ class OAICompatLargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         return num_tokens
 
     def _num_tokens_for_tool_parameters(self, parameters: dict) -> int:
-        num_tokens = 0
-        if "title" in parameters:
-            num_tokens += self._get_num_tokens_by_gpt2("title")
-            num_tokens += self._get_num_tokens_by_gpt2(parameters.get("title"))
-        num_tokens += self._get_num_tokens_by_gpt2("type")
-        num_tokens += self._get_num_tokens_by_gpt2(parameters.get("type"))
-        if "properties" in parameters:
-            num_tokens += self._get_num_tokens_by_gpt2("properties")
-            for key, value in parameters.get("properties", {}).items():
-                num_tokens += self._num_tokens_for_tool_property(key, value)
-        if "required" in parameters:
-            num_tokens += self._get_num_tokens_by_gpt2("required")
-            for required_field in parameters["required"]:
-                num_tokens += 3
-                num_tokens += self._get_num_tokens_by_gpt2(required_field)
-        return num_tokens
-
-    def _num_tokens_for_tool_property(self, key: str, value: dict) -> int:
-        num_tokens = self._get_num_tokens_by_gpt2(key)
-        for field_key, field_value in value.items():
-            num_tokens += self._get_num_tokens_by_gpt2(field_key)
-            if field_key == "enum":
-                num_tokens += self._num_tokens_for_enum_field(field_value)
-            else:
-                num_tokens += self._get_num_tokens_by_gpt2(field_key)
-                num_tokens += self._get_num_tokens_by_gpt2(str(field_value))
-        return num_tokens
-
-    def _num_tokens_for_enum_field(self, field_value: list[Any]) -> int:
-        num_tokens = 0
-        for enum_field in field_value:
-            num_tokens += 3
-            value = (
-                enum_field if isinstance(enum_field, str) else json.dumps(enum_field)
-            )
-            num_tokens += self._get_num_tokens_by_gpt2(value)
-        return num_tokens
+        return self._get_num_tokens_by_gpt2(
+            json.dumps(parameters, ensure_ascii=False, allow_nan=False)
+        )
 
     def _extract_response_tool_calls(
         self,
