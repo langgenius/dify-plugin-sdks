@@ -4,6 +4,7 @@ from decimal import Decimal
 
 import pytest
 import requests
+import tiktoken
 from pytest_mock import MockerFixture
 
 from dify_plugin.entities import I18nObject
@@ -84,6 +85,94 @@ def test_embedding_batches_truncates_and_accumulates_usage(
     assert all(payload["model"] == "upstream-model" for payload in payloads)
     assert all(payload["encoding_format"] == "float" for payload in payloads)
     assert all(payload["user"] == "user-1" for payload in payloads)
+
+
+@pytest.mark.parametrize(
+    ("text", "context_size"),
+    [
+        ("a!" * 10_000 + "hello world " * 10_000, 8192),
+        (
+            "| a | b | c | d | e | f |\n" * 1000
+            + (
+                "The document describes the current configuration "
+                "and the expected output.\n"
+            )
+            * 2000,
+            8192,
+        ),
+        ("你好😀 " * 30 + "hello world " * 100, 8),
+        ("hello world", 2),
+        ("", 2),
+        ("😀", 1),
+    ],
+    ids=["mixed-long", "table-long", "unicode", "already-fits", "empty", "no-fit"],
+)
+def test_embedding_sends_a_prefix_within_the_estimated_context(
+    http_server: HTTPServerFactory, text: str, context_size: int
+) -> None:
+    server = http_server([
+        Response(body=b'{"data":[{"embedding":[1,2]}],"usage":{"total_tokens":0}}')
+    ])
+    model = OAICompatEmbeddingModel([])
+    result = model.invoke(
+        "model",
+        {"endpoint_url": server.url, "context_size": str(context_size)},
+        [text],
+    )
+
+    sent = json.loads(server.requests[0].body)["input"][0]
+    encoding = tiktoken.encoding_for_model("gpt2")
+    assert text.startswith(sent)
+    assert len(encoding.encode_ordinary(sent)) <= context_size
+    if len(encoding.encode_ordinary(text)) <= context_size:
+        assert sent == text
+    else:
+        assert len(encoding.encode_ordinary(text[: len(sent) + 1])) > context_size
+    assert result.embeddings == [[1, 2]]
+    assert result.usage.total_tokens == 0
+    assert model.started_at == 0
+
+
+@pytest.mark.parametrize(
+    ("text", "context_size", "minimum_prefix"),
+    [
+        (
+            "a\n" * 255 + "internationalization!!",
+            512,
+            "a\n" * 255 + "internationalization",
+        ),
+        ("覚醒foo!", 1, "覚醒"),
+        (
+            "a\n" * 254 + "\n😀覚醒" + "hello world " * 8300,
+            512,
+            "a\n" * 254 + "\n😀覚醒",
+        ),
+    ],
+    ids=["word-merge", "unicode-merge", "long-input-merge"],
+)
+def test_embedding_preserves_fitting_estimates_across_token_merges(
+    http_server: HTTPServerFactory,
+    text: str,
+    context_size: int,
+    minimum_prefix: str,
+) -> None:
+    server = http_server([
+        Response(body=b'{"data":[{"embedding":[1,2]}],"usage":{"total_tokens":0}}')
+    ])
+    model = OAICompatEmbeddingModel([])
+    model.invoke(
+        "model",
+        {"endpoint_url": server.url, "context_size": str(context_size)},
+        [text],
+    )
+
+    sent = json.loads(server.requests[0].body)["input"][0]
+    assert sent.startswith(minimum_prefix)
+    assert text.startswith(sent)
+    assert (
+        len(tiktoken.encoding_for_model("gpt2").encode_ordinary(sent)) <= context_size
+    )
+    assert model.started_at == 0
 
 
 def test_embedding_empty_input_does_not_request_the_server(

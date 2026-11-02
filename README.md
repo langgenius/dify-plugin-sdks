@@ -86,7 +86,8 @@ Output estimates include text and tool calls, including responses with no text c
 Tool parameter estimates include the complete JSON schema, including optional and nested fields.
 Long inputs use tokenizer chunks of at most 100,000 characters instead of switching to character counts; this shared estimator also serves embedding input budgets.
 Token merges across chunk boundaries remain approximate.
-Tool-only non-streaming replies use an empty string for absent or null text so the daemon can decode the result.
+Embedding inputs that exceed the configured context are shortened to a measured text prefix within the estimated token budget.
+Non-streaming chat replies use an empty string for absent or null text so the daemon can decode the result.
 Replies without a content field must contain a parsed tool call; an unrecognized tool entry does not make an empty reply valid.
 These local estimates use the SDK tokenizer and pricing configuration; they do not represent the provider's billing record.
 The public `get_num_tokens()` budget for completion also counts only the first prompt message and any supplied tool definitions.

@@ -140,21 +140,32 @@ class OAICompatEmbeddingModel(_CommonOaiApiCompat, TextEmbeddingModel):
         max_chunks = self._get_max_chunks(model, credentials)
 
         inputs = []
-        indices = []
         used_tokens = 0
 
-        for i, text in enumerate(texts):
-            # Here token count is only an approximation based on the GPT2 tokenizer
-            # Better token estimation would make chunking more precise.
+        for text in texts:
             num_tokens = self._get_num_tokens_by_gpt2(text)
-
-            if num_tokens >= context_size:
-                cutoff = int((len(text) * context_size) // num_tokens)
-                # if num tokens is larger than context length, only use the start
-                inputs.append(text[0:cutoff])
+            if num_tokens > context_size:
+                lower, upper = 0, len(text)
+                # Keep fitting estimates: token merges can make prefix counts decrease.
+                for estimate in (
+                    min(context_size, len(text)),
+                    len(text) * context_size // num_tokens,
+                ):
+                    if (
+                        lower < estimate < upper
+                        and self._get_num_tokens_by_gpt2(text[:estimate])
+                        <= context_size
+                    ):
+                        lower = estimate
+                while lower + 1 < upper:
+                    middle = (lower + upper) // 2
+                    if self._get_num_tokens_by_gpt2(text[:middle]) <= context_size:
+                        lower = middle
+                    else:
+                        upper = middle
+                inputs.append(text[:lower])
             else:
                 inputs.append(text)
-            indices += [i]
 
         batched_embeddings = []
         dimension = None
