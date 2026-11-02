@@ -123,25 +123,6 @@ Constrain your SDK dependency to the minor version you have tested while allowin
 For example, `dify-plugin~=0.10.2` allows patches in the 0.10 series.
 Review and test a new minor release before updating the constraint.
 
-### HTTP Error Responses in SDK 0.11.0 (unreleased)
-
-SDK-generated Serverless and Endpoint failures return HTTP 500 with the body `Internal Server Error`.
-The original exception and traceback are logged on the plugin server.
-Endpoint route failures return HTTP 404 with `Not Found`; exceptions from plugin construction or invocation, including `ValueError`, return HTTP 500.
-Explicit HTTP responses returned by a plugin retain their status, headers, and body.
-Update clients that parse exception text or treat a plugin's `ValueError` as a 404.
-
-Protecting errors raised during Endpoint streaming also requires the [daemon HTTP error fix](https://github.com/langgenius/dify-plugin-daemon/issues/834) on every daemon node.
-With that fix, a stream that fails after headers are sent is interrupted, so clients must handle response-body read errors.
-Upgrade the daemon first, then rebuild and deploy plugins with the updated SDK.
-
-## Agent Token Estimates
-
-In SDK 0.11.0 (unreleased), agent token estimates include text blocks as well as string content and treat special-token spellings such as `<|endoftext|>` as ordinary text.
-Message metadata and non-text payloads are excluded.
-Counting previously ignored text can reduce the output budget in strategies that call `recalc_llm_max_tokens`, including Function Calling and ReAct.
-The GPT-2 estimate remains approximate: budget adjustment retains a minimum of 16 output tokens and lets the provider decide whether the prompt fits.
-
 ## Manifest Version Reference
 
 The SDK dependency version and your plugin's top-level `version` in `manifest.yaml` are separate from these compatibility fields:

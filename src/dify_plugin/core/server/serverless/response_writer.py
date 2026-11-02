@@ -3,7 +3,7 @@ from contextvars import copy_context
 from queue import Empty, Queue
 from threading import Lock
 
-from gevent import Greenlet
+from gevent import Greenlet, GreenletExit
 
 from dify_plugin.core.server.__base.response_writer import ResponseWriter
 
@@ -25,7 +25,10 @@ class ServerlessResponseWriter(ResponseWriter):
                 return
             task = self._task = Greenlet.spawn(copy_context().run, callback)
         try:
-            task.get()
+            result = task.get()
+            # gevent returns GreenletExit as a successful task result.
+            if isinstance(result, GreenletExit) and not self.closed:
+                raise result
         finally:
             with self._lock:
                 self._task = None
