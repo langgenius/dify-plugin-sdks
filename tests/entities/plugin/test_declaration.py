@@ -61,7 +61,18 @@ def test_plugin_version_accepts_daemon_compatible_versions(version: str) -> None
     assert PluginConfiguration.validate_version(version) == version
 
 
-@pytest.mark.parametrize("version", ["", "not-a-version", "1.0.0-", "1.0.0-fix 1"])
+@pytest.mark.parametrize(
+    "version",
+    [
+        "",
+        "not-a-version",
+        "1.0.0-",
+        "1.0.0-fix 1",
+        "\uff10.3.7",
+        "0.3.7-\u4fee",
+        "0.3.7-fix1\n",
+    ],
+)
 def test_plugin_version_rejects_invalid_versions(version: str) -> None:
     with pytest.raises(ValueError, match="Invalid version format"):
         PluginConfiguration.validate_version(version)
