@@ -43,3 +43,25 @@ def test_invalid_minimum_dify_version_is_rejected(minimum_version: str) -> None:
             ),
             minimum_dify_version=minimum_version,
         )
+
+
+@pytest.mark.parametrize(
+    "version",
+    [
+        "1.0.0",
+        "0.3.7",
+        "1.0.0rc1",
+        "0.3.7.post1",
+        # Accepted by the plugin daemon's manifest pattern but not by PEP 440.
+        "0.3.7-fix1",
+        "1.2.3-beta_2",
+    ],
+)
+def test_plugin_version_accepts_daemon_compatible_versions(version: str) -> None:
+    assert PluginConfiguration.validate_version(version) == version
+
+
+@pytest.mark.parametrize("version", ["", "not-a-version", "1.0.0-", "1.0.0-fix 1"])
+def test_plugin_version_rejects_invalid_versions(version: str) -> None:
+    with pytest.raises(ValueError, match="Invalid version format"):
+        PluginConfiguration.validate_version(version)
