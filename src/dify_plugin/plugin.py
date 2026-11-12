@@ -33,11 +33,16 @@ from dify_plugin.core.server.serverless.request_reader import ServerlessRequestR
 from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
 from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 from dify_plugin.core.server.tcp.request_reader import TCPReaderWriter
+from dify_plugin.entities.datasource import DatasourceMessage
 from dify_plugin.entities.tool import ToolInvokeMessage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(plugin_logger_handler)
+
+# Preserve inline downloads for older consumers and leave room for Base64 and
+# message metadata under the daemon's default 5 MiB line limit.
+ONLINE_DRIVE_INLINE_BLOB_LIMIT = 3 * 1024 * 1024
 
 
 class Plugin(IOServer, Router):
@@ -592,27 +597,38 @@ class Plugin(IOServer, Router):
         if isinstance(response, Generator):
             with closing(response):
                 for message in response:
-                    if isinstance(message, ToolInvokeMessage) and isinstance(
-                        message.message,
-                        ToolInvokeMessage.BlobMessage,
+                    if (
+                        isinstance(message, ToolInvokeMessage | DatasourceMessage)
+                        and isinstance(message.message, ToolInvokeMessage.BlobMessage)
+                        and (
+                            isinstance(message, ToolInvokeMessage)
+                            or (
+                                data.get("action")
+                                == DatasourceActions.InvokeOnlineDriveDownloadFile.value
+                                and len(message.message.blob)
+                                > ONLINE_DRIVE_INLINE_BLOB_LIMIT
+                            )
+                        )
                     ):
-                        # convert blob to file chunks
                         id_ = uuid.uuid4().hex
                         blob = message.message.blob
-                        message.message.blob = id_.encode("utf-8")
-                        # split the blob into chunks
-                        chunks = [blob[i : i + 8192] for i in range(0, len(blob), 8192)]
-                        for sequence, chunk in enumerate(chunks):
+                        if isinstance(message, ToolInvokeMessage):
+                            message.message.blob = id_.encode("utf-8")
+                            message_type = ToolInvokeMessage
+                        else:
+                            message_type = DatasourceMessage
+                        chunk_offsets = range(0, len(blob), 8192)
+                        for sequence, offset in enumerate(chunk_offsets):
                             writer.session_message(
                                 session_id=session_id,
                                 data=writer.stream_object(
-                                    data=ToolInvokeMessage(
+                                    data=message_type(
                                         type=ToolInvokeMessage.MessageType.BLOB_CHUNK,
                                         message=ToolInvokeMessage.BlobChunkMessage(
                                             id=id_,
                                             sequence=sequence,
                                             total_length=len(blob),
-                                            blob=chunk,
+                                            blob=blob[offset : offset + 8192],
                                             end=False,
                                         ),
                                         meta=message.meta,
@@ -624,11 +640,11 @@ class Plugin(IOServer, Router):
                         writer.session_message(
                             session_id=session_id,
                             data=writer.stream_object(
-                                data=ToolInvokeMessage(
+                                data=message_type(
                                     type=ToolInvokeMessage.MessageType.BLOB_CHUNK,
                                     message=ToolInvokeMessage.BlobChunkMessage(
                                         id=id_,
-                                        sequence=len(chunks),
+                                        sequence=len(chunk_offsets),
                                         total_length=len(blob),
                                         blob=b"",
                                         end=True,
