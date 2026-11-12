@@ -29,6 +29,7 @@ from dify_plugin.entities.datasource import DatasourceMessage
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.trigger import EventDispatch, Subscription
+from dify_plugin.interfaces.datasource.online_drive import OnlineDriveDatasource
 from dify_plugin.interfaces.tool import Tool
 from dify_plugin.invocations.file import File
 from dify_plugin.plugin import Plugin
@@ -902,20 +903,37 @@ def test_missing_implementation_reports_the_requested_name(
     assert "missing-action" in messages[0]["data"]["message"]
 
 
-@pytest.mark.parametrize("size", [0, 1, 8191, 8192, 8193, 16384, 4 * 1024 * 1024])
+@pytest.mark.parametrize(
+    ("action", "size"),
+    [
+        *(
+            ("invoke_tool", size)
+            for size in (0, 1, 8191, 8192, 8193, 16384, 4 * 1024 * 1024)
+        ),
+        ("invoke_online_drive_download_file", 3 * 1024 * 1024 + 1),
+        ("invoke_online_drive_download_file", 7 * 1024 * 1024),
+    ],
+)
 def test_blob_chunk_boundaries_round_trip(
-    contract_plugin: Plugin, monkeypatch: pytest.MonkeyPatch, size: int
+    contract_plugin: Plugin, monkeypatch: pytest.MonkeyPatch, action: str, size: int
 ) -> None:
     content = bytes(range(256)) * (size // 256) + bytes(range(size % 256))
     metadata = {"mime_type": "application/octet-stream", "filename": "result.bin"}
 
-    def invoke_blob(tool: Tool, parameters: dict) -> Generator[ToolInvokeMessage]:
-        del parameters
-        yield tool.create_blob_message(content, meta=metadata)
+    def invoke_blob(
+        owner: Tool | OnlineDriveDatasource, *_args: object, **_kwargs: object
+    ) -> Generator[ToolInvokeMessage | DatasourceMessage]:
+        yield owner.create_blob_message(content, meta=metadata)
 
-    plugin_cls = contract_plugin.registration.get_tool_cls("contract", "echo")
-    monkeypatch.setattr(plugin_cls, "_invoke", invoke_blob)
-    messages = invoke(contract_plugin, request_for("invoke_tool"))
+    if action == "invoke_tool":
+        tool_cls = contract_plugin.registration.get_tool_cls("contract", "echo")
+        monkeypatch.setattr(tool_cls, "_invoke", invoke_blob)
+    else:
+        drive_cls = contract_plugin.registration.get_online_drive_datasource_cls(
+            "drive", "echo"
+        )
+        monkeypatch.setattr(drive_cls, "_download_file", invoke_blob)
+    messages = invoke(contract_plugin, request_for(action))
 
     assert len(messages) == (size + 8191) // 8192 + 1
     chunks = [message["data"]["message"] for message in messages]
@@ -994,10 +1012,10 @@ def test_repeated_tool_blob_keeps_existing_id_replacement(
     [
         (0, None),
         (4, {"file_name": "result.txt"}),
-        (4 * 1024 * 1024, {"mime_type": "application/octet-stream"}),
+        (3 * 1024 * 1024, {"mime_type": "application/octet-stream"}),
         (4, {"file_name": "image.png", "mime_type": "image/png"}),
     ],
-    ids=["empty", "named", "large", "image"],
+    ids=["empty", "named", "inline-limit", "image"],
 )
 def test_datasource_and_agent_blobs_preserve_wire_format_without_uploads(
     contract_plugin: Plugin,
