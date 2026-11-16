@@ -39,9 +39,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup details, integration test requi
 
 See [langgenius/dify-official-plugins](https://github.com/langgenius/dify-official-plugins) for production plugin implementations published and used by Dify.
 
+## Online Drive Downloads
+
+Starting in SDK 0.11.1, online-drive downloads larger than 3 MiB use 8 KiB `blob_chunk` messages to avoid oversized Base64 response lines.
+Deploy [Dify #46126](https://github.com/langgenius/dify/pull/46126) to the API and Pipeline workers before upgrading plugins that use chunked downloads.
+Rebuild and publish the affected plugin packages with the released SDK to deliver the fix to installed plugins.
+
 ## OpenAI-Compatible Embeddings
 
-Starting in SDK 0.11.0 (unreleased), `OAICompatEmbeddingModel` validates each response batch before sending the next request.
+Starting in SDK 0.11.0, `OAICompatEmbeddingModel` validates each response batch before sending the next request.
 Each input must have one nonempty vector of finite numbers, with consistent dimensions across all batches.
 Responses with `index` fields must cover every input in that batch exactly once using integer indices starting at zero; the SDK restores input order.
 Responses without indices retain response order.
@@ -59,7 +65,7 @@ Both methods return `LLMPollingResult` with one of three states:
 
 ## Blocking LLM Replay
 
-In SDK 0.11.0 (unreleased), blocking `session.model.llm.invoke` and `session.model.llm_structured_output.invoke` calls preserve the last non-`None` `opaque_body` snapshot.
+In SDK 0.11.0, blocking `session.model.llm.invoke` and `session.model.llm_structured_output.invoke` calls preserve the last non-`None` `opaque_body` snapshot.
 Empty objects, arrays, strings, zero, and false are valid snapshots; trailing chunks without a snapshot do not erase them.
 String chunks are concatenated, while nonempty content arrays retain their blocks and metadata in order, including when mixed with strings.
 Providers must assemble complete tool calls before emitting them, once per call, with nonempty IDs unique within the response.
@@ -72,14 +78,14 @@ The invoking Agent/plugin, provider, daemon, and host must all preserve these fi
 
 ## OpenAI-Compatible Completion Input
 
-In SDK 0.11.0 (unreleased), the shared `OAICompatLargeLanguageModel` completion mode accepts text from the first prompt message.
+In SDK 0.11.0, the shared `OAICompatLargeLanguageModel` completion mode accepts text from the first prompt message.
 Text content blocks are concatenated in order into one prompt string, including empty lists as an empty string.
 Image, audio, video, or document blocks in that prompt raise an SDK invocation error before sending a request, including when mixed with text.
 For multimodal input, use chat mode with a model that supports the input modality and message role.
 
 ## OpenAI-Compatible Usage Estimates
 
-In SDK 0.11.0 (unreleased), streaming and non-streaming responses estimate missing usage fields with the same counters.
+In SDK 0.11.0, streaming and non-streaming responses estimate missing usage fields with the same counters.
 Provider counts, including zero, take precedence; a missing or null count is estimated independently.
 Completion counts the text sent from the first prompt message, while chat counts the complete message history and the tool definitions sent with the request.
 Output estimates include text and tool calls, including responses with no text content.
@@ -97,7 +103,7 @@ Overrides of `_num_tokens_from_string()` must follow the SDK signature `(text, t
 
 ## OpenAI-Compatible Streaming
 
-In SDK 0.11.0 (unreleased), `OAICompatLargeLanguageModel` preserves SSE data alongside comments and unknown fields.
+In SDK 0.11.0, `OAICompatLargeLanguageModel` preserves SSE data alongside comments and unknown fields.
 Responses marked `text/event-stream` ignore events without data; invalid JSON in `data` fields still raises an invocation error.
 The parser handles LF, CRLF, and CR line endings within events, including with custom delimiters.
 A single leading UTF-8 BOM is ignored for both default and custom delimiters.
@@ -124,6 +130,9 @@ For example, `dify-plugin~=0.10.2` allows patches in the 0.10 series.
 Review and test a new minor release before updating the constraint.
 
 ## Manifest Version Reference
+
+Starting in SDK 0.11.1, the top-level `version` in `manifest.yaml` accepts PEP 440 versions and the daemon's version format, including suffixes such as `0.3.7-fix1`.
+Dify deployments also need [Dify #46036](https://github.com/langgenius/dify/pull/46036) to accept these suffixed versions in plugin declarations.
 
 The SDK dependency version and your plugin's top-level `version` in `manifest.yaml` are separate from these compatibility fields:
 
@@ -162,12 +171,12 @@ Minimum versions apply to the listed features.
 | 1.14.2 | 0.9.0 | LLM polling invocations. |
 | 1.16.0 | 0.10.0 | Read `app_id` through `get_current_session()` during app LLM invocations. |
 | 1.16.1 | 0.10.0 | `multiple: true` for tool `select` and `dynamic-select` parameters; requires plugin daemon 0.5.0 or later. |
-| Pending | 0.11.0 (unreleased) | Tool parameter `reset_on_change` declarations; requires plugin daemon 0.6.11 or later and the pending [Dify integration](https://github.com/langgenius/dify/pull/43040). |
-| Pending | 0.11.0 (unreleased) | Optional `OnlineDriveFile.remote_metadata`; requires plugin daemon 0.6.11 or later, with Dify browse and change-detection support still pending. |
+| Pending | 0.11.0 | Tool parameter `reset_on_change` declarations; requires plugin daemon 0.6.11 or later and the pending [Dify integration](https://github.com/langgenius/dify/pull/43040). |
+| Pending | 0.11.0 | Optional `OnlineDriveFile.remote_metadata`; requires plugin daemon 0.6.11 or later, with Dify browse and change-detection support still pending. |
 
 ## Literal Stop Sequences
 
-Starting in SDK 0.11.0 (unreleased), `LargeLanguageModel.enforce_stop_tokens` stops at the earliest literal sequence, including punctuation and backslashes.
+Starting in SDK 0.11.0, `LargeLanguageModel.enforce_stop_tokens` stops at the earliest literal sequence, including punctuation and backslashes.
 An empty stop list or no matching sequence returns the full input.
 Callers that used regex patterns must supply literal stop strings: for example, replace `r"\."` with `"."` to stop at a period.
 An empty string inside the stop list still matches at the start of the input.
