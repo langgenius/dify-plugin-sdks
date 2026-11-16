@@ -1,4 +1,5 @@
 import datetime as dt
+import re
 from enum import Enum
 
 from packaging.version import InvalidVersion, Version
@@ -6,6 +7,23 @@ from pydantic import BaseModel, Field, field_validator
 
 from dify_plugin.core.documentation.schema_doc import docs
 from dify_plugin.entities import I18nObject
+
+# Same pattern the plugin daemon uses for manifest versions
+# (pkg/entities/manifest_entities/version.go), e.g. "0.3.7-fix1".
+_DAEMON_VERSION_PATTERN = re.compile(r"\d{1,4}(\.\d{1,4}){2}(-\w{1,16})?", re.ASCII)
+
+
+def _is_valid_plugin_version(version: str) -> bool:
+    """Accept PEP 440 versions and every version the plugin daemon accepts."""
+    # fullmatch + ASCII: Go regexp classes are ASCII-only, and Go "$"
+    # rejects a trailing newline.
+    if _DAEMON_VERSION_PATTERN.fullmatch(version):
+        return True
+    try:
+        Version(version)
+    except InvalidVersion:
+        return False
+    return True
 
 
 @docs(
@@ -238,13 +256,10 @@ class PluginConfiguration(BaseModel):
     @field_validator("version")
     @classmethod
     def validate_version(cls, v: str) -> str:
-        try:
-            Version(v)
-        except InvalidVersion as e:
+        if not _is_valid_plugin_version(v):
             msg = f"Invalid version format: {v}"
-            raise ValueError(msg) from e
-        else:
-            return v
+            raise ValueError(msg)
+        return v
 
 
 @docs(
